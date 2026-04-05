@@ -1,0 +1,530 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}
+    Member Gap Attendance Report 
+{% endblock title %}
+{% block content %}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js'></script>
+
+<style>
+    .hidden {
+        display: none;
+    }
+    .fc-event-title {
+        white-space: normal !important;
+    }
+    .badge-present {
+        background-color: #28a745;
+        color: white;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-size: 0.8em;
+    }
+    .badge-absent {
+        background-color: #dc3545;
+        color: white;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-size: 0.8em;
+    }
+    .badge-leave {
+        background-color: #007bff;
+        color: white;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-size: 0.8em;
+    }
+    .badge-holiday {
+        background-color: #ffc107;
+        color: black;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-size: 0.8em;
+    }
+    .badge-occasion {
+        background-color: #17a2b8;
+        color: white;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-size: 0.8em;
+    }
+    .fc-daygrid-event {
+        white-space: normal !important;
+        padding: 2px !important;
+    }
+    .fc-event {
+        margin-bottom: 2px !important;
+    }
+    .calendar-details {
+        font-size: 0.8em;
+        margin-top: 3px;
+    }
+    .fc-daygrid-day-frame {
+        overflow-y: auto;
+        max-height: 100px;
+    }
+    @media (min-width: 1200px) {
+        .fc-daygrid-day-frame {
+            max-height: 150px;
+        }
+    }
+</style>
+
+<div class="row">
+    <form action="" method="post">
+        <div class="row">
+            <div class="col-6">
+                <Label for="first_date">From</Label>
+                <input id="first" type="date" class="form-control" name="first_date" value="{{first_date}}" required onchange="checkBtn()">
+            </div>
+            <div class="col-6">
+                <Label for="last_date">To</Label>
+                <input id="last" type="date" class="form-control" name="last_date" value="{{last_date}}" required onchange="checkBtn()">
+            </div>
+        </div>
+        {% csrf_token %}
+        <button type="submit" id="sub" class="btn btn-outline-secondary m-2" onclick="showload()"> Filter </button>
+        <br>
+    </form>
+    
+    <button class="btn btn-outline-primary m-2" onclick="printData('printarea')">Print</button>
+    <button class="btn btn-outline-secondary m-2" id="switch-view">Switch to Calendar View</button>
+
+    <div id="table-view" class="col-12">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="text-primary"><i class="fas fa-calendar-alt"></i> Total Days</h5>
+                        <h3>{{ total_days }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="text-dark"><i class="fas fa-user-times"></i> Total Leave</h5>
+                        <h3>{{ total_leave_days }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="text-danger"><i class="fas fa-user-times"></i> Total Absent Days</h5>
+                        <h3>{{ total_absent_days }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body ">
+                        <h5><i class="fas fa-user-check text-success"></i> Total Present Days</h5>
+                        <h3>{{ total_present_days }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="text-warning"><i class="fas fa-calendar-check text-warning"></i> Total Holidays</h5>
+                        <h3>{{ total_holidays }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body text-secondary">
+                        <h5 class="text-primary"><i class="fas fa-calendar-day text-primary"></i> Total Occasion Holidays</h5>
+                        <h3>{{ total_occasion_holidays }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    
+        <div class="card mb-4 mt-3">
+            <div class="card-header pb-0" style="padding-right:60px; display: flex; justify-content: space-between;">
+                <h6>{{first_date}} to {{last_date}}</h6>
+                <h6>{{org}} - {{thisone}}</h6>
+            </div>
+            <div class="card-body px-0 pt-0 pb-2">
+                <div class="table-responsive p-0" id="printarea">
+                    <table class="table align-items-center mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">{{first_date}} - {{last_date}} | {{org}} | {{thisone}}</th>
+                            </tr>
+                            <tr>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Date</th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">In</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Out</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Total Hour</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                            </tr> 
+                        </thead>
+                        <tbody>
+                            {% for i in tm %}
+                                <tr>
+                                    <td>
+                                        <p class="text-xs font-weight-bold mb-0">{{i.0}}</p>
+                                        <small>{{i.0|date:'l'}}</small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex px-2 py-1">
+                                            <div class="d-flex flex-column justify-content-center">
+                                                <p class="mb-0 text-sm text-center" data-bs-toggle="modal" data-bs-target="#exampleModal{{i.id}}" style="cursor:pointer;">{{i.1}}</p>
+                                                {% if 'All' == thisone %}
+                                                <p class="text-xs text-secondary mb-0">{{i.group}}</p>
+                                                {% endif %}
+                                                <div class="modal fade" id="exampleModal{{i.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                                    <div class="modal-dialog modal-dialog modal-dialog-centered">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="exampleModalLabel">{{i.name}} Today Details</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="row" style="border: 1px solid black;">
+                                                                    <div class="col-6 text-center" style="border-right: 1px solid;">In</div>
+                                                                    <div class="col-6 text-center">OUT</div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    {% for j in i.alldataofdaily.all %}
+                                                                    <div class="col-6 text-center" style="border-bottom: 1px solid black;">
+                                                                        {{j.scanned_time.time}}
+                                                                    </div>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <p class="text-xs font-weight-bold mb-0">{{i.2}}</p>
+                                    </td>
+                                    <td>
+                                        <p class="text-xs font-weight-bold mb-0 text-center">{{i.3}}</p>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        <span class="badge badge-sm bg-gradient-secondary">{{i.4}}</span>
+                                    </td>
+                                    <td>
+                        
+                                        {% if i.6 %}
+                                          <p class="text-center">
+                                            <span class="badge badge-sm bg-gradient-light text-dark text-center">{{i.6}}</span>
+                                          </p>
+                                          {%else%}
+                                            {% if i.5 %}
+                                              <p class="text-center">
+                                                <span class="badge badge-sm bg-gradient-warning text-center">Holiday</span>
+                                              </p>
+                                            {%else%}
+                                              {%if i.2%}
+                                                  <p class="text-center">
+                                                    <span class="badge badge-sm bg-gradient-success text-center">Present</span>
+                                                  </p>
+                                                {%else%}
+                                                 
+                                                  {% if i.7 %}
+                                                    <p class="text-center">
+                                                        <span class="badge badge-sm bg-gradient-primary text-center">On Leave</span>
+                                                    </p>
+                                                    {%else%}
+                                                        <p class="text-center">
+                                                            <span class="badge badge-sm bg-gradient-danger text-center">Absent</span>
+                                                        </p>
+                                                  {% endif %}
+                                                    
+                                                  
+                
+                                              {%endif%}
+                                            {% endif %}
+                                          
+                                        {% endif %}
+                                        
+                                    </td>
+                                    
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="calendar-view" class="col-12 hidden">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="text-primary"><i class="fas fa-calendar-alt"></i> Total Days</h5>
+                        <h3>{{ total_days }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="text-dark"><i class="fas fa-user-times"></i> Total Leave</h5>
+                        <h3>{{ total_leave_days }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="text-danger"><i class="fas fa-user-times"></i> Total Absent Days</h5>
+                        <h3>{{ total_absent_days }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body ">
+                        <h5><i class="fas fa-user-check text-success"></i> Total Present Days</h5>
+                        <h3>{{ total_present_days }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="text-warning"><i class="fas fa-calendar-check text-warning"></i> Total Holidays</h5>
+                        <h3>{{ total_holidays }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body text-secondary">
+                        <h5 class="text-primary"><i class="fas fa-calendar-day text-primary"></i> Total Occasion Holidays</h5>
+                        <h3>{{ total_occasion_holidays }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4 mt-3">
+            <div class="card-header pb-0" style="padding-right:60px; display: flex; justify-content: space-between;">
+                <h6>{{first_date}} to {{last_date}}</h6>
+                <h6>{{org}} - {{thisone}}</h6>
+            </div>
+            <div class="card-body">
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function checkBtn() {
+        var sum = document.getElementById("sub");
+        var first = document.getElementById("first").value;
+        var last = document.getElementById("last").value;
+        sum.disabled = !(first && last);
+    }
+
+    function printData(tId) {
+        var printContents = document.getElementById(tId).innerHTML;
+        var originalContents = document.body.innerHTML;
+        document.body.innerHTML = printContents;
+        window.print();
+        document.body.innerHTML = originalContents;
+    }
+
+    document.getElementById('switch-view').addEventListener('click', function() {
+        var tableView = document.getElementById('table-view');
+        var calendarView = document.getElementById('calendar-view');
+
+        if (tableView.classList.contains('hidden')) {
+            tableView.classList.remove('hidden');
+            calendarView.classList.add('hidden');
+            this.textContent = 'Switch to Calendar View';
+        } else {
+            tableView.classList.add('hidden');
+            calendarView.classList.remove('hidden');
+            this.textContent = 'Switch to Table View';
+            renderCalendar();
+        }
+    });
+
+   function renderCalendar() {
+    var calendarEl = document.getElementById('calendar');
+    
+    // Prepare events data with proper formatting
+    var events = [
+        {% for i in tm %}
+        {
+            title: '{{ i.1|escapejs }}',
+            start: '{{ i.0|date:"Y-m-d" }}',  // Ensure proper date format
+            extendedProps: {
+                inTime: '{% if i.2 %}{{ i.2|time:"H:i" }}{% else %}--:--{% endif %}',
+                outTime: '{% if i.3 %}{{ i.3|time:"H:i" }}{% else %}--:--{% endif %}',
+                totalHours: '{% if i.4 %}{{ i.4 }}{% else %}--:--{% endif %}',
+                status: '{% if i.6 %}{{ i.6|escapejs }}{% elif i.5 %}Holiday{% elif i.2 %}Present{% elif i.7 %}On Leave{% else %}Absent{% endif %}'
+            },
+            backgroundColor: '{% if i.6 %}#f8f9fa{% elif i.5 %}#ffc107{% elif i.2 %}#28a745{% elif i.7 %}#007bff{% else %}#dc3545{% endif %}',
+            borderColor: '{% if i.6 %}#f8f9fa{% elif i.5 %}#ffc107{% elif i.2 %}#28a745{% elif i.7 %}#007bff{% else %}#dc3545{% endif %}',
+            textColor: '{% if i.6 or i.5 %}#212529{% else %}#ffffff{% endif %}',
+            display: 'block'  // Ensure events are visible
+        },
+        {% endfor %}
+    ];
+
+    console.log("Calendar Events:", events);  // Debug output
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        initialDate:'{{first_date}}',  // Set initial date to the first day of the month
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: events,
+        eventDisplay: 'block',
+        eventDidMount: function(info) {
+            // Additional styling when event mounts
+            info.el.style.borderRadius = '4px';
+            info.el.style.padding = '2px';
+            info.el.style.marginBottom = '2px';
+        },
+        eventContent: function(arg) {
+            var event = arg.event;
+            var title = event.title;
+            var status = event.extendedProps.status;
+            var inTime = event.extendedProps.inTime;
+            var outTime = event.extendedProps.outTime;
+            var totalHours = event.extendedProps.totalHours;
+            
+            // Determine status badge class
+            var statusClass = '';
+            if (status === 'Present') statusClass = 'badge-present';
+            else if (status === 'Absent') statusClass = 'badge-absent';
+            else if (status === 'On Leave') statusClass = 'badge-leave';
+            else if (status === 'Holiday') statusClass = 'badge-holiday';
+            else if (status === 'Occasion Holiday') statusClass = 'badge-occasion';
+            
+            // Create event content
+            var container = document.createElement('div');
+            container.className = 'fc-event-content-container';
+            
+            var titleEl = document.createElement('div');
+            titleEl.className = 'fc-event-title';
+            titleEl.textContent = title;
+            
+            var detailsEl = document.createElement('div');
+            detailsEl.className = 'fc-event-details';
+            detailsEl.innerHTML = `
+                <div class="fc-event-time-details">
+                    <span>In: ${inTime}</span> | 
+                    <span>Out: ${outTime}</span> | 
+                    <span>Total: ${totalHours}</span>
+                </div>
+                <span class="fc-event-status ${statusClass}">${status}</span>
+            `;
+            
+            container.appendChild(titleEl);
+            container.appendChild(detailsEl);
+            
+            return { domNodes: [container] };
+        },
+        dayHeaderContent: function(arg) {
+            var container = document.createElement('div');
+            container.className = 'fc-day-header-content';
+            container.innerHTML = `
+                <div class="fc-day-header-date">${arg.text}</div>
+                <div class="fc-day-header-weekday">${arg.date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+            `;
+            return { domNodes: [container] };
+        },
+        height: 'auto',  // Adjust height automatically
+        dayMaxEvents: true  // Show all events for each day
+    });
+
+    calendar.render();
+    
+    // Trigger window resize to ensure proper rendering
+    setTimeout(function() {
+        window.dispatchEvent(new Event('resize'));
+    }, 100);
+}
+
+
+    
+</script>
+
+<style>
+    /* Calendar Container */
+#calendar {
+    min-height: 600px;
+    margin-top: 20px;
+}
+
+/* Event Styling */
+.fc-event-content-container {
+    padding: 3px;
+    font-size: 0.85em;
+}
+
+.fc-event-title {
+    font-weight: bold;
+    margin-bottom: 2px;
+    white-space: normal;
+}
+
+.fc-event-details {
+    line-height: 1.3;
+}
+
+.fc-event-time-details {
+    font-size: 0.8em;
+    margin-bottom: 2px;
+}
+
+.fc-event-status {
+    display: inline-block;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.75em;
+    font-weight: bold;
+}
+
+/* Day Header Styling */
+.fc-day-header-content {
+    text-align: center;
+    padding: 3px 0;
+}
+
+.fc-day-header-date {
+    font-weight: bold;
+}
+
+.fc-day-header-weekday {
+    font-size: 0.8em;
+    color: #666;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    #calendar {
+        min-height: 400px;
+    }
+    
+    .fc-event-content-container {
+        font-size: 0.7em;
+    }
+}
+</style>
+{% endblock content %}

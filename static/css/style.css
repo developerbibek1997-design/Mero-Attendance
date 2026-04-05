@@ -1,0 +1,244 @@
+*{
+    margin: 0px;
+}
+#background{
+    background-color: #ededed;
+
+}
+
+#topside{
+    height: auto;
+    width: 50%;
+}
+.font-line{
+    font-size: 40px;
+    font-weight: 600;
+}
+
+.form-control{
+    border: none;
+    border-left: 2px solid red;
+    background-color: white;
+    border-radius: 0px;
+    height: 45px;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    outline: none;
+    
+}
+.payslip {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 20px;
+    width: 600px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+.payslip-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.payslip-header h2 {
+    margin: 0;
+    font-size: 24px;
+}
+.payslip-header p {
+    margin: 0;
+    font-size: 14px;
+}
+.payslip-details {
+    margin-bottom: 20px;
+}
+.payslip-details h6 {
+    margin: 5px 0;
+}
+.payslip-details span {
+    display: inline-block;
+    margin-right: 15px;
+}
+.payslip-summary {
+    text-align: right;
+    margin-top: 20px;
+}
+
+.alert-warning {
+    background-image: linear-gradient(310deg, #f6f6f6 0%, #fcfcfc 100%);
+}
+.payslip-summary p {
+    margin: 5px 0;
+}
+input:focus {
+    outline: none!important;
+}
+.navbar{
+    height: 70px;
+    background-color: rgb(28, 37, 41);
+}
+a{text-decoration: none!important;color: inherit!important;}
+
+.serviceBoxwhite{
+    cursor: pointer;
+}
+
+.serviceBoxwhite:hover{
+    background-color: #ededed;
+    transition-duration: 1s;
+
+}
+.maintain{
+    height: 70px;
+}
+.infoBox img{
+    height: 80px;
+    width: auto;
+}
+.infoBox{
+    background-color: #ededed;
+    box-shadow: rgba(218, 218, 218, 0.24) 0px 3px 8px;
+    padding: 20px;
+    border-radius: 10px;
+}
+.navItem ul{
+    display: inline-flex;
+    list-style: none;
+    color: white;
+}
+.navItem  li{
+    padding-left:10px
+}
+
+.form-design{
+    background-color: rgb(255, 255, 255);
+    padding-top: 30px;
+    padding-bottom: 40px;
+    margin-top: 30px;
+    width: 75%;
+    border-radius: 20px;
+}
+.login-form{
+    padding: 10px;  
+}
+.attenPic img{
+    height: auto;
+    width: 80%;
+}
+
+
+
+/* Service Division Styling */
+#serviceDiv{
+    background-color: rgb(28, 37, 41);
+}
+
+.serviceBox{
+    padding: 20px;
+    border-radius: 20px;
+    background-color: rgb(40, 50, 54);
+}
+.serviceBoxwhite{
+    padding: 20px;
+    border-radius: 20px;
+    background-color: rgb(255, 255, 255);
+}
+
+.serviceBoxwhite img{
+    height: 40px;
+    width: auto;
+}
+.serviceBox img{
+    height: 40px;
+    width: auto;
+}
+#sidebanner{
+    height: 400px;
+    width: 100%;
+}
+.serviceBox1{
+    padding: 20px;
+    background-color: rgb(40, 50, 54);
+}
+#sidebanner1{
+    height: 400px
+}
+
+
+
+
+
+/* About Us page designing and styling */
+.about-bg{
+    background-image: url('../res/about-bg.png');
+    background-size: contain;
+    height: 90vh;
+    width: 100%;
+}
+.glassBox {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    height: 400px;
+    width: 50%;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+
+}
+
+.glassBox img{
+    height: auto;
+    width: 100%;
+}
+
+.activeHome{
+    border: 2px solid red;
+}
+
+.contact-ico{
+    display: flex;
+}
+
+.contact-ico img{
+    height: 50px;
+    width: 50px;
+   
+}
+.follow1{
+    height: 50px;
+    width: 50px;
+}
+.partner{
+    height: 100px;
+    width: auto;
+    max-width: 100%;
+}
+.form-control{
+    border: 2px solid black!important;
+}
+
+@media screen and (max-width: 600px) {
+
+    .maintain{
+        height: 68px;
+    }
+    .searchBoxForm{
+        display: block;
+    }
+    .form-design{
+        width: 95%;
+    }
+
+    .glassBox{
+        height: auto;
+        width: 80%;
+    }
+
+    .about-bg {
+        background-image: url(../res/about-bg.png);
+        background-size: contain;
+        height: 100vh!important;
+
+    }
+    
+  }

@@ -1,0 +1,22 @@
+{% extends 'dashboard.html' %}
+
+{% block title %}
+    Settings | Attendance Management System
+{% endblock title %}
+
+
+{% block content %}
+    <h6>Settings</h6>
+    <hr>
+    {% for i in messages  %}
+    <div class="alert alert-light alert-dismissible fade show" role="alert">
+        {{i}}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+   
+    
+
+    
+{% endblock content %}
+    

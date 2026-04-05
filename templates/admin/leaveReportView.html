@@ -1,0 +1,210 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}
+    Leave Report 
+{% endblock title %}
+{% block content %}
+<style>
+  .leave-card {
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-bottom: none;
+  }
+  .member-name {
+    font-weight: 600;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .member-name:hover {
+    color: #667eea;
+    transform: translateX(3px);
+  }
+  .leave-dates {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  .date-badge {
+    background: #edf2f7;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+  .reason-container {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+    border-left: 4px solid #667eea;
+  }
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+  .status-badge {
+    padding: 0.35rem 0.75rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.75rem;
+  }
+  .approved {
+    background-color: #e6fffa;
+    color: #38b2ac;
+  }
+  .rejected {
+    background-color: #fff5f5;
+    color: #f56565;
+  }
+  .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+</style>
+
+<div class="row">
+  <div class="col-12">
+    <div class="card leave-card">
+      <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="mb-0">{{date}}</h5>
+        </div>
+        <div>
+          <h5 class=" text-light p-2">{{org}} - Leave Report</h5>
+        </div>
+      </div>
+      
+      <div class="card-body px-4 pt-4 pb-2">
+        {% for i in leave %}
+        <div class="leave-item mb-4 pb-3 border-bottom">
+          <div class="row align-items-center">
+            <div class="col-md-3">
+              <p class="member-name mb-0 text-bolder" data-bs-toggle="modal" data-bs-target="#exampleModal{{i.id}}">
+                <i class="fas fa-user-circle me-2"></i>{{i.member.name}}
+              </p>
+            </div>
+            
+            <div class="col-md-3">
+              <div class="leave-dates">
+                <div class="date-badge">
+                  <i class="far fa-calendar-alt me-2"></i>{{i.gap_start}}
+                </div>
+                <span class="text-muted">to</span>
+                <div class="date-badge">
+                  <i class="far fa-calendar-alt me-2"></i>{{i.gap_end}}
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-3">
+              {% if i.approved %}
+                <span class="status-badge approved">
+                  <i class="fas fa-check-circle me-1"></i>Approved
+                </span>
+              {% elif i.rejected %}
+                <span class="status-badge rejected">
+                  <i class="fas fa-times-circle me-1"></i>Rejected
+                </span>
+              {% else %}
+                <span class="text-muted">Pending</span>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <div class="action-buttons">
+                {% if not i.approved and not i.rejected %}
+                  <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#approveModal{{i.id}}">
+                    <i class="fas fa-check me-1"></i>Approve
+                  </button>
+                  <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{i.id}}">
+                    <i class="fas fa-times me-1"></i>Reject
+                  </button>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          
+          <div class="row mt-3">
+            <div class="col-12">
+              <div class="reason-container">
+                <h6 class="text-sm text-muted mb-2">Reason:</h6>
+                <p class="mb-0">{{i.reason}}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Approve Modal -->
+        <div class="modal fade" id="approveModal{{i.id}}" tabindex="-1" aria-labelledby="approveModalLabel{{i.id}}" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="approveModalLabel{{i.id}}">Confirm Approval</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>Are you sure you want to approve this leave request for <strong>{{i.member.name}}</strong>?</p>
+                <p class="text-muted">From {{i.gap_start}} to {{i.gap_end}}</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{% url 'schooladmin:acceptReject' i.id 'accept' %}">
+                  <button type="button" class="btn btn-success">
+                    <i class="fas fa-check me-1"></i>Confirm Approval
+                  </button>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reject Modal -->
+        <div class="modal fade" id="rejectModal{{i.id}}" tabindex="-1" aria-labelledby="rejectModalLabel{{i.id}}" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="rejectModalLabel{{i.id}}">Confirm Rejection</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>Are you sure you want to reject this leave request for <strong>{{i.member.name}}</strong>?</p>
+                <p class="text-muted">From {{i.gap_start}} to {{i.gap_end}}</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{% url 'schooladmin:acceptReject' i.id 'reject' %}">
+                  <button type="button" class="btn btn-danger">
+                    <i class="fas fa-times me-1"></i>Confirm Rejection
+                  </button>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function printData(tId) {
+    var printContents = document.getElementById(tId).innerHTML;
+    var originalContents = document.body.innerHTML;
+
+    document.body.innerHTML = printContents;
+
+    window.print();
+
+    document.body.innerHTML = originalContents;
+  }
+</script>
+{% endblock content %}

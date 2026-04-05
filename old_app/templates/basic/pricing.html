@@ -1,0 +1,53 @@
+{% extends 'pillar.html' %}
+{% load static %}
+{% block content %}
+    <style>
+    .loader{
+      display: none;
+    }
+
+  </style>
+    <div class="container-fluid pb-5" id="background">
+       
+        <div class="row pb-5">
+         
+            <div class="col-lg-12 col-12 col-md-12 mt-3">
+              <br><br>
+              <h5 class="text-center">Mero <b> <span style="color: red;">Attendance</span></b> </h5>
+              <hr>
+              <h5 class="text-center mt-3">Pricing<b> package</b> </h5>
+            
+            
+            </div>
+            {% for pricing in pricing_list %}
+            <div class="col-lg-3 col-12 mt-5 m-auto">
+
+              <div class="card p-3">
+                
+                {% if pricing.image %}
+                    <img src="{{pricing.image.url}}" alt="Mero Attendnace Pricing">
+                    {% else %}
+                    <img src="{%static 'res/time.png'%}" alt="Mero Attendnace Pricing">
+                {% endif %}
+               
+                  <h3>{{ pricing.name }}</h3>
+                  <b>
+                    <h4 class="text-success">Rs. {{ pricing.price }}</h4>
+                  </b>
+                 
+                  <span class="badge bg-danger p-2">
+                    Limit: {{pricing.limit}}
+                  </span>
+              
+                    
+                  
+              </div>
+            </div>
+            {% endfor %}
+            
+              
+        </div>
+    </div>
+
+{% endblock content %}
+    

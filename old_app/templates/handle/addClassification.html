@@ -1,0 +1,88 @@
+{% extends 'dashboard.html' %}
+
+{% block title %}
+    Add Classification |Attendance Management System
+{% endblock title %}
+
+
+{% block content %}
+    <h6>Add Classification</h6>
+    <hr>
+    {% for i in messages  %}
+    <div class="alert alert-light alert-dismissible fade show" role="alert">
+        {{i}}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+    <div class="card p-5">
+        <form action="" method="post">
+            <div class="row">
+                {{form}}
+                {% csrf_token %}
+               
+
+                <div class="mt-2">
+                    <button type="submit" class="btn btn-warning"> Add Classification </button>
+                </div>
+                
+            </div>
+        </form>
+    </div>
+    <hr>
+    <h6>Classification List</h6>
+    <div class="row">
+        {% for i in clas  %}
+          <div class="col-xl-6 col-sm-6 mb-xl-0 mb-4 p-2">
+              <div class="card">
+                <div class="card-body p-3">
+                  <div class="row">
+                    <div class="col-8">
+                      <div class="numbers">
+                      
+                        <h4 class="m-3 text-capitalize font-weight-bold">{{i.name}}</h4>
+
+                        <div class="d-flex">
+                          <a href="{%url 'handle:editClassification' i.id%}" class="p-2">
+                            <button class="btn btn-sm btn-primary">Edit</button>
+                          </a>
+                          <div class="p-2">
+                            <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#staticBackdrop{{i.id}}">
+                              Delete
+                          </button>
+                          </div>
+                        
+                  
+                          <!-- Modal -->
+                          <div class="modal fade" id="staticBackdrop{{i.id}}" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                              <div class="modal-dialog">
+                              <div class="modal-content">
+                                  <div class="modal-header">
+                                  <h5 class="modal-title" id="staticBackdropLabel">Delete {{i.name}}</h5>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                  </div>
+
+                                  <div class="modal-footer">
+                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                  <a href="{%url 'handle:deleteClassification' i.id%}">
+                                      <button type="button" class="btn  btn-danger">Procced</button>
+                                  </a>
+                                  </div>
+                              </div>
+                              </div>
+                          </div>
+
+                        </div>
+                      
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+          </div>
+        {% endfor %}
+            
+    </div>
+    
+  
+{% endblock content %}
+    

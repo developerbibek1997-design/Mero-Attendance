@@ -1,0 +1,221 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}
+   Profile
+{% endblock title %}
+
+{% block content %}
+<style>
+  @media print {
+    table { page-break-after:auto }
+    tr    { page-break-inside:avoid; page-break-after:auto }
+    td    { page-break-inside:avoid; page-break-after:auto }
+    thead { display:table-header-group }
+    tfoot { display:table-footer-group }
+  }
+</style>
+
+<hr>
+
+{% for message in messages %}
+<div class="alert alert-light alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+
+<div class="row">
+    <div class="col-12 col-md-4">
+        <div class="card p-5">
+            {% if org.image %}
+                <img src="{{ org.image.url }}" alt="Mero Attendance" style="height: auto; width: 100%">
+            {% else %}
+                <img src="{% static 'res/click.png' %}" alt="Mero Attendance" style="height: auto; width: 100%">
+            {% endif %}
+
+            <div class="text-center">
+                <h5>Name: {{ org.name }}</h5>
+                <p>Address: {{ org.address }}</p>
+                <p>Serial Key: {{ org.serial_key }}</p>
+                <p>Expire On: {{ org.expire_on }}</p>
+            </div>
+
+            <div class="mt-3">
+                <!-- 1st button: Manage Holiday -->
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#manageHolidayModal">
+                    <i class="bi bi-calendar-event"></i> Manage Holiday
+                </button>
+
+                <!-- 2nd button: Occasion Holiday -->
+                <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#occasionHolidayModal">
+                    <i class="bi bi-card-checklist"></i> Occasion Holiday
+                </button>
+
+                {% comment %} <!-- 3rd button: Choose Calendar -->
+                <button type="button" class="btn btn-info w-100" onclick="chooseCalendar()">
+                    <i class="bi bi-calendar3"></i> Choose Calendar
+                </button> {% endcomment %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-8">
+        <div class="card p-5">
+            <form action="" method="post" enctype="multipart/form-data">
+                <div class="row">
+                    {{ form }}
+                    {% csrf_token %}
+                    <div class="d-grid mt-2">
+                        <button type="submit" class="btn btn-warning">Edit Org</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Manage Holiday -->
+<div class="modal fade" id="manageHolidayModal" tabindex="-1" aria-labelledby="manageHolidayModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="manageHolidayModalLabel">Manage Holiday</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                
+                {% if holiday %}
+                
+                        <p>To update select day among Sunday to Saturday for holiday:</p>
+                        <form action="{% url 'schooladmin:updateHoliday' %}" method="post">
+                            <div id="daySelection">
+                                <input type="checkbox" id="sunday" name="day" value="Sunday" {% if 'Sunday' in holiday %}checked{% endif %}>
+                                <label for="sunday">Sunday</label><br>
+                                <input type="checkbox" id="monday" name="day" value="Monday" {% if 'Monday' in holiday %}checked{% endif %}>
+                                <label for="monday">Monday</label><br>
+                                <input type="checkbox" id="tuesday" name="day" value="Tuesday" {% if 'Tuesday' in holiday %}checked{% endif %}>
+                                <label for="tuesday">Tuesday</label><br>
+                                <input type="checkbox" id="wednesday" name="day" value="Wednesday" {% if 'Wednesday' in holiday %}checked{% endif %}>
+                                <label for="wednesday">Wednesday</label><br>
+                                <input type="checkbox" id="thursday" name="day" value="Thursday" {% if 'Thursday' in holiday %}checked{% endif %}>
+                                <label for="thursday">Thursday</label><br>
+                                <input type="checkbox" id="friday" name="day" value="Friday" {% if 'Friday' in holiday %}checked{% endif %}>
+                                <label for="friday">Friday</label><br>
+                                <input type="checkbox" id="saturday" name="day" value="Saturday" {% if 'Saturday' in holiday %}checked{% endif %}>
+                                <label for="saturday">Saturday</label><br>
+                            </div>
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </form>
+                    {%else%}
+                        <p>Select any day among Sunday to Saturday for holiday:</p>
+                        <form action="{%url 'schooladmin:addHoliday'%}" method="post">
+                            <div id="daySelection">
+                                <input  type="checkbox" id="sunday" name="day" value="Sunday">
+                                <label for="sunday">Sunday</label><br>
+                                <input type="checkbox" id="monday" name="day" value="Monday">
+                                <label for="monday">Monday</label><br>
+                                <input type="checkbox" id="tuesday" name="day" value="Tuesday">
+                                <label for="tuesday">Tuesday</label><br>
+                                <input type="checkbox" id="wednesday" name="day" value="Wednesday">
+                                <label for="wednesday">Wednesday</label><br>
+                                <input type="checkbox" id="thursday" name="day" value="Thursday">
+                                <label for="thursday">Thursday</label><br>
+                                <input type="checkbox" id="friday" name="day" value="Friday">
+                                <label for="friday">Friday</label><br>
+                                <input type="checkbox" id="saturday" name="day" value="Saturday">
+                                <label for="saturday">Saturday</label><br>
+                            </div>
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </form>
+
+                {% endif %}
+                    
+                
+                
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Occasion Holiday -->
+<div class="modal fade" id="occasionHolidayModal" tabindex="-1" aria-labelledby="occasionHolidayModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="occasionHolidayModalLabel">Occasion Holiday</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'schooladmin:addOccasion' %}" method="POST">
+                    <div class="mb-3">
+                        <label for="occasionName" class="form-label">Occasion Name</label>
+                        <input type="text" class="form-control" id="occasionName" name="occasion">
+                    </div>
+                    <div class="mb-3">
+                        <label for="holidayType" class="form-label">Holiday Type</label>
+                        <select class="form-control" id="holidayType" name="holidayType" onchange="toggleEndDate()">
+                            <option value="1-day">1 Day</option>
+                            <option value="gap">Gap Holiday</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="occasionDate" class="form-label">Select Start Date</label>
+                        <input type="date" class="form-control" id="occasionDate" name="ocDate">
+                    </div>
+                    <div class="mb-3" id="endDateDiv" style="display: none;">
+                        <label for="occasionEndDate" class="form-label">Select End Date</label>
+                        <input type="date" class="form-control" id="occasionEndDate" name="ocEndDate">
+                    </div>
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <hr>
+                
+            </div>
+            <div class="p-3">
+                <h6>Occasion List</h6>
+                <hr>
+                {% for occasion in occasions %}
+                    <p class="d-flex justify-content-between mt-2">
+                        {{ occasion.date }}{% if occasion.end_date %} - {{ occasion.end_date }}{% endif %}
+                        <span class="badge bg-primary">
+                            {{ occasion.name }}
+                        </span>
+                    </p>
+                    <hr class="m-0">
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleEndDate() {
+        var holidayType = document.getElementById("holidayType").value;
+        var endDateDiv = document.getElementById("endDateDiv");
+        if (holidayType === "gap") {
+            endDateDiv.style.display = "block";
+        } else {
+            endDateDiv.style.display = "none";
+        }
+    }
+</script>
+
+
+<script>
+    function chooseCalendar() {
+        // Implement logic to choose between English or Nepali calendar
+        alert('Choose calendar functionality goes here.');
+    }
+</script>
+
+{% endblock content %}

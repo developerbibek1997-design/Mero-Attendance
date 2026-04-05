@@ -1,0 +1,278 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}
+    Member Gap Attendance Report 
+{% endblock title %}
+{% block content %}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js'></script>
+
+<style>
+    .hidden {
+        display: none;
+    }
+    .fc-event-title {
+        white-space: normal !important;
+    }
+    .badge-present {
+        background-color: #28a745;
+        color: white;
+    }
+    .badge-absent {
+        background-color: #dc3545;
+        color: white;
+    }
+</style>
+
+<div class="row">
+    <form action="" method="post">
+        <div class="row">
+            <div class="col-6">
+                <Label for="first_date">From</Label>
+                <input id="first" type="date" class="form-control" name="first_date" value="{{first_date}}" required onchange="checkBtn()">
+            </div>
+            <div class="col-6">
+                <Label for="last_date">To</Label>
+                <input id="last" type="date" class="form-control" name="last_date" value="{{last_date}}" required onchange="checkBtn()">
+            </div>
+        </div>
+        {% csrf_token %}
+        <button type="submit" id="sub" class="btn btn-outline-secondary m-2" onclick="showload()"> Filter </button>
+        <br>
+    </form>
+    
+    <button class="btn btn-outline-primary m-2" onclick="printData('printarea')">Print</button>
+    <button class="btn btn-outline-secondary m-2" id="switch-view">Switch to Calendar View</button>
+
+    <div id="table-view" class="col-12">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="text-primary"><i class="fas fa-calendar-alt"></i> Total Days</h5>
+                        <h3>{{ total_days }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="text-dark"><i class="fas fa-user-times"></i> Total Leave</h5>
+                        <h3>{{ total_leave_days }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="text-danger"><i class="fas fa-user-times"></i> Total Absent Days</h5>
+                        <h3>{{ total_absent_days }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body ">
+                        <h5><i class="fas fa-user-check text-success"></i> Total Present Days</h5>
+                        <h3>{{ total_present_days }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="text-warning"><i class="fas fa-calendar-check text-warning"></i> Total Holidays</h5>
+                        <h3>{{ total_holidays }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mt-3">
+                    <div class="card-body text-secondary">
+                        <h5 class="text-primary"><i class="fas fa-calendar-day text-primary"></i> Total Occasion Holidays</h5>
+                        <h3>{{ total_occasion_holidays }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    
+        <div class="card mb-4 mt-3">
+            <div class="card-header pb-0" style="padding-right:60px; display: flex; justify-content: space-between;">
+                <h6>{{first_date}} to {{last_date}}</h6>
+                <h6>{{org}} - {{thisone}}</h6>
+            </div>
+            <div class="card-body px-0 pt-0 pb-2">
+                <div class="table-responsive p-0" id="printarea">
+                    <table class="table align-items-center mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">{{first_date}} - {{last_date}} | {{org}} | {{thisone}}</th>
+                            </tr>
+                            <tr>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Date</th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">In</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Out</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Total Hour</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                            </tr> 
+                        </thead>
+                        <tbody>
+                            {% for i in tm %}
+                                <tr>
+                                    <td>
+                                        <p class="text-xs font-weight-bold mb-0">{{i.0}}</p>
+                                        <small>{{i.0|date:'l'}}</small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex px-2 py-1">
+                                            <div class="d-flex flex-column justify-content-center">
+                                                <p class="mb-0 text-sm text-center" data-bs-toggle="modal" data-bs-target="#exampleModal{{i.id}}" style="cursor:pointer;">{{i.1}}</p>
+                                                {% if 'All' == thisone %}
+                                                <p class="text-xs text-secondary mb-0">{{i.group}}</p>
+                                                {% endif %}
+                                                <div class="modal fade" id="exampleModal{{i.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                                    <div class="modal-dialog modal-dialog modal-dialog-centered">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="exampleModalLabel">{{i.name}} Today Details</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="row" style="border: 1px solid black;">
+                                                                    <div class="col-6 text-center" style="border-right: 1px solid;">In</div>
+                                                                    <div class="col-6 text-center">OUT</div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    {% for j in i.alldataofdaily.all %}
+                                                                    <div class="col-6 text-center" style="border-bottom: 1px solid black;">
+                                                                        {{j.scanned_time.time}}
+                                                                    </div>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <p class="text-xs font-weight-bold mb-0">{{i.2}}</p>
+                                    </td>
+                                    <td>
+                                        <p class="text-xs font-weight-bold mb-0 text-center">{{i.3}}</p>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        <span class="badge badge-sm bg-gradient-secondary">{{i.4}}</span>
+                                    </td>
+                                    <td>
+                        
+                                        {% if i.6 %}
+                                          <p class="text-center">
+                                            <span class="badge badge-sm bg-gradient-light text-dark text-center">{{i.6}}</span>
+                                          </p>
+                                          {%else%}
+                                            {% if i.5 %}
+                                              <p class="text-center">
+                                                <span class="badge badge-sm bg-gradient-warning text-center">Holiday</span>
+                                              </p>
+                                            {%else%}
+                                              {%if i.2%}
+                                                  <p class="text-center">
+                                                    <span class="badge badge-sm bg-gradient-success text-center">Present</span>
+                                                  </p>
+                                                {%else%}
+                                                 
+                                                  {% if i.7 %}
+                                                    <p class="text-center">
+                                                        <span class="badge badge-sm bg-gradient-primary text-center">On Leave</span>
+                                                    </p>
+                                                    {%else%}
+                                                        <p class="text-center">
+                                                            <span class="badge badge-sm bg-gradient-danger text-center">Absent</span>
+                                                        </p>
+                                                  {% endif %}
+                                                    
+                                                  
+                
+                                              {%endif%}
+                                            {% endif %}
+                                          
+                                        {% endif %}
+                                        
+                                    </td>
+                                    
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="calendar-view" class="col-12 hidden">
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<script>
+    function checkBtn() {
+        var sum = document.getElementById("sub");
+        var first = document.getElementById("first").value;
+        var last = document.getElementById("last").value;
+        sum.disabled = !(first && last);
+    }
+
+    function printData(tId) {
+        var printContents = document.getElementById(tId).innerHTML;
+        var originalContents = document.body.innerHTML;
+        document.body.innerHTML = printContents;
+        window.print();
+        document.body.innerHTML = originalContents;
+    }
+
+    document.getElementById('switch-view').addEventListener('click', function() {
+        var tableView = document.getElementById('table-view');
+        var calendarView = document.getElementById('calendar-view');
+
+        if (tableView.classList.contains('hidden')) {
+            tableView.classList.remove('hidden');
+            calendarView.classList.add('hidden');
+            this.textContent = 'Switch to Calendar View';
+        } else {
+            tableView.classList.add('hidden');
+            calendarView.classList.remove('hidden');
+            this.textContent = 'Switch to Table View';
+            renderCalendar();
+        }
+    });
+
+    function renderCalendar() {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            events: [
+                {% for i in tm %}
+                    {
+                        title: '{{i.1}} - {% if i.2 %}<span class="badge badge-present">Present</span>{% else %}<span class="badge badge-absent">Absent</span>{% endif %}',
+                        start: '{{i.0}}',
+                        display: 'block',
+                        className: 'badge-present'
+                    },
+                {% endfor %}
+            ],
+            eventContent: function(arg) {
+                var customHtml = arg.event.title;
+                return { html: customHtml };
+            }
+        });
+        calendar.render();
+    }
+</script>
+{% endblock content %}

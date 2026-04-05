@@ -1,0 +1,201 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}
+    Edit Device |Attendance Management System
+{% endblock title %}
+
+
+{% block content %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Before closing body -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <h6>Edit Organization</h6>
+    <hr>
+    {% for i in messages  %}
+    <div class="alert alert-light alert-dismissible fade show" role="alert">
+        {{i}}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+    <div class="row">
+        <div class="col-12 col-md-4">
+            <div class="card p-5">
+                {% if org.image %}
+                <img src="{{org.image.url}}" alt="Mero Attendance" srcset="" style="height: auto;width:100%">
+                {%else%}
+                <img src="{%static 'res/click.png'%}" alt="Mero Attendance" srcset="" style="height: auto;width:100%">
+                {% endif %}
+                <div class="text-center">
+                    <h5>Name: {{org.name}}</h5>
+                    <p>Serial Key: {{org.serial_key}}</p>
+                    <p>Expire On: {{org.expire_on}}</p>
+                    <p>Member Limit: {{org.member_limit}}</p>
+                </div>
+                <div class="d-block">
+                    
+                    <button class="btn btn-danger btn-block" style="width: 100%;" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+                        Delete
+                    </button>
+            
+                    <!-- Modal -->
+                    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                            <h5 class="modal-title" id="staticBackdropLabel">Delete {{org.name}}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                          
+                            </div>
+                            <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <a href="{%url 'superadmin:deleteOrg' org.id%}">
+                                <button type="button" class="btn btn-danger">Procced</button>
+                            </a>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+               
+                
+            </div>
+        </div>
+        <div class="col-12 col-md-8">
+            <div class="container-fluid py-4">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card my-4">
+                            <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                                <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3">
+                                    <h6 class="text-white text-capitalize ps-3">Add Organization</h6>
+                                </div>
+                            </div>
+                            <div class="card-body px-4 pb-2">
+                                {% for message in messages %}
+                                <div class="alert alert-light alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                {% endfor %}
+
+                                <form method="post" class="pt-3">
+                                    {% csrf_token %}
+                                    
+                                    <div class="row">
+                                        <!-- Regular Fields -->
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                                                {{ form.name }}
+                                                {% if form.name.help_text %}
+                                                <small class="form-text text-muted">{{ form.name.help_text }}</small>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="{{ form.expire_on.id_for_label }}" class="form-label">{{ form.expire_on.label }}</label>
+                                                {{ form.expire_on }}
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label }}</label>
+                                                {{ form.address }}
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="{{ form.member_limit.id_for_label }}" class="form-label">{{ form.member_limit.label }}</label>
+                                                {{ form.member_limit }}
+                                                {% if form.member_limit.help_text %}
+                                                <small class="form-text text-muted">{{ form.member_limit.help_text }}</small>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="{{ form.serial_key.id_for_label }}" class="form-label">{{ form.serial_key.label }}</label>
+                                                {{ form.serial_key }}
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="{{ form.new_serial_key.id_for_label }}" class="form-label">{{ form.new_serial_key.label }}</label>
+                                                {{ form.new_serial_key }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Toggle Switches -->
+                                    <div class="row mt-4">
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-3">
+                                                {{ form.mutifeature_enable }}
+                                                <label class="form-check-label" for="{{ form.mutifeature_enable.id_for_label }}">
+                                                    {{ form.mutifeature_enable.label }}
+                                                </label>
+                                                {% if form.mutifeature_enable.help_text %}
+                                                <small class="form-text text-muted d-block">{{ form.mutifeature_enable.help_text }}</small>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="form-check form-switch mb-3">
+                                                {{ form.location_based }}
+                                                <label class="form-check-label" for="{{ form.location_based.id_for_label }}">
+                                                    {{ form.location_based.label }}
+                                                </label>
+                                                {% if form.location_based.help_text %}
+                                                <small class="form-text text-muted d-block">{{ form.location_based.help_text }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-3">
+                                                {{ form.qr_based }}
+                                                <label class="form-check-label" for="{{ form.qr_based.id_for_label }}">
+                                                    {{ form.qr_based.label }}
+                                                </label>
+                                                {% if form.qr_based.help_text %}
+                                                <small class="form-text text-muted d-block">{{ form.qr_based.help_text }}</small>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="form-check form-switch mb-3">
+                                                {{ form.auto_checkin }}
+                                                <label class="form-check-label" for="{{ form.auto_checkin.id_for_label }}">
+                                                    {{ form.auto_checkin.label }}
+                                                </label>
+                                                {% if form.auto_checkin.help_text %}
+                                                <small class="form-text text-muted d-block">{{ form.auto_checkin.help_text }}</small>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="form-check form-switch mb-3">
+                                                {{ form.activate }}
+                                                <label class="form-check-label" for="{{ form.activate.id_for_label }}">
+                                                    {{ form.activate.label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-center mt-4">
+                                        <button type="submit" class="btn btn-lg btn-primary">Edit Organization</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    
+   
+    
+{% endblock content %}
+    

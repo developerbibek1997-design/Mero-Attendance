@@ -1,0 +1,181 @@
+{% extends 'dashboard.html' %}
+
+{% block title %}
+    Register New Device | Attendance Management System
+{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5>Register New Device</h5>
+                       
+                    </div>
+                    <p class="text-sm mb-0">Add a new biometric device to your attendance system</p>
+                </div>
+                
+                <div class="card-body">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                    
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="row">
+                            <!-- Device Information Section -->
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="id_name" class="form-label">Device Name</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-desktop"></i></span>
+                                        {{ form.name }}
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        Please provide a device name.
+                                    </div>
+                                    {% if form.name.errors %}
+                                        <div class="text-danger small">{{ form.name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="id_serial_number" class="form-label">Port No</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                                        {{ form.port_no }}
+                                    </div>
+                                    {% if form.port_no.errors %}
+                                        <div class="text-danger small">{{ form.port_no.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="id_ip_address" class="form-label">IP Address</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-network-wired"></i></span>
+                                        {{ form.ip_address }}
+                                    </div>
+                                    {% if form.ip_address.errors %}
+                                        <div class="text-danger small">{{ form.ip_address.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                              
+                            </div>
+                            
+                           
+                            <div class="col-12 mt-3">
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-plus-circle me-2"></i> Register Device
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Device Setup Instructions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header pb-0">
+                    <h5>Device Setup Guide</h5>
+                    <p class="text-sm mb-0">Follow these steps to connect your biometric device</p>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="step-card p-3 mb-3">
+                                <div class="step-number bg-gradient-primary rounded-circle d-inline-flex align-items-center justify-content-center">
+                                    1
+                                </div>
+                                <h6 class="mt-2">Physical Connection</h6>
+                                <p class="text-sm">Connect the device to power and network using the provided cables</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="step-card p-3 mb-3">
+                                <div class="step-number bg-gradient-primary rounded-circle d-inline-flex align-items-center justify-content-center">
+                                    2
+                                </div>
+                                <h6 class="mt-2">Network Configuration</h6>
+                                <p class="text-sm">Ensure the device has a static IP address within your network range</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="step-card p-3 mb-3">
+                                <div class="step-number bg-gradient-primary rounded-circle d-inline-flex align-items-center justify-content-center">
+                                    3
+                                </div>
+                                <h6 class="mt-2">System Integration</h6>
+                                <p class="text-sm">Test connectivity after registration to confirm successful pairing</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    .card-header {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    .form-control, .input-group-text {
+        height: 42px;
+    }
+    .input-group-text {
+        background-color: #f8f9fa;
+    }
+    .step-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        height: 100%;
+    }
+    .step-number {
+        width: 30px;
+        height: 30px;
+        color: white;
+        font-weight: bold;
+    }
+    .form-label {
+        font-weight: 500;
+    }
+</style>
+
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+</script>
+{% endblock content %}

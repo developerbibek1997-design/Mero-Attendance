@@ -1,0 +1,62 @@
+{% extends 'dashboard.html' %}
+
+{% block title %}
+    Edit Classification |Attendance Management System
+{% endblock title %}
+
+
+{% block content %}
+    <h6>Edit Classification</h6>
+    <hr>
+    {% for i in messages  %}
+    <div class="alert alert-light alert-dismissible fade show" role="alert">
+        {{i}}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+    <div class="card p-5">
+        <form action="" method="post">
+            <div class="row">
+                {{form}}
+                {% csrf_token %}
+                <div class="d-grid mt-2">
+                    <button type="submit" class="btn btn-warning"> Update Classification </button>
+                </div>
+                
+            </div>
+        </form>
+    </div>
+
+     <hr>
+     <h5>
+        Member inside {{clas.name}}
+     </h5>
+     <hr>
+     <div class="row">
+        {% for i in clas.member_type.all %}
+            <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4 mt-3 member-card">
+                <div class="card">
+                    <div class="card-body p-3">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="numbers d-flex justify-content-between">
+                                    <i class="fa fa-user my-auto" style="font-size: 40px;"></i>
+                                   
+                                    <div>
+                                        <p class="text-sm mb-0 text-capitalize font-weight-bold">{{ i.name }}</p>
+                                        <p class="text-sm mb-0 text-capitalize">{{ i.classification }}</p>
+                                        <p>{{ i.phone }}</p>
+                                    </div>
+                                  
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+     </div>
+    
+
+{% endblock content %}
+    

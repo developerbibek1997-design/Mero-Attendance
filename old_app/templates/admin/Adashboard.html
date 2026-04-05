@@ -1,0 +1,181 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}
+    Admin Dashboard Attendance Management System
+{% endblock title %}
+
+{%block content%}
+<style>
+  .card{
+    cursor: pointer;
+  }
+</style>
+<h6>{{org}}</h6>
+<hr>
+{% for i in messages  %}
+<div class="alert alert-light alert-dismissible fade show" role="alert">
+    {{i}}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+<div class="row">
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+      <a href="{%url 'handle:memberReport'%}">
+        <div class="card">
+          <div class="card-body p-3">
+            <div class="row">
+              <div class="col-8">
+                <div class="numbers">
+                  <p class="text-sm mb-0 text-capitalize font-weight-bold">Total Member</p>
+                  <h5 class="font-weight-bolder mb-0">
+                    {{tm}}
+                
+                  </h5>
+                </div>
+              </div>
+              <div class="col-4 text-end">
+                <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-md">
+                  <i class="ni ni-money-coins text-lg opacity-10" aria-hidden="true"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    
+    </div>
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+      <a href="{%url 'schooladmin:presentToday'%}">
+        <div class="card">
+          <div class="card-body p-3">
+            <div class="row">
+              <div class="col-8">
+                <div class="numbers">
+                  <p class="text-sm mb-0 text-capitalize font-weight-bold">Present Today</p>
+                  <h5 class="font-weight-bolder mb-0">
+                    {{present}}
+  
+                  </h5>
+                </div>
+              </div>
+            
+              <div class="col-4 text-end">
+                <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-md">
+                  <i class="ni ni-world text-lg opacity-10" aria-hidden="true"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+     
+    </div>
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+      <a href="{%url 'schooladmin:absentToday'%}">
+        <div class="card">
+          <div class="card-body p-3">
+            <div class="row">
+              <div class="col-8">
+                <div class="numbers">
+                  <p class="text-sm mb-0 text-capitalize font-weight-bold">Absent Today</p>
+                  <h5 class="font-weight-bolder mb-0">
+                    {{absent}}
+                 
+                  </h5>
+                </div>
+              </div>
+              <div class="col-4 text-end">
+                <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-md">
+                  <i class="ni ni-paper-diploma text-lg opacity-10" aria-hidden="true"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+     
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <a href="{%url 'schooladmin:leaveReportView'%}">
+        <div class="card">
+          <div class="card-body p-3">
+            <div class="row">
+              <div class="col-8">
+                <div class="numbers">
+                  <p class="text-sm mb-0 text-capitalize font-weight-bold">Total Leave Report</p>
+                  <h5 class="font-weight-bolder mb-0">
+                   {{leave}}  
+                   {% if unseen_leave %}
+                       <span class="badge bg-danger">New {{unseen_leave}}</span>
+                   {% endif %}
+                  </h5>
+                </div>
+              </div>
+              <div class="col-4 text-end">
+                <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-md">
+                  <i class="ni ni-cart text-lg opacity-10" aria-hidden="true"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+
+    </div>
+    
+    {% if org.mutifeature_enable %}
+    <div class="col-12 mt-5">
+      <a href="{%url 'schooladmin:staffmake'%}">
+        <div class="card h-100 p-3">
+          <div class="overflow-hidden position-relative border-radius-lg bg-cover h-100" style="background-image: url('../static/res/about-bg.png');">
+            <span class="mask bg-gradient-dark"></span>
+            <div class="card-body position-relative z-index-1 d-flex flex-column h-100 p-3">
+              <h5 class="text-white font-weight-bolder mb-4 pt-2">Attendance without device</h5>
+              <p class="text-white">You can change your member to staff and add classes for them to take attendance without devices</p>
+              <a class="text-white text-sm font-weight-bold mb-0 icon-move-right mt-auto" href="{%url 'schooladmin:staffmake'%}">
+               Create now
+                <i class="fas fa-arrow-right text-sm ms-1" aria-hidden="true"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </a>
+
+    </div>
+    {% endif %}
+      
+
+    <h6 class="mt-4">Devices</h6>
+    <hr>
+    {% for d in devices %}
+
+    <div class="col-lg-4 col-6 mt-1">
+      <div class="card" style="cursor: pointer;">
+        <div class="card-body p-3">
+          <div class="row">
+            <div class="col-lg-6">
+              <div class="d-flex flex-column h-100">
+                <p class="mb-1 pt-2 text-bold">{{d.name}}</p>
+               
+                <p class="mb-2">{{d.ip_address}}</p>
+                <p class="mb-5">{{d.port_no}}</p>
+                <a class="text-body text-sm font-weight-bold mb-0 icon-move-right mt-auto" href="{%url 'handle:editDevice' d.id%}">
+                  Manipulate
+                  <i class="fas fa-arrow-right text-sm ms-1" aria-hidden="true"></i>
+                </a>
+              </div>
+            </div>
+            <div class="col-lg-5 ms-auto text-center mt-5 mt-lg-0">
+              <div class="border-radius-lg h-100 my-auto">
+                <img src="{%static 'res/zkteco.jpg'%}" class="h-80 my-auto w-100 top-0 d-lg-block d-none" alt="waves">
+               
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+      
+</div>
+{%endblock content%}

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+{% load static %}
+{% load pwa %}
+<html lang="en">
+<head>
+    {% progressive_web_app_meta %}
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        
+        {% block title %}
+            School College Attendance Management System Online | Best Attendance Management System With salary sheet
+        {% endblock title %}
+            
+    </title>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TS47V03PY9"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+    
+      gtag('config', 'G-TS47V03PY9');
+    </script>
+        
+    <link rel="stylesheet" href="{%static 'bootstrap/bootstrap.min.css'%}">
+    <link rel="stylesheet" href="{%static 'css/style.css'%}">
+</head>
+<body>
+    <div class="container-fluid p-0 m-0">
+        <nav class="navbar navbar-expand-lg fixed-top">
+          <div class="container-fluid">
+            <a class="navbar-brand text-white" href="#" onclick="showload()">Mero Attendance</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+              <div class="navbar-nav ms-auto ">
+                <a class="nav-link active text-white" aria-current="page" href="/">Home</a>
+                <a class="nav-link text-white" href="{%url 'management:about'%}" onclick="showload()">About Us</a>
+                <a class="nav-link text-white" href="{%url 'management:contact'%}" onclick="showload()">Contact Us</a>
+                <a class="nav-link text-white" href="{%url 'management:pricing'%}" onclick="showload()">Pricing</a>
+                <a class="nav-link text-white" href="{%url 'management:pullar'%}" onclick="showload()">Download Pullar</a>
+              </div>
+            </div>
+          </div>
+      </nav>
+      <div class="maintain">
+      
+      </div>
+      </div>
+    
+    {% block content %}
+        
+    {% endblock content %}
+
+    <div class="container-fluid m-0 p-5" id="background">
+        <h5 class="text-center">Mero <b> <span style="color: red;">Attendance</span></b></h5>
+        <br>
+        <div class="row p-0 m-0">
+          <div class="col-12 col-lg-3 mt-3">
+            <a href="{%url 'management:homepage'%}">
+                <div class="serviceBoxwhite">
+                    <img src="{%static 'res/home.png'%}" alt="Attendance mero attendance">
+                    <h6 class="text-success mt-2">
+                      HOME
+                    </h6>
+                  </div>
+                </a>
+             </div>
+        
+      
+       
+            
+          <div class="col-12 col-lg-3 mt-3">
+            <a href="{%url 'management:about'%}">
+              {%url 'management:about' as abo%}
+                <div class="serviceBoxwhite {%if request.path == abo%}activeHome{%endif%}">
+                    <img src="{%static 'res/about.png'%}" alt="Attendance mero attendance">
+                    <h6 class="text-success mt-2">
+                      ABOUT US
+                    </h6>
+                  </div>
+            </a>
+           
+          </div>
+  
+          <div class="col-12 col-lg-3 mt-3">
+            {%url 'management:contact' as con%}
+            <a href="{%url 'management:contact'%}">
+                <div class="serviceBoxwhite {%if request.path == con%}activeHome{%endif%}">
+                    <img src="{%static 'res/contact.png'%}" alt="Attendance mero attendance">
+                    <h6 class="text-contact mt-2">
+                      CONTACT US
+                    </h6>
+                  </div>
+            </a>
+           
+          </div>
+  
+          <div class="col-12 col-lg-3 mt-3">
+            {%url 'management:pricing' as price%}
+            <a href="{%url 'management:pricing'%}">
+                <div class="serviceBoxwhite {%if request.path == price%}activeHome{%endif%}">
+                    <img src="{%static 'res/pricing.png'%}" alt="Attendance mero attendance">
+                    <h6 class="text-contact mt-2">
+                      PRICING
+                    </h6>
+                  </div>
+            </a>
+           
+          </div>
+  
+          <div class="col-12 col-lg-3 mt-3">
+
+            <a href="{%url 'management:document'%}">
+              {%url 'management:document' as doc%}
+                <div class="serviceBoxwhite {%if request.path == doc%}activeHome{%endif%}">
+                    <img src="{%static 'res/doc.jpeg'%}" alt="Attendance mero attendance">
+                    <h6 class="text-contact mt-2">
+                      DOCUMENTATION
+                    </h6>
+                  </div>
+            </a>
+            
+          </div>
+  
+          <div class="col-12 col-lg-3 mt-3">
+
+            <a href="{%url 'management:privacy'%}">
+            {%url 'management:privacy' as privacy%}
+            <div class="serviceBoxwhite {%if request.path == privacy%}activeHome{%endif%}" >
+              <img src="{%static 'res/privacy.png'%}" alt="Attendance mero attendance">
+              <h6 class="text-contact mt-2">
+               PRIVACY POLICY
+              </h6>
+            </div>
+            </a>
+          </div>
+
+          <div class="col-12 col-lg-3 mt-3">
+            <a href="{%url 'management:terms'%}">
+              {%url 'management:terms' as term%}
+                <div class="serviceBoxwhite {%if request.path == term%}activeHome{%endif%}">
+                    <img src="{%static 'res/terms.png'%}" alt="Attendance mero attendance">
+                    <h6 class="text-contact mt-2">
+                    Terms and condition
+                    </h6>
+                </div>
+            </a>
+            
+          </div>
+
+          <div class="col-12 col-lg-3 mt-3">
+            <a href="{%url 'management:pullar'%}">
+              {%url 'management:pullar' as down%}
+                <div class="serviceBoxwhite {%if request.path == down%}activeHome{%endif%}">
+                    <img src="{%static 'res/download.png'%}" alt="Attendance mero attendance">
+                    <h6 class="text-contact mt-2">
+                     Download
+                    </h6>
+                  </div>
+            </a>
+           
+          </div>
+  
+
+        <br><br>
+      </div>
+        
+    <script src="{%static 'bootstrap/bootstrap.min.js'%}"></script>
+    <script src="{%static 'bootstrap/bootstrap.bundle.min.js'%}"></script>
+</body>
+</html>

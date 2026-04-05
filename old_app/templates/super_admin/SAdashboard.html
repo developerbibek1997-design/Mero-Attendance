@@ -1,0 +1,163 @@
+
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}
+    Super Admin Dashboard Attendance Management System
+{% endblock title %}
+
+{%block content%}
+    <h5>Super Admin</h5>
+    <hr>
+    <h6>Atteneance Management System</h6>
+    {% for i in messages  %}
+    <div class="alert alert-light alert-dismissible fade show" role="alert">
+        {{i}}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+    <div class="row">
+        <div class="col-xl-6 col-sm-6 mb-xl-0 mb-4">
+          <a href="{%url 'superadmin:addOrg'%}">
+            <div class="card">
+              <div class="card-body p-3">
+                <div class="row">
+                  <div class="col-8">
+                    <div class="numbers">
+                      <p class="text-sm mb-0 text-capitalize font-weight-bold">Add Organization</p>
+                      <h5 class="font-weight-bolder mb-0">
+                        {{org_count}}
+                    
+                      </h5>
+                    </div>
+                  </div>
+                  <div class="col-4 text-end">
+                    <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-md">
+                      <i class="ni ni-money-coins text-lg opacity-10" aria-hidden="true"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a>
+        
+        </div>
+
+        <div class="col-xl-6 col-sm-6 mb-xl-0 mb-4">
+          <a href="{%url 'superadmin:addUser'%}">
+            <div class="card">
+              <div class="card-body p-3">
+                <div class="row">
+                  <div class="col-8">
+                    <div class="numbers">
+                      <p class="text-sm mb-0 text-capitalize font-weight-bold">Add Admin</p>
+                      <h5 class="font-weight-bolder mb-0">
+                        {{user_count}}
+                    
+                      </h5>
+                    </div>
+                  </div>
+                  <div class="col-4 text-end">
+                    <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-md">
+                      <i class="ni ni-world text-lg opacity-10" aria-hidden="true"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a>
+        
+        </div>
+
+    </div>
+
+    <div class="row">
+      <h6 class="mt-4">Organization</h6>
+      <hr>
+      {% for org in org %}
+  
+        <div class="col-lg-6 col-6 mt-4">
+          <div class="card" style="cursor: pointer;">
+            <div class="card-body p-3 mt-1">
+                <div class="row align-items-center justify-content-lg-between">
+
+                    <div class="col-md-12">
+                      Organization:
+                    </div>
+                    <div class="col-md-12">
+                      <b>{{org.name}}</b>
+                      
+                    </div>
+                    <div class="col-md-12">
+                      Serial_key:
+                    </div>
+                    <div class="col-md-12">
+                      <b>{{org.serial_key}}</b>
+                    </div>
+                    <div class="col-md-12">
+                      Activation Number:
+                    </div>
+                    <div class="col-md-12">
+                      <b>{{org.new_serial_key}}</b>
+                    </div>
+                    <hr>
+                    <div class="col-md-6">
+                      Activated:
+                    </div>
+                    <div class="col-md-6">
+
+                      
+                      {% if org.activate %}
+                      <b >Activated</b>
+                      {%else%}
+                      <b>Not Activate</b>
+                      {% endif %}
+                        
+                      
+                    </div>
+                    <hr>
+                    <div class="col-12">
+                      Expiration Date:
+                    </div>
+                    <div class="col-12">
+                      <b>{{org.expire_on}}</b>
+                    </div>
+                    <br>
+                    <hr>
+                
+                </div>
+                <div class="d-flex">
+                    <a href="{%url 'superadmin:editOrg' org.id%}">
+                      <button class="btn btn-sm btn-primary">Edit</button>
+                    </a>
+
+                    <div class="p-2">
+                      <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#staticBackdrop{{org.id}}">
+                        Delete
+                    </button>
+                      <!-- Modal -->
+                    <div class="modal fade" id="staticBackdrop{{org.id}}" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                            <h5 class="modal-title" id="staticBackdropLabel">Delete {{org.name}}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+
+                            <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <a href="{%url 'superadmin:deleteOrg' org.id%}">
+                                <button type="button" class="btn  btn-danger">Procced</button>
+                            </a>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+{%endblock content%}
+    

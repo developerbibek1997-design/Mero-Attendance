@@ -1,0 +1,177 @@
+{% extends 'dashboard.html' %}
+
+{% block title %}
+    Edit Classification | Attendance Management System
+{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5>Edit Classification</h5>
+                      
+                    </div>
+                    <p class="text-sm mb-0">Update classification details and view associated members</p>
+                </div>
+                
+                <div class="card-body">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                    
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label for="id_name" class="form-label">Classification Name</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                        {{ form.name }}
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        Please provide a valid classification name.
+                                    </div>
+                                    {% if form.name.errors %}
+                                        <div class="text-danger small">{{ form.name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-save me-1"></i> Update Classification
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5>Members in {{ clas.name }}</h5>
+                        <span class="badge bg-gradient-primary">{{ clas.member_type.all.count }} members</span>
+                    </div>
+                </div>
+                <div class="card-body px-0 pt-0 pb-2">
+                    {% if clas.member_type.all %}
+                    <div class="row">
+                        {% for member in clas.member_type.all %}
+                        <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
+                            <div class="card member-card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar avatar-xl me-3">
+                                            <span class="avatar-initial bg-gradient-primary rounded-circle">
+                                                {{ member.name|first|upper }}
+                                            </span>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-0 text-sm text-capitalize">{{ member.name }}</h6>
+                                            <p class="text-xs text-secondary mb-0">
+                                                <i class="fas fa-tag me-1"></i> {{ member.classification }}
+                                            </p>
+                                            <p class="text-xs text-secondary mb-0">
+                                                <i class="fas fa-phone me-1"></i> {{ member.phone }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <hr class="my-2">
+                                    <div class="d-flex justify-content-between">
+                                        <a href="{% url 'handle:memberEdit' member.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit me-1"></i> Edit
+                                        </a>
+                                       
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center p-4">
+                        <img src="https://cdn-icons-png.flaticon.com/512/4076/4076478.png" height="100" alt="No members">
+                        <h5 class="mt-3">No Members Found</h5>
+                        <p class="text-muted">There are currently no members assigned to this classification</p>
+                        <a href="{% url 'handle:addMember' %}" class="btn btn-sm btn-primary mt-2">
+                            <i class="fas fa-plus me-1"></i> Add Member
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease-in-out;
+    }
+    .card:hover {
+        transform: translateY(-2px);
+    }
+    .card-header {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    .member-card {
+        cursor: pointer;
+    }
+    .avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .avatar-initial {
+        color: white;
+        font-weight: 600;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.35em 0.65em;
+    }
+    .form-control, .input-group-text {
+        height: 42px;
+    }
+    .input-group-text {
+        background-color: #f8f9fa;
+    }
+</style>
+
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+</script>
+{% endblock content %}

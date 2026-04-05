@@ -1,0 +1,87 @@
+{% extends 'dashboard.html' %}
+
+{% block content %}
+<div id="table-view" class="col-12">
+    <div class="card mb-4">
+        <div class="card-header pb-0" style="padding-right:60px; display: flex; justify-content: space-between;">
+            <h6>{{ date }}</h6>
+            <small>{{ date|date:'l' }}</small>
+            <h6>{{ clas.name }}</h6>
+        </div>
+        <div class="card-body px-0 pt-0 pb-2">
+            <div class="table-responsive p-0" id="printarea">
+                <table class="table align-items-center mb-0">
+                    <thead>
+                        <tr>
+                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">{{ date }} |{{ org }} |{{ clas.name }}</th>
+                        </tr>
+                        <tr>
+                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member Name</th>
+                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in mem %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex px-2 py-1">
+                                        <div class="d-flex flex-column justify-content-center">
+                                            {{ i.name }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <p class="text-center my-auto">
+                                        {% if i.id in attended_members %}
+                                            <button class="btn btn-success p-2" disabled>Presented</button>
+                                        {% else %}
+                                            <button class="btn btn-primary p-2 mark-present" data-member-id="{{ i.id }}" data-organization-id="{{ org.id }}">Present</button>
+                                        {% endif %}
+                                    </p>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $(".mark-present").click(function() {
+            var button = $(this);
+            
+            // Prevent further clicks if already marked as "Presented"
+            if (button.hasClass("btn-success")) {
+                return;
+            }
+            
+            var memberId = button.data("member-id");
+            var organizationId = button.data("organization-id");
+            
+            $.ajax({
+                url: "{% url 'staff:mark_present' %}",
+                type: "POST",
+                data: {
+                    member_id: memberId,
+                    organization_id: organizationId,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if(response.status == "success") {
+                        button.removeClass("btn-primary").addClass("btn-success").text("Presented").prop('disabled', true);
+                    } else {
+                        alert("Failed to record attendance.");
+                    }
+                },
+                error: function() {
+                    alert("An error occurred.");
+                }
+            });
+        });
+    });
+</script>
+{% endblock content %}

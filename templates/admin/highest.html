@@ -1,0 +1,487 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}
+    Attendance Analytics | Attendance Management System 
+{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5>Attendance Analytics Dashboard</h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-download me-1"></i> Export
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                                <li><a class="dropdown-item" href="#" id="exportPDF">PDF</a></li>
+                                <li><a class="dropdown-item" href="#" id="exportExcel">Excel</a></li>
+                                <li><a class="dropdown-item" href="#" id="exportCSV">CSV</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <p class="text-sm mb-0">Analyze member attendance patterns and trends</p>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="date_range" class="form-label">Date Range</label>
+                            <select class="form-select" id="date_range" name="date_range">
+                                <option value="7days" {% if selected_range == '7days' %}selected{% endif %}>Last 7 Days</option>
+                                <option value="30days" {% if selected_range == '30days' %}selected{% endif %}>Last 30 Days</option>
+                                <option value="month" {% if selected_range == 'month' %}selected{% endif %}>This Month</option>
+                                <option value="year" {% if selected_range == 'year' %}selected{% endif %}>This Year</option>
+                                <option value="custom" {% if selected_range == 'custom' %}selected{% endif %}>Custom Range</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3 {% if selected_range != 'custom' %}d-none{% endif %}" id="custom_start_group">
+                            <label for="custom_start" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="custom_start" name="custom_start" value="{{ custom_start }}">
+                        </div>
+                        
+                        <div class="col-md-3 {% if selected_range != 'custom' %}d-none{% endif %}" id="custom_end_group">
+                            <label for="custom_end" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="custom_end" name="custom_end" value="{{ custom_end }}">
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="classification" class="form-label">Classification</label>
+                            <select class="form-select" id="classification" name="classification">
+                                <option value="all">All Classifications</option>
+                                {% for classification in classifications %}
+                                    <option value="{{ classification.id }}" {% if selected_classification == classification.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ classification.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter me-1"></i> Apply Filters
+                            </button>
+                            <a href="?" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-sync-alt me-1"></i> Reset
+                            </a>
+                        </div>
+                    </form>
+                    
+                    <hr>
+                    
+                    <!-- Summary Cards -->
+                    <div class="row">
+                        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+                            <div class="card">
+                                <div class="card-body p-3">
+                                    <div class="row">
+                                        <div class="col-8">
+                                            <div class="numbers">
+                                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Period</p>
+                                                <h5 class="font-weight-bolder">
+                                                    {{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}
+                                                </h5>
+                                            </div>
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            <div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
+                                                <i class="fas fa-calendar-alt text-lg opacity-10" aria-hidden="true"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+                            <div class="card">
+                                <div class="card-body p-3">
+                                    <div class="row">
+                                        <div class="col-8">
+                                            <div class="numbers">
+                                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Total Days</p>
+                                                <h5 class="font-weight-bolder">
+                                                    {{ total_days }}
+                                                </h5>
+                                            </div>
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            <div class="icon icon-shape bg-gradient-danger shadow-danger text-center rounded-circle">
+                                                <i class="fas fa-clock text-lg opacity-10" aria-hidden="true"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+                            <div class="card">
+                                <div class="card-body p-3">
+                                    <div class="row">
+                                        <div class="col-8">
+                                            <div class="numbers">
+                                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Members</p>
+                                                <h5 class="font-weight-bolder">
+                                                    {{ member_stats|length }}
+                                                </h5>
+                                            </div>
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            <div class="icon icon-shape bg-gradient-success shadow-success text-center rounded-circle">
+                                                <i class="fas fa-users text-lg opacity-10" aria-hidden="true"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-sm-6">
+                            <div class="card">
+                                <div class="card-body p-3">
+                                    <div class="row">
+                                        <div class="col-8">
+                                            <div class="numbers">
+                                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Avg. Attendance</p>
+                                                <h5 class="font-weight-bolder">
+                                                    {% if member_stats %}
+                                                        {{ member_stats|length}} per day
+                                                    {% else %}
+                                                        0
+                                                    {% endif %}
+                                                </h5>
+                                            </div>
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            <div class="icon icon-shape bg-gradient-warning shadow-warning text-center rounded-circle">
+                                                <i class="fas fa-chart-line text-lg opacity-10" aria-hidden="true"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Analytics Sections -->
+                    <div class="row mt-4">
+                        <!-- Most Present Members -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header pb-0">
+                                    <h6>Top Attendance</h6>
+                                    <p class="text-sm">Members with highest attendance rate ({{ total_days }} days)</p>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="table-responsive">
+                                        <table class="table align-items-center mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Days Present</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Attendance %</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for stat in most_present %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex px-2 py-1">
+                                                            <div class="d-flex flex-column justify-content-center">
+                                                                <h6 class="mb-0 text-sm">{{ stat.member.name }}</h6>
+                                                                <p class="text-xs text-secondary mb-0">{{ stat.member.classification }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="align-middle text-center">
+                                                        <span class="text-secondary text-xs font-weight-bold">{{ stat.days_present }}</span>
+                                                    </td>
+                                                    <td class="align-middle text-center">
+                                                        <div class="progress-wrapper w-75 mx-auto">
+                                                            <div class="progress-info">
+                                                                <div class="progress-percentage">
+                                                                    <span class="text-xs font-weight-bold">{{ stat.days_present }}%</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="progress">
+                                                                <div class="progress-bar bg-gradient-info" role="progressbar" 
+                                                                     aria-valuenow="{{ stat.days_present }}" 
+                                                                     aria-valuemin="0" aria-valuemax="100" 
+                                                                     style="width: {{ stat.days_present}}%;"></div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Least Present Members -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header pb-0">
+                                    <h6>Lowest Attendance</h6>
+                                    <p class="text-sm">Members with lowest attendance rate ({{ total_days }} days)</p>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="table-responsive">
+                                        <table class="table align-items-center mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Days Present</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Attendance %</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for stat in least_present %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex px-2 py-1">
+                                                            <div class="d-flex flex-column justify-content-center">
+                                                                <h6 class="mb-0 text-sm">{{ stat.member.name }}</h6>
+                                                                <p class="text-xs text-secondary mb-0">{{ stat.member.classification }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="align-middle text-center">
+                                                        <span class="text-secondary text-xs font-weight-bold">{{ stat.days_present }}</span>
+                                                    </td>
+                                                    <td class="align-middle text-center">
+                                                        <div class="progress-wrapper w-75 mx-auto">
+                                                            <div class="progress-info">
+                                                                <div class="progress-percentage">
+                                                                    <span class="text-xs font-weight-bold">{{ stat.days_present}}%</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="progress">
+                                                                <div class="progress-bar bg-gradient-danger" role="progressbar" 
+                                                                     aria-valuenow="{{ stat.days_present}}" 
+                                                                     aria-valuemin="0" aria-valuemax="100" 
+                                                                     style="width: {{ stat.days_present }}%;"></div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Most Time Spent -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header pb-0">
+                                    <h6>Top Time Spent</h6>
+                                    <p class="text-sm">Members who spent most time at work</p>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="table-responsive">
+                                        <table class="table align-items-center mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Total Time</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Avg. Per Day</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for stat in most_time_spent %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex px-2 py-1">
+                                                            <div class="d-flex flex-column justify-content-center">
+                                                                <h6 class="mb-0 text-sm">{{ stat.member.name }}</h6>
+                                                                <p class="text-xs text-secondary mb-0">{{ stat.member.classification }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="align-middle text-center">
+                                                        <span class="text-secondary text-xs font-weight-bold">
+                                                            {{ stat.time_spent|time:"H:i" }} hours
+                                                        </span>
+                                                    </td>
+                                                    <td class="align-middle text-center">
+                                                        <span class="text-secondary text-xs font-weight-bold">
+                                                            {{ stat.avg_time_per_day|time:"H:i" }} hours
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Most Consistent -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header pb-0">
+                                    <h6>Most Consistent</h6>
+                                    <p class="text-sm">Members with most consistent daily hours</p>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="table-responsive">
+                                        <table class="table align-items-center mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Avg. Hours</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Deviation</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for stat in most_consistent %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex px-2 py-1">
+                                                            <div class="d-flex flex-column justify-content-center">
+                                                                <h6 class="mb-0 text-sm">{{ stat.member.name }}</h6>
+                                                                <p class="text-xs text-secondary mb-0">{{ stat.member.classification }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="align-middle text-center">
+                                                        <span class="text-secondary text-xs font-weight-bold">
+                                                            {{ stat.avg_time_per_day|time:"H:i" }} hours
+                                                        </span>
+                                                    </td>
+                                                    <td class="align-middle text-center">
+                                                        <span class="badge badge-sm bg-gradient-success">Low</span>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Attendance Trends Chart -->
+                    <div class="row mt-4">
+                    
+                            {% for classification, members in classifi.items %}
+                                <div class="col-xl-6 col-12 mb-4">
+                                <a href="{% url 'handle:memberReport' %}" class="text-decoration-none">
+                                    <div class="card attendance-card hover-shadow-lg border-0">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 class="card-title mb-0 text-primary font-weight-bold text-uppercase letter-spacing-1">
+                                            {{ classification }}
+                                        </h5>
+                                        
+                                        <span class="">
+                                            {{ members.values|length }} Members
+                                        </span>
+                                        </div>
+                                        
+                                        <div class="divider divider-dashed"></div>
+                                        
+                                        <ul class="list-unstyled mb-0">
+                                        {% for member_name, count in members.items %}
+                                            <li class="py-2 d-flex justify-content-between align-items-center member-item">
+                                            <div class="d-flex align-items-center">
+                                                <span class="avatar avatar-sm rounded-circle bg-primary-soft me-3">
+                                                <span class="avatar-initials text-primary">{{ member_name|first|upper }}</span>
+                                                </span>
+                                                <span class="font-weight-medium text-dark">{{ member_name }}</span>
+                                            </div>
+                                            <h4>
+                                                {{count}}
+                                            </h4>
+                                            
+                                            </li>
+                                            {% if not forloop.last %}
+                                            <div class="divider dotted"></div>
+                                            {% endif %}
+                                        {% endfor %}
+                                        </ul>
+                                        
+                                        <div class="mt-3 d-flex justify-content-between align-items-center">
+                                        <span class="bg-primary-soft text-primary px-2 py-1 rounded">
+                                            Highest Attendance of employees
+                                        </span>
+                                        <span class="text-sm text-muted">
+                                            <i class="fas fa-history mr-1"></i> Updated recently
+                                        </span>
+                                        </div>
+                                    </div>
+                                    </div>
+                                </a>
+                                </div>
+                            {% endfor %}
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Show/hide custom date inputs based on selection
+    document.getElementById('date_range').addEventListener('change', function() {
+        const isCustom = this.value === 'custom';
+        document.getElementById('custom_start_group').classList.toggle('d-none', !isCustom);
+        document.getElementById('custom_end_group').classList.toggle('d-none', !isCustom);
+    });
+    
+    // Initialize attendance trends chart
+    const ctx = document.getElementById('attendance-trends-chart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Average Attendance',
+                data: [65, 59, 80, 81, 56, 55, 40, 72, 68, 75, 82, 90],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1,
+                fill: true,
+                backgroundColor: 'rgba(75, 192, 192, 0.1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.raw + '%';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Attendance Rate (%)'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

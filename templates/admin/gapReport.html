@@ -1,0 +1,203 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}
+    Gap Attendance Report 
+{% endblock title %}
+{% block content %}
+<style>
+ @media print
+            {
+            table { page-break-after:auto }
+            tr    { page-break-inside:avoid; page-break-after:auto }
+            td    { page-break-inside:avoid; page-break-after:auto }
+            th    { page-break-inside:avoid; page-break-after:auto }
+            thead { display:table-header-group }
+            tfoot { display:table-footer-group }
+            }
+</style>
+<div class="row">
+  <form action="" method="post">
+    <div class="row">
+        <div class="col-6">
+            <Label for="first_date">From</Label>
+            <input type="date" id="first" class="form-control" name="first_date" value="{{first_date}}" required onchange="checkBtn()">
+        </div>
+        <div class="col-6">
+            <Label for="last_date">To</Label>
+            <input type="date" id="last" class="form-control" name="last_date" value="{{last_date}}" required onchange="checkBtn()">
+            
+        </div>
+        <!-- <div class="col-6">
+            <label for="filter">Group</label>
+            <select name="filter" class="form-select" id="inputGroupSelect04" aria-label="Example select with button addon" style="height: 42px;">
+                <option {% if 'All' == thisone %} selected {%endif%} value="All">All</option>
+                <option {% if 'Teacher' == thisone %} selected {%endif%} value="Teacher" >Teacher</option>
+                <option {% if 'Staff' == thisone %} selected {%endif%}  value="Staff" >Staff</option>
+                <option {% if 'Student' == thisone %} selected {%endif%} value="Student">Student</option>
+            </select>
+        </div> -->
+        <div class="col-6">
+            <Label for="classification">Classification</Label>
+            <select name="classification" id="" class="form-select">
+                 <option {% if 'All' == thisone %} selected {%endif%} value="All">All</option>
+          
+          {% for c in clas %}
+            <option {% if thisone == c.name  %} selected {%endif%} value="{{c.id}}" >{{c.name}}</option>
+          {% endfor %}
+            </select>
+ 
+            
+        </div>
+    </div>
+    {% csrf_token %}
+    <button type="submit" id="sub" class="btn btn-outline-secondary m-2" onclick="showload()"> Filter </button>
+    <!-- <button type="submit" class="btn btn-outline-secondary m-2" onclick="showload()"> Filter </button> -->
+  </form>
+  
+  {% if tm %}
+  <button class="btn btn-outline-primary m-2 " onclick="printData('printarea')">Print</button>
+  <div class="col-12" >
+    <div class="card mb-4">
+      <div class="card-header pb-0" style="padding-right:60px; display: flex; justify-content: space-between;">
+        <h6 >{{first_date}} to {{last_date}} </h6>
+        <h6 >{{org}}- {{thisone}}</h6>
+        <!-- <h6>{{date}}</h6> -->
+      </div>
+     
+      <div class="card-body px-0 pt-0 pb-2">
+        <div class="table-responsive p-0" id="printarea">
+          <tr>
+            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">{{first_date}} - {{last_date}} | {{org}} | {{thisone}}</th>           
+          </tr>
+          <table class="table align-items-center mb-0">
+            <thead>
+              <tr>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Date</th>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">In</th>
+                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Out</th>
+                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Total Hour</th>
+                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+               
+              </tr>
+            </thead>
+            <tbody>
+              
+              {% for i in tm  %}
+                  <tr>
+                    <td>
+                      <p class="text-xs font-weight-bold mb-0">{{i.0}}</p>
+                      <small>{{i.0|date:'l'}}</small>
+                    </td>
+                      <td>
+                        <div class="d-flex px-2 py-1">
+                          <div class="d-flex flex-column justify-content-center">
+                            <p class="mb-0 text-sm text-center" data-bs-toggle="modal" data-bs-target="#exampleModal{{i.id}}" style="cursor:pointer;">{{i.1}}</p>
+                            
+                            {% if 'All' == thisone %}
+                            <p class="text-xs text-secondary mb-0">{{i.classification}}</p>
+                            
+                            {% endif %}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <p class="text-xs font-weight-bold mb-0">{{i.2}}</p>
+                        
+                      </td>
+                      <td>
+                          <p class="text-xs font-weight-bold mb-0 text-center">{{i.3}}</p>
+                          
+                        </td>
+                      <td class="align-middle text-center text-sm ">
+                        <span class="badge badge-sm bg-gradient-secondary">{{i.4}}</span>
+                      </td>
+                      <td>
+                        
+                        {% if i.6 %}
+                          <p class="text-center">
+                            <span class="badge badge-sm bg-gradient-light text-dark text-center">{{i.6}}</span>
+                          </p>
+                          {%else%}
+                            {% if i.5 %}
+                              <p class="text-center">
+                                <span class="badge badge-sm bg-gradient-warning text-center">Holiday</span>
+                              </p>
+                            {%else%}
+                              {%if i.2%}
+                                  <p class="text-center">
+                                    <span class="badge badge-sm bg-gradient-success text-center">Present</span>
+                                  </p>
+                                {%else%}
+                                  <p class="text-center">
+                                    <span class="badge badge-sm bg-gradient-danger text-center">Absent</span>
+                                  </p>
+
+                              {%endif%}
+                            {% endif %}
+                          
+                        {% endif %}
+                          
+                        
+                        
+                          
+                        
+                      </td>
+                    
+                  </tr>
+              {% endfor %}
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>   
+  {% endif %}
+    
+
+   
+  </div>
+  <script>
+    sum = document.getElementById("sub")
+    sum.disabled = true
+    first = document.getElementById("first").value
+    last = document.getElementById("last").value
+    console.log("i am")
+    console.log(first)
+    console.log(last)
+    if(first != "" && last != "") {
+      sum.disabled = false; //button remains disabled
+    } else {
+      sum.disabled = true; //button is enabled
+    }
+    function checkBtn(){
+        first = document.getElementById("first").value
+        last = document.getElementById("last").value
+        console.log("i am")
+        console.log(first)
+        console.log(last)
+        if(first != "" && last != "") {
+          sum.disabled = false; //button remains disabled
+        } else {
+          sum.disabled = true; //button is enabled
+        }
+    }
+
+   
+    function printData(tId) {
+     var printContents = document.getElementById(tId).innerHTML;
+     var originalContents = document.body.innerHTML;
+
+     document.body.innerHTML = printContents;
+
+     window.print();
+
+     document.body.innerHTML = originalContents;
+    }
+  
+    
+  </script>
+{% endblock content %}
+    
+    

@@ -1,0 +1,211 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}
+    Super Admin Dashboard | Attendance Management System
+{% endblock title %}
+
+{% block content %}
+<style>
+    #headerBackground {
+        background-image: url("{% static 'res/attendance.png' %}");
+        background-size: cover;
+        background-position: center;
+    }
+</style>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header min-height-300 border-radius-xl" id="headerBackground"
+            >
+                <span class="mask bg-gradient-dark opacity-6"></span>
+            </div>
+            <div class="card card-body mx-3 mx-md-4 mt-n6">
+                <div class="row gx-4">
+                    <div class="col-auto">
+                        <div class="avatar avatar-xl position-relative">
+                            <img src="{% static 'img/admin-avatar.png' %}" alt="profile_image" class="w-100 border-radius-lg shadow-sm">
+                        </div>
+                    </div>
+                    <div class="col-auto my-auto">
+                        <div class="h-100">
+                            <h5 class="mb-1">Super Admin Dashboard</h5>
+                            <p class="mb-0 font-weight-normal text-sm">Attendance Management System</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% for message in messages %}
+    <div class="alert alert-light alert-dismissible fade show shadow-sm" role="alert">
+        <i class="ni ni-bell-55 me-2"></i>
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-lg-6 col-md-6 mb-4">
+            <a href="{% url 'superadmin:addOrg' %}" class="card hover-scale h-100">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-8">
+                            <h6 class="text-uppercase text-primary mb-1">Add Organization</h6>
+                            <h2 class="mb-0">{{ org_count }}</h2>
+                            <span class="text-sm">Total Organizations</span>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-primary rounded-circle shadow text-center">
+                                <i class="ni ni-building text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-lg-6 col-md-6 mb-4">
+            <a href="{% url 'superadmin:addUser' %}" class="card hover-scale h-100">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-8">
+                            <h6 class="text-uppercase text-info mb-1">Add Admin</h6>
+                            <h2 class="mb-0">{{ user_count }}</h2>
+                            <span class="text-sm">Total Admins</span>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-info rounded-circle shadow text-center">
+                                <i class="ni ni-single-02 text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Organizations Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6>Organizations</h6>
+                        <a href="{% url 'superadmin:addOrg' %}" class="btn btn-sm btn-primary">
+                            <i class="ni ni-fat-add me-1"></i> Add New
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body px-0 pt-0 pb-2">
+                    <div class="table-responsive p-0">
+                        <table class="table align-items-center mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Organization</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Serial Key</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Expiration</th>
+                                    <th class="text-secondary opacity-7"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for org in org %}
+                                
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex px-2 py-1">
+                                                <div class="d-flex flex-column justify-content-center">
+                                                    <h6 class="mb-0 text-sm">{{ org.name }}</h6>
+                                                    <p class="text-xs text-secondary mb-0">{{ org.new_serial_key }}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <p class="text-xs font-weight-bold mb-0">{{ org.serial_key }}</p>
+                                        </td>
+                                        <td class="align-middle text-center text-sm">
+                                            <span class="badge badge-sm {% if org.activate %}bg-gradient-success{% else %}bg-gradient-secondary{% endif %}">
+                                                {% if org.activate %}Active{% else %}Inactive{% endif %}
+                                            </span>
+                                        </td>
+                                        <td class="align-middle text-center">
+                                            <span class="text-secondary text-xs font-weight-bold">{{ org.expire_on }}</span>
+                                        </td>
+                                        <td class="align-middle">
+                                            <div class="btn-group">
+                                                <a href="{% url 'superadmin:editOrg' org.id %}" class="btn btn-sm btn-outline-primary me-1" data-toggle="tooltip" title="Edit">
+                                                    <i class="ni ni-settings"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#staticBackdrop{{org.id}}" title="Delete">
+                                                    <i class="ni ni-fat-remove"></i>
+                                                </button>
+                                                <a href="{%url 'superadmin:orgDetail' org.id%}" class="btn btn-sm btn-outline-primary me-1">
+                                                      View
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+           
+                               
+
+                                <!-- Delete Modal -->
+                                <div class="modal fade" id="staticBackdrop{{org.id}}" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Are you sure you want to delete <strong>{{ org.name }}</strong>? This action cannot be undone.</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <a href="{% url 'superadmin:deleteOrg' org.id %}">
+                                                    <button type="button" class="btn btn-danger">Delete Organization</button>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-scale {
+        transition: all 0.3s ease;
+    }
+    .hover-scale:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    .page-header {
+        height: 200px;
+        background-size: cover;
+        background-position: center;
+    }
+    .card-header {
+        background-color: rgba(255, 255, 255, 0.03);
+    }
+</style>
+
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+{% endblock content %}

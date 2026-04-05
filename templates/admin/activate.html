@@ -1,0 +1,302 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Deactivated</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --danger: #ef233c;
+            --success: #2b9348;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --light-blue: #e6f0ff;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .deactivated-container {
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            padding: 40px;
+            max-width: 680px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .deactivated-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--danger) 0%, var(--primary) 100%);
+        }
+        
+        h1 {
+            color: var(--danger);
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 28px;
+        }
+        
+        .deactivated-message {
+            margin-bottom: 30px;
+            font-size: 16px;
+            color: var(--gray);
+        }
+        
+        .qr-code-container {
+            margin: 30px auto;
+            padding: 20px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 12px;
+            display: inline-block;
+            background-color: white;
+            position: relative;
+            max-width: 260px;
+            width: 100%;
+        }
+        
+        .qr-code-container::before {
+            content: 'Payment QR Code';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 0 15px;
+            color: var(--primary);
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .qr-code-placeholder {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .qr-code-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .bank-info {
+            background-color: var(--light-blue);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 25px 0;
+            text-align: left;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .bank-info h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .bank-details {
+            margin-bottom: 15px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+        
+        .bank-details strong {
+            color: var(--dark);
+            display: inline-block;
+            width: 140px;
+        }
+        
+        .receipt-option {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .file-upload {
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        .file-upload input {
+            display: none;
+        }
+        
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 25px;
+            background-color: white;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload-label:hover {
+            border-color: var(--primary);
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .file-upload-label i {
+            margin-right: 10px;
+            color: var(--primary);
+            font-size: 20px;
+        }
+        
+        .btn {
+            background-color: var(--success);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            margin-top: 15px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(43, 147, 72, 0.2);
+        }
+        
+        .btn:hover {
+            background-color: #248232;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(43, 147, 72, 0.3);
+        }
+        
+        .contact-info {
+            margin-top: 30px;
+            font-size: 14px;
+            color: var(--gray);
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .contact-info a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 576px) {
+            .deactivated-container {
+                padding: 30px 20px;
+            }
+            
+            .bank-details strong {
+                width: 120px;
+                display: inline-block;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="deactivated-container">
+         {%url 'management:logout' as haha%}
+              
+        <a class="nav-link  {%if request.path == haha %} active {%endif%}" href="{{haha}}" onclick="showload()">
+            <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+            <svg width="12px" height="12px" viewBox="0 0 40 44" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                <title>document</title>
+                <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                <g transform="translate(-1870.000000, -591.000000)" fill="#FFFFFF" fill-rule="nonzero">
+                    <g transform="translate(1716.000000, 291.000000)">
+                    <g transform="translate(154.000000, 300.000000)">
+                        <path class="color-background opacity-6" d="M40,40 L36.3636364,40 L36.3636364,3.63636364 L5.45454545,3.63636364 L5.45454545,0 L38.1818182,0 C39.1854545,0 40,0.814545455 40,1.81818182 L40,40 Z"></path>
+                        <path class="color-background" d="M30.9090909,7.27272727 L1.81818182,7.27272727 C0.814545455,7.27272727 0,8.08727273 0,9.09090909 L0,41.8181818 C0,42.8218182 0.814545455,43.6363636 1.81818182,43.6363636 L30.9090909,43.6363636 C31.9127273,43.6363636 32.7272727,42.8218182 32.7272727,41.8181818 L32.7272727,9.09090909 C32.7272727,8.08727273 31.9127273,7.27272727 30.9090909,7.27272727 Z M18.1818182,34.5454545 L7.27272727,34.5454545 L7.27272727,30.9090909 L18.1818182,30.9090909 L18.1818182,34.5454545 Z M25.4545455,27.2727273 L7.27272727,27.2727273 L7.27272727,23.6363636 L25.4545455,23.6363636 L25.4545455,27.2727273 Z M25.4545455,20 L7.27272727,20 L7.27272727,16.3636364 L25.4545455,16.3636364 L25.4545455,20 Z"></path>
+                    </g>
+                    </g>
+                </g>
+                </g>
+            </svg>
+            </div>
+            <span class="nav-link-text ms-1">LOGOUT</span>
+        </a>
+        <hr>
+        <h1>Service Has Been Deactivated</h1>
+        
+        <div class="deactivated-message">
+            <p>We regret to inform you that this service is no longer available. If you have any outstanding payments or need to settle your account, please use the payment methods below.</p>
+        </div>
+        
+        <div class="qr-code-container">
+            <div class="qr-code-placeholder">
+                <img src="{% static 'res/qr/qrcode.JPG' %}" alt="Payment QR Code">
+            </div>
+        </div>
+        
+        <div class="bank-info">
+            <h3><i class="fas fa-university"></i> Bank Transfer Information</h3>
+            
+            <div class="bank-details">
+                <strong>Bank Name:</strong> GARIMA BIKASH BANK<br>
+                <strong>Account Name:</strong> Wake and Tech Nepal Pvt Ltd.<br>
+                <strong>Account Number:</strong> 08900100916944000001<br>
+              
+                <strong>Branch:</strong> Jorpati <br>
+                <strong>Currency:</strong>NPR
+            </div>
+            
+            <p style="font-size: 14px; color: var(--gray); margin-bottom: 0;"><i class="fas fa-info-circle"></i> Please include your account ID or reference number in the payment description.</p>
+        </div>
+        
+        {% comment %} <div class="receipt-option">
+            <h3 style="color: var(--primary); margin-bottom: 15px; font-weight: 500;"><i class="fas fa-receipt"></i> Payment Receipt Submission</h3>
+            <p style="color: var(--gray); margin-bottom: 20px;">After making the payment, please upload your receipt for verification</p>
+            
+            <div class="file-upload">
+                <input type="file" id="receipt-upload" accept="image/*,.pdf">
+                <label for="receipt-upload" class="file-upload-label">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>Choose Receipt File</span>
+                </label>
+            </div>
+            
+            <a href="#" class="btn"><i class="fas fa-paper-plane"></i> Submit Receipt</a>
+        </div> {% endcomment %}
+        
+        <div class="contact-info">
+            <p><i class="fas fa-envelope"></i> For any questions, please contact <a href="mailto:support@yourdomain.com">wakeandtechnepal@gmail.com</a> or call <a href="tel:+9779818082513">+9779818082513</a></p>
+        </div>
+    </div>
+</body>
+</html>

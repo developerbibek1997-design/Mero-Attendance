@@ -1,0 +1,80 @@
+{% extends 'dashboard.html' %}
+
+{% block title %}
+    Edit Device |Attendance Management System
+{% endblock title %}
+
+
+{% block content %}
+    <h6>Edit Device</h6>
+    <hr>
+    {% for i in messages  %}
+    <div class="alert alert-light alert-dismissible fade show" role="alert">
+        {{i}}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+    <div class="row">
+        <div class="col-12 col-md-4">
+            <div class="card p-5">
+                <div class="text-center">
+                    <h5>Name of the Device: {{devi.name}}</h5>
+                    <p>IP Address of the Device: {{devi.ip_address}}</p>
+                    <p>Port No. of the Device: {{devi.port_no}}</p>
+                </div>
+                <div class="d-block">
+                    
+                    <button class="btn btn-danger btn-block" style="width: 100%;" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+                        Delete
+                    </button>
+            
+                    <!-- Modal -->
+                    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                            <h5 class="modal-title" id="staticBackdropLabel">Delete {{devi.name}}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                          
+                            </div>
+                            <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <a href="{%url 'handle:deleteDevice' devi.id%}">
+                                <button type="button" class="btn btn-danger">Procced</button>
+                            </a>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+               
+                
+            </div>
+        </div>
+        <div class="col-12 col-md-8">
+            <div class="card p-5">
+                <form action="" method="post">
+                    <div class="row">
+                        {{form}}
+                        {% csrf_token %}
+                        <div class="d-grid mt-2">
+                            <button type="submit" class="btn btn-warning"> Edit Device </button>
+                        </div>
+                        
+                    </div>
+                
+                    
+                    
+                </form>
+            </div>
+        </div>
+        
+    </div>
+    
+    
+   
+    
+{% endblock content %}
+    
