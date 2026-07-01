@@ -1,0 +1,113 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}My Attendance Report{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <div class="card p-3 d-flex flex-row align-items-center border-0 shadow-sm">
+                <div class="avatar avatar-lg bg-gradient-primary text-white rounded-circle me-4">
+                    {{ memb.name|slice:":1" }}
+                </div>
+                <div>
+                    <h5 class="mb-0">{{ memb.name }}</h5>
+                    <p class="text-sm text-muted mb-0">{{ memb.classification.name }} | {{ org.name }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mt-3 mt-md-0">
+            <form method="get" class="card p-3 border-0 shadow-sm d-flex flex-row align-items-center">
+                <label class="mb-0 me-3 font-weight-bolder text-sm text-secondary">Select Month:</label>
+                <input type="month" name="month" class="form-control" value="{{ selected_month }}" onchange="this.form.submit()">
+            </form>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger text-white">{{ error }}</div>
+    {% endif %}
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card p-4 text-center shadow-sm border-0">
+                <h6 class="text-uppercase text-xs text-secondary font-weight-bolder">Total Days Present</h6>
+                <h2 class="text-success mb-0">{{ total_present }}</h2>
+                <small class="text-muted">In {{ selected_month }}</small>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-4 text-center shadow-sm border-0">
+                <h6 class="text-uppercase text-xs text-secondary font-weight-bolder">Leave Requests</h6>
+                <h2 class="text-warning mb-0">{{ leaves|length }}</h2>
+                <small class="text-muted">In {{ selected_month }}</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-light border-bottom p-3 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 font-weight-bolder text-dark">Attendance Logs ({{ selected_month }})</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-items-center mb-0">
+                <thead>
+                    <tr>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Date</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Time</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td class="text-sm font-weight-bold ps-4">{{ log.scanned_time|date:"Y-m-d (l)" }}</td>
+                        <td class="text-sm">{{ log.scanned_time|date:"H:i A" }}</td>
+                        <td><span class="badge bg-gradient-info">Check-In Log</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="text-center py-4 text-muted">No attendance records found for this month.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-light border-bottom p-3">
+            <h6 class="mb-0 font-weight-bolder text-dark">Leave History ({{ selected_month }})</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-items-center mb-0">
+                <thead>
+                    <tr>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Details / Reason</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Dates</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in leaves %}
+                    <tr>
+                        <td class="text-sm ps-4" style="max-width: 300px; white-space: normal;">
+                            <strong>{{ l.leave_type.name }}</strong><br>
+                            <small class="text-muted">{{ l.reason }}</small>
+                        </td>
+                        <td class="text-sm">{{ l.gap_start|date:"M d" }} to {{ l.gap_end|date:"M d" }}</td>
+                        <td class="text-center">
+                            {% if l.approved %} <span class="badge bg-gradient-success">Approved</span>
+                            {% elif l.rejected %} <span class="badge bg-gradient-danger">Rejected</span>
+                            {% else %} <span class="badge bg-gradient-secondary">Pending</span> {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="text-center py-4 text-muted">No leave requests found for this month.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}

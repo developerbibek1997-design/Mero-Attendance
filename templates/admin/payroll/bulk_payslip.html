@@ -1,0 +1,158 @@
+{% extends 'dashboard.html' %}
+{% block title %}Bulk Payslip | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0"><i class="fas fa-file-invoice text-success me-2"></i>Bulk Payslip Generator</h4>
+    <a href="{% url 'schooladmin:playslip' %}" class="btn btn-outline-secondary btn-sm">Individual Payslip</a>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+  <div class="row g-4">
+    <!-- Form -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm sticky-top" style="top:80px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-cog text-primary me-2"></i>Payslip Settings</h6>
+        </div>
+        <div class="card-body p-4">
+          <form method="post" id="bulkForm">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">Month Name *</label>
+              <input type="text" name="month_name" class="form-control" placeholder="e.g. January 2025" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">From Date *</label>
+              <input type="date" name="from_date" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">To Date *</label>
+              <input type="date" name="to_date" class="form-control" required>
+            </div>
+            <div class="mb-4">
+              <div class="form-check">
+                <input type="checkbox" name="send_email" class="form-check-input" id="sendEmail">
+                <label class="form-check-label text-sm" for="sendEmail"><i class="fas fa-envelope me-1 text-primary"></i>Email payslip to each member</label>
+              </div>
+            </div>
+
+            <!-- Filter by class -->
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">Filter by Classification</label>
+              <select id="classFilter" class="form-select form-select-sm">
+                <option value="">All (show all members)</option>
+                {% for cls in classifications %}<option value="{{ cls.id }}">{{ cls.name }}</option>{% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <div class="d-flex justify-content-between mb-2">
+                <label class="form-label text-xs font-weight-bold mb-0">Select Members *</label>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-xs btn-outline-primary" id="selectAll">All</button>
+                  <button type="button" class="btn btn-xs btn-outline-secondary" id="deselectAll">None</button>
+                </div>
+              </div>
+              <div id="memberList" style="max-height:300px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;padding:8px;">
+                {% for m in members %}
+                <div class="form-check member-row" data-class="{{ m.classification_id|default:'' }}">
+                  <input type="checkbox" class="form-check-input member-cb" name="member_ids" value="{{ m.id }}" id="m{{ m.id }}">
+                  <label class="form-check-label text-xs" for="m{{ m.id }}">
+                    <strong>{{ m.name }}</strong> <span class="text-muted">— Rs. {{ m.salary_amount }}</span>
+                  </label>
+                </div>
+                {% empty %}
+                <p class="text-xs text-muted text-center py-2">No members with salary configured.</p>
+                {% endfor %}
+              </div>
+              <p class="text-xs text-muted mt-1"><span id="selectedCount">0</span> selected</p>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100"><i class="fas fa-cogs me-1"></i>Generate Payslips</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-info-circle text-info me-2"></i>How Bulk Payslip Works</h6>
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded">
+                <h6 class="text-xs font-weight-bold text-uppercase text-primary mb-2">What Gets Calculated</h6>
+                <ul class="text-xs text-muted ps-3 mb-0">
+                  <li>Attendance days in selected date range</li>
+                  <li>Gross salary from member profile</li>
+                  <li>Basic net payable (use individual for deductions)</li>
+                </ul>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded">
+                <h6 class="text-xs font-weight-bold text-uppercase text-warning mb-2">Notes</h6>
+                <ul class="text-xs text-muted ps-3 mb-0">
+                  <li>Skips members with existing payslip for same period</li>
+                  <li>Email is sent in background (non-blocking)</li>
+                  <li>PF/SSF/tax deductions: use individual payslip</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Member Summary Table -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder">Members with Salary Configuration ({{ members|length }})</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr>
+              <th class="text-xs">Member</th><th class="text-xs">Type</th>
+              <th class="text-xs">Salary</th><th class="text-xs">Email</th>
+            </tr></thead>
+            <tbody>
+              {% for m in members %}
+              <tr>
+                <td class="text-sm font-weight-bold">{{ m.name }}</td>
+                <td><span class="badge bg-light text-dark">{{ m.get_member_type_display }}</span></td>
+                <td class="text-sm">Rs. {{ m.salary_amount }}/{{ m.salary_type }}</td>
+                <td class="text-xs {% if m.email %}text-success{% else %}text-muted{% endif %}">
+                  {% if m.email %}<i class="fas fa-check me-1"></i>{{ m.email }}{% else %}<i class="fas fa-times me-1"></i>No email{% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">No members with salary configured.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const cbs = document.querySelectorAll('.member-cb');
+const countEl = document.getElementById('selectedCount');
+function updateCount() { countEl.textContent = document.querySelectorAll('.member-cb:checked').length; }
+cbs.forEach(cb => cb.addEventListener('change', updateCount));
+document.getElementById('selectAll').addEventListener('click', () => { cbs.forEach(cb => { if (!cb.closest('.member-row').style.display || cb.closest('.member-row').style.display !== 'none') cb.checked = true; }); updateCount(); });
+document.getElementById('deselectAll').addEventListener('click', () => { cbs.forEach(cb => cb.checked = false); updateCount(); });
+document.getElementById('classFilter').addEventListener('change', function() {
+  const val = this.value;
+  document.querySelectorAll('.member-row').forEach(row => {
+    row.style.display = (!val || row.dataset.class === val) ? '' : 'none';
+  });
+});
+document.getElementById('bulkForm').addEventListener('submit', function(e) {
+  if (!document.querySelectorAll('.member-cb:checked').length) { e.preventDefault(); alert('Please select at least one member.'); }
+});
+</script>
+{% endblock %}

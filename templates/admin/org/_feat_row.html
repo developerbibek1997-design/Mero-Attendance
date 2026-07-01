@@ -1,0 +1,18 @@
+{% load schooladmin_extras %}{% with is_on=org|feat_field:field %}
+<div class="feat-card {% if is_on %}feat-enabled{% else %}feat-disabled{% endif %}">
+  <div class="feat-card-icon"><i class="fas {{ icon }}"></i></div>
+  <div class="feat-card-body">
+    <p class="feat-card-label">{{ label }}</p>
+    <p class="feat-card-desc">{{ desc }}</p>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+    <label class="feat-toggle">
+      <input type="checkbox" name="{{ field }}" value="1" {% if is_on %}checked{% endif %}>
+      <span class="feat-slider"></span>
+    </label>
+    <span class="feat-status-badge {% if is_on %}feat-badge-on{% else %}feat-badge-off{% endif %}">
+      {% if is_on %}ON{% else %}OFF{% endif %}
+    </span>
+  </div>
+</div>
+{% endwith %}

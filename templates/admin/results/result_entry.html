@@ -1,0 +1,161 @@
+{% extends 'dashboard.html' %}
+{% load schooladmin_extras %}
+{% block title %}Marks Entry | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+:root{--ink:#0f172a;--muted:#64748b;--border:#e2e8f0;--bg:#f8fafc;--indigo:#6366f1;--indigo-dk:#4f46e5;--indigo-lt:#eef2ff;--green:#16a34a;--green-lt:#dcfce7;--rose:#e11d48;--rose-lt:#ffe4e6;--amber:#d97706;}
+.rs-hero{background:linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#1e3a5f 100%);border-radius:20px;padding:1.4rem 2rem;position:relative;overflow:hidden;margin-bottom:1.5rem;}
+.rs-hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.025'%3E%3Cpath d='M0 0h20v20H0zM20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E");}
+.rs-hero-inner{position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;}
+.rc{background:#fff;border-radius:16px;border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,.04);overflow:hidden;margin-bottom:1.25rem;}
+.f-label{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem;display:block;}
+.f-sel{border:1.5px solid var(--border);border-radius:8px;padding:.5rem .85rem;font-size:.85rem;background:#fff;outline:none;min-height:40px;transition:border-color .15s;width:100%;}
+.f-sel:focus{border-color:var(--indigo);}
+/* marks table */
+.marks-tbl{width:100%;border-collapse:collapse;}
+.marks-tbl th{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;padding:.65rem .75rem;background:#fafbff;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap;}
+.marks-tbl th.left{text-align:left;}
+.marks-tbl td{padding:.55rem .65rem;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
+.marks-tbl tr:hover td{background:#fafbff;}
+.marks-inp{
+  width:70px;border:1.5px solid var(--border);border-radius:7px;
+  padding:.3rem .5rem;font-size:.85rem;text-align:center;outline:none;transition:border-color .15s;
+}
+.marks-inp:focus{border-color:var(--indigo);}
+.marks-inp.absent-mode{background:#fff1f2;border-color:#fecdd3;color:var(--muted);}
+.abs-chk{accent-color:var(--rose);width:16px;height:16px;cursor:pointer;}
+.rmk-inp{border:1.5px solid var(--border);border-radius:7px;padding:.28rem .55rem;font-size:.8rem;width:100%;min-width:100px;outline:none;}
+.rmk-inp:focus{border-color:var(--indigo);}
+.btn-save-marks{background:linear-gradient(135deg,var(--green),#15803d);color:#fff;border:none;border-radius:10px;padding:.65rem 1.75rem;font-size:.88rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:.5rem;}
+.sticky-save{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--border);padding:1rem 1.4rem;z-index:5;}
+</style>
+
+<div class="container-fluid py-3">
+{% for msg in messages %}
+<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show mb-3">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+{% endfor %}
+
+<div class="rs-hero mb-4">
+  <div class="rs-hero-inner">
+    <div>
+      <div style="font-size:.68rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:.3rem;">{{ org.name }}</div>
+      <h4 style="color:#fff;font-size:1.25rem;font-weight:900;margin:0;"><i class="fas fa-edit me-2 opacity-75"></i>Bulk Marks Entry</h4>
+      <p style="color:#94a3b8;font-size:.82rem;margin:.3rem 0 0;">Enter marks for all students in one go. Changes auto-save on Submit.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'schooladmin:exam_terms' %}" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:.45rem 1rem;font-size:.8rem;font-weight:700;text-decoration:none;"><i class="fas fa-arrow-left me-1"></i>Exams</a>
+      {% if selected_exam and selected_classification %}
+      <a href="{% url 'schooladmin:result_report' %}?exam={{ selected_exam.pk }}&classification={{ selected_classification.pk }}{% if selected_section %}&section={{ selected_section }}{% endif %}" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:.45rem 1rem;font-size:.8rem;font-weight:700;text-decoration:none;"><i class="fas fa-chart-bar me-1"></i>Report</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Filter -->
+<div class="rc">
+  <div style="padding:1rem 1.25rem;">
+    <form method="get" class="row g-3 align-items-end" id="filterForm">
+      <div class="col-md-3">
+        <label class="f-label">Exam</label>
+        <select name="exam" class="f-sel" onchange="this.form.submit()">
+          <option value="">-- Select Exam --</option>
+          {% for e in exams %}<option value="{{ e.id }}" {% if selected_exam and selected_exam.id == e.id %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="f-label">Classification</label>
+        <select name="classification" class="f-sel" onchange="this.form.submit()">
+          <option value="">-- Select Class --</option>
+          {% for c in classifications %}<option value="{{ c.id }}" {% if selected_classification and selected_classification.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      {% if sections %}
+      <div class="col-md-3">
+        <label class="f-label">Section <small>(optional)</small></label>
+        <select name="section" class="f-sel" onchange="this.form.submit()">
+          <option value="">All Sections</option>
+          {% for s in sections %}<option value="{{ s.id }}" {% if selected_section == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-md-2"><button type="submit" class="btn btn-primary btn-sm w-100"><i class="fas fa-search me-1"></i>Load</button></div>
+    </form>
+  </div>
+</div>
+
+{% if selected_exam and selected_classification and members_data %}
+<form method="post" id="marksForm">
+  {% csrf_token %}
+  <input type="hidden" name="exam_id" value="{{ selected_exam.id }}">
+  <input type="hidden" name="classification_id" value="{{ selected_classification.id }}">
+  <input type="hidden" name="section_id" value="{{ selected_section|default:'' }}">
+  <div class="rc">
+    <div style="padding:.9rem 1.4rem;border-bottom:1px solid var(--border);">
+      <div style="font-weight:800;color:var(--ink);font-size:.9rem;">{{ selected_exam.name }} — {{ selected_classification.name }}{% if selected_section %} / Section {{ selected_section }}{% endif %}</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:.15rem;">{{ members_data|length }} students · {{ subjects|length }} subjects &nbsp;·&nbsp; <i class="fas fa-info-circle me-1"></i>Check "Absent" to mark a student absent for a subject.</div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="marks-tbl">
+        <thead>
+          <tr>
+            <th class="left" style="min-width:160px;position:sticky;left:0;background:#fafbff;z-index:2;">#&nbsp;Student</th>
+            {% for subj in subjects %}
+            <th style="min-width:100px;">
+              {{ subj.name }}<br>
+              <span style="font-weight:500;color:var(--muted);">/{{ subj.full_marks|floatformat:0 }}</span>
+            </th>
+            <th style="min-width:60px;font-size:.6rem;">Absent</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in members_data %}
+          <tr>
+            <td style="position:sticky;left:0;background:#fff;z-index:1;font-weight:700;">
+              <div>{{ row.member.name }}</div>
+              <div style="font-size:.72rem;color:var(--muted);">{{ row.member.card|default:"" }}</div>
+            </td>
+            {% for subj in subjects %}
+            {% with rec=row.records|dict_get:subj.id %}
+            <td class="text-center">
+              <input type="number" step="0.5" name="marks_{{ row.member.id }}_{{ subj.id }}"
+                class="marks-inp" id="inp_{{ row.member.id }}_{{ subj.id }}"
+                value="{% if rec %}{{ rec.obtained_marks|floatformat:1 }}{% endif %}"
+                min="0" max="{{ subj.full_marks }}" placeholder="—"
+                {% if rec and rec.is_absent %}disabled class="marks-inp absent-mode"{% endif %}>
+            </td>
+            <td class="text-center">
+              <input type="checkbox" name="absent_{{ row.member.id }}_{{ subj.id }}"
+                class="abs-chk" id="abs_{{ row.member.id }}_{{ subj.id }}"
+                {% if rec and rec.is_absent %}checked{% endif %}
+                onchange="toggleAbsent(this, 'inp_{{ row.member.id }}_{{ subj.id }}')">
+            </td>
+            {% endwith %}
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="sticky-save d-flex justify-content-between align-items-center">
+      <div style="font-size:.8rem;color:var(--muted);"><i class="fas fa-keyboard me-1"></i>Tab between cells for fast entry</div>
+      <button type="submit" class="btn-save-marks"><i class="fas fa-save"></i>Save All Marks</button>
+    </div>
+  </div>
+</form>
+
+{% elif selected_exam and selected_classification %}
+<div class="rc"><div style="text-align:center;padding:3rem;color:var(--muted);"><i class="fas fa-users fa-2x d-block mb-2 opacity-30"></i>No students found in this classification{% if selected_section %}/section{% endif %}.</div></div>
+{% else %}
+<div class="rc"><div style="text-align:center;padding:3rem;color:var(--muted);"><i class="fas fa-edit fa-2x d-block mb-2 opacity-30"></i>Select an exam and classification above to load marks entry.</div></div>
+{% endif %}
+
+</div>
+<script>
+function toggleAbsent(chk, inputId) {
+  var inp = document.getElementById(inputId);
+  if (chk.checked) { inp.value = 0; inp.disabled = true; inp.classList.add('absent-mode'); }
+  else { inp.value = ''; inp.disabled = false; inp.classList.remove('absent-mode'); }
+}
+</script>
+{% endblock %}

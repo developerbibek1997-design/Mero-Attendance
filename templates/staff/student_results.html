@@ -1,0 +1,166 @@
+{% extends 'dashboard.html' %}
+{% block title %}My Results | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+:root{--ink:#0f172a;--muted:#64748b;--border:#e2e8f0;--green:#16a34a;--green-lt:#dcfce7;--rose:#e11d48;--rose-lt:#ffe4e6;--amber:#d97706;--amber-lt:#fef3c7;--indigo:#6366f1;--indigo-lt:#eef2ff;}
+.hero{background:linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#064e3b 100%);border-radius:20px;padding:1.4rem 2rem;position:relative;overflow:hidden;margin-bottom:1.5rem;}
+.hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.025'%3E%3Cpath d='M0 0h20v20H0zM20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E");}
+.hero-inner{position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;}
+.rc{background:#fff;border-radius:16px;border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,.04);overflow:hidden;}
+.kpi-card{background:#fff;border-radius:14px;border:1px solid var(--border);padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+.kpi-val{font-size:1.5rem;font-weight:900;line-height:1.1;}
+.kpi-lbl{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:.25rem;}
+.rp-tbl{width:100%;border-collapse:collapse;}
+.rp-tbl th{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;padding:.65rem .85rem;background:#fafbff;border-bottom:1px solid var(--border);text-align:left;}
+.rp-tbl th.ctr{text-align:center;}
+.rp-tbl td{padding:.75rem .85rem;border-bottom:1px solid #f1f5f9;font-size:.84rem;vertical-align:middle;}
+.rp-tbl tr:last-child td{border-bottom:none;}
+.rp-tbl tr:hover td{background:#fafbff;}
+.pill-pass{background:var(--green-lt);color:var(--green);border:1px solid #bbf7d0;border-radius:99px;padding:.15rem .55rem;font-size:.7rem;font-weight:700;}
+.pill-fail{background:var(--rose-lt);color:var(--rose);border:1px solid #fecdd3;border-radius:99px;padding:.15rem .55rem;font-size:.7rem;font-weight:700;}
+.pill-abs{background:var(--amber-lt);color:var(--amber);border:1px solid #fde68a;border-radius:99px;padding:.15rem .55rem;font-size:.7rem;font-weight:700;}
+.grade-chip{display:inline-block;min-width:30px;text-align:center;border-radius:7px;padding:.1rem .4rem;font-size:.85rem;font-weight:900;}
+.pct-bar{height:6px;background:#f1f5f9;border-radius:99px;overflow:hidden;}
+.pct-fill{height:100%;border-radius:99px;}
+</style>
+
+<div class="container-fluid py-3">
+{% for msg in messages %}
+<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show mb-3">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+{% endfor %}
+
+<div class="hero mb-4">
+  <div class="hero-inner">
+    <div>
+      <div style="font-size:.68rem;color:#6ee7b7;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:.3rem;">{{ org.name }}</div>
+      <h4 style="color:#fff;font-size:1.2rem;font-weight:900;margin:0;"><i class="fas fa-graduation-cap me-2 opacity-75"></i>My Results</h4>
+      <p style="color:#6ee7b7;font-size:.82rem;margin:.3rem 0 0;">View your published exam results and marksheets</p>
+    </div>
+    <a href="{% url 'staff:dashboard' %}" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:.45rem 1rem;font-size:.8rem;font-weight:700;text-decoration:none;"><i class="fas fa-arrow-left me-1"></i>Dashboard</a>
+  </div>
+</div>
+
+<!-- Exam Selector -->
+<div class="rc mb-3">
+  <div style="padding:1rem 1.25rem;">
+    <form method="get" class="d-flex flex-wrap gap-3 align-items-end">
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:.3rem;">Select Exam</label>
+        <select name="exam" style="border:1.5px solid var(--border);border-radius:8px;padding:.5rem .85rem;font-size:.85rem;background:#fff;outline:none;min-height:40px;width:100%;">
+          <option value="">-- Choose Published Exam --</option>
+          {% for exam in exams %}<option value="{{ exam.pk }}" {% if selected_exam and selected_exam.pk == exam.pk %}selected{% endif %}>{{ exam.name }}{% if exam.academic_year %} ({{ exam.academic_year }}){% endif %}</option>{% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" style="min-height:40px;padding:.5rem 1.25rem;">View Results</button>
+    </form>
+  </div>
+</div>
+
+{% if selected_exam %}
+
+<!-- KPI summary -->
+{% if results %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-2">
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--indigo);">{{ total_percentage }}%</div><div class="kpi-lbl">Percentage</div></div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--indigo);">{{ overall_grade }}</div><div class="kpi-lbl">Grade</div></div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--green);">{{ pass_count }}</div><div class="kpi-lbl">Pass</div></div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--rose);">{{ fail_count }}</div><div class="kpi-lbl">Fail</div></div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--amber);">{{ absent_count }}</div><div class="kpi-lbl">Absent</div></div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="kpi-card">
+      <div class="kpi-val {% if overall_pass %}text-success{% else %}text-danger{% endif %}">{% if overall_pass %}PASS{% else %}FAIL{% endif %}</div>
+      <div class="kpi-lbl">Result</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="rc">
+  <div style="padding:.9rem 1.25rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;">
+    <div>
+      <div style="font-weight:800;font-size:.9rem;color:var(--ink);">{{ selected_exam.name }}</div>
+      {% if selected_exam.start_date %}<div style="font-size:.75rem;color:var(--muted);">{{ selected_exam.start_date|date:"M d" }}{% if selected_exam.end_date %} — {{ selected_exam.end_date|date:"M d, Y" }}{% endif %}</div>{% endif %}
+    </div>
+    {% if results %}
+    <a href="{% url 'schooladmin:marksheet' exam_pk=selected_exam.pk member_pk=member.pk %}" target="_blank"
+       style="background:var(--indigo-lt);color:var(--indigo);border:1px solid #c7d2fe;border-radius:8px;padding:.4rem .9rem;font-size:.78rem;font-weight:700;text-decoration:none;">
+      <i class="fas fa-file-alt me-1"></i>Print Marksheet
+    </a>
+    {% endif %}
+  </div>
+
+  {% if results %}
+  <div style="overflow-x:auto;">
+    <table class="rp-tbl">
+      <thead><tr>
+        <th>#</th><th>Subject</th>
+        <th class="ctr">Full Marks</th><th class="ctr">Pass Marks</th>
+        <th class="ctr">Obtained</th><th class="ctr">%</th>
+        <th class="ctr">Grade</th><th class="ctr">Status</th><th>Remarks</th>
+      </tr></thead>
+      <tbody>
+        {% for r in results %}
+        <tr>
+          <td style="color:var(--muted);font-size:.78rem;">{{ forloop.counter }}</td>
+          <td style="font-weight:700;">{{ r.subject.name }}</td>
+          <td class="ctr">{{ r.subject.full_marks|floatformat:0 }}</td>
+          <td class="ctr">{{ r.subject.pass_marks|floatformat:0 }}</td>
+          <td class="ctr">
+            {% if r.is_absent %}<span class="pill-abs">Absent</span>
+            {% else %}<strong>{{ r.obtained_marks|floatformat:1 }}</strong>{% endif %}
+          </td>
+          <td class="ctr" style="min-width:90px;">
+            {% if not r.is_absent %}
+            <div>{% widthratio r.obtained_marks r.subject.full_marks 100 %}%</div>
+            <div class="pct-bar mt-1"><div class="pct-fill" style="width:{% widthratio r.obtained_marks r.subject.full_marks 100 %}%;background:{% if r.is_passed %}var(--green){% else %}var(--rose){% endif %};"></div></div>
+            {% else %}—{% endif %}
+          </td>
+          <td class="ctr">
+            {% if not r.is_absent %}<span class="grade-chip {% if r.grade == 'A+' or r.grade == 'A' %}bg-success text-white{% elif r.grade == 'NG' %}bg-danger text-white{% else %}bg-light{% endif %}">{{ r.grade|default:"—" }}</span>{% else %}—{% endif %}
+          </td>
+          <td class="ctr">
+            {% if r.is_absent %}<span class="pill-abs">Absent</span>
+            {% elif r.is_passed %}<span class="pill-pass">Pass</span>
+            {% else %}<span class="pill-fail">Fail</span>{% endif %}
+          </td>
+          <td style="font-size:.78rem;color:var(--muted);">{{ r.remarks|default:"" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr style="background:#f8fafc;">
+          <td colspan="4" style="font-weight:900;text-align:right;font-size:.84rem;">Total</td>
+          <td class="ctr" style="font-weight:900;">{{ total_obtained|floatformat:1 }} / {{ total_full|floatformat:0 }}</td>
+          <td class="ctr" style="font-weight:900;color:var(--indigo);">{{ total_percentage }}%</td>
+          <td class="ctr" style="font-weight:900;font-size:.9rem;color:var(--indigo);">{{ overall_grade }}</td>
+          <td class="ctr">
+            {% if overall_pass %}<span class="pill-pass">Overall Pass</span>{% else %}<span class="pill-fail">Overall Fail</span>{% endif %}
+          </td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:3rem;color:var(--muted);"><i class="fas fa-inbox fa-2x d-block mb-2 opacity-30"></i>No results found for this exam. Check back later.</div>
+  {% endif %}
+</div>
+
+{% elif exams %}
+<div class="rc"><div style="text-align:center;padding:3rem;color:var(--muted);"><i class="fas fa-list-alt fa-2x d-block mb-2 opacity-30"></i>Select an exam above to view your results.</div></div>
+{% else %}
+<div class="rc"><div style="text-align:center;padding:3rem;color:var(--muted);"><i class="fas fa-clock fa-2x d-block mb-2 opacity-30"></i>No published results yet. Check back later.</div></div>
+{% endif %}
+
+</div>
+{% endblock %}

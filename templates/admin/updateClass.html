@@ -1,43 +1,240 @@
 {% extends 'dashboard.html' %}
-
-{% block title %}
-    Update Classifications for {{ mem.name }}
-{% endblock title %}
+{% load static %}
+{% block title %}Update Classes — {{ mem.name }} | {{ org.name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    {% for i in messages  %}
-    <div class="alert alert-light alert-dismissible fade show" role="alert">
-        {{i}}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<style>
+:root{--u-ink:#0f172a;--u-slate:#334155;--u-muted:#64748b;--u-border:#e2e8f0;--u-bg:#f8fafc;--u-green:#16a34a;--u-blue:#2563eb;--u-purple:#7c3aed;}
+.uc-page{background:var(--u-bg);min-height:100vh;padding-bottom:3rem;}
+
+/* hero */
+.uc-hero{background:linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#3b0764 100%);padding:1.8rem 2rem 4.6rem;position:relative;overflow:hidden;}
+.uc-hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M0 0h20v20H0zM20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E");}
+.uc-hero-title{color:#fff;font-size:1.45rem;font-weight:800;margin:0;letter-spacing:-.4px;position:relative;z-index:1;}
+.uc-hero-sub{color:#94a3b8;font-size:.83rem;margin:.3rem 0 0;position:relative;z-index:1;}
+
+/* profile card floating over hero */
+.uc-profile-wrap{margin:-3rem 2rem 0;position:relative;z-index:2;}
+.uc-profile{background:#fff;border-radius:18px;box-shadow:0 8px 32px rgba(0,0,0,.12);border:1px solid rgba(255,255,255,.9);padding:1.4rem 1.8rem;display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;}
+.uc-avatar{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:1.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.uc-name{font-size:1.1rem;font-weight:800;color:var(--u-ink);margin:0;}
+.uc-meta{font-size:.78rem;color:var(--u-muted);margin:.2rem 0 0;}
+.uc-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border-radius:99px;font-size:.72rem;font-weight:700;}
+.uc-badge-green{background:#dcfce7;color:#15803d;}
+.uc-badge-purple{background:#ede9fe;color:#6d28d9;}
+
+/* body */
+.uc-body{padding:1.5rem 2rem;}
+
+/* section card */
+.uc-card{background:#fff;border:1.5px solid var(--u-border);border-radius:16px;overflow:hidden;margin-bottom:1.25rem;}
+.uc-card-hd{padding:1rem 1.4rem;border-bottom:1px solid var(--u-border);display:flex;align-items:center;gap:.75rem;}
+.uc-card-hd-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.92rem;flex-shrink:0;}
+.uc-card-hd-title{font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--u-ink);margin:0;}
+.uc-card-hd-sub{font-size:.72rem;color:var(--u-muted);margin:.1rem 0 0;}
+.uc-card-bd{padding:1.4rem;}
+
+/* pill checkboxes */
+.pill-grid{display:flex;flex-wrap:wrap;gap:.55rem;}
+.pill-check input[type=checkbox]{display:none;}
+.pill-check.cls-pill label{padding:.45rem 1rem;border-radius:99px;font-size:.78rem;font-weight:700;border:1.5px solid var(--u-border);color:var(--u-muted);cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;transition:all .15s;white-space:nowrap;}
+.pill-check.cls-pill label:hover{border-color:#6366f1;color:#6366f1;}
+.pill-check.cls-pill input:checked+label{background:#6366f1;border-color:#6366f1;color:#fff;}
+.pill-check.crs-pill label{padding:.45rem 1rem;border-radius:99px;font-size:.78rem;font-weight:700;border:1.5px solid var(--u-border);color:var(--u-muted);cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;transition:all .15s;white-space:nowrap;}
+.pill-check.crs-pill label:hover{border-color:var(--u-green);color:var(--u-green);}
+.pill-check.crs-pill input:checked+label{background:var(--u-green);border-color:var(--u-green);color:#fff;}
+
+/* current assignment chips */
+.chip-row{display:flex;flex-wrap:wrap;gap:.45rem;}
+.chip{display:inline-flex;align-items:center;gap:.35rem;padding:.32rem .75rem;border-radius:99px;font-size:.73rem;font-weight:700;}
+.chip-cls{background:#ede9fe;color:#5b21b6;}
+.chip-crs{background:#dcfce7;color:#15803d;}
+.chip-empty{color:var(--u-muted);font-size:.78rem;font-style:italic;}
+
+/* save btn */
+.btn-save{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;border-radius:12px;padding:.75rem 2.5rem;font-size:.9rem;font-weight:800;cursor:pointer;transition:opacity .15s;display:inline-flex;align-items:center;gap:.5rem;}
+.btn-save:hover{opacity:.9;}
+.btn-cancel{background:transparent;border:1.5px solid var(--u-border);color:var(--u-slate);border-radius:12px;padding:.72rem 1.8rem;font-size:.9rem;font-weight:700;cursor:pointer;}
+
+/* filter input */
+.cls-filter{width:100%;padding:.6rem .9rem;border:1.5px solid var(--u-border);border-radius:9px;font-size:.84rem;outline:none;margin-bottom:.9rem;transition:border-color .15s;}
+.cls-filter:focus{border-color:var(--u-purple);}
+</style>
+
+<div class="uc-page">
+
+  <!-- Hero -->
+  <div class="uc-hero">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <div class="text-xs text-white opacity-50 mb-1 fw-bold text-uppercase" style="position:relative;z-index:1;">{{ org.name }}</div>
+        <h4 class="uc-hero-title"><i class="fas fa-chalkboard-user me-2 opacity-75"></i>Update Teaching Assignment</h4>
+        <p class="uc-hero-sub">Assign classifications and courses for this staff member's portal and attendance.</p>
+      </div>
+      <a href="javascript:history.back()" class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;position:relative;z-index:1;">
+        <i class="fas fa-arrow-left me-1"></i>Back
+      </a>
     </div>
-    {% endfor %}
-    <div class="row mb-3">
-        <h4>Update Classifications for {{ mem.name }}</h4>
-        <hr>
-        <form method="POST">
-            {% csrf_token %}
-            
-            {% for classification in clas %}
-            <div class="form-check">
-                <input 
-                    class="form-check-input mt-3" 
-                    type="checkbox" 
-                    name="classifications" 
-                    id="classification{{ classification.id }}" 
-                    value="{{ classification.id }}"
-                    {% if classification.id in holiday %}checked{% endif %}
-                >
-                <label class="form-check-label mt-3" for="classification{{ classification.id }}">
-                  {{ classification.name }}
-                </label>
+  </div>
+
+  <!-- Profile card -->
+  <div class="uc-profile-wrap">
+    <div class="uc-profile">
+      <div class="uc-avatar">{{ mem.name|first|upper }}</div>
+      <div class="flex-grow-1">
+        <div class="uc-name">{{ mem.name }}</div>
+        <div class="uc-meta">
+          {% if mem.email %}<i class="fas fa-envelope me-1"></i>{{ mem.email }}&nbsp;&nbsp;{% endif %}
+          {% if mem.phone %}<i class="fas fa-phone me-1"></i>{{ mem.phone }}{% endif %}
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <span class="uc-badge uc-badge-green"><i class="fas fa-circle-check"></i>Portal Active</span>
+        <span class="uc-badge uc-badge-purple"><i class="fas fa-chalkboard"></i>{{ cas|length }} Class{{ cas|length|pluralize:"es" }}</span>
+        <span class="uc-badge" style="background:#f0fdf4;color:#15803d;">
+          <i class="fas fa-book"></i>{{ assigned_course_ids|length }} Course{{ assigned_course_ids|length|pluralize }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  {% for message in messages %}
+  <div class="mx-4 mt-3 alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">
+    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <div class="uc-body">
+
+    <!-- Current assignments summary -->
+    <div class="uc-card">
+      <div class="uc-card-hd">
+        <div class="uc-card-hd-icon" style="background:#f1f5f9;color:#475569;"><i class="fas fa-list-check"></i></div>
+        <div>
+          <div class="uc-card-hd-title">Current Assignments</div>
+          <div class="uc-card-hd-sub">What this staff member is currently assigned to</div>
+        </div>
+      </div>
+      <div class="uc-card-bd">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="text-xs fw-bold text-uppercase text-muted mb-2"><i class="fas fa-chalkboard me-1"></i>Classes</div>
+            <div class="chip-row">
+              {% for c in cas %}
+              <span class="chip chip-cls"><i class="fas fa-chalkboard" style="font-size:.65rem;"></i>{{ c.classification.name }}</span>
+              {% empty %}
+              <span class="chip-empty">No classes assigned yet.</span>
+              {% endfor %}
             </div>
-            {% endfor %}
-                
-            <input type="hidden" name="member" value="{{ mem.id }}">
-            
-            <button type="submit" class="btn btn-primary mt-3">Save changes</button>
-        </form>
+          </div>
+          <div class="col-md-6">
+            <div class="text-xs fw-bold text-uppercase text-muted mb-2"><i class="fas fa-book-open me-1"></i>Teaching Courses</div>
+            <div class="chip-row">
+              {% for crs in courses %}{% if crs.id in assigned_course_ids %}
+              <span class="chip chip-crs"><i class="fas fa-book" style="font-size:.65rem;"></i>{{ crs.name }}</span>
+              {% endif %}{% endfor %}
+              {% if not assigned_course_ids %}
+              <span class="chip-empty">No courses assigned yet.</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- Edit form -->
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="member" value="{{ mem.id }}">
+
+      <div class="row g-3">
+
+        <!-- Classifications -->
+        <div class="col-lg-6">
+          <div class="uc-card h-100">
+            <div class="uc-card-hd">
+              <div class="uc-card-hd-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-chalkboard"></i></div>
+              <div>
+                <div class="uc-card-hd-title">Select Classifications</div>
+                <div class="uc-card-hd-sub">Classes this staff member will manage attendance for</div>
+              </div>
+            </div>
+            <div class="uc-card-bd">
+              <input type="text" class="cls-filter" id="clsFilter" placeholder="Filter classes…" oninput="filterPills('clsFilter','cls-pill-wrap')">
+              <div class="pill-grid" id="cls-pill-wrap">
+                {% for c in clas %}
+                <div class="pill-check cls-pill cls-filterable" data-name="{{ c.name|lower }}">
+                  <input type="checkbox" name="classifications" value="{{ c.id }}"
+                    id="uc_cls_{{ c.id }}"
+                    {% if c.id in holiday %}checked{% endif %}>
+                  <label for="uc_cls_{{ c.id }}"><i class="fas fa-chalkboard" style="font-size:.62rem;"></i>{{ c.name }}</label>
+                </div>
+                {% empty %}
+                <p class="text-muted text-sm">No classifications available.</p>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Courses -->
+        <div class="col-lg-6">
+          <div class="uc-card h-100">
+            <div class="uc-card-hd">
+              <div class="uc-card-hd-icon" style="background:#dcfce7;color:#16a34a;"><i class="fas fa-book-open"></i></div>
+              <div>
+                <div class="uc-card-hd-title">Select Teaching Courses</div>
+                <div class="uc-card-hd-sub">Courses this staff member will log lessons and attendance for</div>
+              </div>
+            </div>
+            <div class="uc-card-bd">
+              <input type="text" class="cls-filter" id="crsFilter" placeholder="Filter courses…" oninput="filterPills('crsFilter','crs-pill-wrap')">
+              <div class="pill-grid" id="crs-pill-wrap">
+                {% for crs in courses %}
+                <div class="pill-check crs-pill crs-filterable" data-name="{{ crs.name|lower }}">
+                  <input type="checkbox" name="courses" value="{{ crs.id }}"
+                    id="uc_crs_{{ crs.id }}"
+                    {% if crs.id in assigned_course_ids %}checked{% endif %}>
+                  <label for="uc_crs_{{ crs.id }}">
+                    <i class="fas fa-book" style="font-size:.62rem;"></i>{{ crs.name }}
+                    {% if crs.code %}<span style="opacity:.6;font-size:.68rem;">({{ crs.code }})</span>{% endif %}
+                  </label>
+                </div>
+                {% empty %}
+                <p class="text-muted text-sm">No active courses configured.</p>
+                {% endfor %}
+              </div>
+
+              {% if courses %}
+              <div class="mt-3 p-2 rounded-2" style="background:#f0fdf4;border:1px solid #bbf7d0;font-size:.74rem;color:#15803d;">
+                <i class="fas fa-circle-info me-1"></i>
+                Assigning a course sets this staff as the primary teacher. Only one teacher per course.
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.row -->
+
+      <div class="mt-4 d-flex gap-3 align-items-center">
+        <button type="submit" class="btn-save">
+          <i class="fas fa-floppy-disk"></i>Save Changes
+        </button>
+        <a href="javascript:history.back()" class="btn-cancel">Cancel</a>
+        <span class="text-xs text-muted ms-auto"><i class="fas fa-info-circle me-1"></i>Removing a course clears this teacher from it.</span>
+      </div>
+    </form>
+
+  </div>
 </div>
-{% endblock content %}
+
+<script>
+function filterPills(filterId, wrapId){
+  var q = document.getElementById(filterId).value.toLowerCase().trim();
+  document.querySelectorAll('#'+wrapId+' [data-name]').forEach(function(el){
+    el.style.display = (!q || el.dataset.name.includes(q)) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

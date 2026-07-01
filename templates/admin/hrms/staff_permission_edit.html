@@ -1,0 +1,325 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Edit Permissions — {{ member.name }}{% endblock %}
+
+{% block content %}
+<style>
+  .ep-header { background:linear-gradient(135deg,#1e293b,#0f172a); border-radius:16px; padding:28px 32px; color:#fff; margin-bottom:24px; display:flex; align-items:center; gap:20px; }
+  .ep-avatar { width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,#6366f1,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:1.6rem; font-weight:900; color:#fff; flex-shrink:0; }
+  .ep-section { background:#fff; border-radius:14px; border:1px solid #e2e8f0; margin-bottom:20px; overflow:hidden; }
+  .ep-section-header { padding:16px 22px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; gap:12px; }
+  .ep-section-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:.9rem; color:#fff; flex-shrink:0; }
+  .ep-section-title { font-size:.9rem; font-weight:800; color:#0f172a; margin:0; }
+  .ep-section-sub   { font-size:.75rem; color:#94a3b8; margin:0; }
+  .ep-disabled-notice { font-size:.75rem; color:#f59e0b; font-weight:600; margin:0; }
+  .ep-perm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; padding:18px 22px; }
+  .ep-perm-row { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; border:1px solid #e2e8f0; background:#fafafa; transition:border-color .15s; }
+  .ep-perm-row:has(input:checked) { border-color:#6366f1; background:#f5f3ff; }
+  .ep-perm-label { flex:1; }
+  .ep-perm-name { font-size:.84rem; font-weight:700; color:#0f172a; margin:0 0 2px; }
+  .ep-perm-desc { font-size:.72rem; color:#64748b; margin:0; }
+  .ep-toggle { position:relative; display:inline-block; width:40px; height:22px; flex-shrink:0; }
+  .ep-toggle input { opacity:0; width:0; height:0; }
+  .ep-slider { position:absolute; inset:0; background:#cbd5e1; border-radius:999px; cursor:pointer; transition:background .2s; }
+  .ep-slider::after { content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; background:#fff; border-radius:50%; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+  .ep-toggle input:checked + .ep-slider { background:#6366f1; }
+  .ep-toggle input:checked + .ep-slider::after { transform:translateX(18px); }
+  .ep-disabled-overlay { opacity:.45; pointer-events:none; }
+  .save-bar { position:sticky; bottom:0; background:#fff; border-top:1px solid #e2e8f0; padding:14px 22px; display:flex; align-items:center; gap:12px; z-index:10; border-radius:0 0 14px 14px; }
+</style>
+
+<div class="container-fluid py-2">
+
+  <!-- Header -->
+  <div class="ep-header">
+    <div class="ep-avatar">{{ member.name|slice:":1"|upper }}</div>
+    <div>
+      <h3 style="font-size:1.3rem;font-weight:900;margin:0 0 4px;">{{ member.name }}</h3>
+      <p style="margin:0;opacity:.7;font-size:.85rem;">{{ member.member_type|title }} &mdash; {{ org.name }}</p>
+      <p style="margin:4px 0 0;opacity:.6;font-size:.78rem;">
+        Permissions are applied to the staff portal immediately after saving.
+        Only modules enabled in Feature Settings are shown here.
+      </p>
+    </div>
+    <div class="ms-auto">
+      <a href="{% url 'schooladmin:staff_permissions' %}" class="btn btn-outline-light btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Back
+      </a>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="fas fa-check-circle me-2"></i>{{ msg }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <form method="post" id="permForm">
+    {% csrf_token %}
+
+    <!-- ── Attendance (always visible) ───────────────────── -->
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#0ea5e9;"><i class="fas fa-fingerprint"></i></div>
+        <div>
+          <p class="ep-section-title">Attendance</p>
+          <p class="ep-section-sub">What the staff member can do with attendance records</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_attendance"   label="View Attendance"       desc="See own and others' attendance records" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_add_attendance"    label="Add Manual Attendance" desc="Manually mark attendance for members" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_edit_attendance"   label="Edit Attendance"       desc="Correct or modify existing records" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_export_attendance" label="Export Attendance"     desc="Download attendance data as Excel/CSV" %}
+      </div>
+    </div>
+
+    <!-- ── Members ───────────────────────────────────────── -->
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#6366f1;"><i class="fas fa-users"></i></div>
+        <div>
+          <p class="ep-section-title">Member / Staff Management</p>
+          <p class="ep-section-sub">Access to member profiles and records</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_members"   label="View Members"   desc="Browse member/staff profiles" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_add_members"    label="Add Members"    desc="Create new member records" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_edit_members"   label="Edit Members"   desc="Update member information" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_delete_members" label="Delete Members" desc="Remove member records" %}
+      </div>
+    </div>
+
+    <!-- ── Payroll ───────────────────────────────────────── -->
+    {% if features.payroll %}
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#16a34a;"><i class="fas fa-money-bill-wave"></i></div>
+        <div>
+          <p class="ep-section-title">Payroll</p>
+          <p class="ep-section-sub">Salary generation, payslips, and payroll configuration</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_payroll"       label="View Payroll"        desc="See salary sheets and payroll summaries" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_generate_payroll"   label="Generate Payroll"    desc="Run payroll and create payslips" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_own_payslip"   label="View Own Payslip"    desc="Access own salary slip" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_manage_payroll_cfg" label="Payroll Settings"    desc="Configure allowances, deductions, PF/SSF" %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Leave ─────────────────────────────────────────── -->
+    {% if features.leave %}
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#f59e0b;"><i class="fas fa-calendar-minus"></i></div>
+        <div>
+          <p class="ep-section-title">Leave Management</p>
+          <p class="ep-section-sub">Leave requests, approvals, and reports</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_leave"        label="View Leave"         desc="See all leave requests in the system" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_request_leave"     label="Request Leave"      desc="Submit leave requests for self" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_approve_leave"     label="Approve / Reject Leave" desc="Process leave requests from others" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_leave_report" label="Leave Reports"      desc="View and export leave summary reports" %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Stock ─────────────────────────────────────────── -->
+    {% if features.stock %}
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#ea580c;"><i class="fas fa-boxes"></i></div>
+        <div>
+          <p class="ep-section-title">Stock / Inventory</p>
+          <p class="ep-section-sub">Inventory management and stock movement</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_stock"   label="View Stock"         desc="Browse inventory items and stock levels" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_add_stock"    label="Add Stock Items"    desc="Create new inventory entries" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_edit_stock"   label="Edit Stock Items"   desc="Update item details and thresholds" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_delete_stock" label="Delete Stock Items" desc="Remove inventory records" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_stock_in_out" label="Stock In / Out"     desc="Record stock movements" %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Tasks ─────────────────────────────────────────── -->
+    {% if features.tasks %}
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#7c3aed;"><i class="fas fa-tasks"></i></div>
+        <div>
+          <p class="ep-section-title">Task Management</p>
+          <p class="ep-section-sub">Task assignment, tracking, and reporting</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_tasks"       label="View Tasks"       desc="See assigned and available tasks" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_assign_tasks"     label="Assign Tasks"     desc="Create and assign tasks to others" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_manage_tasks"     label="Manage Tasks"     desc="Edit, cancel, and control all tasks" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_task_report" label="Task Reports"     desc="View task completion and performance reports" %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Courses / Results ─────────────────────────────── -->
+    {% if features.results or features.courses %}
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#0891b2;"><i class="fas fa-graduation-cap"></i></div>
+        <div>
+          <p class="ep-section-title">Courses &amp; Results</p>
+          <p class="ep-section-sub">Course management, marks entry, and result publishing</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_courses"       label="View Courses"      desc="Browse course and subject list" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_manage_courses"     label="Manage Courses"    desc="Add, edit, and delete courses / subjects" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_publish_results"    label="Publish Results"   desc="Mark exam terms as published" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_result_report" label="Result Reports"    desc="View and export marksheets and result reports" %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Billing ───────────────────────────────────────── -->
+    {% if features.billing %}
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#dc2626;"><i class="fas fa-file-invoice-dollar"></i></div>
+        <div>
+          <p class="ep-section-title">Billing</p>
+          <p class="ep-section-sub">Invoice generation, payment recording, and dues tracking</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_billing"   label="View Bills"        desc="See invoices and payment history" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_generate_bills" label="Generate Bills"    desc="Create invoices for students/members" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_record_payment" label="Record Payment"    desc="Mark payments as received" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_dues"      label="View Dues"         desc="See outstanding dues and pending amounts" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_export_billing" label="Export Billing"    desc="Download billing reports" %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Finance ───────────────────────────────────────── -->
+    {% if features.finance %}
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#b45309;"><i class="fas fa-chart-line"></i></div>
+        <div>
+          <p class="ep-section-title">Finance</p>
+          <p class="ep-section-sub">Income, expense records and financial reports</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_finance"   label="View Finance"   desc="See income/expense records and totals" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_manage_finance" label="Manage Finance" desc="Add, edit, and delete financial transactions" %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Events ────────────────────────────────────────── -->
+    {% if features.events %}
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#0d9488;"><i class="fas fa-calendar-star"></i></div>
+        <div>
+          <p class="ep-section-title">Events</p>
+          <p class="ep-section-sub">Event calendar and event management</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_events"   label="View Events"   desc="Browse event calendar" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_manage_events" label="Manage Events" desc="Create, edit, and delete events" %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Complaints ────────────────────────────────────── -->
+    {% if features.complaints %}
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#be185d;"><i class="fas fa-comment-alt-exclamation"></i></div>
+        <div>
+          <p class="ep-section-title">Complaints &amp; Requests</p>
+          <p class="ep-section-sub">Filing and managing complaints or support requests</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_complaints"   label="View Complaints"   desc="See all complaints and requests" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_manage_complaints" label="Manage Complaints" desc="Respond to, close, or escalate complaints" %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── HRMS ──────────────────────────────────────────── -->
+    {% if features.hrms %}
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#4f46e5;"><i class="fas fa-id-card-alt"></i></div>
+        <div>
+          <p class="ep-section-title">HRMS</p>
+          <p class="ep-section-sub">Resignations, documents, and HR records</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_hrms"   label="View HRMS"   desc="See HR records, documents, resignations" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_manage_hrms" label="Manage HRMS" desc="Process resignations, upload documents" %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Branches ──────────────────────────────────────── -->
+    {% if features.branches %}
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#334155;"><i class="fas fa-code-branch"></i></div>
+        <div>
+          <p class="ep-section-title">Branch Management</p>
+          <p class="ep-section-sub">Access to branch data and configuration</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_branches"   label="View Branches"   desc="Browse branch list and details" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_manage_branches" label="Manage Branches" desc="Add, edit, and configure branches" %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Reports & Export ──────────────────────────────── -->
+    <div class="ep-section">
+      <div class="ep-section-header">
+        <div class="ep-section-icon" style="background:#0f172a;"><i class="fas fa-chart-bar"></i></div>
+        <div>
+          <p class="ep-section-title">Reports &amp; Export</p>
+          <p class="ep-section-sub">Access to system reports and bulk data export</p>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% include "admin/hrms/_perm_toggle.html" with name="can_view_reports"   label="View Reports"   desc="Access all available reports" %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_export_reports" label="Export Reports" desc="Download reports as Excel/CSV/PDF" %}
+        {% if features.bulk_export %}
+        {% include "admin/hrms/_perm_toggle.html" with name="can_bulk_export"    label="Bulk Export"    desc="Export large datasets from the export hub" %}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="save-bar">
+      <button type="submit" class="btn btn-primary px-5" style="font-weight:700;">
+        <i class="fas fa-save me-2"></i> Save Permissions
+      </button>
+      <a href="{% url 'schooladmin:staff_permissions' %}" class="btn btn-outline-secondary">Cancel</a>
+      <span style="font-size:.78rem;color:#94a3b8;margin-left:auto;">
+        Changes apply immediately to this staff member's session.
+      </span>
+    </div>
+  </form>
+</div>
+{% endblock %}

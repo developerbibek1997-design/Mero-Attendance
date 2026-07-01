@@ -1,0 +1,62 @@
+{% extends 'dashboard.html' %}
+{% block title %}Stock Movements | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0">Stock Movement History</h4>
+    <div>
+      <a href="{% url 'schooladmin:stock_in' %}" class="btn btn-success btn-sm me-1"><i class="fas fa-arrow-down me-1"></i>Stock In</a>
+      <a href="{% url 'schooladmin:stock_out' %}" class="btn btn-warning btn-sm"><i class="fas fa-arrow-up me-1"></i>Stock Out</a>
+    </div>
+  </div>
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3"><label class="text-xs font-weight-bold">Item</label>
+          <select name="item" class="form-select form-select-sm"><option value="">All Items</option>{% for i in items %}<option value="{{ i.id }}" {% if selected_item == i.id|stringformat:"s" %}selected{% endif %}>{{ i.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="text-xs font-weight-bold">Type</label>
+          <select name="movement_type" class="form-select form-select-sm"><option value="">All</option><option value="in" {% if selected_type == 'in' %}selected{% endif %}>In</option><option value="out" {% if selected_type == 'out' %}selected{% endif %}>Out</option><option value="damage" {% if selected_type == 'damage' %}selected{% endif %}>Damage</option><option value="adjustment" {% if selected_type == 'adjustment' %}selected{% endif %}>Adjustment</option></select></div>
+        <div class="col-md-2"><label class="text-xs font-weight-bold">From</label><input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from|default:'' }}"></div>
+        <div class="col-md-2"><label class="text-xs font-weight-bold">To</label><input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to|default:'' }}"></div>
+        <div class="col-md-3 d-flex gap-1 flex-wrap">
+          <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-filter me-1"></i>Filter</button>
+          <a href="{% url 'schooladmin:stock_movements' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+          <a href="{% url 'schooladmin:export_stock' %}?fmt=excel&type=movements" class="btn btn-success btn-sm" title="Export Excel"><i class="fas fa-file-excel"></i></a>
+          <a href="{% url 'schooladmin:export_stock' %}?fmt=csv&type=movements" class="btn btn-outline-success btn-sm" title="Export CSV"><i class="fas fa-file-csv"></i></a>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th class="text-xs">#</th><th class="text-xs">Date</th><th class="text-xs">Item</th><th class="text-xs">Type</th><th class="text-xs">Qty</th><th class="text-xs">Unit Cost</th><th class="text-xs">Branch</th><th class="text-xs">By</th><th class="text-xs">Note</th></tr>
+        </thead>
+        <tbody>
+          {% for m in movements %}
+          <tr>
+            <td class="text-xs text-muted">{{ forloop.counter }}</td>
+            <td class="text-sm">{{ m.movement_date }}</td>
+            <td class="text-sm font-weight-bold">{{ m.item.name }}</td>
+            <td>
+              {% if m.movement_type == 'in' %}<span class="badge bg-success">IN</span>
+              {% elif m.movement_type == 'out' %}<span class="badge bg-warning text-dark">OUT</span>
+              {% elif m.movement_type == 'damage' %}<span class="badge bg-danger">DAMAGE</span>
+              {% else %}<span class="badge bg-info">ADJUST</span>{% endif %}
+            </td>
+            <td class="text-sm">{{ m.quantity }} {{ m.item.unit }}</td>
+            <td class="text-sm">Rs. {{ m.unit_cost|floatformat:2 }}</td>
+            <td class="text-sm">{{ m.branch.name|default:"-" }}</td>
+            <td class="text-sm">{{ m.created_by.username|default:"System" }}</td>
+            <td class="text-xs text-muted">{{ m.note|truncatechars:40 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" class="text-center text-muted py-5"><i class="fas fa-history fa-2x mb-2 d-block"></i>No movement records found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

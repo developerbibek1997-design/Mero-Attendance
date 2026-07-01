@@ -1,0 +1,119 @@
+{% extends 'dashboard.html' %}
+{% block title %}Publish Summary | {{ exam.name }}{% endblock %}
+{% block content %}
+<style>
+:root{--ink:#0f172a;--muted:#64748b;--border:#e2e8f0;--green:#16a34a;--green-lt:#dcfce7;--rose:#e11d48;--rose-lt:#ffe4e6;--amber:#d97706;--amber-lt:#fef3c7;--indigo:#6366f1;}
+.hero{background:linear-gradient(135deg,#0f172a 0%,#14532d 100%);border-radius:20px;padding:1.5rem 2rem;position:relative;overflow:hidden;margin-bottom:1.5rem;}
+.hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.025'%3E%3Cpath d='M0 0h20v20H0zM20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E");}
+.hero-inner{position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;}
+.rc{background:#fff;border-radius:16px;border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,.04);overflow:hidden;}
+.sum-tbl{width:100%;border-collapse:collapse;}
+.sum-tbl th{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;padding:.7rem 1rem;background:#fafbff;border-bottom:1px solid var(--border);text-align:left;}
+.sum-tbl th.ctr{text-align:center;}
+.sum-tbl td{padding:.85rem 1rem;border-bottom:1px solid #f1f5f9;font-size:.85rem;vertical-align:middle;}
+.sum-tbl tr:last-child td{border-bottom:none;}
+.bar-wrap{height:8px;background:#f1f5f9;border-radius:99px;overflow:hidden;min-width:80px;}
+.bar-fill{height:100%;border-radius:99px;}
+.warning-box{background:var(--amber-lt);border:1px solid #fde68a;border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.25rem;}
+.published-box{background:var(--green-lt);border:1px solid #bbf7d0;border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.25rem;}
+</style>
+
+<div class="container-fluid py-3">
+{% for msg in messages %}
+<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show mb-3">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+{% endfor %}
+
+<div class="hero mb-4">
+  <div class="hero-inner">
+    <div>
+      <div style="font-size:.68rem;color:#86efac;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:.3rem;">{{ org.name }}</div>
+      <h4 style="color:#fff;font-size:1.2rem;font-weight:900;margin:0;"><i class="fas fa-paper-plane me-2 opacity-75"></i>{{ exam.name }} — Publish Summary</h4>
+      <p style="color:#86efac;font-size:.82rem;margin:.3rem 0 0;">Review before publishing result to students</p>
+    </div>
+    <div>
+      {% if exam.is_published %}
+      <span style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:.6rem 1.25rem;font-size:.84rem;font-weight:700;"><i class="fas fa-check-circle me-2"></i>Currently Published</span>
+      {% else %}
+      <span style="background:rgba(255,255,255,.1);color:#86efac;border:1px solid rgba(134,239,172,.3);border-radius:10px;padding:.6rem 1.25rem;font-size:.84rem;font-weight:700;"><i class="fas fa-clock me-2"></i>Not Published</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if pending_entry %}
+<div class="warning-box d-flex align-items-start gap-3">
+  <i class="fas fa-exclamation-triangle mt-1" style="color:var(--amber);"></i>
+  <div>
+    <div style="font-weight:800;color:#92400e;font-size:.88rem;">Marks not entered for all students</div>
+    <div style="font-size:.78rem;color:#a16207;margin-top:.2rem;">{{ pending_entry }} class{{ pending_entry|pluralize:"es" }} still have pending marks. Students will see incomplete results if you publish now.</div>
+  </div>
+</div>
+{% endif %}
+
+{% if exam.is_published %}
+<div class="published-box d-flex align-items-start gap-3">
+  <i class="fas fa-check-circle mt-1" style="color:var(--green);"></i>
+  <div>
+    <div style="font-weight:800;color:#14532d;font-size:.88rem;">Result is Live</div>
+    <div style="font-size:.78rem;color:#15803d;margin-top:.2rem;">Students can view their results from their portal. Click "Unpublish" to hide results.</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Summary Table -->
+{% if class_summaries %}
+<div class="rc mb-3">
+  <div style="padding:.9rem 1.25rem;border-bottom:1px solid var(--border);font-weight:800;font-size:.9rem;color:var(--ink);">
+    <i class="fas fa-list me-2" style="color:var(--indigo);"></i>Per-Classification Summary
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="sum-tbl">
+      <thead><tr><th>Classification</th><th class="ctr">Students</th><th class="ctr">Marks Entered</th><th class="ctr">Pass</th><th class="ctr">Fail / NG</th><th class="ctr">Absent</th><th>Completion</th></tr></thead>
+      <tbody>
+        {% for row in class_summaries %}
+        <tr>
+          <td style="font-weight:700;">{{ row.classification }}{% if row.section %} / {{ row.section }}{% endif %}</td>
+          <td class="text-center">{{ row.total_students }}</td>
+          <td class="text-center">
+            {% if row.entry_count == row.total_students %}<span style="color:var(--green);font-weight:700;">{{ row.entry_count }}</span>{% else %}<span style="color:var(--amber);font-weight:700;">{{ row.entry_count }}</span>{% endif %}
+          </td>
+          <td class="text-center" style="color:var(--green);font-weight:700;">{{ row.pass_count }}</td>
+          <td class="text-center" style="color:var(--rose);font-weight:700;">{{ row.fail_count }}</td>
+          <td class="text-center" style="color:var(--amber);font-weight:700;">{{ row.absent_count }}</td>
+          <td style="min-width:120px;">
+            <div class="bar-wrap"><div class="bar-fill" style="width:{% if row.total_students %}{% widthratio row.entry_count row.total_students 100 %}{% else %}0{% endif %}%;background:{% if row.entry_count == row.total_students %}var(--green){% else %}var(--amber){% endif %};"></div></div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem;">{% if row.total_students %}{% widthratio row.entry_count row.total_students 100 %}%{% endif %}</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Action -->
+<div class="rc">
+  <div style="padding:1.5rem;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1rem;">
+    <div style="font-size:2.5rem;">{% if exam.is_published %}🔒{% else %}🚀{% endif %}</div>
+    <div>
+      <div style="font-weight:900;font-size:1rem;color:var(--ink);">
+        {% if exam.is_published %}Unpublish this result?{% else %}Publish result to students?{% endif %}
+      </div>
+      <div style="font-size:.82rem;color:var(--muted);margin-top:.3rem;">
+        {% if exam.is_published %}Results will be hidden from student portal.{% else %}Students will be able to see their marksheet from their dashboard.{% endif %}
+      </div>
+    </div>
+    <form method="post" class="d-flex gap-3">
+      {% csrf_token %}
+      <a href="{% url 'schooladmin:exam_terms' %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+      <button type="submit" class="btn btn-{% if exam.is_published %}warning{% else %}success{% endif %} btn-sm px-4">
+        <i class="fas fa-{% if exam.is_published %}eye-slash{% else %}paper-plane{% endif %} me-2"></i>
+        {% if exam.is_published %}Unpublish{% else %}Publish Now{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+
+</div>
+{% endblock %}

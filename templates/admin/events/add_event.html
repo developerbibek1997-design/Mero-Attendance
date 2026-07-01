@@ -1,0 +1,37 @@
+{% extends 'dashboard.html' %}
+{% block title %}Add Event | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-calendar-plus text-primary me-2"></i>Add Event</h6>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Event Title *</label><input type="text" name="title" class="form-control" required></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Event Type</label>
+                <select name="event_type" class="form-select">{% for val,label in event_types %}<option value="{{ val }}">{{ label }}</option>{% endfor %}</select></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Branch</label>
+                <select name="branch" class="form-select"><option value="">-- All Branches --</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Start Date *</label><input type="date" name="start_date" class="form-control" value="{{ today }}" required></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">End Date *</label><input type="date" name="end_date" class="form-control" value="{{ today }}" required></div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Location</label><input type="text" name="location" class="form-control" placeholder="e.g. School Grounds"></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Responsible Staff</label>
+                <select name="responsible_staff" class="form-select"><option value="">-- None --</option>{% for s in staff_list %}<option value="{{ s.admin.id }}">{{ s.member.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Status</label>
+                <select name="status" class="form-select"><option value="upcoming">Upcoming</option><option value="ongoing">Ongoing</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Description</label><textarea name="description" class="form-control" rows="3"></textarea></div>
+              <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Create Event</button><a href="{% url 'schooladmin:event_list' %}" class="btn btn-outline-secondary">Cancel</a></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

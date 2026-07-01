@@ -1,0 +1,12 @@
+{% load schooladmin_extras %}{% with cur=sp|getattr_filter:name %}
+<div class="ep-perm-row">
+  <div class="ep-perm-label">
+    <p class="ep-perm-name">{{ label }}</p>
+    <p class="ep-perm-desc">{{ desc }}</p>
+  </div>
+  <label class="ep-toggle">
+    <input type="checkbox" name="{{ name }}" value="1" {% if cur %}checked{% endif %}>
+    <span class="ep-slider"></span>
+  </label>
+</div>
+{% endwith %}

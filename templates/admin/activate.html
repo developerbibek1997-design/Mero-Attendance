@@ -8,13 +8,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #4361ee;
+            --primary: #dc2626;
             --danger: #ef233c;
             --success: #2b9348;
             --light: #f8f9fa;
             --dark: #212529;
             --gray: #6c757d;
-            --light-blue: #e6f0ff;
+            --light-blue: #fff5f5;
         }
         
         body {
@@ -33,7 +33,7 @@
         
         .deactivated-container {
             background-color: white;
-            border-radius: 16px;
+            border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
             padding: 40px;
             max-width: 680px;
@@ -50,7 +50,7 @@
             left: 0;
             width: 100%;
             height: 6px;
-            background: linear-gradient(90deg, var(--danger) 0%, var(--primary) 100%);
+            background: linear-gradient(90deg, var(--danger) 0%, #111827 100%);
         }
         
         h1 {
@@ -233,7 +233,7 @@
     <div class="deactivated-container">
          {%url 'management:logout' as haha%}
               
-        <a class="nav-link  {%if request.path == haha %} active {%endif%}" href="{{haha}}" onclick="showload()">
+        <a class="nav-link  {%if request.path == haha %} active {%endif%}" href="{{haha}}">
             <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
             <svg width="12px" height="12px" viewBox="0 0 40 44" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
                 <title>document</title>

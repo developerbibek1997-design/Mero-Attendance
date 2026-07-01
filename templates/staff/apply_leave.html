@@ -1,0 +1,145 @@
+{% extends 'dashboard.html' %}
+{% block title %}Apply Leave | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-md me-3">
+                        <i class="fas fa-calendar-plus text-white"></i>
+                    </div>
+                    <h4 class="mb-0">Request Time Off</h4>
+                </div>
+                
+              <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label class="form-label font-weight-bolder">Leave Category</label>
+                        <select name="leave_type" class="form-select" required>
+                            <option value="" disabled selected>Select Category...</option>
+                            {% for lt in leave_types %}
+                            <option value="{{ lt.id }}">{{ lt.name }} (Balance: {{ lt.remaining }} days)</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label font-weight-bolder">Duration Type</label>
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="timing_type" id="fullDay" value="full_day" checked onchange="toggleTimeInput()">
+                                <label class="form-check-label" for="fullDay">Full Day</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="timing_type" id="halfDay" value="half_day" onchange="toggleTimeInput()">
+                                <label class="form-check-label text-primary font-weight-bold" for="halfDay">Half Day</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="timing_type" id="lateIn" value="late_in" onchange="toggleTimeInput()">
+                                <label class="form-check-label" for="lateIn">Late In</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="timing_type" id="earlyOut" value="early_out" onchange="toggleTimeInput()">
+                                <label class="form-check-label" for="earlyOut">Early Out</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4 d-none" id="timeInputContainer">
+                        <label class="form-label font-weight-bolder text-warning" id="timeInputLabel">Specific Time</label>
+                        <input type="time" name="specific_time" id="specific_time" class="form-control">
+                    </div>
+
+                    <div class="mb-4 d-none" id="halfDayContainer">
+                        <label class="form-label font-weight-bolder text-info">Which Half?</label>
+                        <select name="half_day_period" id="half_day_period" class="form-select">
+                            <option value="first_half">First Half (Morning Shift)</option>
+                            <option value="second_half">Second Half (Afternoon Shift)</option>
+                        </select>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bolder">Start Date</label>
+                            <input type="date" name="start_date" id="start_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bolder">End Date</label>
+                            <input type="date" name="end_date" id="end_date" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label font-weight-bolder">Reason</label>
+                        <textarea name="reason" class="form-control" rows="4" placeholder="Please provide a brief reason..." required></textarea>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn bg-gradient-primary btn-lg">Submit Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTimeInput() {
+    const isLate = document.getElementById('lateIn').checked;
+    const isEarly = document.getElementById('earlyOut').checked;
+    const isHalf = document.getElementById('halfDay').checked;
+    
+    const timeContainer = document.getElementById('timeInputContainer');
+    const halfDayContainer = document.getElementById('halfDayContainer');
+    
+    const timeLabel = document.getElementById('timeInputLabel');
+    const timeInput = document.getElementById('specific_time');
+    const endDateInput = document.getElementById('end_date');
+    const startDateInput = document.getElementById('start_date');
+
+    // Handle Late In / Early Out
+    if (isLate || isEarly) {
+        timeContainer.classList.remove('d-none');
+        halfDayContainer.classList.add('d-none');
+        timeInput.required = true;
+        
+        endDateInput.value = startDateInput.value;
+        endDateInput.setAttribute('readonly', true);
+
+        if (isLate) timeLabel.innerText = "Expected Arrival Time (Late In)";
+        if (isEarly) timeLabel.innerText = "Expected Departure Time (Early Out)";
+        
+    // Handle Half Day
+    } else if (isHalf) {
+        halfDayContainer.classList.remove('d-none');
+        timeContainer.classList.add('d-none');
+        timeInput.required = false;
+        
+        // Half days are only 1 day long
+        endDateInput.value = startDateInput.value;
+        endDateInput.setAttribute('readonly', true);
+        
+    // Handle Full Day
+    } else {
+        timeContainer.classList.add('d-none');
+        halfDayContainer.classList.add('d-none');
+        timeInput.required = false;
+        endDateInput.removeAttribute('readonly');
+    }
+}
+
+// Auto-fill end date when start date changes
+document.getElementById('start_date').addEventListener('change', function() {
+    const isLate = document.getElementById('lateIn').checked;
+    const isEarly = document.getElementById('earlyOut').checked;
+    const isHalf = document.getElementById('halfDay').checked;
+    
+    if(isLate || isEarly || isHalf || !document.getElementById('end_date').value) {
+        document.getElementById('end_date').value = this.value;
+    }
+});
+</script>
+{% endblock content %}

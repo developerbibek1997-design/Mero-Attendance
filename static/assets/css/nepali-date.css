@@ -1,0 +1,274 @@
+/* ═══════════════════════════════════════════════════════════════
+   Mero Attendance — Premium global date picker styles
+   Used by static/assets/js/global-date-picker.js for AD and BS calendars
+   ═══════════════════════════════════════════════════════════════ */
+
+.global-date-wrap,
+.ndp-wrap {
+    position: relative;
+    display: block;
+    width: 100%;
+}
+
+.global-date-wrap input,
+.ndp-wrap input {
+    width: 100%;
+    padding-right: 2.55rem !important;
+}
+
+.global-date-icon,
+.ndp-icon {
+    position: absolute;
+    right: .82rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #e11d48;
+    font-size: .88rem;
+    pointer-events: none;
+    z-index: 2;
+    line-height: 1;
+    opacity: .86;
+}
+
+input.global-date-picker,
+input.nepali-date-field,
+input.nepali-cal {
+    background: #ffffff !important;
+    border: 1px solid rgba(15, 23, 42, .14) !important;
+    border-radius: 12px !important;
+    color: #0f172a !important;
+    font-size: .875rem !important;
+    min-height: 42px;
+    outline: none !important;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease !important;
+}
+
+input.global-date-picker:focus,
+input.nepali-date-field:focus,
+input.nepali-cal:focus {
+    border-color: #0f172a !important;
+    box-shadow: 0 0 0 4px rgba(15, 23, 42, .08) !important;
+}
+
+input.global-date-picker::placeholder,
+input.nepali-date-field::placeholder,
+input.nepali-cal::placeholder {
+    color: #94a3b8 !important;
+}
+
+input.global-date-picker[readonly],
+input.nepali-date-field[readonly],
+input.nepali-cal[readonly] {
+    background: #ffffff !important;
+    cursor: pointer;
+}
+
+/* ── Input wrapper ── */
+.ndp-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.ndp-wrap input {
+    padding-right: 2.4rem !important;
+    flex: 1;
+}
+.ndp-icon { color: #e11d48; }
+
+/* ── Calendar popup container ── */
+.nepali-date-picker {
+    background: #ffffff !important;
+    border: 1px solid rgba(15, 23, 42, .08) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .20), 0 4px 18px rgba(225, 29, 72, .10) !important;
+    padding: 0 !important;
+    min-width: 320px !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    overflow: hidden !important;
+    z-index: 99999 !important;
+    animation: ndpFadeIn .15s ease !important;
+}
+@keyframes ndpFadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Table reset ── */
+.nepali-date-picker table {
+    border: none !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+}
+
+/* ── Header row (month nav) ── */
+.nepali-date-picker table thead {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+}
+.nepali-date-picker table thead td {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: .9rem !important;
+    padding: .9rem .5rem !important;
+    text-align: center !important;
+    letter-spacing: .01em;
+}
+/* Navigation arrows */
+.nepali-date-picker table thead td .icon {
+    opacity: 1 !important;
+    width: 28px !important;
+    height: 28px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(255,255,255,.18) !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: background .15s !important;
+    vertical-align: middle;
+    background-image: none !important;
+}
+.nepali-date-picker table thead td .icon:hover {
+    background: rgba(255,255,255,.32) !important;
+}
+/* Arrow SVG via ::before */
+.nepali-date-picker table thead td:first-child .icon::before {
+    content: '‹';
+    font-size: 1.2rem;
+    color: #fff;
+    line-height: 1;
+}
+.nepali-date-picker table thead td:last-child .icon::before {
+    content: '›';
+    font-size: 1.2rem;
+    color: #fff;
+    line-height: 1;
+}
+
+/* ── Day-of-week header ── */
+.nepali-date-picker table th {
+    background: #f8fafc !important;
+    color: #64748b !important;
+    font-size: .72rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .06em !important;
+    padding: .5rem .2rem !important;
+    text-align: center !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* ── Date cells ── */
+.nepali-date-picker table td {
+    width: 40px !important;
+    height: 40px !important;
+    padding: 4px 2px !important;
+    text-align: center !important;
+    font-size: .83rem !important;
+    border: none !important;
+    color: #334155 !important;
+    transition: background .12s, color .12s !important;
+    border-radius: 0 !important;
+}
+.nepali-date-picker table tbody td {
+    cursor: pointer !important;
+}
+
+/* Current month dates */
+.nepali-date-picker table tbody td.current-month-date {
+    color: #0f172a !important;
+    font-weight: 600;
+}
+.nepali-date-picker table tbody td.current-month-date:hover {
+    background: #fff1f2 !important;
+    color: #e11d48 !important;
+    font-weight: 700 !important;
+    border-radius: 10px !important;
+}
+
+/* Selected / today */
+.nepali-date-picker table tbody td.current-month-date.selected,
+.nepali-date-picker table tbody td.current-month-date.active {
+    background: linear-gradient(135deg, #e11d48, #be123c) !important;
+    color: #fff !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(225, 29, 72, .30) !important;
+}
+
+/* Today highlight */
+.nepali-date-picker table tbody td.current-month-date.today {
+    background: #f0fdf4 !important;
+    color: #16a34a !important;
+    border-radius: 10px !important;
+    font-weight: 800 !important;
+    border: 1.5px solid #86efac !important;
+}
+
+/* Other-month dates */
+.nepali-date-picker table td.other-month-date {
+    color: #cbd5e1 !important;
+    cursor: default !important;
+}
+
+/* Disabled dates */
+.nepali-date-picker table td.current-month-date.disable,
+.nepali-date-picker table tbody td.current-month-date.disable:hover {
+    color: #cbd5e1 !important;
+    background: transparent !important;
+    cursor: default !important;
+    font-weight: 400 !important;
+}
+
+/* ── Footer / bottom controls ── */
+.nepali-date-picker .ndp-footer,
+.nepali-date-picker tfoot td {
+    background: #f8fafc !important;
+    padding: .6rem .8rem !important;
+    border-top: 1px solid #e2e8f0 !important;
+    text-align: center !important;
+}
+
+/* ── Input field premium styling ── */
+/* ── Ensure calendar floats above modals ── */
+body > .nepali-date-picker,
+.modal .nepali-date-picker,
+.nepali-date-picker,
+.flatpickr-calendar,
+.flatpickr-calendar.open {
+    z-index: 20000 !important;
+}
+
+body > .nepali-date-picker,
+.modal .nepali-date-picker,
+.nepali-date-picker {
+    position: absolute !important;
+}
+
+.flatpickr-calendar {
+    border: 1px solid rgba(15, 23, 42, .08) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .18) !important;
+    overflow: hidden;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange:hover,
+.flatpickr-day.endRange:hover {
+    background: #e11d48 !important;
+    border-color: #e11d48 !important;
+}
+
+@media (max-width: 575.98px) {
+    .nepali-date-picker,
+    .flatpickr-calendar {
+        max-width: calc(100vw - 24px) !important;
+    }
+}

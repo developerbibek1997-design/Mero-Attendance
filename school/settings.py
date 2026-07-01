@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,12 +44,17 @@ INSTALLED_APPS = [
     'superadmin.apps.SuperadminConfig',
 
     #Third Party
-    'pwa',
+    # 'django_progressive_web_app',
     'rest_framework',
     'corsheaders'
 ]
 
-
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # keep any others you already have
+    ],
+}
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -58,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'school.middleware.SecurityEnforcementMiddleware',
 ]
 
 
@@ -76,6 +83,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'school.context_processors.org_and_features',
             ],
         },
     },
@@ -119,7 +127,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# TIME_ZONE = 'UTC'
+TIME_ZONE = "Asia/Kathmandu"
 
 USE_I18N = True
 
@@ -128,6 +137,12 @@ USE_L10N = True
 USE_TZ = True
 
 
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ROTATE_REFRESH_TOKENS': True,
+}
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
@@ -135,6 +150,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR /'static'
 ]
+
+# STATIC_ROOT = BASE_DIR / 'static'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR /'media'
@@ -187,4 +204,8 @@ EMAIL_HOST_USER = 'info@meroattendance.com'
 EMAIL_HOST_PASSWORD = 'Heyiknow777'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
+
+FRONTEND_URL = "https://meroattendance.com"
+
+CSRF_TRUSTED_ORIGINS = ['https://meroattendance.com']
 

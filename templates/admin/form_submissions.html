@@ -1,0 +1,108 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Submissions — {{ form_obj.title }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Page Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1" style="font-size:.82rem;">
+          <li class="breadcrumb-item"><a href="{% url 'schooladmin:form_builder' %}" class="text-danger text-decoration-none">Form Builder</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'schooladmin:form_builder_edit' form_obj.pk %}" class="text-danger text-decoration-none">{{ form_obj.title|truncatechars:30 }}</a></li>
+          <li class="breadcrumb-item active">Submissions</li>
+        </ol>
+      </nav>
+      <h4 class="fw-bold mb-0" style="color:#0f172a;">{{ form_obj.title }}</h4>
+      <p class="text-muted mb-0 small mt-1">
+        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ submissions.count }} submission{{ submissions.count|pluralize }}</span>
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'schooladmin:form_builder_edit' form_obj.pk %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fa fa-arrow-left"></i> Back to Form
+      </a>
+      <a href="/forms/{{ form_obj.uuid }}/" target="_blank" class="btn btn-outline-danger btn-sm">
+        <i class="fa fa-external-link-alt"></i> View Public Form
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <!-- Submissions -->
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-header bg-white border-bottom d-flex align-items-center gap-2 py-3" style="border-radius:12px 12px 0 0;">
+      <i class="fa fa-inbox text-danger"></i>
+      <h6 class="mb-0 fw-bold">All Submissions</h6>
+    </div>
+    <div class="card-body p-0">
+      {% if submissions %}
+        {% for submission in submissions %}
+        <div class="p-4 {% if not forloop.last %}border-bottom{% endif %}">
+          <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+            <div>
+              <span class="badge bg-dark text-white me-2">#{{ submission.pk }}</span>
+              <span class="small text-muted">
+                <i class="fa fa-clock me-1"></i>{{ submission.submitted_at|date:"d M Y, H:i" }}
+              </span>
+              {% if submission.ip_address %}
+              <span class="small text-muted ms-3">
+                <i class="fa fa-network-wired me-1"></i>{{ submission.ip_address }}
+              </span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="row g-3">
+            {% for response in submission.responses.all %}
+            <div class="col-md-6 col-lg-4">
+              <div class="p-3 bg-light rounded" style="border-left:3px solid #e11d48;">
+                <div class="small fw-semibold text-muted mb-1">{{ response.field_label }}</div>
+                <div class="small" style="color:#0f172a;word-break:break-word;">
+                  {{ response.value|default:"<em class='text-muted'>No answer</em>" }}
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-muted small fst-italic">No responses recorded for this submission.</div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fa fa-inbox fa-3x mb-3 d-block opacity-25"></i>
+        <h6 class="fw-semibold">No submissions yet</h6>
+        <p class="small mb-3">Share the public form link to start collecting responses</p>
+        <div class="input-group mx-auto" style="max-width:420px;">
+          <input type="text" class="form-control form-control-sm bg-light" id="shareLink"
+                 value="{{ request.scheme }}://{{ request.get_host }}/forms/{{ form_obj.uuid }}/" readonly>
+          <button class="btn btn-outline-danger btn-sm" onclick="copyShareLink()">
+            <i class="fa fa-copy"></i> Copy Link
+          </button>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function copyShareLink() {
+  const input = document.getElementById('shareLink');
+  if (!input) return;
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = input.nextElementSibling;
+    btn.innerHTML = '<i class="fa fa-check"></i> Copied!';
+    setTimeout(() => btn.innerHTML = '<i class="fa fa-copy"></i> Copy Link', 2000);
+  });
+}
+</script>
+{% endblock %}

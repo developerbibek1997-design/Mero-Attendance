@@ -1,0 +1,118 @@
+{% extends 'dashboard.html' %}
+{% block title %}Cross-Org Attendance Report | Super Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-database text-primary me-2"></i>Attendance Report — All Organizations</h4>
+      <p class="text-xs text-muted mb-0">View and manage attendance records across all organizations</p>
+    </div>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+  <!-- Filter Form -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="text-xs font-weight-bold">Organization *</label>
+          <select name="org" class="form-select form-select-sm" required>
+            <option value="">-- Select Organization --</option>
+            {% for o in orgs %}<option value="{{ o.id }}" {% if selected_org == o.id|stringformat:"s" %}selected{% endif %}>{{ o.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="text-xs font-weight-bold">From Date</label>
+          <input type="date" name="from_date" class="form-control form-control-sm" value="{{ from_date }}">
+        </div>
+        <div class="col-md-3">
+          <label class="text-xs font-weight-bold">To Date</label>
+          <input type="date" name="to_date" class="form-control form-control-sm" value="{{ to_date }}">
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary btn-sm w-100">View</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if org_obj %}
+  <!-- Summary -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm"><div class="card-body p-3 d-flex align-items-center gap-3">
+        <div class="icon icon-shape bg-gradient-primary text-white border-radius-md" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-building"></i></div>
+        <div><p class="text-xs text-muted mb-0">Organization</p><h6 class="font-weight-bolder mb-0">{{ org_obj.name }}</h6></div>
+      </div></div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm"><div class="card-body p-3 d-flex align-items-center gap-3">
+        <div class="icon icon-shape bg-gradient-info text-white border-radius-md" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-calendar-check"></i></div>
+        <div><p class="text-xs text-muted mb-0">Total Records</p><h6 class="font-weight-bolder mb-0">{{ total_records }}</h6></div>
+      </div></div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm"><div class="card-body p-3 d-flex align-items-center gap-3">
+        <div class="icon icon-shape bg-gradient-warning text-white border-radius-md" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-filter"></i></div>
+        <div><p class="text-xs text-muted mb-0">Date Range</p><h6 class="font-weight-bolder mb-0">{{ from_date|default:"All" }} — {{ to_date|default:"All" }}</h6></div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- Danger Zone: Delete -->
+  <div class="card border-0 shadow-sm mb-4" style="border-left:4px solid #ef4444 !important;">
+    <div class="card-body p-4">
+      <h6 class="font-weight-bold text-danger mb-2"><i class="fas fa-exclamation-triangle me-2"></i>Danger Zone — Delete Records</h6>
+      <p class="text-xs text-muted mb-3">This permanently deletes the <strong>{{ total_records }}</strong> attendance records matching the current filter. This cannot be undone.</p>
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="org" value="{{ selected_org }}">
+        <input type="hidden" name="from_date" value="{{ from_date }}">
+        <input type="hidden" name="to_date" value="{{ to_date }}">
+        <div class="form-check mb-3">
+          <input type="checkbox" class="form-check-input" name="confirm" value="yes" id="confirmDelete">
+          <label class="form-check-label text-sm text-danger font-weight-bold" for="confirmDelete">
+            I understand this will permanently delete {{ total_records }} records and cannot be undone.
+          </label>
+        </div>
+        <button type="submit" class="btn btn-danger btn-sm" onclick="return document.getElementById('confirmDelete').checked || (alert('Please check the confirmation box.'), false)">
+          <i class="fas fa-trash me-1"></i>Delete These Records
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Records Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3">
+      <h6 class="mb-0 font-weight-bolder">Records (showing up to 1,000)</h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr>
+          <th class="text-xs">#</th><th class="text-xs">Member</th>
+          <th class="text-xs">Date</th><th class="text-xs">Time</th>
+        </tr></thead>
+        <tbody>
+          {% for r in records %}
+          <tr>
+            <td class="text-xs text-muted">{{ forloop.counter }}</td>
+            <td class="text-sm font-weight-bold">{{ r.mem.name }}</td>
+            <td class="text-sm">{{ r.scanned_time|date:"M d, Y" }}</td>
+            <td class="text-sm">{{ r.scanned_time|date:"g:i A" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted py-5"><i class="fas fa-inbox fa-2x mb-2 d-block"></i>No records found for this filter.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card border-0 shadow-sm"><div class="card-body text-center py-5 text-muted">
+    <i class="fas fa-building fa-3x mb-3 d-block text-primary"></i>
+    <h5>Select an Organization</h5>
+    <p class="text-sm">Choose an organization above to view and manage their attendance records.</p>
+  </div></div>
+  {% endif %}
+</div>
+{% endblock %}

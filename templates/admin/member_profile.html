@@ -1,0 +1,594 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}{{ mem.name }} — Full Profile{% endblock %}
+
+{% block content %}
+<style>
+  /* ── Layout ── */
+  .profile-hero { background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 100%); border-radius: 20px; padding: 2rem; color: #fff; margin-bottom: 1.5rem; }
+  .profile-avatar { width: 90px; height: 90px; border-radius: 50%; background: rgba(255,255,255,0.15); border: 3px solid rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .hero-stat { text-align: center; padding: 0.75rem 1.25rem; background: rgba(255,255,255,0.12); border-radius: 12px; }
+  .hero-stat .val { font-size: 1.6rem; font-weight: 800; }
+  .hero-stat .lbl { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; }
+
+  /* ── Section cards ── */
+  .sec-card { border: none; border-radius: 16px; box-shadow: 0 4px 18px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+  .sec-card .sec-header { background: #f8fafc; border-radius: 16px 16px 0 0; padding: 1rem 1.5rem; border-bottom: 1px solid #e9ecef; display: flex; align-items: center; gap: 0.6rem; }
+  .sec-card .sec-header h6 { margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.8rem; color: #374151; }
+  .kpi { border-radius: 12px; padding: 0.9rem 1.1rem; text-align: center; }
+  .kpi .num { font-size: 1.55rem; font-weight: 800; }
+  .kpi .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.4px; opacity: 0.75; }
+
+  /* ── Heatmap ── */
+  .heatmap-wrap { display: flex; flex-wrap: wrap; gap: 3px; padding: 0.5rem 0; }
+  .hm-day { width: 14px; height: 14px; border-radius: 3px; }
+  .hm-day.present { background: #22c55e; }
+  .hm-day.absent { background: #e5e7eb; }
+
+  /* ── Tables ── */
+  .tbl th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.4px; color: #6b7280; font-weight: 600; padding: 0.6rem 0.9rem; background: #f9fafb; }
+  .tbl td { font-size: 0.85rem; padding: 0.6rem 0.9rem; vertical-align: middle; border-bottom: 1px solid #f3f4f6; }
+  .tbl tbody tr:last-child td { border-bottom: none; }
+
+  /* ── Status pills ── */
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+  .pill-green  { background: #d1fae5; color: #065f46; }
+  .pill-red    { background: #fee2e2; color: #991b1b; }
+  .pill-yellow { background: #fef9c3; color: #854d0e; }
+  .pill-blue   { background: #dbeafe; color: #1e40af; }
+  .pill-gray   { background: #f3f4f6; color: #4b5563; }
+  .pill-purple { background: #ede9fe; color: #5b21b6; }
+
+  /* ── Progress bar ── */
+  .prog-bar-wrap { background: #e5e7eb; border-radius: 999px; height: 8px; overflow: hidden; }
+  .prog-bar { height: 8px; border-radius: 999px; transition: width 0.4s; }
+
+  @media print { .no-print { display: none !important; } }
+</style>
+
+<div class="container-fluid py-3">
+
+  {% for msg in messages %}<div class="alert alert-success alert-dismissible fade show">{{ msg }}<button class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+  <!-- ── Hero ─────────────────────────────────────────────────────── -->
+  <div class="profile-hero no-print">
+    <div class="d-flex flex-wrap align-items-start gap-3">
+      <div class="profile-avatar">{{ mem.name|slice:":1" }}</div>
+      <div class="flex-grow-1">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <h4 class="mb-0 fw-bold text-white">{{ mem.name }}</h4>
+          <span class="pill pill-green" style="background:rgba(255,255,255,0.2);color:#fff;">{{ mem.get_member_type_display }}</span>
+          <span class="pill" style="background:{% if mem.status == 'active' %}rgba(34,197,94,0.3){% else %}rgba(239,68,68,0.3){% endif %};color:#fff;">{{ mem.get_status_display }}</span>
+        </div>
+        <p class="mb-1 mt-1 text-sm opacity-75">
+          {% if mem.classification %}{{ mem.classification.name }} &bull; {% endif %}
+          {% if mem.section %}{{ mem.section.name }} &bull; {% endif %}
+          {% if mem.branch %}{{ mem.branch.name }} &bull; {% endif %}
+          {{ mem.email|default:"No email" }}
+          {% if mem.phone %} &bull; {{ mem.phone }}{% endif %}
+        </p>
+        <p class="mb-0 text-xs opacity-60">
+          Shift: {{ mem.shift_start_time|time:"H:i" }} – {{ mem.shift_end_time|time:"H:i" }}
+          &bull; Card: {{ mem.card|default:"–" }}
+          &bull; Salary: Rs. {{ mem.salary_amount }} ({{ mem.get_salary_type_display }})
+          {% if mem.date_of_birth %}&bull; DOB: {{ mem.date_of_birth }}{% endif %}
+        </p>
+      </div>
+      <div class="d-flex flex-wrap gap-2 ms-auto mt-2">
+        <a href="{% url 'schooladmin:memberGapReport' mem.pk %}" class="btn btn-sm btn-light no-print">
+          <i class="fas fa-calendar-alt me-1"></i>Attendance Report
+        </a>
+        <a href="{% url 'schooladmin:salaryReport' mem.pk %}" class="btn btn-sm btn-warning no-print">
+          <i class="fas fa-file-invoice-dollar me-1"></i>Salary Report
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick KPIs -->
+    <div class="row g-2 mt-3">
+      <div class="col-6 col-md-2">
+        <div class="hero-stat">
+          <div class="val">{{ total_present }}</div>
+          <div class="lbl">Days Present</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="hero-stat">
+          <div class="val">{{ late_days }}</div>
+          <div class="lbl">Late Days</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="hero-stat">
+          <div class="val">{{ late_hours }}h {{ late_mins }}m</div>
+          <div class="lbl">Total Late Time</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="hero-stat">
+          <div class="val">{{ leave_approved }}</div>
+          <div class="lbl">Leaves Taken</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="hero-stat">
+          <div class="val">{{ task_completed }}/{{ task_total }}</div>
+          <div class="lbl">Tasks Done</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="hero-stat">
+          <div class="val">{{ complaints.count }}</div>
+          <div class="lbl">Complaints</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Attendance heatmap ─────────────────────────────────────── -->
+  <div class="card sec-card">
+    <div class="sec-header"><i class="fas fa-calendar-check text-success"></i><h6>Attendance — Last 90 Days</h6></div>
+    <div class="card-body">
+      <div class="d-flex flex-wrap gap-3 mb-3">
+        <div class="kpi" style="background:#d1fae5;">
+          <div class="num text-success">{{ total_present }}</div>
+          <div class="label text-success">Present</div>
+        </div>
+        <div class="kpi" style="background:#fee2e2;">
+          <div class="num text-danger">{{ late_days }}</div>
+          <div class="label text-danger">Late Arrivals</div>
+        </div>
+        <div class="kpi" style="background:#fef9c3;">
+          <div class="num text-warning">{{ late_hours }}h {{ late_mins }}m</div>
+          <div class="label text-warning">Cumulative Late Time</div>
+        </div>
+      </div>
+      <p class="text-xs text-muted mb-2"><i class="fas fa-info-circle me-1"></i>Each square = 1 day &nbsp; <span style="background:#22c55e;display:inline-block;width:12px;height:12px;border-radius:3px;"></span> Present &nbsp; <span style="background:#e5e7eb;display:inline-block;width:12px;height:12px;border-radius:3px;"></span> Absent</p>
+      <div class="heatmap-wrap" id="heatmapContainer"></div>
+    </div>
+  </div>
+
+  <div class="row">
+
+    <!-- ── Leave ── -->
+    <div class="col-lg-6">
+      <div class="card sec-card">
+        <div class="sec-header"><i class="fas fa-umbrella-beach text-info"></i><h6>Leave Summary</h6></div>
+        <div class="card-body">
+          <div class="d-flex gap-2 mb-3 flex-wrap">
+            <div class="kpi flex-fill" style="background:#d1fae5;"><div class="num text-success">{{ leave_approved }}</div><div class="label text-success">Approved</div></div>
+            <div class="kpi flex-fill" style="background:#fef9c3;"><div class="num text-warning">{{ leave_pending }}</div><div class="label text-warning">Pending</div></div>
+            <div class="kpi flex-fill" style="background:#fee2e2;"><div class="num text-danger">{{ leave_rejected }}</div><div class="label text-danger">Rejected</div></div>
+          </div>
+          {% if leaves %}
+          <div class="table-responsive">
+            <table class="table tbl mb-0">
+              <thead><tr><th>Type</th><th>From</th><th>To</th><th>Status</th></tr></thead>
+              <tbody>
+                {% for l in leaves %}
+                <tr>
+                  <td>{{ l.leave_type.name|default:"General" }}</td>
+                  <td class="text-xs">{% if nepali_enabled %}{{ l.gap_start }}{% else %}{{ l.gap_start }}{% endif %}</td>
+                  <td class="text-xs">{{ l.gap_end|default:"–" }}</td>
+                  <td>
+                    {% if l.approved %}<span class="pill pill-green">Approved</span>
+                    {% elif l.rejected %}<span class="pill pill-red">Rejected</span>
+                    {% else %}<span class="pill pill-yellow">Pending</span>{% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-center text-muted py-3 mb-0"><i class="fas fa-calendar-times fa-2x mb-2 d-block text-light"></i>No leave records</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tasks ── -->
+    <div class="col-lg-6">
+      <div class="card sec-card">
+        <div class="sec-header"><i class="fas fa-tasks text-warning"></i><h6>Task Performance</h6></div>
+        <div class="card-body">
+          <div class="d-flex gap-2 mb-2 flex-wrap">
+            <div class="kpi flex-fill" style="background:#dbeafe;"><div class="num text-primary">{{ task_total }}</div><div class="label text-primary">Total</div></div>
+            <div class="kpi flex-fill" style="background:#d1fae5;"><div class="num text-success">{{ task_completed }}</div><div class="label text-success">Done</div></div>
+            <div class="kpi flex-fill" style="background:#fef9c3;"><div class="num text-warning">{{ task_pending }}</div><div class="label text-warning">Pending</div></div>
+            <div class="kpi flex-fill" style="background:#fee2e2;"><div class="num text-danger">{{ task_overdue }}</div><div class="label text-danger">Overdue</div></div>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between text-xs mb-1"><span>Completion Rate</span><strong>{{ task_on_time_pct }}%</strong></div>
+            <div class="prog-bar-wrap"><div class="prog-bar bg-success" style="width:{{ task_on_time_pct }}%;"></div></div>
+          </div>
+          {% if task_instances %}
+          <div class="table-responsive">
+            <table class="table tbl mb-0">
+              <thead><tr><th>Task</th><th>Due</th><th>Status</th><th>Priority</th></tr></thead>
+              <tbody>
+                {% for ti in task_instances %}
+                <tr>
+                  <td class="fw-semibold" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ ti.task.title }}">{{ ti.task.title|truncatechars:30 }}</td>
+                  <td class="text-xs">{{ ti.due_date }}</td>
+                  <td>
+                    {% if ti.status == 'completed' %}<span class="pill pill-green">Done</span>
+                    {% elif ti.status == 'overdue' %}<span class="pill pill-red">Overdue</span>
+                    {% elif ti.status == 'in_progress' %}<span class="pill pill-blue">In Progress</span>
+                    {% elif ti.status == 'missed_absence' %}<span class="pill pill-gray">Missed</span>
+                    {% else %}<span class="pill pill-yellow">Pending</span>{% endif %}
+                  </td>
+                  <td>
+                    {% if ti.task.priority == 'urgent' %}<span class="pill pill-red">Urgent</span>
+                    {% elif ti.task.priority == 'high' %}<span class="pill pill-yellow">High</span>
+                    {% else %}<span class="pill pill-gray">{{ ti.task.get_priority_display }}</span>{% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-center text-muted py-3 mb-0"><i class="fas fa-clipboard-check fa-2x mb-2 d-block text-light"></i>No tasks assigned</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /row -->
+
+  <!-- ── Payslips ─────────────────────────────────────────────────── -->
+  {% if org.feature_payroll %}
+  <div class="card sec-card">
+    <div class="sec-header"><i class="fas fa-file-invoice-dollar text-success"></i><h6>Payslip History</h6>
+      <span class="ms-auto text-sm text-muted">Total Net Paid: <strong class="text-success">Rs. {{ total_net_paid|floatformat:2 }}</strong></span>
+    </div>
+    <div class="card-body px-0 pt-0">
+      {% if payslips %}
+      <div class="table-responsive">
+        <table class="table tbl mb-0">
+          <thead><tr><th>#</th><th>Period</th><th>Present Days</th><th>Gross</th><th>Deductions</th><th>Net Payable</th><th>Generated</th><th></th></tr></thead>
+          <tbody>
+            {% for p in payslips %}
+            <tr>
+              <td class="text-muted text-xs">{{ forloop.counter }}</td>
+              <td>
+                <p class="mb-0 fw-semibold text-sm">{{ p.month_name|default:"–" }}</p>
+                <p class="mb-0 text-xs text-muted">{{ p.from_date|default:"" }} – {{ p.to_date|default:"" }}</p>
+              </td>
+              <td class="text-sm">{{ p.present_days }} / {{ p.total_days }}</td>
+              <td class="text-sm">Rs. {{ p.gross_salary|floatformat:0 }}</td>
+              <td class="text-sm text-danger">
+                – Rs. {{ p.tax_deduction|add:p.pf_employee|add:p.ssf_employee|add:p.advance_deduction|add:p.loan_deduction|floatformat:0 }}
+              </td>
+              <td><strong class="text-success">Rs. {{ p.net_payable|floatformat:2 }}</strong></td>
+              <td class="text-xs text-muted">{{ p.generated_on|date:"Y-m-d" }}</td>
+              <td><a href="{% url 'schooladmin:generate' p.pk %}" class="btn btn-xs btn-outline-primary mb-0" title="View Payslip"><i class="fas fa-eye"></i></a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-center text-muted py-4 mb-0"><i class="fas fa-file-invoice fa-2x mb-2 d-block text-light"></i>No payslips generated yet</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Complaints ─────────────────────────────────────────────── -->
+  {% if org.feature_complaints %}
+  <div class="card sec-card">
+    <div class="sec-header"><i class="fas fa-exclamation-circle text-danger"></i><h6>Complaints Filed</h6>
+      <span class="ms-auto">
+        <span class="pill pill-yellow me-1">{{ complaint_pending }} Pending</span>
+        <span class="pill pill-green">{{ complaint_resolved }} Resolved</span>
+      </span>
+    </div>
+    <div class="card-body px-0 pt-0">
+      {% if complaints %}
+      <div class="table-responsive">
+        <table class="table tbl mb-0">
+          <thead><tr><th>Subject</th><th>Type</th><th>Priority</th><th>Status</th><th>Filed On</th></tr></thead>
+          <tbody>
+            {% for c in complaints %}
+            <tr>
+              <td>
+                <p class="mb-0 fw-semibold text-sm">{{ c.subject }}</p>
+                <p class="mb-0 text-xs text-muted">{{ c.description|truncatechars:60 }}</p>
+              </td>
+              <td class="text-sm">{{ c.complaint_type }}</td>
+              <td>
+                {% if c.priority == 'high' %}<span class="pill pill-red">High</span>
+                {% elif c.priority == 'medium' %}<span class="pill pill-yellow">Medium</span>
+                {% else %}<span class="pill pill-gray">Low</span>{% endif %}
+              </td>
+              <td>
+                {% if c.status == 'resolved' %}<span class="pill pill-green">Resolved</span>
+                {% elif c.status == 'rejected' %}<span class="pill pill-red">Rejected</span>
+                {% elif c.status == 'reviewing' %}<span class="pill pill-blue">Reviewing</span>
+                {% else %}<span class="pill pill-yellow">Pending</span>{% endif %}
+              </td>
+              <td class="text-xs">{{ c.created_at|date:"Y-m-d" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-center text-muted py-4 mb-0"><i class="fas fa-check-circle fa-2x mb-2 d-block text-light"></i>No complaints on record</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Bills ─────────────────────────────────────────────────────── -->
+  {% if org.feature_billing and bills %}
+  <div class="card sec-card">
+    <div class="sec-header"><i class="fas fa-receipt text-primary"></i><h6>Billing / Invoices</h6>
+      <span class="ms-auto text-sm">
+        Billed: <strong>Rs. {{ total_billed|floatformat:0 }}</strong> &nbsp;
+        Paid: <strong class="text-success">Rs. {{ total_paid|floatformat:0 }}</strong> &nbsp;
+        Due: <strong class="text-danger">Rs. {{ total_due|floatformat:0 }}</strong>
+      </span>
+    </div>
+    <div class="card-body px-0 pt-0">
+      <div class="table-responsive">
+        <table class="table tbl mb-0">
+          <thead><tr><th>Invoice #</th><th>Issue Date</th><th>Due Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for b in bills %}
+            <tr>
+              <td class="fw-semibold text-sm">{{ b.invoice_number }}</td>
+              <td class="text-xs">{{ b.issue_date }}</td>
+              <td class="text-xs">{{ b.due_date }}</td>
+              <td class="text-sm">Rs. {{ b.total_amount|floatformat:0 }}</td>
+              <td class="text-sm text-success">Rs. {{ b.amount_paid|floatformat:0 }}</td>
+              <td class="text-sm {% if b.balance_due > 0 %}text-danger{% else %}text-success{% endif %}">Rs. {{ b.balance_due|floatformat:0 }}</td>
+              <td>
+                {% if b.status == 'Paid' %}<span class="pill pill-green">Paid</span>
+                {% elif b.status == 'Partial' %}<span class="pill pill-yellow">Partial</span>
+                {% else %}<span class="pill pill-red">Unpaid</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Academic Results ───────────────────────────────────────── -->
+  {% if org.feature_results and results %}
+  <div class="card sec-card">
+    <div class="sec-header"><i class="fas fa-graduation-cap text-purple"></i><h6>Academic Results</h6></div>
+    <div class="card-body px-0 pt-0">
+      <div class="table-responsive">
+        <table class="table tbl mb-0">
+          <thead><tr><th>Exam</th><th>Subject</th><th>Marks</th><th>Pass Marks</th><th>Result</th><th>Remarks</th></tr></thead>
+          <tbody>
+            {% for r in results %}
+            <tr>
+              <td class="fw-semibold text-sm">{{ r.exam.name|default:"–" }}</td>
+              <td class="text-sm">{{ r.subject.name }}</td>
+              <td><strong>{{ r.obtained_marks }}</strong></td>
+              <td class="text-muted">{{ r.subject.pass_marks }}</td>
+              <td>{% if r.is_passed %}<span class="pill pill-green">Pass</span>{% else %}<span class="pill pill-red">Fail</span>{% endif %}</td>
+              <td class="text-xs text-muted">{{ r.remarks|default:"–" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Absence Corrections ──────────────────────────────────────── -->
+  {% if corrections %}
+  <div class="card sec-card">
+    <div class="sec-header"><i class="fas fa-edit text-secondary"></i><h6>Attendance Corrections ({{ corrections_count }})</h6></div>
+    <div class="card-body px-0 pt-0">
+      <div class="table-responsive">
+        <table class="table tbl mb-0">
+          <thead><tr><th>Date</th><th>Original Scan Time</th><th>Corrected By</th><th>Reason</th></tr></thead>
+          <tbody>
+            {% for c in corrections %}
+            <tr>
+              <td class="text-sm">{{ c.date }}</td>
+              <td class="text-sm">{{ c.original_scan_time|date:"Y-m-d H:i"|default:"–" }}</td>
+              <td class="text-sm">{{ c.corrected_by.username|default:"Admin" }}</td>
+              <td class="text-xs text-muted">{{ c.reason|truncatechars:60 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Documents ─────────────────────────────────────────────────── -->
+  {% if documents %}
+  <div class="card sec-card">
+    <div class="sec-header"><i class="fas fa-folder-open text-orange"></i><h6>Staff Documents ({{ documents.count }})</h6></div>
+    <div class="card-body">
+      <div class="row g-2">
+        {% for doc in documents %}
+        <div class="col-md-3 col-sm-6">
+          <div class="border rounded p-2 d-flex align-items-center gap-2">
+            <i class="fas fa-file-alt fa-2x text-muted"></i>
+            <div class="overflow-hidden">
+              <p class="mb-0 text-sm fw-semibold text-truncate">{{ doc.document_type|default:"Document" }}</p>
+              <a href="{{ doc.file.url }}" target="_blank" class="text-xs text-primary">View / Download</a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Payroll Adjustments (Allowances / Advances / Loans) ─────── -->
+  {% if org.feature_payroll %}
+  <div class="card sec-card">
+    <div class="sec-header" style="justify-content:space-between;">
+      <div class="d-flex align-items-center gap-2">
+        <i class="fas fa-sliders-h text-primary"></i>
+        <h6>Payroll Adjustments</h6>
+      </div>
+      <button class="btn btn-sm btn-outline-primary no-print" data-bs-toggle="collapse" data-bs-target="#adjAddForm">
+        <i class="fas fa-plus me-1"></i> Add
+      </button>
+    </div>
+
+    <!-- Quick-add form -->
+    <div class="collapse" id="adjAddForm">
+      <div class="p-3 border-bottom" style="background:#f8fafc;">
+        <form method="post" class="row g-2 align-items-end">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_adjustment">
+          <div class="col-md-3">
+            <label class="text-xs fw-bold">Type</label>
+            <select name="adjustment_type" class="form-select form-select-sm" required>
+              <option value="">— Select —</option>
+              <option value="allowance">Allowance</option>
+              <option value="bonus">Bonus</option>
+              <option value="advance">Advance Salary</option>
+              <option value="loan">Loan Deduction</option>
+              <option value="deduction">Other Deduction</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="text-xs fw-bold">Title</label>
+            <input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. House Rent Allowance" required>
+          </div>
+          <div class="col-md-2">
+            <label class="text-xs fw-bold">Amount (Rs.)</label>
+            <input type="number" name="amount" class="form-control form-control-sm" step="0.01" min="0.01" required>
+          </div>
+          <div class="col-md-2">
+            <label class="text-xs fw-bold">Effective Date</label>
+            <input type="date" name="effective_date" class="form-control form-control-sm" value="{{ today|default:'' }}">
+          </div>
+          <div class="col-md-2 d-flex gap-1">
+            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="fas fa-save me-1"></i>Save</button>
+          </div>
+          <div class="col-12">
+            <input type="text" name="notes" class="form-control form-control-sm" placeholder="Notes (optional)">
+          </div>
+        </form>
+        <div class="mt-2 p-2 rounded-3 d-flex align-items-start gap-2" style="background:#eff6ff;border:1px solid #bfdbfe;font-size:.77rem;">
+          <i class="fas fa-info-circle text-primary mt-1"></i>
+          <span class="text-muted">Active adjustments are <strong>auto-applied</strong> when generating this member's payslip. After payslip is saved, advances/loans are marked <em>Applied</em>.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      <!-- Summary row -->
+      {% if adjustments_active %}
+      <div class="d-flex gap-3 flex-wrap p-3 border-bottom" style="background:#fffbeb;">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-success rounded-pill">+ Rs. {{ adj_allowance_total|floatformat:0 }}</span>
+          <span class="text-xs text-muted">Allowances</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-warning text-dark rounded-pill">- Rs. {{ adj_advance_total|floatformat:0 }}</span>
+          <span class="text-xs text-muted">Advance</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-danger rounded-pill">- Rs. {{ adj_loan_total|floatformat:0 }}</span>
+          <span class="text-xs text-muted">Loan</span>
+        </div>
+        <span class="text-xs text-muted ms-auto align-self-center">Pending for next payslip</span>
+      </div>
+      {% endif %}
+
+      <!-- Active adjustments table -->
+      {% if adjustments_active %}
+      <div class="table-responsive">
+        <table class="table tbl mb-0">
+          <thead><tr>
+            <th>Title</th><th>Type</th><th class="text-end">Amount</th><th>Effective</th><th>Notes</th><th class="no-print"></th>
+          </tr></thead>
+          <tbody>
+            {% for a in adjustments_active %}
+            <tr>
+              <td class="fw-semibold">{{ a.title }}</td>
+              <td>
+                {% if a.adjustment_type == 'allowance' %}<span class="pill pill-green">Allowance</span>
+                {% elif a.adjustment_type == 'bonus' %}<span class="pill pill-blue">Bonus</span>
+                {% elif a.adjustment_type == 'advance' %}<span class="pill pill-yellow">Advance</span>
+                {% elif a.adjustment_type == 'loan' %}<span class="pill pill-red">Loan</span>
+                {% else %}<span class="pill pill-gray">Deduction</span>{% endif %}
+              </td>
+              <td class="text-end fw-bold {% if a.adjustment_type in 'allowance,bonus' %}text-success{% else %}text-danger{% endif %}">
+                {% if a.adjustment_type == 'allowance' or a.adjustment_type == 'bonus' %}+{% else %}-{% endif %} Rs. {{ a.amount|floatformat:2 }}
+              </td>
+              <td class="text-muted">{{ a.effective_date }}</td>
+              <td class="text-muted text-xs">{{ a.notes|default:"—" }}</td>
+              <td class="no-print">
+                <form method="post" style="display:inline;" onsubmit="return confirm('Cancel this adjustment?')">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="cancel_adjustment">
+                  <input type="hidden" name="adj_pk" value="{{ a.pk }}">
+                  <button class="btn btn-xs btn-outline-danger px-2 py-0 mb-0" title="Cancel"><i class="fas fa-times"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-center text-muted py-3 mb-0"><i class="fas fa-check-circle text-success me-1"></i> No active adjustments — payslip uses base salary only.</p>
+      {% endif %}
+
+      <!-- Applied adjustments (history) -->
+      {% if adjustments_applied %}
+      <div class="px-3 pb-2">
+        <p class="text-xs text-muted mt-3 mb-1 fw-bold">RECENTLY APPLIED (included in past payslips)</p>
+        <div class="d-flex flex-wrap gap-2">
+          {% for a in adjustments_applied %}
+          <span class="pill pill-gray">{{ a.title }} — Rs. {{ a.amount|floatformat:0 }} <span class="text-muted">({{ a.effective_date }})</span></span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Resignation ───────────────────────────────────────────────── -->
+  {% if resignation %}
+  <div class="card sec-card border-danger">
+    <div class="sec-header" style="background:#fef2f2;border-radius:16px 16px 0 0;"><i class="fas fa-door-open text-danger"></i><h6 class="text-danger">Resignation Record</h6></div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3"><label class="text-xs text-muted d-block">Status</label><span class="pill pill-{% if resignation.status == 'approved' %}green{% elif resignation.status == 'rejected' %}red{% else %}yellow{% endif %}">{{ resignation.get_status_display|default:resignation.status }}</span></div>
+        <div class="col-md-3"><label class="text-xs text-muted d-block">Resignation Date</label><span class="text-sm fw-semibold">{{ resignation.resignation_date|default:"–" }}</span></div>
+        <div class="col-md-3"><label class="text-xs text-muted d-block">Last Working Day</label><span class="text-sm fw-semibold">{{ resignation.last_working_date|default:"–" }}</span></div>
+        <div class="col-md-12"><label class="text-xs text-muted d-block">Reason</label><p class="text-sm mb-0">{{ resignation.reason|default:"–" }}</p></div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div><!-- /container -->
+
+<script>
+(function() {
+  const heatmap = {{ heatmap_json|safe }};
+  const container = document.getElementById('heatmapContainer');
+  Object.entries(heatmap).forEach(([date, status]) => {
+    const el = document.createElement('div');
+    el.className = 'hm-day ' + status;
+    el.title = date + ' (' + status + ')';
+    container.appendChild(el);
+  });
+})();
+</script>
+{% endblock %}

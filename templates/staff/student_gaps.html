@@ -1,0 +1,43 @@
+{% extends 'dashboard.html' %}
+{% block title %}My Absence Gaps | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0"><i class="fas fa-user-times text-warning me-2"></i>My Absence Gaps</h4>
+    <a href="{% url 'staff:dashboard' %}" class="btn btn-outline-secondary btn-sm">Back</a>
+  </div>
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr>
+          <th class="text-xs">#</th>
+          <th class="text-xs">Date</th>
+          <th class="text-xs">Course</th>
+          <th class="text-xs">Topic Missed</th>
+          <th class="text-xs">Teacher</th>
+          <th class="text-xs">Status</th>
+        </tr></thead>
+        <tbody>
+          {% for gap in gaps %}
+          <tr>
+            <td class="text-xs text-muted">{{ forloop.counter }}</td>
+            <td class="text-sm">{{ gap.date }}</td>
+            <td class="text-sm font-weight-bold">{{ gap.course.name|default:"General" }}</td>
+            <td class="text-sm">{{ gap.topic_missed|default:"—"|truncatechars:60 }}</td>
+            <td class="text-sm">{{ gap.teacher.first_name|default:"Admin" }}</td>
+            <td>
+              {% if gap.recovery_status == 'covered' %}<span class="badge bg-success">Covered</span>
+              {% elif gap.recovery_status == 'pending' %}<span class="badge bg-danger">Pending</span>
+              {% elif gap.recovery_status == 'notified' %}<span class="badge bg-warning text-dark">Notified</span>
+              {% else %}<span class="badge bg-info">{{ gap.recovery_status|title }}</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-5"><i class="fas fa-check-circle fa-2x text-success mb-2 d-block"></i>No absence gaps recorded. Keep it up!</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

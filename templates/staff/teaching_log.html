@@ -1,0 +1,301 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Teaching Log | {{ org.name }}{% endblock %}
+
+{% block content %}
+<style>
+:root{--tl-ink:#0f172a;--tl-slate:#334155;--tl-muted:#64748b;--tl-border:#e2e8f0;--tl-bg:#f8fafc;--tl-green:#16a34a;--tl-blue:#2563eb;--tl-purple:#7c3aed;}
+.tl-page{background:var(--tl-bg);min-height:100vh;padding-bottom:3rem;}
+
+/* hero */
+.tl-hero{background:linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#0c4a6e 100%);padding:1.8rem 2rem 4.5rem;position:relative;overflow:hidden;}
+.tl-hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='20' cy='20' r='15'/%3E%3C/g%3E%3C/svg%3E");}
+.tl-hero-title{color:#fff;font-size:1.45rem;font-weight:800;margin:0;position:relative;z-index:1;}
+.tl-hero-sub{color:#94a3b8;font-size:.83rem;margin:.25rem 0 0;position:relative;z-index:1;}
+
+/* stat strip */
+.tl-stats{margin:-2.8rem 2rem 0;display:flex;gap:.9rem;flex-wrap:wrap;}
+.tl-stat{flex:1;min-width:130px;background:#fff;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.1);padding:1rem 1.2rem;position:relative;overflow:hidden;}
+.tl-stat::after{content:'';position:absolute;top:-12px;right:-12px;width:52px;height:52px;border-radius:50%;opacity:.08;}
+.tl-stat.c-blue::after{background:#2563eb;}
+.tl-stat.c-green::after{background:#16a34a;}
+.tl-stat.c-purple::after{background:#7c3aed;}
+.tl-stat-label{font-size:.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--tl-muted);margin-bottom:.25rem;}
+.tl-stat-val{font-size:1.55rem;font-weight:800;color:var(--tl-ink);line-height:1.1;}
+.tl-stat-icon{position:absolute;top:.85rem;right:.95rem;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;}
+.tl-stat.c-blue .tl-stat-icon{background:#dbeafe;color:#2563eb;}
+.tl-stat.c-green .tl-stat-icon{background:#dcfce7;color:#16a34a;}
+.tl-stat.c-purple .tl-stat-icon{background:#ede9fe;color:#7c3aed;}
+
+/* body */
+.tl-body{padding:1.5rem 2rem;}
+
+/* section card */
+.tl-card{background:#fff;border:1.5px solid var(--tl-border);border-radius:16px;overflow:hidden;margin-bottom:1.25rem;}
+.tl-card-hd{padding:1rem 1.4rem;border-bottom:1px solid var(--tl-border);display:flex;align-items:center;justify-content:space-between;gap:.75rem;}
+.tl-card-hd-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;}
+.tl-card-hd-title{font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--tl-ink);margin:0;}
+.tl-card-bd{padding:1.4rem;}
+
+/* form inputs */
+.tl-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--tl-muted);margin-bottom:.4rem;display:block;}
+.tl-input{width:100%;padding:.75rem 1rem;border:1.5px solid var(--tl-border);border-radius:10px;font-size:.9rem;color:var(--tl-ink);outline:none;min-height:46px;transition:border-color .15s,box-shadow .15s;background:#fff;}
+.tl-input:focus{border-color:var(--tl-blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+select.tl-input{cursor:pointer;}
+textarea.tl-input{min-height:80px;resize:vertical;}
+
+/* absent pills */
+.absent-pill input[type=checkbox]{display:none;}
+.absent-pill label{display:inline-flex;align-items:center;gap:.3rem;padding:.42rem .85rem;border-radius:99px;font-size:.76rem;font-weight:700;border:1.5px solid var(--tl-border);color:var(--tl-muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.absent-pill label:hover{border-color:#dc2626;color:#dc2626;}
+.absent-pill input:checked+label{background:#dc2626;border-color:#dc2626;color:#fff;}
+
+/* save btn */
+.btn-tl-save{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;border-radius:10px;padding:.72rem 1.8rem;font-size:.88rem;font-weight:700;cursor:pointer;transition:opacity .15s;display:inline-flex;align-items:center;gap:.45rem;}
+.btn-tl-save:hover{opacity:.9;}
+
+/* log timeline */
+.log-timeline{display:flex;flex-direction:column;gap:.75rem;}
+.log-item{background:#fff;border:1.5px solid var(--tl-border);border-radius:14px;overflow:hidden;transition:box-shadow .2s;}
+.log-item:hover{box-shadow:0 4px 18px rgba(0,0,0,.07);}
+.log-item-hd{padding:.85rem 1.1rem;display:flex;align-items:center;gap:.85rem;border-bottom:1px solid var(--tl-border);background:#fafafa;}
+.log-date-badge{background:linear-gradient(135deg,#1e293b,#334155);color:#fff;border-radius:10px;padding:.45rem .7rem;text-align:center;flex-shrink:0;min-width:52px;}
+.log-date-badge .day{font-size:1.2rem;font-weight:800;line-height:1;}
+.log-date-badge .mon{font-size:.6rem;font-weight:700;text-transform:uppercase;opacity:.7;}
+.log-course-name{font-size:.9rem;font-weight:800;color:var(--tl-ink);margin:0;}
+.log-course-code{font-size:.72rem;color:var(--tl-muted);margin:.1rem 0 0;}
+.log-item-bd{padding:.95rem 1.1rem;}
+.log-topic{font-size:.88rem;font-weight:700;color:var(--tl-ink);margin-bottom:.35rem;display:flex;align-items:flex-start;gap:.5rem;}
+.log-topic i{color:var(--tl-blue);flex-shrink:0;margin-top:.15rem;}
+.log-gap{font-size:.8rem;color:var(--tl-muted);display:flex;align-items:flex-start;gap:.5rem;}
+.log-gap i{color:#d97706;flex-shrink:0;margin-top:.1rem;}
+.pill-sm{display:inline-flex;align-items:center;gap:.28rem;padding:.25rem .6rem;border-radius:99px;font-size:.68rem;font-weight:700;}
+.pill-blue{background:#dbeafe;color:#1d4ed8;}
+
+/* empty state */
+.tl-empty{text-align:center;padding:3rem 1rem;color:var(--tl-muted);}
+.tl-empty i{font-size:3rem;opacity:.18;display:block;margin-bottom:.9rem;}
+</style>
+
+<div class="tl-page">
+
+  <!-- Hero -->
+  <div class="tl-hero">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <div class="text-xs text-white opacity-50 mb-1 fw-bold text-uppercase" style="position:relative;z-index:1;">{{ org.name }}</div>
+        <h4 class="tl-hero-title"><i class="fas fa-chalkboard-teacher me-2 opacity-75"></i>Teaching Log</h4>
+        <p class="tl-hero-sub">Record lessons covered and flag any gaps or follow-ups per course.</p>
+      </div>
+      <button class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#addLogModal"
+        style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;font-weight:700;position:relative;z-index:1;">
+        <i class="fas fa-plus me-1"></i>Add Today's Log
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="tl-stats">
+    <div class="tl-stat c-purple">
+      <div class="tl-stat-label">My Courses</div>
+      <div class="tl-stat-val">{{ courses|length }}</div>
+      <div class="tl-stat-icon"><i class="fas fa-book-open"></i></div>
+    </div>
+    <div class="tl-stat c-green">
+      <div class="tl-stat-label">Total Logs</div>
+      <div class="tl-stat-val">{{ logs|length }}</div>
+      <div class="tl-stat-icon"><i class="fas fa-clipboard-check"></i></div>
+    </div>
+    <div class="tl-stat c-blue">
+      <div class="tl-stat-label">With Gap Notes</div>
+      <div class="tl-stat-val">{% with c=0 %}{% for l in logs %}{% if l.gap_note %}{{ forloop.counter|add:"0" }}{% endif %}{% endfor %}{% endwith %}&nbsp;</div>
+      <div class="tl-stat-icon"><i class="fas fa-triangle-exclamation"></i></div>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="mx-4 mt-3 alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <div class="tl-body" style="margin-top:1.5rem;">
+
+    <!-- My assigned courses quick view -->
+    {% if courses %}
+    <div class="tl-card mb-4">
+      <div class="tl-card-hd">
+        <div class="d-flex align-items-center gap-2">
+          <div class="tl-card-hd-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-book-open"></i></div>
+          <div class="tl-card-hd-title">My Assigned Courses</div>
+        </div>
+      </div>
+      <div class="tl-card-bd">
+        <div class="d-flex flex-wrap gap-2">
+          {% for c in courses %}
+          <div style="background:#f8fafc;border:1.5px solid var(--tl-border);border-radius:12px;padding:.6rem 1rem;display:flex;align-items:center;gap:.6rem;">
+            <div style="width:30px;height:30px;background:#ede9fe;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:.78rem;flex-shrink:0;">
+              <i class="fas fa-book"></i>
+            </div>
+            <div>
+              <div style="font-size:.83rem;font-weight:800;color:var(--tl-ink);">{{ c.name }}</div>
+              {% if c.code %}<div style="font-size:.68rem;color:var(--tl-muted);">{{ c.code }}</div>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Log history -->
+    <div class="tl-card">
+      <div class="tl-card-hd">
+        <div class="d-flex align-items-center gap-2">
+          <div class="tl-card-hd-icon" style="background:#dbeafe;color:#2563eb;"><i class="fas fa-clock-rotate-left"></i></div>
+          <div class="tl-card-hd-title">Recent Logs <span class="text-muted fw-normal" style="font-size:.7rem;text-transform:none;">(last 20)</span></div>
+        </div>
+        <button data-bs-toggle="modal" data-bs-target="#addLogModal"
+          style="background:var(--tl-blue);color:#fff;border:none;border-radius:8px;padding:.42rem 1rem;font-size:.78rem;font-weight:700;cursor:pointer;">
+          <i class="fas fa-plus me-1"></i>New Log
+        </button>
+      </div>
+      <div class="tl-card-bd">
+        {% if logs %}
+        <div class="log-timeline">
+          {% for log in logs %}
+          <div class="log-item">
+            <div class="log-item-hd">
+              <div class="log-date-badge">
+                <div class="day">{{ log.attendance_date|date:"d" }}</div>
+                <div class="mon">{{ log.attendance_date|date:"M Y" }}</div>
+              </div>
+              <div class="flex-grow-1 min-width-0">
+                <div class="log-course-name">{{ log.course.name }}</div>
+                {% if log.course.code %}<div class="log-course-code"><i class="fas fa-hashtag me-1"></i>{{ log.course.code }}</div>{% endif %}
+              </div>
+              <span class="pill-sm pill-blue ms-auto flex-shrink-0">
+                <i class="fas fa-chalkboard-teacher" style="font-size:.6rem;"></i>Taught
+              </span>
+            </div>
+            <div class="log-item-bd">
+              <div class="log-topic">
+                <i class="fas fa-book-open-reader"></i>
+                <span>{{ log.topic_taught }}</span>
+              </div>
+              {% if log.gap_note %}
+              <div class="log-gap mt-2">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>{{ log.gap_note }}</span>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="tl-empty">
+          <i class="fas fa-chalkboard-teacher"></i>
+          <h5 class="fw-bold mb-1" style="color:var(--tl-ink);">No logs yet</h5>
+          <p class="mb-3">Start recording your lessons to track teaching progress.</p>
+          <button data-bs-toggle="modal" data-bs-target="#addLogModal"
+            style="background:var(--tl-blue);color:#fff;border:none;border-radius:10px;padding:.62rem 1.6rem;font-size:.85rem;font-weight:700;cursor:pointer;">
+            <i class="fas fa-plus me-1"></i>Add First Log
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add Log Modal ─────────────────────────────────── -->
+<div class="modal fade" id="addLogModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border:none;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.18);">
+      <div class="modal-header" style="background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:18px 18px 0 0;border:none;padding:1.2rem 1.6rem;">
+        <h5 class="modal-title text-white fw-bold"><i class="fas fa-chalkboard-teacher me-2"></i>Add Teaching Log</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1) brightness(200%);"></button>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="tl-label">Course <span class="text-danger">*</span></label>
+              <select name="course_id" class="tl-input" required id="courseSelect">
+                <option value="">— Select course —</option>
+                {% for c in courses %}
+                <option value="{{ c.pk }}">{{ c.name }}{% if c.code %} ({{ c.code }}){% endif %}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="tl-label">Date <span class="text-danger">*</span></label>
+              <input type="date" name="attendance_date" class="tl-input nepali-trigger" value="{% now 'Y-m-d' %}" required id="logDate">
+            </div>
+            <div class="col-12">
+              <label class="tl-label">Topic Taught <span class="text-danger">*</span></label>
+              <input type="text" name="topic_taught" class="tl-input" placeholder="e.g. Chapter 5: Integration by Parts" required>
+            </div>
+            <div class="col-12">
+              <label class="tl-label">Gap / Follow-up Note <span class="text-muted fw-normal">(optional)</span></label>
+              <textarea name="gap_note" class="tl-input" rows="2" placeholder="Any topic that needs revision or follow-up?"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="tl-label">Mark Absent Members <span class="text-muted fw-normal">(click to select)</span></label>
+              <p class="text-xs text-muted mb-2">Absent members auto-create gap records for the selected course.</p>
+              <div id="memberCheckboxes" class="d-flex flex-wrap gap-2">
+                <span class="text-muted" style="font-size:.8rem;">Select a course first to load members.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid var(--tl-border);padding:.9rem 1.4rem;">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn-tl-save">
+            <i class="fas fa-floppy-disk"></i>Save Teaching Log
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// Load absent members when course selected
+document.getElementById('courseSelect').addEventListener('change', function(){
+  var courseId = this.value;
+  var container = document.getElementById('memberCheckboxes');
+  if(!courseId){ container.innerHTML = '<span class="text-muted" style="font-size:.8rem;">Select a course first.</span>'; return; }
+  container.innerHTML = '<span class="text-muted" style="font-size:.8rem;"><i class="fas fa-spinner fa-spin me-1"></i>Loading members…</span>';
+  fetch('/staff/api/staff/class/'+courseId+'/members/')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      container.innerHTML = '';
+      var members = data.members || [];
+      if(!members.length){
+        container.innerHTML = '<span class="text-muted" style="font-size:.8rem;">No members found for this course.</span>';
+        return;
+      }
+      members.forEach(function(m){
+        container.innerHTML += '<div class="absent-pill"><input type="checkbox" name="absent_member_ids" value="'+m.id+'" id="abm'+m.id+'"><label for="abm'+m.id+'">'+m.name+'</label></div>';
+      });
+    }).catch(function(){
+      container.innerHTML = '<span class="text-danger" style="font-size:.8rem;"><i class="fas fa-exclamation-circle me-1"></i>Failed to load members.</span>';
+    });
+});
+
+// Init Nepali picker on modal open
+document.getElementById('addLogModal').addEventListener('shown.bs.modal', function(){
+  if(window.NepaliDate) NepaliDate.init(this);
+});
+
+// Fill gap note stat dynamically
+(function(){
+  var gapCount = {{ logs|length }} > 0 ? document.querySelectorAll('.log-gap').length : 0;
+  var el = document.querySelectorAll('.tl-stat.c-blue .tl-stat-val')[0];
+  if(el) el.textContent = gapCount;
+})();
+</script>
+{% endblock %}

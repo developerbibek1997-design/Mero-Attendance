@@ -1,0 +1,72 @@
+{% extends 'dashboard.html' %}
+{% block title %}Branches | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0">Branch Management</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBranchModal"><i class="fas fa-plus me-1"></i>Add Branch</button>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+  <div class="row g-3">
+    {% for branch in branches %}
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h6 class="font-weight-bolder mb-0">{{ branch.name }}</h6>
+            <span class="badge {% if branch.is_active %}bg-success{% else %}bg-secondary{% endif %}">{% if branch.is_active %}Active{% else %}Inactive{% endif %}</span>
+          </div>
+          {% if branch.address %}<p class="text-xs text-muted mb-1"><i class="fas fa-map-marker-alt me-1"></i>{{ branch.address }}</p>{% endif %}
+          {% if branch.phone %}<p class="text-xs text-muted mb-1"><i class="fas fa-phone me-1"></i>{{ branch.phone }}</p>{% endif %}
+          {% if branch.email %}<p class="text-xs text-muted mb-0"><i class="fas fa-envelope me-1"></i>{{ branch.email }}</p>{% endif %}
+        </div>
+        <div class="card-footer bg-transparent border-top py-2 d-flex justify-content-between align-items-center">
+          <small class="text-xs text-muted">{{ branch.members.count|default:0 }} members</small>
+          <button class="btn btn-xs btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editBranch{{ branch.pk }}"><i class="fas fa-edit"></i> Edit</button>
+        </div>
+      </div>
+    </div>
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editBranch{{ branch.pk }}" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header"><h6 class="modal-title">Edit Branch — {{ branch.name }}</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+          <form method="post" action="{% url 'schooladmin:branch_list' %}">{% csrf_token %}
+            <input type="hidden" name="action" value="edit"><input type="hidden" name="branch_id" value="{{ branch.pk }}">
+            <div class="modal-body row g-3">
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Branch Name *</label><input type="text" name="name" class="form-control" value="{{ branch.name }}" required></div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Address</label><input type="text" name="address" class="form-control" value="{{ branch.address|default:'' }}"></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Phone</label><input type="text" name="phone" class="form-control" value="{{ branch.phone|default:'' }}"></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Email</label><input type="email" name="email" class="form-control" value="{{ branch.email|default:'' }}"></div>
+              <div class="col-12"><div class="form-check"><input type="checkbox" name="is_active" class="form-check-input" {% if branch.is_active %}checked{% endif %}><label class="form-check-label text-xs">Active</label></div></div>
+            </div>
+            <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm">Save Changes</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12"><div class="card border-0 shadow-sm"><div class="card-body text-center py-5 text-muted"><i class="fas fa-code-branch fa-2x mb-2 d-block"></i>No branches yet. Add your first branch.</div></div></div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Add Branch Modal -->
+<div class="modal fade" id="addBranchModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h6 class="modal-title">Add New Branch</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="action" value="add">
+        <div class="modal-body row g-3">
+          <div class="col-12"><label class="form-label text-xs font-weight-bold">Branch Name *</label><input type="text" name="name" class="form-control" required></div>
+          <div class="col-12"><label class="form-label text-xs font-weight-bold">Address</label><input type="text" name="address" class="form-control"></div>
+          <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Phone</label><input type="text" name="phone" class="form-control"></div>
+          <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Email</label><input type="email" name="email" class="form-control"></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm">Add Branch</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

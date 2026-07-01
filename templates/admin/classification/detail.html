@@ -1,0 +1,294 @@
+{% extends 'dashboard.html' %}
+{% block title %}{{ cls.name }} Management | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+.hub-wrap{padding:1rem 1.5rem 2rem;background:#f8fafc;min-height:100vh;}
+.hub-hero{background:#111827;border-radius:12px;padding:1.25rem 1.5rem;color:#fff;margin-bottom:1rem;}
+.hub-hero h4{color:#fff;font-weight:800;margin:0;}
+.hub-hero p{color:#cbd5e1;font-size:.84rem;margin:.25rem 0 0;}
+.hub-tabs{display:flex;gap:.4rem;overflow-x:auto;margin-bottom:1rem;padding-bottom:.25rem;}
+.hub-tabs a{white-space:nowrap;border:1px solid #e2e8f0;background:#fff;color:#334155;border-radius:8px;padding:.55rem .8rem;font-size:.8rem;font-weight:700;text-decoration:none;}
+.hub-tabs a.active{background:#e11d48;color:#fff;border-color:#e11d48;}
+.stat-card{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;height:100%;}
+.stat-label{font-size:.68rem;text-transform:uppercase;color:#64748b;font-weight:800;letter-spacing:.04em;margin-bottom:.25rem;}
+.stat-value{font-size:1.45rem;font-weight:900;color:#111827;line-height:1.15;}
+.panel{background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:1rem;}
+.panel-hd{padding:.9rem 1rem;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;}
+.panel-title{font-weight:800;color:#111827;margin:0;font-size:.95rem;}
+.field-label{font-size:.68rem;text-transform:uppercase;color:#64748b;font-weight:800;letter-spacing:.04em;margin-bottom:.25rem;}
+.hub-input,.hub-select,.hub-textarea{width:100%;border:1px solid #dbe3ef;border-radius:8px;padding:.55rem .7rem;font-size:.84rem;min-height:40px;background:#fff;}
+.hub-textarea{min-height:86px;}
+.hub-table{width:100%;border-collapse:collapse;}
+.hub-table th{font-size:.66rem;text-transform:uppercase;color:#64748b;letter-spacing:.04em;background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:.7rem .8rem;text-align:left;}
+.hub-table td{font-size:.82rem;color:#111827;border-bottom:1px solid #f1f5f9;padding:.75rem .8rem;vertical-align:middle;}
+.hub-table tr:last-child td{border-bottom:none;}
+.pill{display:inline-flex;align-items:center;border-radius:999px;padding:.15rem .55rem;font-size:.7rem;font-weight:800;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;}
+.pill.green{background:#dcfce7;color:#15803d;border-color:#bbf7d0;}
+.pill.red{background:#ffe4e6;color:#be123c;border-color:#fecdd3;}
+.pill.amber{background:#fef3c7;color:#92400e;border-color:#fde68a;}
+.empty{padding:2.5rem 1rem;text-align:center;color:#64748b;font-size:.86rem;}
+.action-row{display:flex;gap:.35rem;flex-wrap:wrap;}
+@media(max-width:768px){.hub-wrap{padding:.75rem}.hub-table{min-width:900px}.hub-hero{padding:1rem}.panel-hd{align-items:flex-start}.stat-value{font-size:1.2rem}}
+</style>
+
+<div class="hub-wrap">
+  {% for message in messages %}
+  <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">
+    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <div class="hub-hero">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <div class="text-uppercase" style="font-size:.68rem;letter-spacing:.08em;color:#fecdd3;font-weight:800;">{{ org.name }}</div>
+        <h4>{{ cls.name }} Control Center</h4>
+        <p>Students, sections, Course / Subject setup, billing, results, attendance, and reports in one place.</p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-light btn-sm" href="{% url 'schooladmin:student_add' %}?classification={{ cls.id }}"><i class="fas fa-user-plus me-1"></i>Add Student</a>
+        <a class="btn btn-outline-light btn-sm" href="{% url 'handle:addClassification' %}"><i class="fas fa-sitemap me-1"></i>Structure</a>
+      </div>
+    </div>
+  </div>
+
+  <nav class="hub-tabs">
+    <a class="{% if tab == 'overview' %}active{% endif %}" href="?tab=overview">Overview</a>
+    <a class="{% if tab == 'students' %}active{% endif %}" href="?tab=students">Students</a>
+    <a class="{% if tab == 'sections' %}active{% endif %}" href="?tab=sections">Sections</a>
+    <a class="{% if tab == 'courses' %}active{% endif %}" href="?tab=courses">Course / Subject</a>
+    <a class="{% if tab == 'billing' %}active{% endif %}" href="?tab=billing">Billing / Fees</a>
+    <a class="{% if tab == 'send' %}active{% endif %}" href="?tab=send">Bulk Bill Send</a>
+    <a class="{% if tab == 'results' %}active{% endif %}" href="?tab=results">Exam / Result</a>
+    <a class="{% if tab == 'reports' %}active{% endif %}" href="?tab=reports">Reports</a>
+  </nav>
+
+  {% if tab == 'overview' %}
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3 col-xl"><div class="stat-card"><div class="stat-label">Total Students</div><div class="stat-value">{{ total_students }}</div></div></div>
+    <div class="col-6 col-md-3 col-xl"><div class="stat-card"><div class="stat-label">Active Students</div><div class="stat-value">{{ active_students }}</div></div></div>
+    <div class="col-6 col-md-3 col-xl"><div class="stat-card"><div class="stat-label">Sections</div><div class="stat-value">{{ sections_count }}</div></div></div>
+    <div class="col-6 col-md-3 col-xl"><div class="stat-card"><div class="stat-label">Courses</div><div class="stat-value">{{ subjects_count }}</div></div></div>
+    <div class="col-6 col-md-3 col-xl"><div class="stat-card"><div class="stat-label">Attendance Today</div><div class="stat-value">{{ attend_pct }}%</div></div></div>
+  </div>
+  <div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="stat-card"><div class="stat-label">Expected Monthly Income</div><div class="stat-value">Rs. {{ expected_monthly|floatformat:0 }}</div></div></div>
+    <div class="col-md-3"><div class="stat-card"><div class="stat-label">Pending Bill Amount</div><div class="stat-value text-danger">Rs. {{ total_due|floatformat:0 }}</div></div></div>
+    <div class="col-md-3"><div class="stat-card"><div class="stat-label">Paid Amount</div><div class="stat-value text-success">Rs. {{ total_paid|floatformat:0 }}</div></div></div>
+    <div class="col-md-3"><div class="stat-card"><div class="stat-label">Results Published</div><div class="stat-value">{{ published_exams }}</div></div></div>
+  </div>
+  <div class="panel">
+    <div class="panel-hd"><h6 class="panel-title">Recent Students</h6><a href="?tab=students" class="btn btn-sm btn-outline-primary">View All</a></div>
+    <div class="table-responsive">
+      <table class="hub-table">
+        <thead><tr><th>Student</th><th>Guardian</th><th>Billing</th><th>Monthly Payable</th><th>Due</th><th>Attendance</th></tr></thead>
+        <tbody>
+        {% for row in students|slice:":8" %}
+          <tr><td><strong>{{ row.member.name }}</strong><div class="text-muted text-xs">{{ row.member.card|default:"No roll / ID" }}</div></td><td>{{ row.member.guardian_name|default:"-" }}<div class="text-muted text-xs">{{ row.member.guardian_phone|default:"" }}</div></td><td>{{ row.member.get_billing_type_display }}</td><td>Rs. {{ row.final_fee|floatformat:0 }}</td><td class="{% if row.due > 0 %}text-danger{% endif %}">Rs. {{ row.due|floatformat:0 }}</td><td>{{ row.attendance_pct }}%</td></tr>
+        {% empty %}
+          <tr><td colspan="6"><div class="empty">No students in this classification yet.</div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if tab == 'students' %}
+  <div class="panel">
+    <div class="panel-hd">
+      <h6 class="panel-title">Student List</h6>
+      <a class="btn btn-primary btn-sm" href="{% url 'schooladmin:student_add' %}?classification={{ cls.id }}"><i class="fas fa-plus me-1"></i>Add Student</a>
+    </div>
+    <div class="p-3 border-bottom">
+      <form method="get" class="row g-2 align-items-end">
+        <input type="hidden" name="tab" value="students">
+        <div class="col-md-3"><label class="field-label">Section</label><select name="section" class="hub-select"><option value="">All Sections</option>{% for section in sections %}<option value="{{ section.id }}" {% if section_filter == section.id|stringformat:"s" %}selected{% endif %}>{{ section.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-5"><label class="field-label">Search</label><input class="hub-input" type="search" name="q" value="{{ search_q }}" placeholder="Name, roll / ID, phone, guardian"></div>
+        <div class="col-md-4 d-flex gap-2"><button class="btn btn-primary btn-sm flex-fill" type="submit">Filter</button><a class="btn btn-outline-secondary btn-sm" href="?tab=students">Clear</a></div>
+      </form>
+    </div>
+    <div class="table-responsive">
+      <table class="hub-table">
+        <thead><tr><th>Student</th><th>Section</th><th>Guardian Contact</th><th>Billing Type</th><th>Monthly Fee</th><th>Pending</th><th>Result</th><th>Attendance</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for row in students %}
+          <tr>
+            <td><strong>{{ row.member.name }}</strong><div class="text-muted text-xs">{{ row.member.card|default:"No roll / ID" }}</div></td>
+            <td>{{ row.member.section.name|default:"-" }}</td>
+            <td>{{ row.member.guardian_name|default:"-" }}<div class="text-muted text-xs">{{ row.member.guardian_phone|default:row.member.phone }}{% if row.member.guardian_email %} | {{ row.member.guardian_email }}{% endif %}</div></td>
+            <td>{{ row.member.get_billing_type_display }}</td>
+            <td>Rs. {{ row.final_fee|floatformat:0 }}</td>
+            <td class="{% if row.due > 0 %}text-danger{% endif %}">Rs. {{ row.due|floatformat:0 }}</td>
+            <td>{% if row.last_result %}<span class="pill green">{{ row.last_result.exam.name }}</span>{% else %}<span class="pill">Pending</span>{% endif %}</td>
+            <td>{{ row.attendance_pct }}%</td>
+            <td>
+              <div class="action-row">
+                <a class="btn btn-xs btn-outline-primary" href="{% url 'schooladmin:student_profile' row.member.id %}">Profile</a>
+                <a class="btn btn-xs btn-outline-secondary" href="{% url 'schooladmin:student_edit' row.member.id %}">Edit</a>
+                <a class="btn btn-xs btn-outline-success" href="{% url 'schooladmin:bulk_bill_generate' %}?classification={{ cls.id }}&section={{ row.member.section_id|default:'' }}&month={{ current_month }}&year={{ current_year }}&preview=1">Generate Bill</a>
+                <a class="btn btn-xs btn-outline-info" href="{% url 'schooladmin:bulk_bill_send' %}?classification={{ cls.id }}&section={{ row.member.section_id|default:'' }}&month={{ current_month }}&year={{ current_year }}">Send Bill</a>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="9"><div class="empty">No students found.</div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if tab == 'sections' %}
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <div class="panel">
+        <div class="panel-hd"><h6 class="panel-title">Add Section</h6></div>
+        <form method="post" class="p-3">{% csrf_token %}<input type="hidden" name="action" value="add_section"><input type="hidden" name="return_tab" value="sections">
+          <div class="mb-2"><label class="field-label">Section Name</label><input class="hub-input" name="name" required></div>
+          <div class="mb-2"><label class="field-label">Code</label><input class="hub-input" name="code"></div>
+          <div class="mb-3"><label class="field-label">Status</label><select class="hub-select" name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+          <button class="btn btn-primary btn-sm w-100">Save Section</button>
+        </form>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="panel">
+        <div class="panel-hd"><h6 class="panel-title">Sections</h6></div>
+        <div class="table-responsive"><table class="hub-table"><thead><tr><th>Name</th><th>Code</th><th>Students</th><th>Courses</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+          {% for section in sections %}
+          <tr>
+            <td><strong>{{ section.name }}</strong></td><td>{{ section.code|default:"-" }}</td><td>{{ section.members.count }}</td><td>{{ section.section_subjects.count }}</td><td><span class="pill {% if section.status == 'active' %}green{% endif %}">{{ section.get_status_display }}</span></td>
+            <td>
+              <form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="deactivate_section"><input type="hidden" name="section_id" value="{{ section.id }}"><input type="hidden" name="return_tab" value="sections"><button class="btn btn-xs btn-outline-warning">Deactivate</button></form>
+              <form method="post" class="d-inline" onsubmit="return confirm('Delete section {{ section.name }}?')">{% csrf_token %}<input type="hidden" name="action" value="delete_section"><input type="hidden" name="section_id" value="{{ section.id }}"><input type="hidden" name="return_tab" value="sections"><button class="btn btn-xs btn-outline-danger">Delete</button></form>
+            </td>
+          </tr>
+          {% empty %}<tr><td colspan="6"><div class="empty">No sections yet.</div></td></tr>{% endfor %}
+        </tbody></table></div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if tab == 'courses' %}
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <div class="panel">
+        <div class="panel-hd"><h6 class="panel-title">Add Course / Subject</h6></div>
+        <form method="post" class="p-3">{% csrf_token %}<input type="hidden" name="action" value="add_subject"><input type="hidden" name="return_tab" value="courses">
+          <div class="row g-2">
+            <div class="col-8"><label class="field-label">Name</label><input class="hub-input" name="name" required></div>
+            <div class="col-4"><label class="field-label">Code</label><input class="hub-input" name="code"></div>
+            <div class="col-12"><label class="field-label">Section</label><select class="hub-select" name="section"><option value="">Whole classification</option>{% for section in sections %}<option value="{{ section.id }}">{{ section.name }}</option>{% endfor %}</select></div>
+            <div class="col-6"><label class="field-label">Full Marks</label><input class="hub-input" type="number" step="0.5" name="full_marks" value="100"></div>
+            <div class="col-6"><label class="field-label">Pass Marks</label><input class="hub-input" type="number" step="0.5" name="pass_marks" value="40"></div>
+            <div class="col-6"><label class="field-label">Monthly Fee</label><input class="hub-input" type="number" step="0.01" name="monthly_fee" value="0"></div>
+            <div class="col-6"><label class="field-label">One-Time Fee</label><input class="hub-input" type="number" step="0.01" name="one_time_fee" value="0"></div>
+            <div class="col-12"><label class="field-label">Teacher</label><select class="hub-select" name="teacher"><option value="">No teacher</option>{% for teacher in teachers %}<option value="{{ teacher.id }}">{{ teacher.get_full_name|default:teacher.username }}</option>{% endfor %}</select></div>
+          </div>
+          <button class="btn btn-primary btn-sm w-100 mt-3">Save Course / Subject</button>
+        </form>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="panel">
+        <div class="panel-hd"><h6 class="panel-title">Course / Subject List</h6><a class="btn btn-sm btn-outline-secondary" href="{% url 'schooladmin:subject_list' %}?classification={{ cls.id }}">Advanced Setup</a></div>
+        <div class="table-responsive"><table class="hub-table"><thead><tr><th>Name</th><th>Scope</th><th>Teacher</th><th>Fee</th><th>Marks</th><th>Status</th><th>Action</th></tr></thead><tbody>
+          {% for subject in subjects %}
+          <tr>
+            <td><strong>{{ subject.name }}</strong><div class="text-muted text-xs">{{ subject.code|default:"" }}</div></td><td>{{ subject.section.name|default:"Whole classification" }}</td><td>{{ subject.teacher.get_full_name|default:subject.teacher.username|default:"-" }}</td><td>Rs. {{ subject.monthly_fee|floatformat:0 }}</td><td>{{ subject.pass_marks|floatformat:0 }} / {{ subject.full_marks|floatformat:0 }}</td><td><span class="pill {% if subject.status == 'active' %}green{% endif %}">{{ subject.get_status_display }}</span></td>
+            <td>
+              <form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="deactivate_subject"><input type="hidden" name="subject_id" value="{{ subject.id }}"><input type="hidden" name="return_tab" value="courses"><button class="btn btn-xs btn-outline-warning">Deactivate</button></form>
+              <form method="post" class="d-inline" onsubmit="return confirm('Delete {{ subject.name }}?')">{% csrf_token %}<input type="hidden" name="action" value="delete_subject"><input type="hidden" name="subject_id" value="{{ subject.id }}"><input type="hidden" name="return_tab" value="courses"><button class="btn btn-xs btn-outline-danger">Delete</button></form>
+            </td>
+          </tr>
+          {% empty %}<tr><td colspan="7"><div class="empty">No courses / subjects yet.</div></td></tr>{% endfor %}
+        </tbody></table></div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if tab == 'billing' %}
+  <div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="stat-card"><div class="stat-label">Monthly Fee Students</div><div class="stat-value">{{ monthly_fee_count }}</div></div></div>
+    <div class="col-md-3"><div class="stat-card"><div class="stat-label">Course-Wise Students</div><div class="stat-value">{{ course_wise_count }}</div></div></div>
+    <div class="col-md-3"><div class="stat-card"><div class="stat-label">Scholarship / Free</div><div class="stat-value">{{ scholarship_count }}</div></div></div>
+    <div class="col-md-3"><div class="stat-card"><div class="stat-label">Expected Income</div><div class="stat-value">Rs. {{ expected_monthly|floatformat:0 }}</div></div></div>
+  </div>
+  <div class="panel">
+    <div class="panel-hd"><h6 class="panel-title">Generate Bills</h6></div>
+    <form class="p-3 row g-3 align-items-end" method="get" action="{% url 'schooladmin:bulk_bill_generate' %}">
+      <input type="hidden" name="classification" value="{{ cls.id }}">
+      <input type="hidden" name="preview" value="1">
+      <div class="col-md-3"><label class="field-label">Section</label><select class="hub-select" name="section"><option value="">All Sections</option>{% for section in sections %}<option value="{{ section.id }}">{{ section.name }}</option>{% endfor %}</select></div>
+      <div class="col-md-3"><label class="field-label">Billing Type</label><select class="hub-select" name="billing_type"><option value="">All Types</option>{% for value,label in billing_type_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-md-2"><label class="field-label">Month</label><select class="hub-select" name="month">{% for value,label in months %}<option value="{{ value }}" {% if value == current_month %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-md-2"><label class="field-label">Year</label><input class="hub-input" name="year" value="{{ current_year }}"></div>
+      <div class="col-md-2"><button class="btn btn-primary btn-sm w-100">Preview</button></div>
+    </form>
+  </div>
+  <div class="panel">
+    <div class="panel-hd"><h6 class="panel-title">Financial Summary</h6><a class="btn btn-sm btn-outline-primary" href="{% url 'schooladmin:bill_list' %}">All Bills</a></div>
+    <div class="row g-3 p-3">
+      <div class="col-md-4"><div class="stat-card"><div class="stat-label">Pending Income</div><div class="stat-value text-danger">Rs. {{ total_due|floatformat:0 }}</div></div></div>
+      <div class="col-md-4"><div class="stat-card"><div class="stat-label">Paid Income</div><div class="stat-value text-success">Rs. {{ total_paid|floatformat:0 }}</div></div></div>
+      <div class="col-md-4"><div class="stat-card"><div class="stat-label">Total Billed</div><div class="stat-value">Rs. {{ total_billed|floatformat:0 }}</div></div></div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if tab == 'send' %}
+  <div class="panel">
+    <div class="panel-hd"><h6 class="panel-title">Bulk Bill Send</h6></div>
+    <form class="p-3 row g-3 align-items-end" method="get" action="{% url 'schooladmin:bulk_bill_send' %}">
+      <input type="hidden" name="classification" value="{{ cls.id }}">
+      <div class="col-md-3"><label class="field-label">Section</label><select class="hub-select" name="section"><option value="">All Sections</option>{% for section in sections %}<option value="{{ section.id }}">{{ section.name }}</option>{% endfor %}</select></div>
+      <div class="col-md-3"><label class="field-label">Month</label><select class="hub-select" name="month">{% for value,label in months %}<option value="{{ value }}" {% if value == current_month %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-md-3"><label class="field-label">Year</label><input class="hub-input" name="year" value="{{ current_year }}"></div>
+      <div class="col-md-3"><button class="btn btn-primary btn-sm w-100">Open Send Preview</button></div>
+    </form>
+  </div>
+  <div class="panel">
+    <div class="panel-hd"><h6 class="panel-title">Recent Bill Send Logs</h6></div>
+    <div class="table-responsive"><table class="hub-table"><thead><tr><th>Bill</th><th>Student</th><th>Method</th><th>Status</th><th>Sent At</th><th>Error</th></tr></thead><tbody>
+      {% for log in bill_send_logs %}<tr><td>{{ log.bill.invoice_number }}</td><td>{{ log.bill.member.name }}</td><td>{{ log.get_sent_method_display }}</td><td><span class="pill {% if log.status == 'sent' %}green{% elif log.status == 'failed' %}red{% else %}amber{% endif %}">{{ log.status|title }}</span></td><td>{{ log.sent_at }}</td><td>{{ log.error_message|default:"-" }}</td></tr>{% empty %}<tr><td colspan="6"><div class="empty">No bill send logs yet.</div></td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+  {% endif %}
+
+  {% if tab == 'results' %}
+  <div class="panel">
+    <div class="panel-hd"><h6 class="panel-title">Exam / Result Management</h6><a class="btn btn-sm btn-primary" href="{% url 'schooladmin:exam_terms' %}">Create Exam</a></div>
+    <div class="p-3 d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'schooladmin:subject_list' %}?classification={{ cls.id }}">Manage Courses / Subjects</a>
+      <a class="btn btn-outline-success btn-sm" href="{% url 'schooladmin:result_entry' %}?classification={{ cls.id }}">Bulk Marks Entry</a>
+      <a class="btn btn-outline-info btn-sm" href="{% url 'schooladmin:result_report' %}?classification={{ cls.id }}">Result Report</a>
+      <a class="btn btn-outline-warning btn-sm" href="{% url 'schooladmin:bulk_result_send' %}?classification={{ cls.id }}">Bulk Result Send</a>
+    </div>
+    <div class="table-responsive"><table class="hub-table"><thead><tr><th>Exam</th><th>Academic Year</th><th>Status</th><th>Published</th><th>Actions</th></tr></thead><tbody>
+      {% for exam in exams %}
+      <tr><td><strong>{{ exam.name }}</strong></td><td>{{ exam.academic_year|default:"-" }}</td><td>{{ exam.get_status_display }}</td><td>{% if exam.is_published %}<span class="pill green">Published</span>{% else %}<span class="pill amber">Pending</span>{% endif %}</td><td class="action-row"><a class="btn btn-xs btn-outline-primary" href="{% url 'schooladmin:result_entry' %}?exam={{ exam.id }}&classification={{ cls.id }}">Marks</a><a class="btn btn-xs btn-outline-success" href="{% url 'schooladmin:result_publish_summary' exam.id %}">Publish</a><a class="btn btn-xs btn-outline-info" href="{% url 'schooladmin:bulk_result_send' %}?exam={{ exam.id }}&classification={{ cls.id }}">Send</a></td></tr>
+      {% empty %}<tr><td colspan="5"><div class="empty">No exams created for this classification yet.</div></td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-hd"><h6 class="panel-title">Recent Result Send Logs</h6></div>
+    <div class="table-responsive"><table class="hub-table"><thead><tr><th>Exam</th><th>Student</th><th>Method</th><th>Status</th><th>Sent At</th></tr></thead><tbody>
+      {% for log in result_send_logs %}<tr><td>{{ log.exam.name }}</td><td>{{ log.member.name }}</td><td>{{ log.get_sent_method_display }}</td><td><span class="pill {% if log.status == 'sent' %}green{% elif log.status == 'failed' %}red{% else %}amber{% endif %}">{{ log.status|title }}</span></td><td>{{ log.sent_at }}</td></tr>{% empty %}<tr><td colspan="5"><div class="empty">No result send logs yet.</div></td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+  {% endif %}
+
+  {% if tab == 'reports' %}
+  <div class="row g-3">
+    <div class="col-md-4"><div class="panel h-100"><div class="panel-hd"><h6 class="panel-title">Student Report</h6></div><div class="p-3"><a class="btn btn-outline-primary btn-sm w-100" href="{% url 'schooladmin:student_list' %}?classification={{ cls.id }}">Open Student Report</a></div></div></div>
+    <div class="col-md-4"><div class="panel h-100"><div class="panel-hd"><h6 class="panel-title">Fee Report</h6></div><div class="p-3 d-grid gap-2"><a class="btn btn-outline-danger btn-sm" href="{% url 'schooladmin:bill_list' %}?status=Unpaid">Pending Bills</a><a class="btn btn-outline-success btn-sm" href="{% url 'schooladmin:bill_list' %}?status=Paid">Paid Bills</a></div></div></div>
+    <div class="col-md-4"><div class="panel h-100"><div class="panel-hd"><h6 class="panel-title">Academic Reports</h6></div><div class="p-3 d-grid gap-2"><a class="btn btn-outline-info btn-sm" href="{% url 'schooladmin:subject_list' %}?classification={{ cls.id }}">Course Report</a><a class="btn btn-outline-primary btn-sm" href="{% url 'schooladmin:result_report' %}?classification={{ cls.id }}">Result Report</a><a class="btn btn-outline-secondary btn-sm" href="{% url 'schooladmin:allRecord' %}">Attendance Report</a></div></div></div>
+    <div class="col-12"><div class="panel"><div class="panel-hd"><h6 class="panel-title">Export</h6></div><div class="p-3 d-flex gap-2 flex-wrap"><a class="btn btn-sm btn-outline-secondary" href="{% url 'schooladmin:export_hub' %}">Export Hub</a><a class="btn btn-sm btn-outline-secondary" href="{% url 'schooladmin:export_members' %}">Export Students</a><a class="btn btn-sm btn-outline-secondary" href="{% url 'schooladmin:export_finance' %}">Export Finance</a><a class="btn btn-sm btn-outline-secondary" href="{% url 'schooladmin:export_attendance' %}">Export Attendance</a></div></div></div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends 'dashboard.html' %}
+{% block title %}Task List | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-list-check text-primary me-2"></i>All Tasks</h4>
+      <p class="text-xs text-muted mb-0">View and filter all task assignments</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'schooladmin:create_task' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i>New Task</a>
+      <a href="{% url 'schooladmin:task_dashboard' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <!-- Filter Bar -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3 col-6">
+          <label class="text-xs font-weight-bold">Staff Member</label>
+          <select name="member" class="form-select form-select-sm">
+            <option value="">All Members</option>
+            {% for m in members %}<option value="{{ m.id }}" {% if filters.member == m.id|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="text-xs font-weight-bold">Status</label>
+          <select name="status" class="form-select form-select-sm">
+            <option value="">All</option>
+            {% for val, label in status_choices %}<option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="text-xs font-weight-bold">Priority</label>
+          <select name="priority" class="form-select form-select-sm">
+            <option value="">All</option>
+            {% for val, label in priority_choices %}<option value="{{ val }}" {% if filters.priority == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="text-xs font-weight-bold">Type</label>
+          <select name="task_type" class="form-select form-select-sm">
+            <option value="">All</option>
+            {% for val, label in type_choices %}<option value="{{ val }}" {% if filters.task_type == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1 col-6">
+          <label class="text-xs font-weight-bold">From</label>
+          <input type="date" name="from_date" class="form-control form-control-sm" value="{{ filters.from_date }}">
+        </div>
+        <div class="col-md-1 col-6">
+          <label class="text-xs font-weight-bold">To</label>
+          <input type="date" name="to_date" class="form-control form-control-sm" value="{{ filters.to_date }}">
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Task Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 font-weight-bolder">Results <span class="text-muted fw-normal">({{ instances|length }})</span></h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="text-xs">#</th>
+            <th class="text-xs">Task</th>
+            <th class="text-xs">Assigned To</th>
+            <th class="text-xs">Priority</th>
+            <th class="text-xs">Type</th>
+            <th class="text-xs">Due Date</th>
+            <th class="text-xs">Status</th>
+            <th class="text-xs">Approval</th>
+            <th class="text-xs text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inst in instances %}
+          <tr>
+            <td class="text-xs text-muted">{{ forloop.counter }}</td>
+            <td>
+              <a href="{% url 'schooladmin:task_detail' inst.task.pk %}" class="text-sm font-weight-bold text-dark text-decoration-none">{{ inst.task.title|truncatechars:40 }}</a>
+            </td>
+            <td class="text-sm">{{ inst.assigned_member.name }}</td>
+            <td>
+              {% if inst.task.priority == 'urgent' %}<span class="badge bg-danger">Urgent</span>
+              {% elif inst.task.priority == 'high' %}<span class="badge bg-warning text-dark">High</span>
+              {% elif inst.task.priority == 'medium' %}<span class="badge bg-primary">Medium</span>
+              {% else %}<span class="badge bg-secondary">Low</span>{% endif %}
+            </td>
+            <td class="text-xs text-muted">{{ inst.task.get_task_type_display }}</td>
+            <td class="text-sm {% if inst.due_date < today and inst.status == 'overdue' %}text-danger font-weight-bold{% endif %}">
+              {{ inst.due_date|date:"M d, Y" }}
+            </td>
+            <td>
+              {% if inst.status == 'completed' %}<span class="badge bg-success">Completed</span>
+              {% elif inst.status == 'in_progress' %}<span class="badge" style="background:#8b5cf6">In Progress</span>
+              {% elif inst.status == 'pending' %}<span class="badge bg-warning text-dark">Pending</span>
+              {% elif inst.status == 'overdue' %}<span class="badge bg-danger">Overdue</span>
+              {% elif inst.status == 'missed_absence' %}<span class="badge bg-dark">Missed/Absent</span>
+              {% elif inst.status == 'not_completed' %}<span class="badge bg-secondary">Not Done</span>
+              {% elif inst.status == 'rework_required' %}<span class="badge bg-danger">Rework</span>
+              {% elif inst.status == 'cancelled' %}<span class="badge bg-light text-dark">Cancelled</span>
+              {% else %}<span class="badge bg-light text-dark">{{ inst.get_status_display }}</span>{% endif %}
+            </td>
+            <td>
+              {% if inst.approval_status == 'pending_approval' %}<span class="badge bg-warning text-dark">⏳ Pending</span>
+              {% elif inst.approval_status == 'approved' %}<span class="badge bg-success">✓ Approved</span>
+              {% elif inst.approval_status == 'rejected' %}<span class="badge bg-danger">✗ Rejected</span>
+              {% else %}<span class="text-xs text-muted">—</span>{% endif %}
+            </td>
+            <td class="text-center">
+              <a href="{% url 'schooladmin:task_detail' inst.task.pk %}" class="btn btn-xs btn-outline-primary">View</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center text-muted py-5">
+              <i class="fas fa-inbox fa-3x mb-3 d-block text-muted"></i>
+              No task records match the current filters.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

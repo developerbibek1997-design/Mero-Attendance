@@ -1,248 +1,1098 @@
 {% extends 'pillar.html' %}
 {% load static %}
 
+{% block title %}Mero Attendance | Smart Attendance, HRMS, Payroll & School Management System Nepal{% endblock title %}
+
+{% block extra_css %}
+<style>
+/* ── page tokens ─────────────────────────────────────────── */
+.hp {
+  --red:     #e11d48; --red-dk: #be123c; --red-lt: #fff1f2;
+  --ink:     #0f172a; --slate:  #334155; --muted:  #64748b;
+  --line:    rgba(15,23,42,.09); --soft:  #f8fafc;
+  --green:   #16a34a; --green-lt:#f0fdf4;
+  --blue:    #2563eb; --blue-lt: #eff6ff;
+  --violet:  #7c3aed; --violet-lt:#f5f3ff;
+  --amber:   #d97706; --amber-lt: #fffbeb;
+  --teal:    #0d9488; --teal-lt:  #f0fdfa;
+  --cyan:    #0891b2; --cyan-lt:  #ecfeff;
+  --rose:    #db2777; --rose-lt:  #fdf2f8;
+  background: #fff; color: var(--ink);
+}
+
+/* ── shared ────────────────────────────────────────────────── */
+.hp-sec { padding: 88px 0; }
+.hp-sec-soft { background: var(--soft); }
+.hp-sec-dark { background: #0a1124; }
+
+.hp-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 15px; border-radius: 99px; font-size: .76rem;
+  font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+}
+.hp-badge-red    { background: var(--red-lt);    color: var(--red);    border: 1px solid rgba(225,29,72,.14); }
+.hp-badge-green  { background: var(--green-lt);  color: var(--green);  border: 1px solid rgba(22,163,74,.14); }
+.hp-badge-blue   { background: var(--blue-lt);   color: var(--blue);   border: 1px solid rgba(37,99,235,.14); }
+.hp-badge-violet { background: var(--violet-lt); color: var(--violet); border: 1px solid rgba(124,58,237,.14); }
+.hp-badge-teal   { background: var(--teal-lt);   color: var(--teal);   border: 1px solid rgba(13,148,136,.14); }
+.hp-badge-amber  { background: var(--amber-lt);  color: var(--amber);  border: 1px solid rgba(217,119,6,.14); }
+.hp-badge-white  { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.18); }
+
+.hp-h2 {
+  font-size: clamp(2rem, 3.8vw, 3.4rem);
+  font-weight: 950; line-height: 1.08; letter-spacing: -.04em;
+  margin: 14px 0 12px;
+}
+.hp-h2-white { color: #fff; }
+.hp-lead { color: var(--muted); font-size: 1rem; line-height: 1.8; margin: 0; max-width: 680px; }
+.hp-lead-white { color: rgba(255,255,255,.72); }
+.hp-sec-head { margin-bottom: 52px; }
+.hp-sec-head.ctr { text-align: center; }
+.hp-sec-head.ctr .hp-lead { margin: 0 auto; }
+
+/* ── buttons ─────────────────────────────────────────────── */
+.hp-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 46px; padding: 10px 22px; border-radius: 99px;
+  font-weight: 800; font-size: .88rem; transition: all .18s;
+  border: none; cursor: pointer;
+}
+.hp-btn:hover { transform: translateY(-2px); text-decoration: none; }
+.hp-btn-red   { background: linear-gradient(135deg,var(--red),var(--red-dk)); color:#fff; box-shadow:0 14px 30px rgba(225,29,72,.28); }
+.hp-btn-red:hover  { color:#fff; box-shadow:0 20px 40px rgba(225,29,72,.38); }
+.hp-btn-white { background:#fff; color:var(--ink); }
+.hp-btn-white:hover { color:var(--red); }
+.hp-btn-ghost { background:rgba(255,255,255,.1); border:1.5px solid rgba(255,255,255,.22); color:#fff; }
+.hp-btn-ghost:hover { background:rgba(255,255,255,.18); color:#fff; }
+.hp-btn-outline { background:transparent; border:1.5px solid var(--line); color:var(--slate); }
+.hp-btn-outline:hover { border-color:var(--red); color:var(--red); }
+
+/* ── icon boxes ──────────────────────────────────────────── */
+.ic { width:46px; height:46px; border-radius:12px; display:grid; place-items:center; font-size:1.1rem; flex-shrink:0; }
+.ic-red    { background:var(--red-lt);    color:var(--red); }
+.ic-green  { background:var(--green-lt);  color:var(--green); }
+.ic-blue   { background:var(--blue-lt);   color:var(--blue); }
+.ic-violet { background:var(--violet-lt); color:var(--violet); }
+.ic-amber  { background:var(--amber-lt);  color:var(--amber); }
+.ic-teal   { background:var(--teal-lt);   color:var(--teal); }
+.ic-cyan   { background:var(--cyan-lt);   color:var(--cyan); }
+.ic-rose   { background:var(--rose-lt);   color:var(--rose); }
+.ic-slate  { background:#f1f5f9;          color:var(--slate); }
+.ic-ink    { background:var(--ink);       color:#fff; }
+.ic-lime   { background:#f7fee7; color:#65a30d; }
+.ic-orange { background:#fff7ed; color:#ea580c; }
+.ic-pink   { background:#fdf4ff; color:#a21caf; }
+
+/* ══════════════════════════════════════════════════════════
+   1 · HERO
+══════════════════════════════════════════════════════════ */
+.hp-hero {
+  position: relative; min-height: calc(100vh - 68px);
+  display: flex; align-items: center;
+  padding: 72px 0 60px;
+  background:
+    linear-gradient(105deg, rgba(10,17,36,.96) 0%, rgba(10,17,36,.82) 55%, rgba(10,17,36,.55) 100%),
+    url("{% static 'res/background.jpg' %}") center/cover no-repeat;
+}
+
+.hp-hero::after {
+  content:""; position:absolute; inset:auto 0 -2px;
+  height:90px; background:linear-gradient(transparent,#fff); pointer-events:none;
+}
+
+.hp-kicker {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18);
+  border-radius:99px; padding:8px 15px; font-size:.76rem; font-weight:800;
+  text-transform:uppercase; letter-spacing:.06em; color:#fff; margin-bottom:22px;
+}
+
+.hp-h1 {
+  font-size: clamp(2.4rem, 5vw, 4.8rem);
+  font-weight: 950; line-height: 1.03; letter-spacing: -.04em;
+  color: #fff; margin: 0 0 20px;
+}
+.hp-h1 span { color: #fb7185; }
+
+.hp-hero-sub {
+  color: rgba(255,255,255,.75); font-size: 1.05rem;
+  line-height: 1.8; max-width: 600px; margin-bottom: 30px;
+}
+
+.hp-hero-btns { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:40px; }
+
+/* Trust badges strip */
+.hp-trust {
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+.hp-trust-badge {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+  border-radius: 99px; padding: 7px 14px;
+  color: rgba(255,255,255,.82); font-size: .76rem; font-weight: 700;
+}
+.hp-trust-badge i { color: #4ade80; font-size: .78rem; }
+
+/* Login card */
+.hp-login-card {
+  background: rgba(255,255,255,.97);
+  border-radius: 22px;
+  padding: 36px 32px;
+  box-shadow: 0 32px 80px rgba(10,17,36,.3);
+  backdrop-filter: blur(12px);
+  max-width: 400px;
+  width: 100%;
+}
+.hp-login-card .lc-head { margin-bottom: 26px; }
+.hp-login-card .lc-title {
+  font-size: 1.5rem; font-weight: 950; color: var(--ink);
+  margin: 0 0 4px; letter-spacing: -.03em;
+}
+.hp-login-card .lc-title span { color: var(--red); }
+.hp-login-card .lc-sub { font-size: .82rem; color: var(--muted); }
+
+.lc-field-label {
+  display: block; font-size: .76rem; font-weight: 800;
+  color: var(--slate); text-transform: uppercase; letter-spacing: .04em;
+  margin-bottom: 6px;
+}
+.lc-input {
+  width: 100%; border: 1.5px solid var(--line);
+  border-radius: 10px; padding: 11px 14px; font-size: .9rem;
+  color: var(--ink); outline: none; transition: border-color .18s;
+  background: #fff;
+}
+.lc-input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(225,29,72,.1); }
+.lc-btn {
+  width: 100%; min-height: 46px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, var(--red), var(--red-dk));
+  color: #fff; border-radius: 10px; font-weight: 900; font-size: .9rem;
+  box-shadow: 0 14px 30px rgba(225,29,72,.28);
+  transition: all .18s;
+}
+.lc-btn:hover { box-shadow: 0 20px 40px rgba(225,29,72,.38); transform: translateY(-2px); }
+.lc-divider { text-align: center; font-size: .78rem; color: var(--muted); margin: 14px 0; }
+.lc-alt-btn {
+  display: block; text-align: center; width: 100%;
+  border: 1.5px solid var(--line); border-radius: 10px; padding: 11px;
+  font-size: .84rem; font-weight: 700; color: var(--blue);
+  transition: border-color .18s;
+}
+.lc-alt-btn:hover { border-color: var(--blue); background: var(--blue-lt); }
+.lc-forgot { display: block; text-align: center; font-size: .78rem; color: var(--muted); margin-top: 14px; }
+.lc-forgot a { color: var(--red); font-weight: 700; }
+
+.loader { display:none; }
+
+/* ══════════════════════════════════════════════════════════
+   2 · STATS BAND
+══════════════════════════════════════════════════════════ */
+.hp-stats-band {
+  background: #fff; border-bottom: 1px solid var(--line);
+  padding: 28px 0;
+}
+.hp-stats-inner {
+  display: flex; align-items: center; justify-content: space-around;
+  flex-wrap: wrap; gap: 24px;
+}
+.hp-stat-item { text-align: center; }
+.hp-stat-val { font-size: 2rem; font-weight: 950; color: var(--red); line-height: 1; }
+.hp-stat-lbl { font-size: .78rem; font-weight: 700; color: var(--muted); margin-top: 4px; }
+.hp-stat-sep { width: 1px; height: 44px; background: var(--line); }
+
+/* ══════════════════════════════════════════════════════════
+   3 · FEATURES GRID
+══════════════════════════════════════════════════════════ */
+.hp-feat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.hp-feat-card {
+  background: #fff; border: 1px solid var(--line);
+  border-radius: 18px; padding: 24px 22px;
+  transition: transform .22s, box-shadow .22s;
+  position: relative; overflow: hidden;
+}
+.hp-feat-card::before {
+  content:""; position:absolute; top:-30px; right:-30px;
+  width:80px; height:80px; border-radius:50%;
+  background: rgba(225,29,72,.04);
+  transition: transform .3s;
+}
+.hp-feat-card:hover { transform: translateY(-6px); box-shadow: 0 22px 56px rgba(15,23,42,.1); }
+.hp-feat-card:hover::before { transform: scale(2.4); }
+
+.hp-feat-card .fc-icon { margin-bottom: 16px; }
+.hp-feat-card h3 { font-size: .95rem; font-weight: 900; margin: 0 0 8px; color: var(--ink); }
+.hp-feat-card p { font-size: .82rem; color: var(--muted); line-height: 1.7; margin: 0 0 12px; }
+.hp-feat-card ul {
+  list-style: none; margin: 0; padding: 0; display: grid; gap: 5px;
+}
+.hp-feat-card ul li {
+  font-size: .78rem; color: var(--muted); display: flex;
+  align-items: flex-start; gap: 7px; line-height: 1.5;
+}
+.hp-feat-card ul li::before {
+  content:"✓"; color: var(--green); font-weight: 900;
+  font-size: .74rem; flex-shrink: 0; margin-top: 1px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   4 · HOW IT WORKS
+══════════════════════════════════════════════════════════ */
+.hp-steps {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 0;
+  position: relative;
+}
+.hp-steps::before {
+  content:""; position:absolute; top: 38px; left: calc(12.5% + 2px);
+  width: calc(75% - 4px); height: 2px;
+  background: linear-gradient(90deg, var(--red), var(--violet));
+  border-radius: 99px; z-index: 0;
+}
+.hp-step { text-align: center; padding: 0 20px; position: relative; z-index: 1; }
+.hp-step-num {
+  width: 76px; height: 76px; border-radius: 50%; margin: 0 auto 20px;
+  display: grid; place-items: center;
+  font-size: 1.4rem; font-weight: 950; color: #fff;
+  background: linear-gradient(135deg, var(--red), var(--red-dk));
+  box-shadow: 0 18px 40px rgba(225,29,72,.3);
+  border: 4px solid #fff;
+}
+.hp-step h4 { font-size: .95rem; font-weight: 900; margin: 0 0 8px; color: var(--ink); }
+.hp-step p { font-size: .82rem; color: var(--muted); line-height: 1.7; margin: 0; }
+
+/* ══════════════════════════════════════════════════════════
+   5 · DEVICES SECTION
+══════════════════════════════════════════════════════════ */
+.hp-devices-grid {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 16px;
+}
+.hp-device-card {
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px; padding: 24px 20px; text-align: center;
+  transition: background .2s, transform .2s;
+}
+.hp-device-card:hover { background: rgba(255,255,255,.12); transform: translateY(-4px); }
+.hp-device-card .dv-icon {
+  width: 58px; height: 58px; border-radius: 14px;
+  background: rgba(255,255,255,.1); display: grid; place-items: center;
+  margin: 0 auto 14px; font-size: 1.4rem; color: #fff;
+}
+.hp-device-card h4 { color: #fff; font-size: .9rem; font-weight: 800; margin: 0 0 6px; }
+.hp-device-card p { color: rgba(255,255,255,.58); font-size: .78rem; line-height: 1.6; margin: 0; }
+
+/* ══════════════════════════════════════════════════════════
+   6 · DASHBOARD PREVIEW (stat cards)
+══════════════════════════════════════════════════════════ */
+.hp-dash-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
+}
+.hp-dash-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 16px;
+  padding: 24px 22px; display: flex; gap: 16px; align-items: flex-start;
+  box-shadow: 0 6px 22px rgba(15,23,42,.06);
+  transition: transform .2s, box-shadow .2s;
+}
+.hp-dash-card:hover { transform: translateY(-4px); box-shadow: 0 18px 44px rgba(15,23,42,.1); }
+.hp-dash-card h4 { font-size: .88rem; font-weight: 900; margin: 0 0 4px; }
+.hp-dash-card p { font-size: .78rem; color: var(--muted); margin: 0; line-height: 1.6; }
+
+/* ══════════════════════════════════════════════════════════
+   7 · WHO CAN USE
+══════════════════════════════════════════════════════════ */
+.hp-who-grid {
+  display: grid; grid-template-columns: repeat(5,1fr); gap: 14px;
+}
+.hp-who-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 16px;
+  padding: 24px 16px; text-align: center;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+.hp-who-card:hover { transform: translateY(-5px); box-shadow: 0 18px 44px rgba(15,23,42,.1); border-color: rgba(225,29,72,.25); }
+.hp-who-card .wc-icon {
+  width: 54px; height: 54px; border-radius: 14px; margin: 0 auto 14px;
+  display: grid; place-items: center; font-size: 1.3rem;
+}
+.hp-who-card h4 { font-size: .88rem; font-weight: 900; margin: 0; color: var(--ink); }
+
+/* ══════════════════════════════════════════════════════════
+   8 · BENEFITS
+══════════════════════════════════════════════════════════ */
+.hp-benefits-grid {
+  display: grid; grid-template-columns: repeat(2,1fr); gap: 16px;
+}
+.hp-benefit-item {
+  display: flex; gap: 16px; align-items: flex-start;
+  background: #fff; border: 1px solid var(--line);
+  border-radius: 14px; padding: 22px;
+  transition: box-shadow .2s, transform .2s;
+}
+.hp-benefit-item:hover { transform: translateY(-3px); box-shadow: 0 14px 36px rgba(15,23,42,.09); }
+.hp-benefit-item h4 { font-size: .92rem; font-weight: 900; margin: 0 0 5px; }
+.hp-benefit-item p { font-size: .8rem; color: var(--muted); margin: 0; line-height: 1.7; }
+
+/* ══════════════════════════════════════════════════════════
+   9 · FINAL CTA
+══════════════════════════════════════════════════════════ */
+.hp-cta {
+  background:
+    linear-gradient(105deg, rgba(10,17,36,.96) 0%, rgba(10,17,36,.84) 100%),
+    url("{% static 'res/payroll.png' %}") center/cover no-repeat;
+  padding: 88px 0; color: #fff;
+}
+.hp-cta-inner {
+  max-width: 840px; margin: 0 auto; text-align: center;
+}
+.hp-cta-inner h2 {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 950; line-height: 1.08; letter-spacing: -.04em;
+  margin: 16px 0 14px;
+}
+.hp-cta-inner p { color: rgba(255,255,255,.72); font-size: 1rem; line-height: 1.8; margin-bottom: 32px; }
+.hp-cta-btns { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width:1199px) {
+  .hp-feat-grid { grid-template-columns: repeat(3,1fr); }
+  .hp-who-grid  { grid-template-columns: repeat(4,1fr); }
+}
+@media (max-width:991px) {
+  .hp-sec { padding: 68px 0; }
+  .hp-feat-grid   { grid-template-columns: repeat(2,1fr); }
+  .hp-steps       { grid-template-columns: repeat(2,1fr); gap:28px; }
+  .hp-steps::before { display:none; }
+  .hp-devices-grid { grid-template-columns: repeat(2,1fr); }
+  .hp-dash-grid   { grid-template-columns: repeat(2,1fr); }
+  .hp-who-grid    { grid-template-columns: repeat(3,1fr); }
+  .hp-benefits-grid{ grid-template-columns: 1fr; }
+  .hp-hero        { min-height: auto; padding: 72px 0 60px; }
+}
+@media (max-width:767px) {
+  .hp-feat-grid   { grid-template-columns: 1fr; }
+  .hp-devices-grid { grid-template-columns: 1fr 1fr; }
+  .hp-who-grid    { grid-template-columns: repeat(2,1fr); }
+  .hp-dash-grid   { grid-template-columns: 1fr; }
+  .hp-stats-inner .hp-stat-sep { display:none; }
+  .hp-login-card  { margin: 0 auto; }
+}
+@media (max-width:575px) {
+  .hp-h1 { font-size: 2.2rem; }
+  .hp-hero-btns .hp-btn { width: 100%; justify-content: center; }
+  .hp-who-grid    { grid-template-columns: 1fr 1fr; }
+  .hp-steps       { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock extra_css %}
+
 {% block content %}
-    <style>
-    .loader{
-      display: none;
-    }
+<div class="hp">
 
-   
-  </style>
+<!-- ══════════════════════════════════════════════
+     HERO
+══════════════════════════════════════════════ -->
+<section class="hp-hero">
+  <div class="container" style="position:relative;z-index:1;">
+    <div class="row g-5 align-items-center">
 
-    <div class="container-fluid p-0 m-0" id="background">
-       
-        <div class="row p-0 m-0">
-            <div class="col-lg-12 col-12 col-md-12 ">
-                <div class="mt-4">
-                  <div class="row m-0 p-0">
-                    <div class="col-12 col-lg-6 mt-3 text-center">
-                      <h5 class="text-center">Mero <b> <span style="color: red;">Attendance</span></b></h5>
-                      <br>
-                      <img class="m-auto" id="topside" src="{%static 'res/topside.gif'%}" alt="">
-                  
-                      <h1 class="font-line text-center mt-3">
-                        Save Paper, Time And
-                      </h1>
-                      <h1 class="font-line text-danger text-center">
-                        Save Money <i class="fa fa-money"></i>
-                      </h1>
-                      <br>
-                      <p class="font-below text-dark text-center">
-                        Allow meroattendance to take care your headach
-                      </p>
-    
-                      <button class="btn btn-lg btn-danger mt-3 mb-5 text-center">
-                        Learn More
-                      </button>
-                      <br>
-                
-                    </div>
-                    <div class="col-lg-6 col-md-6 col-12 my-auto">
-                      <div class="form-design">
-                        <div class="d-grid gap-2 p-3 ">
-                          <a href="{%url 'management:askVerify'%}" class="d-block">
-                              <button type="submit" class="btn btn-outline-info w-100" type="button" onclick="showload()">Ask For Leave</button>
-                          </a>
-                        </div>
-                        {% for i in messages  %}
-                        <div class="alert alert-light alert-dismissible fade show" role="alert">
-                            {{i}}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                        {% endfor %}
-                      <div class="loader text-center" id="loader">
-                          <div class="spinner-grow text-success" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                          </div>
-                          <div class="spinner-grow text-danger" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                          </div>
-                          <div class="spinner-grow text-warning" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                          </div>
-                          <div class="spinner-grow text-info" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                          </div>
-                          <div class="spinner-grow text-light" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                          </div>
-                      </div>
-                      <form action="" method="post" class="login-form p-3">
-                          <h2 class="text-center">Welcome<b> <span style="color: red;">Back</span></b></h2>
-                          <div class="p-0 m-0 text-center">
-                            <small>Digital Attendance Nepal</small>
-                          </div>
-                          <p class="ms-1">{{form.email.label_tag}}</p>
-                          
-                          {{form.email}}
-                          <br>
-                          <p class="ms-1">
-                            {{form.password.label_tag}}
-                          </p>
-                          
-                          {{form.password}}
-                          {% csrf_token %}
-                          <br><br>
-
-                          <div class="d-grid gap-2">
-                              <button type="submit" class="btn btn-outline-danger" type="button" onclick="showload()">Login</button>
-                          </div>
-                          
-                          <p class="text-center">
-                              <a href="{%url 'management:password_reset'%}">
-                                  Forget Password?
-                              </a>
-                          </p>
-                       
-                          <p class="text-center m-0 p-0 mt-4">
-                              All Right Reserve
-                          </p>
-
-                          <p class="text-center m-0 p-0">@copy WakeandTechNepal</p>
-                      </form>
-                      </div>
-                        
-                    </div>
-                    
-                  </div>
-                </div>
-            </div>
-
-        </div>
-        <br><br><br>
-        
-    </div>
-    <div class="container-fluid m-0 p-5" id="serviceDiv">
-      <h2 class="text-light p-2">
-        Our Service
-      </h2><br>
-      <small class="text-light p-2">
-        Being a Nepal's First online cloud attendance system we are proud to present you mero attendance
-      </small>
-      <br>
-      <br>
-      <div class="row p-0 m-0">
-        <div class="col-12 col-lg-4 mt-3">
-            <div class="serviceBox">
-                <img src="{% static 'res/attendance.png' %}" alt="Easy Attendance">
-                <h6 class="text-success mt-2">
-                    Easy Attendance
-                </h6>
-                <small class="text-light mt-2">
-                    Our Easy Attendance system simplifies the process of tracking employee attendance, providing real-time updates, and reducing administrative tasks. With features like automated clock-in/out and leave management, it ensures accurate attendance records and enhances productivity.
-                </small>
-            </div>
-        </div>
-    
-        <div class="col-12 col-lg-4 mt-3">
-            <div class="serviceBox">
-                <img src="{% static 'res/payroll.png' %}" alt="Payroll System">
-                <h6 class="text-success mt-2">
-                    Payroll System
-                </h6>
-                <small class="text-light mt-2">
-                    Our Payroll System ensures timely and accurate payroll processing, handling everything from salary calculations and tax deductions to direct deposits. It is designed to comply with all legal requirements and reduce the risk of errors, ensuring employees are paid correctly and on time.
-                </small>
-            </div>
-        </div>
-    
-        <div class="col-12 col-lg-4 mt-3">
-            <div class="serviceBox">
-                <img src="{% static 'res/payslip.png' %}" alt="Report and Payslip">
-                <h6 class="text-success mt-2">
-                    Report and Payslip
-                </h6>
-                <small class="text-light mt-2">
-                    Our Report and Payslip feature offers comprehensive reporting tools to help manage your business's financial health. Generate detailed payslips, view expense reports, and analyze financial data to make informed decisions. This feature provides transparency and accuracy, enhancing financial management.
-                </small>
-            </div>
-        </div>
-    </div>
-    
-      <br><br>
-    </div>
-    <div class="container-fluid m-0 p-0" id="aboutDiv">
-      
-      <div class="row p-0 m-0">
-        <div class="col-12 col-lg-6 p-0 m-0">
-          <img id="sidebanner" src="{%static 'res/image.png'%}" alt="mero attendance">
+      <!-- Left: headline + CTA -->
+      <div class="col-lg-6">
+        <div class="hp-kicker">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span data-i18n="hero.kicker">Nepal's #1 Cloud Attendance & HRMS Platform</span>
         </div>
 
-        <div class="col-12 col-lg-6 p-0 m-0">
-          <div class="serviceBox1 p-4" id="sidebanner1">
-            <h5 class="text-light">Mero <b> <span style="color: red;">Attendance</span></b></h5>
-            <br> <br>
-            <h1 class="front-line text-light">
-              Book Your Demo
-            </h1>
-            <h1 class="text-success">
-              Right Now
-            </h1>
-            <br>
-            <br>
-            <a href="{%url 'management:contact'%}">
-              <button class="btn btn-success btn-lg">
-                Book Demo
-              </button>
-            </a>
-           
-            <br><br><br>
-            <div class="text-light">
-              <i class="fa-brands fa-facebook p-2"></i>
-              <i class="fa-brands fa-instagram p-2"></i>
-              <i class="fa-brands fa-weibo p-2"></i>
+        <h1 class="hp-h1">
+          <span data-i18n="hero.h1.1">Smart Attendance,</span><br>
+          <span data-i18n="hero.h1.2" style="color:#fb7185;">HRMS, Payroll</span> &<br>
+          <span data-i18n="hero.h1.3">School Management</span>
+        </h1>
+
+        <p class="hp-hero-sub" data-i18n="hero.sub">
+          A complete cloud platform for schools, colleges, offices, institutes and multi-branch
+          organizations — from daily attendance to payroll, billing and results in one dashboard.
+        </p>
+
+        <div class="hp-hero-btns">
+          <a href="{% url 'management:contact' %}" class="hp-btn hp-btn-red">
+            <i class="fa-solid fa-calendar-check"></i> <span data-i18n="hero.btn.demo">Request Demo</span>
+          </a>
+          <a href="{% url 'management:pricing' %}" class="hp-btn hp-btn-white">
+            <i class="fa-solid fa-tags"></i> <span data-i18n="hero.btn.pricing">View Pricing</span>
+          </a>
+          <a href="#features" class="hp-btn hp-btn-ghost">
+            <i class="fa-solid fa-layer-group"></i> <span data-i18n="hero.btn.features">All Features</span>
+          </a>
+        </div>
+
+        <div class="hp-trust">
+          <div class="hp-trust-badge"><i class="fa-solid fa-check-circle"></i> <span data-i18n="hero.trust.cloud">Cloud Based</span></div>
+          <div class="hp-trust-badge"><i class="fa-solid fa-check-circle"></i> <span data-i18n="hero.trust.bio">Biometric Ready</span></div>
+          <div class="hp-trust-badge"><i class="fa-solid fa-check-circle"></i> <span data-i18n="hero.trust.payroll">Payroll Automation</span></div>
+          <div class="hp-trust-badge"><i class="fa-solid fa-check-circle"></i> <span data-i18n="hero.trust.branch">Multi-Branch</span></div>
+          <div class="hp-trust-badge"><i class="fa-solid fa-check-circle"></i> <span data-i18n="hero.trust.cal">Nepali Calendar</span></div>
+        </div>
+      </div>
+
+      <!-- Right: Login form -->
+      <div class="col-lg-6 d-flex justify-content-end">
+        <div class="hp-login-card" id="login-form">
+          <div class="lc-head">
+            <div class="lc-title" data-i18n="login.title">Welcome Back</div>
+            <div class="lc-sub" data-i18n="login.sub">Sign in to your organization dashboard</div>
+          </div>
+
+          {% for i in messages %}
+          <div class="alert alert-info alert-dismissible fade show mb-3" role="alert" style="border-radius:10px;font-size:.84rem;">
+            {{ i }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          {% endfor %}
+
+          <div class="loader text-center mb-3" id="loader">
+            <div class="spinner-grow text-danger" style="width:.7rem;height:.7rem;" role="status"></div>
+            <div class="spinner-grow text-success" style="width:.7rem;height:.7rem;" role="status"></div>
+            <div class="spinner-grow text-warning" style="width:.7rem;height:.7rem;" role="status"></div>
+          </div>
+
+          <form action="" method="post" onsubmit="document.getElementById('loader').style.display='block'">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="lc-field-label">{{ form.email.label }}</label>
+              {{ form.email }}
             </div>
+            <div class="mb-4">
+              <label class="lc-field-label">{{ form.password.label }}</label>
+              {{ form.password }}
+            </div>
+            <button type="submit" class="lc-btn">
+              <i class="fa-solid fa-right-to-bracket me-2"></i>Login to Dashboard
+            </button>
+          </form>
+
+          <div class="lc-divider">or</div>
+          <a href="{% url 'management:askVerify' %}" class="lc-alt-btn">
+            <i class="fa-solid fa-file-circle-check me-1"></i> Apply for Leave / Verify Leave
+          </a>
+          <div class="lc-forgot">
+            <a href="{% url 'management:password_reset' %}">Forgot password?</a>
+            &nbsp;&bull;&nbsp;
+            <a href="{% url 'management:contact' %}" style="color:var(--red);">Request demo access</a>
           </div>
         </div>
-
-       
       </div>
-      <br><br>
-    </div>
-   <br><br>
-    <div class="container-fluid mt-3" >
-      
-      <div class="row p-0 m-0">
-        <div class="col-12 col-lg-4 mt-3">
-            <div class="infoBox">
-                <img src="{% static 'res/paper.png' %}" alt="Save Paper and Time">
-                <h3 class="mt-3">
-                    Save Paper and Time
-                </h3>
-                <p class="mt-3 text-black-50">
-                    Our digital solutions help you eliminate the need for paper-based processes, saving both time and resources. By transitioning to a digital platform, you can reduce paperwork, streamline operations, and contribute to environmental sustainability.
-                </p>
-            </div>
-        </div>
-    
-        <div class="col-12 col-lg-4 mt-3">
-            <div class="infoBox">
-                <img src="{% static 'res/right.png' %}" alt="Get True Data">
-                <h3 class="mt-3">
-                    Get True Data
-                </h3>
-                <p class="mt-3 text-black-50">
-                    Our system ensures the accuracy and reliability of your data. With real-time updates and robust data validation processes, you can trust that the information you receive is correct, enabling better decision-making and strategic planning.
-                </p>
-            </div>
-        </div>
-    
-        <div class="col-12 col-lg-4 mt-3">
-            <div class="infoBox">
-                <img src="{% static 'res/click.png' %}" alt="One Click Report">
-                <h3 class="mt-3">
-                    One Click Report
-                </h3>
-                <p class="mt-3 text-black-50">
-                    Generate comprehensive reports with just a single click. Our intuitive reporting tools allow you to quickly access and analyze data, providing valuable insights into your operations without the hassle of manual report creation.
-                </p>
-            </div>
-        </div>
-    </div>
-    
-      <br><br>
-    </div>
 
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     STATS BAND
+══════════════════════════════════════════════ -->
+<div class="hp-stats-band">
+  <div class="container">
+    <div class="hp-stats-inner">
+      <div class="hp-stat-item"><div class="hp-stat-val">17+</div><div class="hp-stat-lbl" data-i18n="stats.modules_lbl">System Modules</div></div>
+      <div class="hp-stat-sep"></div>
+      <div class="hp-stat-item"><div class="hp-stat-val">5</div><div class="hp-stat-lbl" data-i18n="stats.methods_lbl">Attendance Methods</div></div>
+      <div class="hp-stat-sep"></div>
+      <div class="hp-stat-item"><div class="hp-stat-val">100%</div><div class="hp-stat-lbl" data-i18n="stats.cloud_lbl">Cloud Based</div></div>
+      <div class="hp-stat-sep"></div>
+      <div class="hp-stat-item"><div class="hp-stat-val">Multi</div><div class="hp-stat-lbl" data-i18n="stats.branch_lbl">Branch Support</div></div>
+      <div class="hp-stat-sep"></div>
+      <div class="hp-stat-item"><div class="hp-stat-val">BS/AD</div><div class="hp-stat-lbl" data-i18n="stats.cal_lbl">Nepali Calendar Support</div></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     FEATURES
+══════════════════════════════════════════════ -->
+<section class="hp-sec" id="features">
+  <div class="container">
+    <div class="hp-sec-head ctr">
+      <div class="hp-badge hp-badge-red"><i class="fa-solid fa-layer-group"></i> <span data-i18n="sec.feat.badge">Full Feature Set</span></div>
+      <h2 class="hp-h2" data-i18n="sec.feat.h2">Everything your organization needs, in one system</h2>
+      <p class="hp-lead" data-i18n="sec.feat.lead">
+        From the first attendance check-in to monthly salary processing, student billing and result publishing —
+        Mero Attendance covers every workflow without spreadsheets or disconnected tools.
+      </p>
+    </div>
+    <div class="hp-feat-grid">
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-red"><i class="fa-solid fa-user-check"></i></div>
+        <h3 data-i18n="feat.attendance.title">Attendance Management</h3>
+        <p data-i18n="feat.attendance.desc">Track daily attendance across all methods with real-time data and auto late detection.</p>
+        <ul>
+          <li>QR code mobile scan</li>
+          <li>GPS / geo-fence check-in</li>
+          <li>WiFi-based auto check-in</li>
+          <li>Biometric device sync (ZKTeco, Hikvision)</li>
+          <li>Manual attendance roster</li>
+          <li>Shift-based late & early detection</li>
+          <li>Daily gap & absent report</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-blue"><i class="fa-solid fa-people-roof"></i></div>
+        <h3 data-i18n="feat.hrms.title">HRMS & Staff Management</h3>
+        <p data-i18n="feat.hrms.desc">Manage your entire workforce with records, documents, roles and operational workflows.</p>
+        <ul>
+          <li>Staff & employee profiles</li>
+          <li>Department / branch assignment</li>
+          <li>Roles and permission control</li>
+          <li>Probation review workflow</li>
+          <li>Resignation with clearance</li>
+          <li>Staff document store</li>
+          <li>Complaint management</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-green"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+        <h3 data-i18n="feat.payroll.title">Payroll & Salary</h3>
+        <p data-i18n="feat.payroll.desc">Auto-generate salary sheets from attendance and produce printable payslips in minutes.</p>
+        <ul>
+          <li>Attendance-linked salary sheet</li>
+          <li>Payslip generation & print</li>
+          <li>PF, SSF, TDS calculation</li>
+          <li>Allowances & bonus</li>
+          <li>Deductions & advance salary</li>
+          <li>Bulk payroll run</li>
+          <li>Payroll settings per policy</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-violet"><i class="fa-solid fa-calendar-xmark"></i></div>
+        <h3 data-i18n="feat.leave.title">Leave Management</h3>
+        <p data-i18n="feat.leave.desc">Handle all leave types, approvals and annual quotas with a full leave audit trail.</p>
+        <ul>
+          <li>Leave type configuration</li>
+          <li>Annual leave quota per staff</li>
+          <li>Paid / unpaid leave</li>
+          <li>Leave request & approval flow</li>
+          <li>Leave history per employee</li>
+          <li>Leave impact on salary</li>
+          <li>Self-service leave apply</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-amber"><i class="fa-solid fa-user-graduate"></i></div>
+        <h3 data-i18n="feat.student.title">Student & Member Management</h3>
+        <p data-i18n="feat.student.desc">Complete student/member profiles with guardian info, course assignment and status tracking.</p>
+        <ul>
+          <li>Student / member profiles</li>
+          <li>Guardian name, phone & email</li>
+          <li>Classification & section</li>
+          <li>Course / subject assignment</li>
+          <li>Admission date & roll number</li>
+          <li>Active / inactive / passed status</li>
+          <li>Billing type per student</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-teal"><i class="fa-solid fa-graduation-cap"></i></div>
+        <h3 data-i18n="feat.result.title">Course & Result Management</h3>
+        <p data-i18n="feat.result.desc">Set up courses, enter marks in bulk, publish results and send marksheets to guardians.</p>
+        <ul>
+          <li>Course & subject setup</li>
+          <li>Classification-wise subject list</li>
+          <li>Exam term management</li>
+          <li>Bulk marks entry per class</li>
+          <li>Auto grade (A+ to NG)</li>
+          <li>Result publish & marksheet</li>
+          <li>Bulk result send to guardians</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-rose"><i class="fa-solid fa-receipt"></i></div>
+        <h3 data-i18n="feat.billing.title">Billing & Fee Collection</h3>
+        <p data-i18n="feat.billing.desc">Generate bulk bills per class with scholarship, discount and email delivery.</p>
+        <ul>
+          <li>Monthly / course-wise / custom billing</li>
+          <li>Scholarship & discount per student</li>
+          <li>Bulk bill generation per class</li>
+          <li>Email & PDF bill delivery</li>
+          <li>Partial & full payment tracking</li>
+          <li>Previous due rollover</li>
+          <li>Bill send log & history</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-cyan"><i class="fa-solid fa-boxes-stacked"></i></div>
+        <h3 data-i18n="feat.stock.title">Stock & Inventory</h3>
+        <p data-i18n="feat.stock.desc">Track stock items, movements and event usage with low-stock alerts.</p>
+        <ul>
+          <li>Item & category management</li>
+          <li>Stock in / stock out flow</li>
+          <li>Low stock alerts</li>
+          <li>Supplier & purchase tracking</li>
+          <li>Event stock usage</li>
+          <li>Stock movement history</li>
+          <li>Inventory report & export</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-pink"><i class="fa-solid fa-chart-line"></i></div>
+        <h3 data-i18n="feat.finance.title">Income & Expense (Finance)</h3>
+        <p data-i18n="feat.finance.desc">Track all organizational income and expenses with category-level finance dashboards.</p>
+        <ul>
+          <li>Income & expense records</li>
+          <li>Branch-wise finance view</li>
+          <li>Transaction categories</li>
+          <li>Payment method tracking</li>
+          <li>Finance dashboard & chart</li>
+          <li>Student fee integration</li>
+          <li>Excel export</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-orange"><i class="fa-solid fa-calendar-days"></i></div>
+        <h3 data-i18n="feat.events.title">Events & Calendar</h3>
+        <p data-i18n="feat.events.desc">Plan and manage school/office events, holidays and occasions with stock usage tracking.</p>
+        <ul>
+          <li>Event creation & management</li>
+          <li>Event types (exam, holiday, sports…)</li>
+          <li>Responsible staff assignment</li>
+          <li>Stock usage per event</li>
+          <li>Unified calendar view</li>
+          <li>Holiday & occasion log</li>
+          <li>Appointment scheduling</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-slate"><i class="fa-solid fa-list-check"></i></div>
+        <h3 data-i18n="feat.tasks.title">Task Management</h3>
+        <p data-i18n="feat.tasks.desc">Assign recurring or one-time tasks to staff with approval and proof workflows.</p>
+        <ul>
+          <li>One-time & recurring tasks</li>
+          <li>Assign to individuals or teams</li>
+          <li>Proof attachment upload</li>
+          <li>Approval & rejection flow</li>
+          <li>Reason for incomplete tasks</li>
+          <li>Task dashboard & summary</li>
+          <li>Overdue alert</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-lime"><i class="fa-solid fa-book-open"></i></div>
+        <h3 data-i18n="feat.study.title">Study Gap / Teaching Log</h3>
+        <p data-i18n="feat.study.desc">Let teachers record daily topics; absent students can catch up on missed lessons.</p>
+        <ul>
+          <li>Daily topic entry by teacher</li>
+          <li>Subject-wise lesson log</li>
+          <li>Gap tracking per student</li>
+          <li>Student view of missed lessons</li>
+          <li>Classification-wise report</li>
+          <li>Teaching progress overview</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h3 data-i18n="feat.complaint.title">Complaint & Request System</h3>
+        <p data-i18n="feat.complaint.desc">Staff and students can file complaints; admins review and resolve with status tracking.</p>
+        <ul>
+          <li>Complaint filing by staff/student</li>
+          <li>Admin review dashboard</li>
+          <li>Status: open / in-progress / resolved</li>
+          <li>Comment & response thread</li>
+          <li>Complaint history log</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-blue"><i class="fa-solid fa-file-export"></i></div>
+        <h3 data-i18n="feat.reports.title">Reports & Analytics</h3>
+        <p data-i18n="feat.reports.desc">Comprehensive reports across all modules — exportable, printable and date-filtered.</p>
+        <ul>
+          <li>Daily & monthly attendance report</li>
+          <li>Payroll & payslip export</li>
+          <li>Leave & gap report</li>
+          <li>Student result report</li>
+          <li>Finance & stock report</li>
+          <li>Task & event summary</li>
+          <li>Bulk Excel / PDF export</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-violet"><i class="fa-solid fa-shield-halved"></i></div>
+        <h3 data-i18n="feat.dashboard.title">Staff Dashboard & Roles</h3>
+        <p data-i18n="feat.dashboard.desc">Role-based personalized dashboards for admins, HR, teachers, accountants and staff.</p>
+        <ul>
+          <li>Role-based access control</li>
+          <li>Permission-based module access</li>
+          <li>Personalized staff dashboard</li>
+          <li>Student/member self-service view</li>
+          <li>Multi-admin support</li>
+          <li>Action audit trail</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-green"><i class="fa-solid fa-building-columns"></i></div>
+        <h3 data-i18n="feat.branch.title">Multi-Branch Organization</h3>
+        <p data-i18n="feat.branch.desc">Manage multiple branches, campuses or locations from one central admin panel.</p>
+        <ul>
+          <li>Branch creation & management</li>
+          <li>Branch-wise staff & attendance</li>
+          <li>Branch-wise finance & stock</li>
+          <li>Consolidated reporting</li>
+          <li>Branch admin delegation</li>
+          <li>Nepali (BS) & English (AD) calendar</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     HOW IT WORKS
+══════════════════════════════════════════════ -->
+<section class="hp-sec hp-sec-soft">
+  <div class="container">
+    <div class="hp-sec-head ctr">
+      <div class="hp-badge hp-badge-blue"><i class="fa-solid fa-route"></i> <span data-i18n="sec.steps.badge">Getting Started</span></div>
+      <h2 class="hp-h2" data-i18n="sec.steps.h2">Up and running in 4 simple steps</h2>
+      <p class="hp-lead" data-i18n="sec.steps.lead">
+        No complex setup. No IT team needed. Create your organization, add your people,
+        connect your attendance method and go live — same day.
+      </p>
+    </div>
+    <div class="hp-steps">
+      <div class="hp-step">
+        <div class="hp-step-num">1</div>
+        <h4 data-i18n="step.1.title">Create Organization</h4>
+        <p data-i18n="step.1.desc">Register your school, office, institute or company. Set calendar type, branches and admin roles.</p>
+      </div>
+      <div class="hp-step">
+        <div class="hp-step-num">2</div>
+        <h4 data-i18n="step.2.title">Add Staff & Members</h4>
+        <p data-i18n="step.2.desc">Import or add employees, students and members with profiles, departments and billing setup.</p>
+      </div>
+      <div class="hp-step">
+        <div class="hp-step-num">3</div>
+        <h4 data-i18n="step.3.title">Connect Attendance</h4>
+        <p data-i18n="step.3.desc">Choose QR, GPS, WiFi, manual or biometric device. Install the Puller to sync device data.</p>
+      </div>
+      <div class="hp-step">
+        <div class="hp-step-num">4</div>
+        <h4 data-i18n="step.4.title">Manage & Report</h4>
+        <p data-i18n="step.4.desc">Run payroll, send bills, publish results, track leave and export every report in one click.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     DEVICE & ATTENDANCE METHODS
+══════════════════════════════════════════════ -->
+<section class="hp-sec hp-sec-dark">
+  <div class="container">
+    <div class="hp-sec-head ctr">
+      <div class="hp-badge hp-badge-white"><i class="fa-solid fa-fingerprint"></i> <span data-i18n="sec.dev.badge">Device Support</span></div>
+      <h2 class="hp-h2 hp-h2-white" data-i18n="sec.dev.h2">Works with every attendance method</h2>
+      <p class="hp-lead hp-lead-white" style="margin:0 auto;" data-i18n="sec.dev.lead">
+        Mero Attendance supports all major attendance methods — physical devices or pure mobile/web.
+        Mix methods per branch or department.
+      </p>
+    </div>
+    <div class="hp-devices-grid">
+
+      <div class="hp-device-card">
+        <div class="dv-icon"><i class="fa-solid fa-fingerprint"></i></div>
+        <h4 data-i18n="dev.zkteco.title">ZKTeco Biometric</h4>
+        <p data-i18n="dev.zkteco.desc">Sync fingerprint/face attendance from ZKTeco devices via the Puller app.</p>
+      </div>
+      <div class="hp-device-card">
+        <div class="dv-icon"><i class="fa-solid fa-camera"></i></div>
+        <h4 data-i18n="dev.hikvision.title">Hikvision Device</h4>
+        <p data-i18n="dev.hikvision.desc">Pull attendance records from Hikvision face recognition devices.</p>
+      </div>
+      <div class="hp-device-card">
+        <div class="dv-icon"><i class="fa-solid fa-id-card"></i></div>
+        <h4 data-i18n="dev.rfid.title">RFID Card</h4>
+        <p data-i18n="dev.rfid.desc">Track attendance with RFID cards / QR roll numbers linked to member records.</p>
+      </div>
+      <div class="hp-device-card">
+        <div class="dv-icon"><i class="fa-solid fa-qrcode"></i></div>
+        <h4 data-i18n="dev.qr.title">QR Code Scan</h4>
+        <p data-i18n="dev.qr.desc">Staff or students scan a QR code via mobile browser — no app install needed.</p>
+      </div>
+      <div class="hp-device-card">
+        <div class="dv-icon"><i class="fa-solid fa-location-dot"></i></div>
+        <h4 data-i18n="dev.gps.title">GPS / Geo-Fence</h4>
+        <p data-i18n="dev.gps.desc">Check-in is validated against the organization's GPS location or allowed radius.</p>
+      </div>
+      <div class="hp-device-card">
+        <div class="dv-icon"><i class="fa-solid fa-wifi"></i></div>
+        <h4 data-i18n="dev.wifi.title">WiFi Auto Check-in</h4>
+        <p data-i18n="dev.wifi.desc">Attendance auto-marks when a member connects to the organization's WiFi network.</p>
+      </div>
+      <div class="hp-device-card">
+        <div class="dv-icon"><i class="fa-solid fa-table-list"></i></div>
+        <h4 data-i18n="dev.manual.title">Manual Roster</h4>
+        <p data-i18n="dev.manual.desc">Admins mark present/absent directly from the dashboard for any date or class.</p>
+      </div>
+      <div class="hp-device-card">
+        <div class="dv-icon"><i class="fa-solid fa-mobile-screen"></i></div>
+        <h4 data-i18n="dev.mobile.title">Mobile Web App</h4>
+        <p data-i18n="dev.mobile.desc">Responsive web dashboard works on any smartphone browser without installation.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     DASHBOARD PREVIEW (widgets)
+══════════════════════════════════════════════ -->
+<section class="hp-sec">
+  <div class="container">
+    <div class="hp-sec-head ctr">
+      <div class="hp-badge hp-badge-violet"><i class="fa-solid fa-gauge-high"></i> <span data-i18n="sec.dash.badge">Dashboard Preview</span></div>
+      <h2 class="hp-h2" data-i18n="sec.dash.h2">Everything visible from one dashboard</h2>
+      <p class="hp-lead" data-i18n="sec.dash.lead">
+        Admins see real-time attendance, payroll status, pending actions, stock alerts and financial
+        overview the moment they log in — no digging through menus.
+      </p>
+    </div>
+    <div class="hp-dash-grid">
+
+      <div class="hp-dash-card">
+        <div class="ic ic-red"><i class="fa-solid fa-user-check"></i></div>
+        <div><h4 data-i18n="dash.today.title">Today's Attendance</h4><p data-i18n="dash.today.desc">Present, absent, late and early-out counts for the day, updated in real time.</p></div>
+      </div>
+      <div class="hp-dash-card">
+        <div class="ic ic-green"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+        <div><h4 data-i18n="dash.payroll.title">Payroll Summary</h4><p data-i18n="dash.payroll.desc">Monthly salary status — processed, pending and total payable amount at a glance.</p></div>
+      </div>
+      <div class="hp-dash-card">
+        <div class="ic ic-blue"><i class="fa-solid fa-calendar-xmark"></i></div>
+        <div><h4 data-i18n="dash.leave.title">Leave Requests</h4><p data-i18n="dash.leave.desc">Pending leave approvals with quick approve/reject buttons for faster HR flow.</p></div>
+      </div>
+      <div class="hp-dash-card">
+        <div class="ic ic-amber"><i class="fa-solid fa-boxes-stacked"></i></div>
+        <div><h4 data-i18n="dash.stock.title">Stock Alerts</h4><p data-i18n="dash.stock.desc">Items below minimum stock threshold flagged for immediate restocking action.</p></div>
+      </div>
+      <div class="hp-dash-card">
+        <div class="ic ic-violet"><i class="fa-solid fa-list-check"></i></div>
+        <div><h4 data-i18n="dash.tasks.title">Pending Tasks</h4><p data-i18n="dash.tasks.desc">Outstanding staff tasks with status, due date and assigned member overview.</p></div>
+      </div>
+      <div class="hp-dash-card">
+        <div class="ic ic-teal"><i class="fa-solid fa-chart-pie"></i></div>
+        <div><h4 data-i18n="dash.finance.title">Income & Expense</h4><p data-i18n="dash.finance.desc">Monthly financial balance — total income vs. expense in a clean visual chart.</p></div>
+      </div>
+      <div class="hp-dash-card">
+        <div class="ic ic-rose"><i class="fa-solid fa-receipt"></i></div>
+        <div><h4 data-i18n="dash.billing.title">Billing Status</h4><p data-i18n="dash.billing.desc">Bills generated vs. sent, pending dues and total collection for the current month.</p></div>
+      </div>
+      <div class="hp-dash-card">
+        <div class="ic ic-cyan"><i class="fa-solid fa-calendar-days"></i></div>
+        <div><h4 data-i18n="dash.events.title">Upcoming Events</h4><p data-i18n="dash.events.desc">Scheduled events and holidays for the week with responsible staff and stock usage.</p></div>
+      </div>
+      <div class="hp-dash-card">
+        <div class="ic ic-lime"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div><h4 data-i18n="dash.results.title">Result & Exam Status</h4><p data-i18n="dash.results.desc">Exams pending marks entry, published results and marksheet send summary.</p></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     WHO CAN USE IT
+══════════════════════════════════════════════ -->
+<section class="hp-sec hp-sec-soft" id="who">
+  <div class="container">
+    <div class="hp-sec-head ctr">
+      <div class="hp-badge hp-badge-green"><i class="fa-solid fa-building"></i> <span data-i18n="sec.who.badge">Built For Everyone</span></div>
+      <h2 class="hp-h2" data-i18n="sec.who.h2">Designed for every type of organization</h2>
+      <p class="hp-lead" data-i18n="sec.who.lead">
+        Whether you run a single classroom or a multi-campus institution — Mero Attendance
+        adapts to your organization's size and structure.
+      </p>
+    </div>
+    <div class="hp-who-grid">
+
+      <div class="hp-who-card">
+        <div class="wc-icon ic-red"><i class="fa-solid fa-school"></i></div>
+        <h4 data-i18n="who.schools">Schools</h4>
+      </div>
+      <div class="hp-who-card">
+        <div class="wc-icon ic-blue"><i class="fa-solid fa-university"></i></div>
+        <h4 data-i18n="who.colleges">Colleges</h4>
+      </div>
+      <div class="hp-who-card">
+        <div class="wc-icon ic-green"><i class="fa-solid fa-graduation-cap"></i></div>
+        <h4 data-i18n="who.institutes">Institutes</h4>
+      </div>
+      <div class="hp-who-card">
+        <div class="wc-icon ic-violet"><i class="fa-solid fa-building"></i></div>
+        <h4 data-i18n="who.offices">Offices</h4>
+      </div>
+      <div class="hp-who-card">
+        <div class="wc-icon ic-amber"><i class="fa-solid fa-industry"></i></div>
+        <h4 data-i18n="who.factories">Factories</h4>
+      </div>
+      <div class="hp-who-card">
+        <div class="wc-icon ic-teal"><i class="fa-solid fa-handshake-angle"></i></div>
+        <h4 data-i18n="who.ngos">NGOs</h4>
+      </div>
+      <div class="hp-who-card">
+        <div class="wc-icon ic-cyan"><i class="fa-solid fa-building-columns"></i></div>
+        <h4 data-i18n="who.multi">Multi-Branch</h4>
+      </div>
+      <div class="hp-who-card">
+        <div class="wc-icon ic-rose"><i class="fa-solid fa-chalkboard-teacher"></i></div>
+        <h4 data-i18n="who.training">Training Centers</h4>
+      </div>
+      <div class="hp-who-card">
+        <div class="wc-icon ic-lime"><i class="fa-solid fa-bed"></i></div>
+        <h4 data-i18n="who.hostels">Hostels</h4>
+      </div>
+      <div class="hp-who-card">
+        <div class="wc-icon ic-slate"><i class="fa-solid fa-sitemap"></i></div>
+        <h4 data-i18n="who.any">Any Organization</h4>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     BENEFITS
+══════════════════════════════════════════════ -->
+<section class="hp-sec">
+  <div class="container">
+    <div class="hp-sec-head ctr">
+      <div class="hp-badge hp-badge-amber"><i class="fa-solid fa-bolt"></i> <span data-i18n="sec.ben.badge">Why Choose Us</span></div>
+      <h2 class="hp-h2" data-i18n="sec.ben.h2">Real benefits your team will feel every day</h2>
+    </div>
+    <div class="hp-benefits-grid">
+
+      <div class="hp-benefit-item">
+        <div class="ic ic-red"><i class="fa-solid fa-clock"></i></div>
+        <div>
+          <h4 data-i18n="ben.time.title">Saves Admin Time</h4>
+          <p data-i18n="ben.time.desc">Attendance, payroll, billing and results that used to take days now run in minutes with auto-generation.</p>
+        </div>
+      </div>
+      <div class="hp-benefit-item">
+        <div class="ic ic-green"><i class="fa-solid fa-shield-check"></i></div>
+        <div>
+          <h4 data-i18n="ben.errors.title">Eliminates Manual Errors</h4>
+          <p data-i18n="ben.errors.desc">Automated calculations for salary, grade, fee and attendance remove human errors from critical processes.</p>
+        </div>
+      </div>
+      <div class="hp-benefit-item">
+        <div class="ic ic-blue"><i class="fa-solid fa-chart-line"></i></div>
+        <div>
+          <h4 data-i18n="ben.reports.title">Real-Time Reports</h4>
+          <p data-i18n="ben.reports.desc">Attendance, payroll, finance and student data are always live — no waiting for month-end reconciliation.</p>
+        </div>
+      </div>
+      <div class="hp-benefit-item">
+        <div class="ic ic-violet"><i class="fa-solid fa-eye"></i></div>
+        <div>
+          <h4 data-i18n="ben.transparency.title">Full Transparency</h4>
+          <p data-i18n="ben.transparency.desc">Staff can see their own attendance, leave balance, payslip and results — reducing admin queries by half.</p>
+        </div>
+      </div>
+      <div class="hp-benefit-item">
+        <div class="ic ic-teal"><i class="fa-solid fa-calendar"></i></div>
+        <div>
+          <h4 data-i18n="ben.calendar.title">Nepali Calendar Support</h4>
+          <p data-i18n="ben.calendar.desc">Switch between Bikram Sambat (BS) and English calendar per organization preference — built for Nepal.</p>
+        </div>
+      </div>
+      <div class="hp-benefit-item">
+        <div class="ic ic-amber"><i class="fa-solid fa-mobile-screen"></i></div>
+        <div>
+          <h4 data-i18n="ben.mobile.title">Works on Any Device</h4>
+          <p data-i18n="ben.mobile.desc">Fully responsive dashboard that works on desktop, tablet and mobile — no app download required.</p>
+        </div>
+      </div>
+      <div class="hp-benefit-item">
+        <div class="ic ic-cyan"><i class="fa-solid fa-cloud"></i></div>
+        <div>
+          <h4 data-i18n="ben.cloud.title">Cloud Access, Always On</h4>
+          <p data-i18n="ben.cloud.desc">Data lives in the cloud — access from anywhere, anytime, with no server maintenance burden on your team.</p>
+        </div>
+      </div>
+      <div class="hp-benefit-item">
+        <div class="ic ic-lime"><i class="fa-solid fa-arrows-up-to-line"></i></div>
+        <div>
+          <h4 data-i18n="ben.scale.title">Scales with Your Organization</h4>
+          <p data-i18n="ben.scale.desc">Start with a single branch and 10 staff. Grow to 50 branches and 5,000 members without changing systems.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     FINAL CTA
+══════════════════════════════════════════════ -->
+<section class="hp-cta">
+  <div class="container">
+    <div class="hp-cta-inner">
+      <div class="hp-badge hp-badge-white" style="margin:0 auto 8px;"><i class="fa-solid fa-rocket"></i> <span data-i18n="cta.badge">Get Started Today</span></div>
+      <h2 data-i18n="cta.h2">Ready to manage your organization smarter?</h2>
+      <p data-i18n="cta.lead">
+        Book a free demo and see how Mero Attendance can replace spreadsheets, disconnected tools
+        and manual processes with one clean, powerful dashboard.
+      </p>
+      <div class="hp-cta-btns">
+        <a href="{% url 'management:contact' %}" class="hp-btn hp-btn-red">
+          <i class="fa-solid fa-calendar-check"></i> <span data-i18n="cta.btn.demo">Request Demo</span>
+        </a>
+        <a href="{% url 'management:pricing' %}" class="hp-btn hp-btn-white">
+          <i class="fa-solid fa-tags"></i> <span data-i18n="cta.btn.pricing">View Pricing</span>
+        </a>
+        <a href="{% url 'management:homepage' %}#login-form" class="hp-btn hp-btn-ghost">
+          <i class="fa-solid fa-right-to-bracket"></i> <span data-i18n="cta.btn.login">Login</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /.hp -->
+
+<script>
+/* Style the Django form inputs to match the login card design */
+(function(){
+  var inputs = document.querySelectorAll('.hp-login-card input[type=email], .hp-login-card input[type=password], .hp-login-card input[type=text]');
+  inputs.forEach(function(el){
+    el.classList.add('lc-input');
+    el.style.display = 'block';
+    el.style.marginBottom = '4px';
+  });
+})();
+</script>
 {% endblock content %}
-    

@@ -1,97 +1,490 @@
 {% extends 'dashboard.html' %}
-
-{% block title %}
-    Edit Member |Attendance Management System
-{% endblock title %}
-
+{% load static %}
+{% block title %}Edit — {{ mem.name }}{% endblock %}
 
 {% block content %}
-    <h6>Edit Memeber</h6>
-    <hr>
-    
-    {% for i in messages  %}
-    <div class="alert alert-light alert-dismissible fade show" role="alert">
-        {{i}}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% endfor %}
-    <div class="row">
-        <div class="col-12 col-md-4">
-            <div class="card p-5">
-                <div class="text-center">
-                    <h5>Id: {{mem.id}}</h5>
-                    <h5>Name: {{mem.name}}</h5>
-                    <p>Classification: {{mem.classification}}</p>
-                    <p>Card: {{mem.card}}</p>
-                    <p>Device Id: {{mem.device_id}}</p>
-                    <p>Email: {{mem.email}}</p>
-                    <p>Address: {{mem.address}}</p>
-                </div>
-                <div class="d-block">
-                    
-                        <button class="btn btn-danger btn-block" style="width: 100%;" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
-                            Delete
-                        </button>
-            
-                    <!-- Modal -->
-                    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-                        <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                            <h5 class="modal-title" id="staticBackdropLabel">Delete {{mem.name}}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                          
-                            </div>
-                            <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <a href="{%url 'handle:deleteMember' mem.id%}">
-                                <button type="button" class="btn btn-danger">Procced</button>
-                            </a>
-                            </div>
-                        </div>
-                        </div>
-                    </div>
-                </div>
-               
-                
-            </div>
+<style>
+:root {
+  --ink:#0f172a; --slate:#334155; --muted:#64748b;
+  --border:#e2e8f0; --bg:#f8fafc;
+  --indigo:#6366f1; --indigo-dk:#4f46e5; --indigo-lt:#eef2ff;
+  --green:#16a34a; --amber:#d97706; --rose:#e11d48;
+}
+.pg { background:var(--bg); min-height:100vh; padding:2rem; }
+
+/* profile sidebar */
+.profile-card {
+  background:#fff; border-radius:20px;
+  border:1px solid var(--border);
+  box-shadow:0 4px 20px rgba(0,0,0,.06);
+  overflow:hidden; position:sticky; top:1.5rem;
+}
+.profile-header {
+  background:linear-gradient(135deg,#312e81,#4f46e5,#6366f1);
+  padding:2rem 1.5rem 3.5rem; text-align:center; position:relative;
+}
+.avatar-ring {
+  width:80px; height:80px; border-radius:50%;
+  background:rgba(255,255,255,.2); border:3px solid rgba(255,255,255,.5);
+  display:flex; align-items:center; justify-content:center;
+  font-size:2rem; font-weight:900; color:#fff;
+  margin:0 auto .75rem; text-transform:uppercase;
+}
+.profile-name { color:#fff; font-size:1rem; font-weight:800; margin:0; }
+.profile-badge {
+  display:inline-block; margin-top:.4rem; padding:.2rem .75rem;
+  background:rgba(255,255,255,.2); color:#fff; border-radius:99px;
+  font-size:.72rem; font-weight:700;
+}
+.profile-body { padding:1.5rem; margin-top:-2rem; }
+.profile-chip {
+  background:#fff; border-radius:14px; border:1px solid var(--border);
+  padding:1rem 1.25rem; margin-bottom:.75rem;
+  box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.chip-label { font-size:.65rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+.chip-val { font-size:.88rem; font-weight:700; color:var(--ink); margin-top:.1rem; }
+.profile-meta { padding:0 1.25rem 1.25rem; }
+.meta-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:.6rem 0; border-bottom:1px solid #f1f5f9; font-size:.82rem;
+}
+.meta-row:last-child { border-bottom:none; }
+.meta-key { color:var(--muted); font-weight:600; }
+.meta-val { font-weight:700; color:var(--ink); text-align:right; }
+.btn-delete {
+  width:100%; margin:0 1.25rem; width:calc(100% - 2.5rem);
+  padding:.65rem; border-radius:10px; border:1.5px solid #fecdd3;
+  background:#fff9f9; color:var(--rose); font-size:.82rem; font-weight:700;
+  cursor:pointer; transition:all .15s; margin-bottom:1.25rem;
+}
+.btn-delete:hover { background:#ffe4e6; border-color:var(--rose); }
+
+/* form area */
+.form-card {
+  background:#fff; border-radius:20px;
+  border:1px solid var(--border);
+  box-shadow:0 4px 20px rgba(0,0,0,.06);
+  overflow:hidden;
+}
+
+/* section tabs */
+.sec-tabs {
+  display:flex; border-bottom:1px solid var(--border);
+  background:#fafbff; padding:.5rem .5rem 0; gap:.2rem; overflow-x:auto;
+}
+.sec-tab {
+  padding:.55rem 1rem; border:none; background:transparent;
+  border-radius:9px 9px 0 0; font-size:.8rem; font-weight:700;
+  color:var(--muted); cursor:pointer; transition:all .15s;
+  white-space:nowrap; border-bottom:2px solid transparent; margin-bottom:-1px;
+  display:flex; align-items:center; gap:.4rem;
+}
+.sec-tab:hover { color:var(--indigo); }
+.sec-tab.active { color:var(--indigo); background:#fff; border-bottom-color:var(--indigo); }
+.sec-tab i { font-size:.8rem; }
+
+.sec-pane { display:none; padding:2rem; }
+.sec-pane.active { display:block; }
+
+/* section headings within pane */
+.sub-hd {
+  display:flex; align-items:center; gap:.7rem;
+  margin-bottom:1.25rem; padding-bottom:.85rem; border-bottom:1px solid var(--border);
+}
+.sub-icon {
+  width:34px; height:34px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center; font-size:.8rem; flex-shrink:0;
+}
+.sub-icon.indigo { background:var(--indigo-lt); color:var(--indigo); }
+.sub-icon.green { background:#dcfce7; color:var(--green); }
+.sub-icon.amber { background:#fef3c7; color:var(--amber); }
+.sub-icon.rose { background:#ffe4e6; color:var(--rose); }
+.sub-title { font-size:.82rem; font-weight:800; color:var(--ink); margin:0; }
+.sub-sub { font-size:.72rem; color:var(--muted); margin:.1rem 0 0; }
+
+/* form controls */
+.f-label {
+  font-size:.7rem; font-weight:700; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.05em; margin-bottom:.35rem; display:block;
+}
+.pg input[type=text],.pg input[type=email],.pg input[type=number],
+.pg input[type=date],.pg input[type=time],.pg select,.pg textarea {
+  width:100%; border:1.5px solid var(--border); border-radius:10px;
+  padding:.65rem .95rem; font-size:.88rem; color:var(--ink);
+  background:#fff; outline:none; transition:border-color .15s,box-shadow .15s;
+  min-height:44px;
+}
+.pg input:focus,.pg select:focus,.pg textarea:focus {
+  border-color:var(--indigo); box-shadow:0 0 0 3px rgba(99,102,241,.1);
+}
+.pg select[multiple] { min-height:100px; padding:.5rem .75rem; }
+.wiz-prefix {
+  display:flex; align-items:stretch; border:1.5px solid var(--border);
+  border-radius:10px; overflow:hidden;
+}
+.wiz-prefix span {
+  padding:.65rem .85rem; background:#f8fafc; font-size:.82rem;
+  font-weight:700; color:var(--muted); border-right:1.5px solid var(--border);
+  display:flex; align-items:center;
+}
+.wiz-prefix input { border:none!important; border-radius:0!important; box-shadow:none!important; flex:1; }
+.wiz-suffix { display:flex; align-items:stretch; border:1.5px solid var(--border); border-radius:10px; overflow:hidden; }
+.wiz-suffix input { border:none!important; border-radius:0!important; box-shadow:none!important; flex:1; }
+.wiz-suffix span { padding:.65rem .85rem; background:#f8fafc; font-size:.82rem; font-weight:700; color:var(--muted); border-left:1.5px solid var(--border); display:flex; align-items:center; }
+
+/* toggle pills */
+.toggle-pills { display:flex; gap:.5rem; flex-wrap:wrap; }
+.toggle-pill input[type=checkbox] { display:none; }
+.toggle-pill label {
+  padding:.38rem .9rem; border-radius:99px; border:2px solid var(--border);
+  font-size:.78rem; font-weight:700; color:var(--muted); cursor:pointer; transition:all .15s;
+}
+.toggle-pill input:checked + label { background:var(--indigo); border-color:var(--indigo); color:#fff; }
+
+/* staff access card */
+.staff-card {
+  border:2px solid var(--border); border-radius:14px; padding:1.25rem;
+  transition:all .25s; background:#fff;
+}
+.staff-card.is-on { border-color:var(--green); background:#f0fdf4; box-shadow:0 4px 16px rgba(22,163,74,.1); }
+.big-switch .form-check-input { width:3em; height:1.6em; cursor:pointer; }
+.big-switch .form-check-input:checked { background-color:var(--green); border-color:var(--green); }
+
+/* save bar */
+.save-bar {
+  padding:1.25rem 2rem; border-top:1px solid var(--border); background:#fff;
+  display:flex; justify-content:flex-end; gap:.75rem; align-items:center;
+}
+.btn-save {
+  background:linear-gradient(135deg,var(--indigo),var(--indigo-dk));
+  color:#fff; border:none; border-radius:10px;
+  padding:.7rem 2rem; font-size:.88rem; font-weight:700; cursor:pointer;
+  transition:opacity .15s; display:inline-flex; align-items:center; gap:.5rem;
+}
+.btn-save:hover { opacity:.88; }
+
+/* alert */
+.pg-alert {
+  border-radius:12px; padding:.85rem 1.1rem; margin-bottom:1rem;
+  font-size:.85rem; display:flex; align-items:center; gap:.6rem;
+}
+.pg-alert.info { background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; }
+</style>
+
+<div class="pg">
+
+  <!-- Messages -->
+  {% for message in messages %}
+  <div class="pg-alert info mb-3">
+    <i class="fas fa-circle-info"></i>{{ message }}
+  </div>
+  {% endfor %}
+
+  <div class="row g-4">
+
+    <!-- ── Left: Profile sidebar ─────────────────── -->
+    <div class="col-lg-3">
+      <div class="profile-card">
+        <div class="profile-header">
+          <div class="avatar-ring">{{ mem.name|slice:":1" }}</div>
+          <div class="profile-name">{{ mem.name }}</div>
+          {% if mem.classification %}
+          <div class="profile-badge">{{ mem.classification.name }}</div>
+          {% endif %}
         </div>
-        <div class="col-12 col-md-8">
-            <div class="card p-5">
-                <form action="" method="post">
-                    <div class="row">
-                    
-                        {% for i in  form %}
-                        <div class="col-6">
-                            <label for="exampleInputEmail1">{{i.label}}</label>
-                            {{i}}
-                            {{i.errors}}
-                        </div> 
-                        {% endfor %}
-                        <div class="col-6">
-                            <label for="exampleInputEmail1">Classification</label>
-                            <select name="classification" id="" class="form-control">
-                                {% for i in classi  %}
-                                    <option value="{{i.id}}">{{i.name}}</option>
-                                {% endfor %}
-                            </select>
-                        </div> 
-    
-                        {% csrf_token %}
-                        <div class="d-grid mt-2">
-                            <button type="submit" class="btn btn-warning"> Update Member </button>
-                        </div>
-                        
-                    </div>
-                </form>
-            </div>
+
+        <div class="profile-body">
+          <div class="profile-chip">
+            <div class="chip-label">Shift</div>
+            <div class="chip-val">{{ mem.shift_start_time|time:"g:i A" }} → {{ mem.shift_end_time|time:"g:i A" }}</div>
+          </div>
+          <div class="profile-chip">
+            <div class="chip-label">Salary</div>
+            <div class="chip-val">Rs. {{ mem.salary_amount|floatformat:0 }} / {{ mem.salary_type }}</div>
+          </div>
+          <div class="profile-chip">
+            <div class="chip-label">Status</div>
+            <div class="chip-val text-capitalize">{{ mem.status }}</div>
+          </div>
         </div>
+
+        <div class="profile-meta">
+          <div class="meta-row">
+            <span class="meta-key">Card ID</span>
+            <span class="meta-val">{{ mem.card|default:"—" }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Branch</span>
+            <span class="meta-val">{{ mem.branch|default:"—" }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Phone</span>
+            <span class="meta-val">{{ mem.phone|default:"—" }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Birthday</span>
+            <span class="meta-val">{{ mem.date_of_birth|default:"—" }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Staff Type</span>
+            <span class="meta-val text-capitalize">{{ mem.staff_type }}</span>
+          </div>
+        </div>
+
+        <div class="text-center" style="padding:0 1.25rem 1.25rem;">
+          <button class="btn-delete" data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="fas fa-trash me-1"></i>Delete Member
+          </button>
+        </div>
+      </div>
     </div>
-   
-    
-   
-    
-{% endblock content %}
-    
+
+    <!-- ── Right: Form ────────────────────────────── -->
+    <div class="col-lg-9">
+      <div class="form-card">
+        <div class="sec-tabs">
+          <button class="sec-tab active" onclick="switchSec('identity', this)"><i class="fas fa-id-card"></i>Identity</button>
+          <button class="sec-tab" onclick="switchSec('org', this)"><i class="fas fa-sitemap"></i>Organization</button>
+          <button class="sec-tab" onclick="switchSec('payroll', this)"><i class="fas fa-wallet"></i>Payroll</button>
+          <button class="sec-tab" onclick="switchSec('access', this)"><i class="fas fa-shield-halved"></i>Access</button>
+        </div>
+
+        <form action="" method="post">
+          {% csrf_token %}
+
+          <!-- Identity -->
+          <div class="sec-pane active" id="sec-identity">
+            <div class="sub-hd">
+              <div class="sub-icon indigo"><i class="fas fa-user"></i></div>
+              <div><div class="sub-title">Personal Details</div><div class="sub-sub">Name, gender, contact and schedule</div></div>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="f-label">Full Name</label>{{ form.name }}
+              </div>
+              <div class="col-md-6">
+                <label class="f-label">Card / Device ID</label>{{ form.card }}
+              </div>
+              <div class="col-md-4">
+                <label class="f-label">Gender</label>{{ form.gender }}
+              </div>
+              <div class="col-md-4">
+                <label class="f-label">Member Type</label>{{ form.member_type }}
+              </div>
+              <div class="col-md-4">
+                <label class="f-label">Status</label>{{ form.status }}
+              </div>
+              <div class="col-md-6">
+                <label class="f-label">Email</label>{{ form.email }}
+              </div>
+              <div class="col-md-6">
+                <label class="f-label">Phone</label>{{ form.phone }}
+              </div>
+              <div class="col-md-6">
+                <label class="f-label">Date of Birth</label>{{ form.date_of_birth }}
+              </div>
+              <div class="col-md-6">
+                <label class="f-label">Address</label>{{ form.address }}
+              </div>
+              <div class="col-md-6">
+                <label class="f-label" style="color:#16a34a;"><i class="fas fa-hourglass-start me-1"></i>Shift Start</label>{{ form.shift_start_time }}
+              </div>
+              <div class="col-md-6">
+                <label class="f-label" style="color:#e11d48;"><i class="fas fa-hourglass-end me-1"></i>Shift End</label>{{ form.shift_end_time }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Organization -->
+          <div class="sec-pane" id="sec-org">
+            <div class="sub-hd">
+              <div class="sub-icon amber"><i class="fas fa-sitemap"></i></div>
+              <div><div class="sub-title">Organization & Role</div><div class="sub-sub">Branch, department, section and employment type</div></div>
+            </div>
+            <div class="row g-3">
+              {% if features.branches %}
+              <div class="col-md-6">
+                <label class="f-label">Branch</label>{{ form.branch }}
+              </div>
+              {% endif %}
+              <div class="col-md-6">
+                <label class="f-label">Classification / Department</label>{{ form.classification }}
+              </div>
+              <div class="col-md-6">
+                <label class="f-label">Section</label>{{ form.section }}
+              </div>
+              <div class="col-md-6">
+                <label class="f-label">Staff Type</label>{{ form.staff_type }}
+              </div>
+              <div class="col-12">
+                <label class="f-label">Courses / Subjects</label>{{ form.courses }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Payroll -->
+          <div class="sec-pane" id="sec-payroll">
+            <div class="sub-hd">
+              <div class="sub-icon green"><i class="fas fa-wallet"></i></div>
+              <div><div class="sub-title">Payroll & Deductions</div><div class="sub-sub">Salary, tax, PF/SSF and probation configuration</div></div>
+            </div>
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label class="f-label">Salary Basis</label>{{ form.salary_type }}
+              </div>
+              <div class="col-md-4">
+                <label class="f-label">Amount</label>
+                <div class="wiz-prefix"><span>Rs.</span>{{ form.salary_amount }}</div>
+              </div>
+              <div class="col-md-4">
+                <label class="f-label">Tax Rate</label>
+                <div class="wiz-suffix">{{ form.tax_percentage }}<span>%</span></div>
+              </div>
+              <div class="col-12">
+                <label class="f-label">Statutory Benefits</label>
+                <div class="toggle-pills">
+                  <div class="toggle-pill">{{ form.pf_enabled }}<label for="{{ form.pf_enabled.id_for_label }}"><i class="fas fa-piggy-bank me-1"></i>Provident Fund (PF)</label></div>
+                  <div class="toggle-pill">{{ form.ssf_enabled }}<label for="{{ form.ssf_enabled.id_for_label }}"><i class="fas fa-shield me-1"></i>Social Security Fund (SSF)</label></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sub-hd mt-2">
+              <div class="sub-icon rose"><i class="fas fa-user-clock"></i></div>
+              <div><div class="sub-title">Probation</div><div class="sub-sub">Leave blank if not on probation</div></div>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="f-label">Probation Start</label>{{ form.probation_start_date }}
+              </div>
+              <div class="col-md-4">
+                <label class="f-label">Probation End</label>{{ form.probation_end_date }}
+              </div>
+              <div class="col-md-4">
+                <label class="f-label">Salary During Probation</label>
+                <div class="wiz-suffix">{{ form.probation_salary_percentage }}<span>%</span></div>
+              </div>
+              <div class="col-md-6">
+                <label class="f-label">Review Status</label>{{ form.probation_review_status }}
+              </div>
+              <div class="col-md-6 d-flex align-items-end pb-1">
+                <div class="form-check">
+                  {{ form.probation_leave_cut_enabled }}
+                  <label class="form-check-label" for="{{ form.probation_leave_cut_enabled.id_for_label }}" style="font-size:.83rem;font-weight:600;color:var(--slate);">
+                    Apply probation leave-cut rules
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Access -->
+          <div class="sec-pane" id="sec-access">
+            <div class="sub-hd">
+              <div class="sub-icon indigo"><i class="fas fa-shield-halved"></i></div>
+              <div><div class="sub-title">Staff Portal Access</div><div class="sub-sub">Control whether this member can log in to the staff portal</div></div>
+            </div>
+            <div class="staff-card" id="staffToggleCard">
+              <div class="d-flex align-items-start gap-3">
+                <div style="width:46px;height:46px;border-radius:14px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;" id="staffIcon">
+                  <i class="fas fa-user-shield" style="color:var(--muted);"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                    <div>
+                      <h6 class="mb-0 fw-bold" style="color:var(--ink);">Grant Dashboard Access</h6>
+                      <p style="font-size:.8rem;color:var(--muted);margin:.3rem 0 0;">Enables login for this member. Credentials are emailed automatically.</p>
+                      <span class="d-none mt-2" id="accessBadge" style="font-size:.75rem;font-weight:700;color:var(--green);display:inline-block;">
+                        <i class="fas fa-circle-check me-1"></i>Access will be activated on save
+                      </span>
+                    </div>
+                    <div class="form-check form-switch big-switch mt-1">{{ form.make_staff }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Save bar -->
+          <div class="save-bar">
+            <a href="javascript:history.back()" style="color:var(--muted);font-size:.85rem;font-weight:600;text-decoration:none;">Cancel</a>
+            <button type="submit" class="btn-save"><i class="fas fa-check"></i>Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Delete modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:18px;border:none;box-shadow:0 20px 60px rgba(0,0,0,.15);">
+      <div class="modal-body p-4 text-center">
+        <div style="width:58px;height:58px;background:#ffe4e6;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.3rem;color:var(--rose);">
+          <i class="fas fa-trash"></i>
+        </div>
+        <h5 style="font-weight:800;color:var(--ink);">Delete {{ mem.name }}?</h5>
+        <p style="color:var(--muted);font-size:.88rem;">This will permanently remove all records for this member. This action cannot be undone.</p>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+          <button type="button" class="btn btn-light fw-bold rounded-3" data-bs-dismiss="modal">Cancel</button>
+          <a href="{% url 'handle:deleteMember' mem.id %}" style="background:var(--rose);color:#fff;border:none;border-radius:10px;padding:.7rem 1.5rem;font-size:.88rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;">
+            <i class="fas fa-trash"></i>Delete
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchSec(name, btn) {
+  document.querySelectorAll('.sec-pane').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.sec-tab').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('sec-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// Staff access toggle
+var staffCb   = document.getElementById('id_make_staff');
+var staffCard = document.getElementById('staffToggleCard');
+var staffBadge= document.getElementById('accessBadge');
+function updateStaff(){
+  if(!staffCb) return;
+  var on = staffCb.checked;
+  staffCard.classList.toggle('is-on', on);
+  if(staffBadge) staffBadge.classList.toggle('d-none', !on);
+}
+if(staffCb){
+  staffCb.classList.add('form-check-input');
+  staffCb.addEventListener('change', updateStaff);
+  updateStaff();
+}
+
+// Dynamic sections
+var branchSel = document.getElementById('id_branch');
+var classSel  = document.getElementById('id_classification');
+var sectionSel= document.getElementById('id_section');
+var selectedSection = "{{ mem.section.id|default:'' }}";
+var secUrl    = "{% url 'handle:sectionsByClassification' %}";
+
+async function loadSections(keepSelected){
+  if(!classSel || !sectionSel || !classSel.value) return;
+  var p = new URLSearchParams({classification_id: classSel.value});
+  if(branchSel && branchSel.value) p.append('branch_id', branchSel.value);
+  var res = await fetch(secUrl + '?' + p.toString());
+  var data = await res.json();
+  sectionSel.innerHTML = '<option value="">Select section</option>';
+  data.sections.forEach(function(s){
+    var o = document.createElement('option');
+    o.value = s.id; o.textContent = s.name;
+    if(keepSelected && String(s.id) === selectedSection) o.selected = true;
+    sectionSel.appendChild(o);
+  });
+}
+if(classSel){ classSel.addEventListener('change', function(){ loadSections(false); }); loadSections(true); }
+if(branchSel){ branchSel.addEventListener('change', function(){ loadSections(false); }); }
+</script>
+{% endblock %}

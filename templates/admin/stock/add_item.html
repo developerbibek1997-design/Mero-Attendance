@@ -1,0 +1,41 @@
+{% extends 'dashboard.html' %}
+{% block title %}Add Stock Item | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-plus-circle text-primary me-2"></i>Add Stock Item</h6>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Item Name *</label><input type="text" name="name" class="form-control" required></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">SKU / Code</label><input type="text" name="sku" class="form-control" placeholder="e.g. STK-001"></div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Category</label>
+                <select name="category" class="form-select"><option value="">-- None --</option>{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Branch</label>
+                <select name="branch" class="form-select"><option value="">-- General --</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Unit</label>
+                <select name="unit" class="form-select"><option value="pcs">Pieces (pcs)</option><option value="kg">Kilogram (kg)</option><option value="ltr">Litre (ltr)</option><option value="box">Box</option><option value="set">Set</option><option value="roll">Roll</option><option value="pair">Pair</option></select></div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Opening Quantity</label><input type="number" step="0.01" name="quantity" class="form-control" value="0"></div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Low Stock Threshold</label><input type="number" step="0.01" name="low_stock_threshold" class="form-control" value="5"></div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Purchase Cost (Rs.)</label><input type="number" step="0.01" name="purchase_cost" class="form-control" value="0"></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Supplier / Vendor</label><input type="text" name="supplier" class="form-control" placeholder="Optional"></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Status</label>
+                <select name="status" class="form-select"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+              <div class="col-12 d-flex gap-2 mt-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save Item</button>
+                <a href="{% url 'schooladmin:stock_items' %}" class="btn btn-outline-secondary">Cancel</a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

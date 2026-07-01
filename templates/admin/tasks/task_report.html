@@ -1,0 +1,184 @@
+{% extends 'dashboard.html' %}
+{% block title %}Task Report | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-chart-bar text-primary me-2"></i>Task Report</h4>
+      <p class="text-xs text-muted mb-0">Filter and export task performance data</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'schooladmin:task_dashboard' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
+      <button onclick="window.print()" class="btn btn-outline-info btn-sm"><i class="fas fa-print me-1"></i>Print</button>
+      <button onclick="exportCSV()" class="btn btn-outline-success btn-sm"><i class="fas fa-file-csv me-1"></i>Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2 col-6">
+          <label class="text-xs font-weight-bold">From Date</label>
+          <input type="date" name="from_date" class="form-control form-control-sm" value="{{ filters.from_date }}">
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="text-xs font-weight-bold">To Date</label>
+          <input type="date" name="to_date" class="form-control form-control-sm" value="{{ filters.to_date }}">
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="text-xs font-weight-bold">Staff Member</label>
+          <select name="member" class="form-select form-select-sm">
+            <option value="">All</option>
+            {% for m in members %}<option value="{{ m.id }}" {% if filters.member == m.id|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="text-xs font-weight-bold">Status</label>
+          <select name="status" class="form-select form-select-sm">
+            <option value="">All</option>
+            {% for val, label in status_choices %}<option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="text-xs font-weight-bold">Priority</label>
+          <select name="priority" class="form-select form-select-sm">
+            <option value="">All</option>
+            {% for val, label in priority_choices %}<option value="{{ val }}" {% if filters.priority == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="text-xs font-weight-bold">Task Type</label>
+          <select name="task_type" class="form-select form-select-sm">
+            <option value="">All</option>
+            {% for val, label in type_choices %}<option value="{{ val }}" {% if filters.task_type == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-auto">
+          <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+          <a href="{% url 'schooladmin:task_report' %}" class="btn btn-outline-secondary btn-sm ms-1">Clear</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  {% if instances %}
+  <div class="row g-3 mb-4">
+    {% with total=instances|length %}
+    <div class="col-6 col-md-3 col-lg">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="text-2xl font-weight-bolder text-primary">{{ total }}</div>
+        <p class="text-xs text-muted mb-0">Total Records</p>
+      </div>
+    </div>
+    {% endwith %}
+  </div>
+  {% endif %}
+
+  <!-- Report Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3">
+      <h6 class="mb-0 font-weight-bolder">Results <span class="text-muted fw-normal">({{ instances|length }})</span></h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0" id="reportTable">
+        <thead class="table-light">
+          <tr>
+            <th class="text-xs">#</th>
+            <th class="text-xs">Staff</th>
+            <th class="text-xs">Task Title</th>
+            <th class="text-xs">Priority</th>
+            <th class="text-xs">Type</th>
+            <th class="text-xs">Due Date</th>
+            <th class="text-xs">Status</th>
+            <th class="text-xs">Completed At</th>
+            <th class="text-xs">Delay</th>
+            <th class="text-xs">Completion Note</th>
+            <th class="text-xs">Not Done Reason</th>
+            <th class="text-xs">Absent?</th>
+            <th class="text-xs">Approval</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inst in instances %}
+          <tr>
+            <td class="text-xs text-muted">{{ forloop.counter }}</td>
+            <td class="text-sm font-weight-bold">{{ inst.assigned_member.name }}</td>
+            <td class="text-sm">{{ inst.task.title|truncatechars:35 }}</td>
+            <td>
+              {% if inst.task.priority == 'urgent' %}<span class="badge bg-danger">Urgent</span>
+              {% elif inst.task.priority == 'high' %}<span class="badge bg-warning text-dark">High</span>
+              {% elif inst.task.priority == 'medium' %}<span class="badge bg-primary">Medium</span>
+              {% else %}<span class="badge bg-secondary">Low</span>{% endif %}
+            </td>
+            <td class="text-xs text-muted">{{ inst.task.get_task_type_display }}</td>
+            <td class="text-sm">{{ inst.due_date|date:"M d, Y" }}</td>
+            <td>
+              {% if inst.status == 'completed' %}<span class="badge bg-success">Done</span>
+              {% elif inst.status == 'in_progress' %}<span class="badge" style="background:#8b5cf6">In Progress</span>
+              {% elif inst.status == 'pending' %}<span class="badge bg-warning text-dark">Pending</span>
+              {% elif inst.status == 'overdue' %}<span class="badge bg-danger">Overdue</span>
+              {% elif inst.status == 'missed_absence' %}<span class="badge bg-dark">Missed</span>
+              {% elif inst.status == 'not_completed' %}<span class="badge bg-secondary">Not Done</span>
+              {% elif inst.status == 'rework_required' %}<span class="badge bg-danger">Rework</span>
+              {% elif inst.status == 'cancelled' %}<span class="badge bg-light text-dark">Cancelled</span>
+              {% endif %}
+            </td>
+            <td class="text-xs text-muted">{{ inst.completed_at|date:"M d, Y g:i A"|default:"—" }}</td>
+            <td class="text-xs {% if inst.completed_at and inst.due_date %}text-danger{% else %}text-muted{% endif %}">
+              {% if inst.completed_at and inst.status == 'completed' %}
+                {% with due_ts=inst.due_date %}
+                  {% if inst.completed_at.date > inst.due_date %}
+                    <span class="text-danger">Late</span>
+                  {% else %}
+                    <span class="text-success">On Time</span>
+                  {% endif %}
+                {% endwith %}
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-xs text-muted">{{ inst.completion_note|truncatechars:40|default:"—" }}</td>
+            <td class="text-xs text-muted">
+              {% if inst.not_done_reason %}{{ inst.get_not_done_reason_display }}{% else %}—{% endif %}
+            </td>
+            <td class="text-center">
+              {% if inst.staff_was_absent %}<span class="badge bg-danger">Absent</span>{% else %}<span class="text-xs text-muted">—</span>{% endif %}
+            </td>
+            <td>
+              {% if inst.approval_status == 'approved' %}<span class="badge bg-success">Approved</span>
+              {% elif inst.approval_status == 'rejected' %}<span class="badge bg-danger">Rejected</span>
+              {% elif inst.approval_status == 'pending_approval' %}<span class="badge bg-warning text-dark">Pending</span>
+              {% else %}<span class="text-xs text-muted">—</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="13" class="text-center text-muted py-5">
+              <i class="fas fa-filter fa-2x mb-2 d-block text-muted"></i>
+              No records match the selected filters.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function exportCSV() {
+  const rows = [['#','Staff','Task','Priority','Type','Due Date','Status','Completed At','On Time?','Note','Not Done Reason','Absent','Approval']];
+  document.querySelectorAll('#reportTable tbody tr').forEach((tr, i) => {
+    const cells = tr.querySelectorAll('td');
+    if (cells.length > 1) {
+      rows.push(Array.from(cells).map(c => '"' + c.innerText.replace(/"/g,'""').trim() + '"'));
+    }
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'task_report.csv';
+  a.click();
+}
+</script>
+{% endblock %}

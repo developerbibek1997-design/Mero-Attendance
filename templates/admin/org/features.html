@@ -1,0 +1,309 @@
+{% extends 'dashboard.html' %}
+{% load static schooladmin_extras %}
+{% block title %}Feature Settings | {{ org.name }}{% endblock %}
+
+{% block content %}
+<style>
+  .feat-page-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    border-radius: 18px; padding: 28px 32px; color: #fff;
+    margin-bottom: 28px; position: relative; overflow: hidden;
+  }
+  .feat-page-header::after {
+    content: ''; position: absolute; top: -40%; right: -5%;
+    width: 260px; height: 260px;
+    background: radial-gradient(circle, rgba(99,102,241,.25) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .feat-section {
+    background: #fff; border-radius: 16px; border: 1px solid #e2e8f0;
+    margin-bottom: 24px; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .feat-section-header {
+    padding: 18px 24px; border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .feat-section-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .95rem; color: #fff; flex-shrink: 0;
+  }
+  .feat-section-title { font-size: .95rem; font-weight: 800; color: #0f172a; margin: 0; }
+  .feat-section-sub   { font-size: .78rem; color: #94a3b8; margin: 0; }
+  .feat-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px; padding: 20px 24px;
+  }
+  .feat-card {
+    border: 1.5px solid #e2e8f0; border-radius: 14px;
+    padding: 16px 18px; display: flex; align-items: flex-start;
+    gap: 14px; transition: border-color .2s, box-shadow .2s;
+    background: #fafafa;
+  }
+  .feat-card.feat-enabled  { border-color: #22c55e; background: #f0fdf4; }
+  .feat-card.feat-disabled { border-color: #e2e8f0; background: #fafafa; }
+  .feat-card-icon {
+    width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+  }
+  .feat-enabled  .feat-card-icon { background: #dcfce7; color: #16a34a; }
+  .feat-disabled .feat-card-icon { background: #f1f5f9; color: #94a3b8; }
+  .feat-card-body { flex: 1; min-width: 0; }
+  .feat-card-label { font-size: .87rem; font-weight: 700; color: #0f172a; margin: 0 0 2px; }
+  .feat-card-desc  { font-size: .76rem; color: #64748b; margin: 0; line-height: 1.4; }
+  /* Toggle switch */
+  .feat-toggle { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; }
+  .feat-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .feat-slider {
+    display: block; width: 46px; height: 26px; background: #cbd5e1;
+    border-radius: 999px; cursor: pointer; transition: background .2s;
+    position: relative;
+  }
+  .feat-slider::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 20px; height: 20px; background: #fff; border-radius: 50%;
+    transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  }
+  .feat-toggle input:checked + .feat-slider { background: #22c55e; }
+  .feat-toggle input:checked + .feat-slider::after { transform: translateX(20px); }
+  .feat-badge-on  { font-size: .65rem; font-weight: 800; padding: 2px 8px;
+                    border-radius: 999px; background: #dcfce7; color: #15803d; letter-spacing: .05em; }
+  .feat-badge-off { font-size: .65rem; font-weight: 800; padding: 2px 8px;
+                    border-radius: 999px; background: #f1f5f9; color: #94a3b8; letter-spacing: .05em; }
+  .preset-btn {
+    border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 8px 16px;
+    font-size: .82rem; font-weight: 700; cursor: pointer; transition: all .15s;
+    background: #fff; color: #334155;
+  }
+  .preset-btn:hover { border-color: #6366f1; color: #6366f1; background: #eef2ff; }
+  .save-bar {
+    position: sticky; bottom: 0; background: #fff; border-top: 1px solid #e2e8f0;
+    padding: 16px 24px; display: flex; align-items: center; gap: 12px;
+    z-index: 10; border-radius: 0 0 16px 16px;
+  }
+</style>
+
+<div class="container-fluid py-2">
+
+  <!-- Header -->
+  <div class="feat-page-header">
+    <div style="position:relative;z-index:2;">
+      <h3 style="font-size:1.5rem;font-weight:900;margin:0 0 6px;">Feature Settings</h3>
+      <p style="margin:0;opacity:.75;font-size:.9rem;">
+        Enable or disable modules for <strong>{{ org.name }}</strong>.
+        Disabled features disappear from sidebar, dashboard, reports, and all staff views.
+      </p>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="fas fa-check-circle me-2"></i>{{ msg }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <!-- Org Type Presets -->
+  <div class="feat-section" style="margin-bottom:20px;">
+    <div class="feat-section-header">
+      <div class="feat-section-icon" style="background:#6366f1;"><i class="fas fa-magic"></i></div>
+      <div>
+        <p class="feat-section-title">Quick Presets</p>
+        <p class="feat-section-sub">Instantly configure features for a common organization type</p>
+      </div>
+    </div>
+    <div style="padding:16px 24px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="preset-btn" onclick="applyPreset('school')"><i class="fas fa-school me-1"></i> School</button>
+      <button class="preset-btn" onclick="applyPreset('college')"><i class="fas fa-university me-1"></i> College</button>
+      <button class="preset-btn" onclick="applyPreset('office')"><i class="fas fa-building me-1"></i> Office</button>
+      <button class="preset-btn" onclick="applyPreset('institute')"><i class="fas fa-chalkboard-teacher me-1"></i> Institute</button>
+      <button class="preset-btn" onclick="applyPreset('all')" style="border-color:#22c55e;color:#15803d;"><i class="fas fa-toggle-on me-1"></i> Enable All</button>
+      <button class="preset-btn" onclick="applyPreset('none')" style="border-color:#f43f5e;color:#dc2626;"><i class="fas fa-toggle-off me-1"></i> Disable All</button>
+    </div>
+  </div>
+
+  <form method="post" id="featForm">
+    {% csrf_token %}
+
+    <!-- ── 1. ATTENDANCE ───────────────────────────────────── -->
+    <div class="feat-section">
+      <div class="feat-section-header">
+        <div class="feat-section-icon" style="background:#0ea5e9;"><i class="fas fa-fingerprint"></i></div>
+        <div>
+          <p class="feat-section-title">Attendance</p>
+          <p class="feat-section-sub">Control attendance methods available to members</p>
+        </div>
+      </div>
+      <div class="feat-grid">
+        {% include "admin/org/_feat_row.html" with field="rfid_based"       label="Biometric / RFID"       desc="ZKTeco / Hikvision device-based attendance" icon="fa-fingerprint" %}
+        {% include "admin/org/_feat_row.html" with field="qr_based"         label="QR Code Attendance"     desc="Member scans a QR code to check in"         icon="fa-qrcode" %}
+        {% include "admin/org/_feat_row.html" with field="location_based"   label="GPS Location Attendance" desc="Attendance via GPS coordinates"             icon="fa-map-marker-alt" %}
+        {% include "admin/org/_feat_row.html" with field="manual_attendance" label="Manual Attendance"      desc="Admin manually marks attendance"            icon="fa-hand-paper" %}
+        {% include "admin/org/_feat_row.html" with field="auto_checkin"     label="Auto Check-in"          desc="Automatically check in at scheduled time"   icon="fa-robot" %}
+        {% include "admin/org/_feat_row.html" with field="course_based_attendance" label="Course-based Attendance" desc="Attendance tied to specific courses" icon="fa-book-open" %}
+      </div>
+    </div>
+
+    <!-- ── 2. HRMS ────────────────────────────────────────── -->
+    <div class="feat-section">
+      <div class="feat-section-header">
+        <div class="feat-section-icon" style="background:#8b5cf6;"><i class="fas fa-id-card"></i></div>
+        <div>
+          <p class="feat-section-title">HR & Staff Management</p>
+          <p class="feat-section-sub">Human resources, documents, resignation, and probation</p>
+        </div>
+      </div>
+      <div class="feat-grid">
+        {% include "admin/org/_feat_row.html" with field="feature_hrms"        label="HRMS Module"         desc="Staff documents, resignation, and HR records" icon="fa-id-card-alt" %}
+        {% include "admin/org/_feat_row.html" with field="feature_member_mgmt" label="Member Management"   desc="Add, edit, and manage members/employees"      icon="fa-users" %}
+        {% include "admin/org/_feat_row.html" with field="feature_branches"    label="Branch Management"   desc="Multi-location/branch support"                icon="fa-code-branch" %}
+      </div>
+    </div>
+
+    <!-- ── 3. PAYROLL ────────────────────────────────────── -->
+    <div class="feat-section">
+      <div class="feat-section-header">
+        <div class="feat-section-icon" style="background:#16a34a;"><i class="fas fa-money-bill-wave"></i></div>
+        <div>
+          <p class="feat-section-title">Payroll & Salary</p>
+          <p class="feat-section-sub">Payslips, PF, SSF, TDS, advance salary, and payroll reports</p>
+        </div>
+      </div>
+      <div class="feat-grid">
+        {% include "admin/org/_feat_row.html" with field="feature_payroll" label="Payroll Module" desc="Generate payslips, salary sheets, allowances, deductions, and tax" icon="fa-file-invoice-dollar" %}
+      </div>
+    </div>
+
+    <!-- ── 4. LEAVE ───────────────────────────────────────── -->
+    <div class="feat-section">
+      <div class="feat-section-header">
+        <div class="feat-section-icon" style="background:#f59e0b;"><i class="fas fa-calendar-minus"></i></div>
+        <div>
+          <p class="feat-section-title">Leave Management</p>
+          <p class="feat-section-sub">Leave requests, approvals, balances, and reports</p>
+        </div>
+      </div>
+      <div class="feat-grid">
+        {% include "admin/org/_feat_row.html" with field="feature_leave" label="Leave Management" desc="Leave types, requests, approval workflow, and leave reports" icon="fa-calendar-xmark" %}
+      </div>
+    </div>
+
+    <!-- ── 5. STUDENT / MEMBER ───────────────────────────── -->
+    <div class="feat-section">
+      <div class="feat-section-header">
+        <div class="feat-section-icon" style="background:#0891b2;"><i class="fas fa-user-graduate"></i></div>
+        <div>
+          <p class="feat-section-title">Student & Course Management</p>
+          <p class="feat-section-sub">Students, courses, subjects, results, and study gap tracking</p>
+        </div>
+      </div>
+      <div class="feat-grid">
+        {% include "admin/org/_feat_row.html" with field="feature_student_mgmt" label="Student Management"   desc="Student profiles, admissions, and classification" icon="fa-user-graduate" %}
+        {% include "admin/org/_feat_row.html" with field="feature_courses"      label="Course Management"    desc="Courses, subjects, and course-based schedules"    icon="fa-book" %}
+        {% include "admin/org/_feat_row.html" with field="feature_results"      label="Results & Exams"      desc="Exam terms, marks entry, result publish, marksheet" icon="fa-trophy" %}
+        {% include "admin/org/_feat_row.html" with field="feature_study_gap"    label="Study Gap / Teaching Log" desc="Teaching log and attendance gap tracker for courses" icon="fa-chalkboard-teacher" %}
+      </div>
+    </div>
+
+    <!-- ── 6. FINANCE ────────────────────────────────────── -->
+    <div class="feat-section">
+      <div class="feat-section-header">
+        <div class="feat-section-icon" style="background:#dc2626;"><i class="fas fa-chart-line"></i></div>
+        <div>
+          <p class="feat-section-title">Finance</p>
+          <p class="feat-section-sub">Income, expense tracking, billing, and payment reports</p>
+        </div>
+      </div>
+      <div class="feat-grid">
+        {% include "admin/org/_feat_row.html" with field="feature_finance" label="Income / Expense" desc="Record income and expenses, view financial reports" icon="fa-chart-line" %}
+        {% include "admin/org/_feat_row.html" with field="feature_billing" label="Billing & Invoices" desc="Generate invoices, track dues, and record student payments" icon="fa-file-invoice" %}
+      </div>
+    </div>
+
+    <!-- ── 7. STOCK / EVENT ───────────────────────────────── -->
+    <div class="feat-section">
+      <div class="feat-section-header">
+        <div class="feat-section-icon" style="background:#ea580c;"><i class="fas fa-boxes"></i></div>
+        <div>
+          <p class="feat-section-title">Stock, Events & Communication</p>
+          <p class="feat-section-sub">Inventory, events, tasks, and complaints</p>
+        </div>
+      </div>
+      <div class="feat-grid">
+        {% include "admin/org/_feat_row.html" with field="feature_stock"        label="Stock / Inventory"    desc="Track inventory items, stock in/out, low-stock alerts" icon="fa-boxes" %}
+        {% include "admin/org/_feat_row.html" with field="feature_events"       label="Events"               desc="Event calendar, scheduling, and event reports"         icon="fa-calendar-star" %}
+        {% include "admin/org/_feat_row.html" with field="feature_tasks"        label="Task Management"      desc="Assign tasks to staff, track completion and approvals"  icon="fa-tasks" %}
+        {% include "admin/org/_feat_row.html" with field="feature_complaints"   label="Complaints & Requests" desc="Staff or student complaints / support requests"       icon="fa-comment-alt-exclamation" %}
+        {% include "admin/org/_feat_row.html" with field="feature_notifications" label="Notifications / SMS"  desc="Send SMS/email notifications to members"              icon="fa-bell" %}
+      </div>
+    </div>
+
+    <!-- ── 8. SYSTEM ─────────────────────────────────────── -->
+    <div class="feat-section">
+      <div class="feat-section-header">
+        <div class="feat-section-icon" style="background:#334155;"><i class="fas fa-cog"></i></div>
+        <div>
+          <p class="feat-section-title">System & Export</p>
+          <p class="feat-section-sub">Nepali calendar, bulk export, and system settings</p>
+        </div>
+      </div>
+      <div class="feat-grid">
+        {% include "admin/org/_feat_row.html" with field="nepali_date"       label="Nepali Calendar (BS)" desc="Use Bikram Sambat calendar throughout the system" icon="fa-calendar-alt" %}
+        {% include "admin/org/_feat_row.html" with field="feature_bulk_export" label="Bulk Data Export"    desc="Export attendance, payroll, stock, and finance data" icon="fa-file-export" %}
+        {% include "admin/org/_feat_row.html" with field="mutifeature_enable" label="Multi-Feature Mode"  desc="Enable advanced multi-mode attendance configuration" icon="fa-layer-group" %}
+      </div>
+    </div>
+
+    <!-- Save bar -->
+    <div class="save-bar">
+      <button type="submit" class="btn btn-success px-5" style="font-weight:700;">
+        <i class="fas fa-save me-2"></i> Save Feature Settings
+      </button>
+      <span style="font-size:.8rem;color:#64748b;">
+        Changes take effect immediately for all users.
+      </span>
+    </div>
+
+  </form>
+</div>
+
+<script>
+const PRESETS = {
+  school:    ['feature_student_mgmt','feature_courses','feature_results','feature_billing','feature_leave','feature_complaints','feature_events','feature_member_mgmt'],
+  college:   ['feature_student_mgmt','feature_courses','feature_results','feature_billing','feature_leave','feature_finance','feature_member_mgmt'],
+  office:    ['feature_leave','feature_payroll','feature_hrms','feature_tasks','feature_finance','feature_bulk_export','feature_member_mgmt'],
+  institute: ['feature_student_mgmt','feature_courses','feature_leave','feature_payroll','feature_hrms','feature_finance','feature_member_mgmt'],
+  all: null,
+  none: [],
+};
+
+function applyPreset(key) {
+  const boxes = document.querySelectorAll('.feat-toggle input[type=checkbox]');
+  if (key === 'all') { boxes.forEach(b => b.checked = true); }
+  else if (key === 'none') { boxes.forEach(b => b.checked = false); }
+  else {
+    const on = new Set(PRESETS[key] || []);
+    boxes.forEach(b => { b.checked = on.has(b.name); });
+  }
+  // refresh card states
+  boxes.forEach(b => b.closest('.feat-card').classList.toggle('feat-enabled', b.checked));
+  boxes.forEach(b => b.closest('.feat-card').classList.toggle('feat-disabled', !b.checked));
+}
+
+// Live card state when toggled
+document.querySelectorAll('.feat-toggle input').forEach(cb => {
+  cb.addEventListener('change', () => {
+    const card = cb.closest('.feat-card');
+    card.classList.toggle('feat-enabled', cb.checked);
+    card.classList.toggle('feat-disabled', !cb.checked);
+    const badge = card.querySelector('.feat-status-badge');
+    if (badge) {
+      badge.textContent = cb.checked ? 'ON' : 'OFF';
+      badge.className = cb.checked ? 'feat-badge-on feat-status-badge' : 'feat-badge-off feat-status-badge';
+    }
+  });
+});
+</script>
+{% endblock %}

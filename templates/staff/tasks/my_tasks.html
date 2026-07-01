@@ -1,0 +1,329 @@
+{% extends 'dashboard.html' %}
+{% block title %}My Tasks{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-tasks text-primary me-2"></i>My Tasks</h4>
+      <p class="text-xs text-muted mb-0">{{ memb.name }} &mdash; {{ today|date:"l, F j, Y" }}</p>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  {% if error %}
+  <div class="alert alert-warning">{{ error }}</div>
+  {% else %}
+
+  <!-- KPI Strip -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3" style="border-top:3px solid #3b82f6 !important;">
+        <div class="font-weight-bolder text-primary" style="font-size:2rem;">{{ total }}</div>
+        <p class="text-xs text-muted mb-0">Total Assigned</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3" style="border-top:3px solid #22c55e !important;">
+        <div class="font-weight-bolder text-success" style="font-size:2rem;">{{ completed_count }}</div>
+        <p class="text-xs text-muted mb-0">Completed</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3" style="border-top:3px solid #f59e0b !important;">
+        <div class="font-weight-bolder text-warning" style="font-size:2rem;">{{ pending_count }}</div>
+        <p class="text-xs text-muted mb-0">Pending / In Progress</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3" style="border-top:3px solid #ef4444 !important;">
+        <div class="font-weight-bolder text-danger" style="font-size:2rem;">{{ overdue_count }}</div>
+        <p class="text-xs text-muted mb-0">Overdue / Missed</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODAY'S TASKS (highlighted) -->
+  {% if today_tasks %}
+  <div class="card border-0 shadow-sm mb-4" style="border-left:4px solid #3b82f6 !important;">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 font-weight-bolder text-primary"><i class="fas fa-calendar-day me-2"></i>Today's Tasks</h6>
+      <span class="badge bg-primary">{{ today_tasks|length }}</span>
+    </div>
+    <div class="card-body p-0">
+      {% for inst in today_tasks %}
+      <div class="p-4 border-bottom">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+              {% if inst.task.priority == 'urgent' %}<span class="badge bg-danger">🔴 Urgent</span>
+              {% elif inst.task.priority == 'high' %}<span class="badge bg-warning text-dark">🟠 High</span>
+              {% elif inst.task.priority == 'medium' %}<span class="badge bg-primary">🔵 Medium</span>
+              {% else %}<span class="badge bg-secondary">⚪ Low</span>{% endif %}
+              <span class="badge bg-light text-dark">{{ inst.task.get_task_type_display }}</span>
+              {% if inst.due_time %}<span class="text-xs text-muted"><i class="fas fa-clock me-1"></i>Due by {{ inst.due_time|time:"g:i A" }}</span>{% endif %}
+            </div>
+            <h6 class="font-weight-bolder mb-1">{{ inst.task.title }}</h6>
+            {% if inst.task.description %}<p class="text-sm text-muted mb-0">{{ inst.task.description|truncatechars:120 }}</p>{% endif %}
+          </div>
+          <div class="text-end">
+            {% if inst.status == 'completed' %}
+            <span class="badge bg-success fs-6 px-3 py-2">✅ Done</span>
+            {% elif inst.status == 'in_progress' %}
+            <span class="badge px-3 py-2" style="background:#8b5cf6;font-size:14px;">⚙️ In Progress</span>
+            {% elif inst.status == 'not_completed' %}
+            <span class="badge bg-secondary fs-6 px-3 py-2">❌ Not Done</span>
+            {% else %}
+            <span class="badge bg-warning text-dark px-3 py-2" style="font-size:14px;">⏳ Pending</span>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if inst.status == 'pending' or inst.status == 'in_progress' or inst.status == 'rework_required' %}
+        <div class="mt-3 d-flex gap-2 flex-wrap">
+          {% if inst.status == 'pending' or inst.status == 'rework_required' %}
+          <form method="post" action="{% url 'staff:update_task_status' inst.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="in_progress">
+            <button type="submit" class="btn btn-sm" style="background:#8b5cf6;color:#fff;"><i class="fas fa-play me-1"></i>Start Task</button>
+          </form>
+          {% endif %}
+          <button class="btn btn-sm btn-success" onclick="openDoneModal({{ inst.pk }}, '{{ inst.task.title|escapejs }}')">
+            <i class="fas fa-check me-1"></i>Mark Done
+          </button>
+          <button class="btn btn-sm btn-outline-danger" onclick="openNotDoneModal({{ inst.pk }}, '{{ inst.task.title|escapejs }}')">
+            <i class="fas fa-times me-1"></i>Not Done
+          </button>
+        </div>
+        {% endif %}
+
+        {% if inst.status == 'completed' and inst.completion_note %}
+        <div class="mt-2 p-2 rounded bg-light border-start border-3 border-success">
+          <p class="text-xs text-muted mb-0"><strong>Completion Note:</strong> {{ inst.completion_note }}</p>
+        </div>
+        {% endif %}
+        {% if inst.status == 'rework_required' and inst.rejection_reason %}
+        <div class="mt-2 p-2 rounded bg-light border-start border-3 border-danger">
+          <p class="text-xs text-danger mb-0"><strong>Rejection Reason:</strong> {{ inst.rejection_reason }}</p>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- OVERDUE / MISSED -->
+  {% if overdue_tasks %}
+  <div class="card border-0 shadow-sm mb-4" style="border-left:4px solid #ef4444 !important;">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 font-weight-bolder text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Overdue / Missed Tasks</h6>
+      <span class="badge bg-danger">{{ overdue_tasks|length }}</span>
+    </div>
+    <div class="card-body p-0">
+      {% for inst in overdue_tasks %}
+      <div class="p-4 border-bottom">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <div class="d-flex gap-2 mb-1 flex-wrap">
+              {% if inst.task.priority == 'urgent' %}<span class="badge bg-danger">Urgent</span>{% elif inst.task.priority == 'high' %}<span class="badge bg-warning text-dark">High</span>{% else %}<span class="badge bg-secondary">{{ inst.task.get_priority_display }}</span>{% endif %}
+              {% if inst.status == 'missed_absence' %}<span class="badge bg-dark">Missed — Absent</span>{% else %}<span class="badge bg-danger">Overdue</span>{% endif %}
+            </div>
+            <h6 class="font-weight-bolder mb-0">{{ inst.task.title }}</h6>
+            <p class="text-xs text-muted mb-0">Was due: {{ inst.due_date|date:"M d, Y" }}</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-success" onclick="openDoneModal({{ inst.pk }}, '{{ inst.task.title|escapejs }}')">
+              <i class="fas fa-check me-1"></i>Complete Now
+            </button>
+          </div>
+        </div>
+        {% if inst.not_done_detail %}<p class="text-xs text-muted mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>{{ inst.not_done_detail }}</p>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- PENDING -->
+  {% if pending_tasks %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 font-weight-bolder"><i class="fas fa-hourglass-half me-2 text-warning"></i>Pending Tasks</h6>
+      <span class="badge bg-warning text-dark">{{ pending_tasks|length }}</span>
+    </div>
+    <div class="card-body p-0">
+      {% for inst in pending_tasks %}
+      {% if inst.due_date != today %}
+      <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <div class="d-flex gap-2 align-items-center mb-1">
+            {% if inst.task.priority == 'urgent' %}<span class="badge bg-danger">Urgent</span>{% elif inst.task.priority == 'high' %}<span class="badge bg-warning text-dark">High</span>{% elif inst.task.priority == 'medium' %}<span class="badge bg-primary">Med</span>{% else %}<span class="badge bg-secondary">Low</span>{% endif %}
+          </div>
+          <p class="text-sm font-weight-bold mb-0">{{ inst.task.title }}</p>
+          <p class="text-xs text-muted mb-0">Due: {{ inst.due_date|date:"M d, Y" }}</p>
+        </div>
+        <div class="d-flex gap-2">
+          <form method="post" action="{% url 'staff:update_task_status' inst.pk %}">{% csrf_token %}
+            <input type="hidden" name="action" value="in_progress">
+            <button type="submit" class="btn btn-sm btn-outline-primary">Start</button>
+          </form>
+          <button class="btn btn-sm btn-success" onclick="openDoneModal({{ inst.pk }}, '{{ inst.task.title|escapejs }}')">Done</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="openNotDoneModal({{ inst.pk }}, '{{ inst.task.title|escapejs }}')">Not Done</button>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- UPCOMING -->
+  {% if upcoming_tasks %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom py-3">
+      <h6 class="mb-0 font-weight-bolder"><i class="fas fa-calendar-alt me-2 text-info"></i>Upcoming Tasks</h6>
+    </div>
+    <div class="card-body p-0">
+      {% for inst in upcoming_tasks %}
+      <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <p class="text-sm font-weight-bold mb-0">{{ inst.task.title }}</p>
+          <p class="text-xs text-muted mb-0">Due: {{ inst.due_date|date:"M d, Y" }} &bull; {{ inst.task.get_task_type_display }}</p>
+        </div>
+        {% if inst.task.priority == 'urgent' %}<span class="badge bg-danger">Urgent</span>
+        {% elif inst.task.priority == 'high' %}<span class="badge bg-warning text-dark">High</span>
+        {% else %}<span class="badge bg-light text-dark">{{ inst.task.get_priority_display }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- COMPLETED -->
+  {% if completed_tasks %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 font-weight-bolder"><i class="fas fa-check-circle me-2 text-success"></i>Recently Completed</h6>
+      <span class="badge bg-success">{{ completed_tasks|length }}</span>
+    </div>
+    <div class="card-body p-0">
+      {% for inst in completed_tasks %}
+      <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <p class="text-sm font-weight-bold mb-0">{{ inst.task.title }}</p>
+          <p class="text-xs text-muted mb-0">Completed: {{ inst.completed_at|date:"M d, Y g:i A"|default:"—" }}</p>
+          {% if inst.completion_note %}<p class="text-xs text-muted mb-0">Note: {{ inst.completion_note|truncatechars:60 }}</p>{% endif %}
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-success">Done</span>
+          {% if inst.approval_status == 'pending_approval' %}<span class="badge bg-warning text-dark">Awaiting Approval</span>
+          {% elif inst.approval_status == 'approved' %}<span class="badge bg-success">✓ Approved</span>
+          {% elif inst.approval_status == 'rejected' %}<span class="badge bg-danger">Rejected — Redo</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not today_tasks and not pending_tasks and not overdue_tasks and not upcoming_tasks %}
+  <div class="card border-0 shadow-sm">
+    <div class="card-body text-center py-5 text-muted">
+      <i class="fas fa-check-double fa-3x mb-3 d-block text-success"></i>
+      <h5>All Clear!</h5>
+      <p class="text-sm">You have no tasks assigned right now.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% endif %}{# end if error #}
+</div>
+
+<!-- Mark Done Modal -->
+<div class="modal fade" id="doneModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title text-success"><i class="fas fa-check-circle me-2"></i>Mark as Completed</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" id="doneForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="completed">
+        <div class="modal-body">
+          <p class="text-sm text-muted mb-3" id="doneTaskName"></p>
+          <div class="mb-3">
+            <label class="form-label text-xs font-weight-bold">Completion Note (optional)</label>
+            <textarea name="completion_note" class="form-control" rows="3" placeholder="Describe what was done, any outcomes or observations..."></textarea>
+          </div>
+          <div class="mb-0">
+            <label class="form-label text-xs font-weight-bold">Proof / Attachment (optional)</label>
+            <input type="file" name="proof" class="form-control form-control-sm">
+            <p class="text-xs text-muted mt-1">Photo, PDF, or document as proof of completion</p>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-check me-1"></i>Mark as Completed</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Not Done Modal -->
+<div class="modal fade" id="notDoneModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title text-danger"><i class="fas fa-times-circle me-2"></i>Mark as Not Done</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" id="notDoneForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="not_completed">
+        <div class="modal-body">
+          <p class="text-sm text-muted mb-3" id="notDoneTaskName"></p>
+          <div class="mb-3">
+            <label class="form-label text-xs font-weight-bold">Reason <span class="text-danger">*</span></label>
+            <select name="not_done_reason" class="form-select" required>
+              <option value="">— Select a reason —</option>
+              <option value="workload">Could not complete due to workload</option>
+              <option value="waiting_approval">Waiting for approval</option>
+              <option value="material_unavailable">Required material unavailable</option>
+              <option value="assigned_late">Assigned late</option>
+              <option value="other">Other reason</option>
+            </select>
+          </div>
+          <div class="mb-0">
+            <label class="form-label text-xs font-weight-bold">Additional Details</label>
+            <textarea name="not_done_detail" class="form-control" rows="2" placeholder="Provide more context if needed..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-times me-1"></i>Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openDoneModal(pk, title) {
+  document.getElementById('doneForm').action = '/staff/tasks/' + pk + '/update/';
+  document.getElementById('doneTaskName').textContent = 'Task: ' + title;
+  new bootstrap.Modal(document.getElementById('doneModal')).show();
+}
+function openNotDoneModal(pk, title) {
+  document.getElementById('notDoneForm').action = '/staff/tasks/' + pk + '/update/';
+  document.getElementById('notDoneTaskName').textContent = 'Task: ' + title;
+  new bootstrap.Modal(document.getElementById('notDoneModal')).show();
+}
+</script>
+{% endblock %}

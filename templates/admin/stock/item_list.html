@@ -1,0 +1,65 @@
+{% extends 'dashboard.html' %}
+{% block title %}Stock Items | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0">Stock Items</h4>
+    <div>
+      <a href="{% url 'schooladmin:add_stock_item' %}" class="btn btn-primary btn-sm me-1"><i class="fas fa-plus me-1"></i>Add Item</a>
+      <a href="{% url 'schooladmin:stock_in' %}" class="btn btn-success btn-sm me-1"><i class="fas fa-arrow-down me-1"></i>In</a>
+      <a href="{% url 'schooladmin:stock_out' %}" class="btn btn-warning btn-sm me-1"><i class="fas fa-arrow-up me-1"></i>Out</a>
+      <a href="{% url 'schooladmin:export_stock' %}?fmt=excel&type=items" class="btn btn-outline-success btn-sm me-1" title="Export Excel"><i class="fas fa-file-excel me-1"></i>Excel</a>
+      <a href="{% url 'schooladmin:export_stock' %}?fmt=csv&type=items" class="btn btn-outline-secondary btn-sm" title="Export CSV"><i class="fas fa-file-csv me-1"></i>CSV</a>
+    </div>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3"><input type="text" name="search" class="form-control form-control-sm" placeholder="Search name or SKU..." value="{{ search }}"></div>
+        <div class="col-md-2"><select name="branch" class="form-select form-select-sm"><option value="">All Branches</option>{% for b in branches %}<option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><select name="category" class="form-select form-select-sm"><option value="">All Categories</option>{% for c in categories %}<option value="{{ c.id }}" {% if selected_category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><select name="status" class="form-select form-select-sm"><option value="">All Status</option><option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option><option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option></select></div>
+        <div class="col-md-3 d-flex gap-1"><button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-search me-1"></i>Search</button><a href="{% url 'schooladmin:stock_items' %}" class="btn btn-outline-secondary btn-sm">Clear</a></div>
+      </form>
+    </div>
+  </div>
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th class="text-xs">#</th><th class="text-xs">Name</th><th class="text-xs">SKU</th><th class="text-xs">Category</th><th class="text-xs">Branch</th><th class="text-xs">Unit</th><th class="text-xs">Qty</th><th class="text-xs">Alert</th><th class="text-xs">Status</th><th class="text-xs text-center">Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr {% if item.is_low_stock %}class="table-warning"{% endif %}>
+            <td class="text-xs text-muted">{{ forloop.counter }}</td>
+            <td>
+              <p class="text-sm font-weight-bold mb-0">{{ item.name }}</p>
+              {% if item.supplier %}<p class="text-xs text-muted mb-0">{{ item.supplier }}</p>{% endif %}
+            </td>
+            <td class="text-xs">{{ item.sku|default:"-" }}</td>
+            <td class="text-sm">{{ item.category.name|default:"-" }}</td>
+            <td class="text-sm">{{ item.branch.name|default:"-" }}</td>
+            <td class="text-sm">{{ item.unit }}</td>
+            <td>
+              {% if item.is_low_stock %}<span class="badge bg-danger">{{ item.quantity }}</span>
+              {% else %}<span class="badge bg-success">{{ item.quantity }}</span>{% endif %}
+            </td>
+            <td class="text-sm">{{ item.low_stock_threshold }}</td>
+            <td><span class="badge {% if item.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">{{ item.status|capfirst }}</span></td>
+            <td class="text-center">
+              <a href="{% url 'schooladmin:edit_stock_item' item.pk %}" class="btn btn-xs btn-outline-primary mb-0"><i class="fas fa-edit"></i></a>
+              <a href="{% url 'schooladmin:stock_movements' %}?item={{ item.pk }}" class="btn btn-xs btn-outline-info mb-0"><i class="fas fa-history"></i></a>
+              <form method="post" action="{% url 'schooladmin:delete_stock_item' item.pk %}" class="d-inline" onsubmit="return confirm('Delete this item?')">{% csrf_token %}<button type="submit" class="btn btn-xs btn-outline-danger mb-0"><i class="fas fa-trash"></i></button></form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="10" class="text-center text-muted py-5"><i class="fas fa-boxes fa-2x mb-2 d-block"></i>No stock items found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

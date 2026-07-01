@@ -1,0 +1,158 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Finance Dashboard | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="font-weight-bolder mb-0">Finance Dashboard</h4>
+      <p class="text-sm text-muted mb-0">Income, Expense & Balance Overview</p>
+    </div>
+    <div>
+      <a href="{% url 'schooladmin:add_income' %}" class="btn btn-success btn-sm me-2"><i class="fas fa-plus me-1"></i>Add Income</a>
+      <a href="{% url 'schooladmin:add_expense' %}" class="btn btn-danger btn-sm"><i class="fas fa-minus me-1"></i>Add Expense</a>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show" role="alert">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <div class="row g-4 mb-4">
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div>
+            <p class="text-xs text-uppercase font-weight-bold text-success mb-1">Total Income</p>
+            <h3 class="font-weight-bolder mb-0">Rs. {{ total_income|floatformat:2 }}</h3>
+            <span class="text-xs text-muted">All time</span>
+          </div>
+          <div class="icon icon-shape bg-gradient-success text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-arrow-up"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div>
+            <p class="text-xs text-uppercase font-weight-bold text-danger mb-1">Total Expense</p>
+            <h3 class="font-weight-bolder mb-0">Rs. {{ total_expense|floatformat:2 }}</h3>
+            <span class="text-xs text-muted">All time</span>
+          </div>
+          <div class="icon icon-shape bg-gradient-danger text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-arrow-down"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div>
+            <p class="text-xs text-uppercase font-weight-bold text-primary mb-1">Net Balance</p>
+            <h3 class="font-weight-bolder mb-0 {% if net_balance >= 0 %}text-success{% else %}text-danger{% endif %}">Rs. {{ net_balance|floatformat:2 }}</h3>
+            <span class="text-xs text-muted">Income - Expense</span>
+          </div>
+          <div class="icon icon-shape bg-gradient-primary text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-balance-scale"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div>
+            <p class="text-xs text-uppercase font-weight-bold text-warning mb-1">This Month</p>
+            <h5 class="font-weight-bolder mb-0 text-success">+Rs. {{ month_income|floatformat:0 }}</h5>
+            <h5 class="font-weight-bolder mb-0 text-danger">-Rs. {{ month_expense|floatformat:0 }}</h5>
+          </div>
+          <div class="icon icon-shape bg-gradient-warning text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-arrow-up text-success me-2"></i>Today's Summary</h6>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span class="text-sm">Today Income</span>
+            <span class="font-weight-bold text-success">Rs. {{ today_income|floatformat:2 }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center py-2">
+            <span class="text-sm">Today Expense</span>
+            <span class="font-weight-bold text-danger">Rs. {{ today_expense|floatformat:2 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-tags text-info me-2"></i>Quick Actions</h6>
+        </div>
+        <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+          <a href="{% url 'schooladmin:income_list' %}" class="btn btn-outline-success btn-sm"><i class="fas fa-list me-1"></i>Income List</a>
+          <a href="{% url 'schooladmin:expense_list' %}" class="btn btn-outline-danger btn-sm"><i class="fas fa-list me-1"></i>Expense List</a>
+          <a href="{% url 'schooladmin:finance_categories' %}" class="btn btn-outline-info btn-sm"><i class="fas fa-tag me-1"></i>Categories</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between">
+      <h6 class="mb-0 font-weight-bolder"><i class="fas fa-history text-primary me-2"></i>Recent Transactions</h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="text-xs text-uppercase">Date</th>
+            <th class="text-xs text-uppercase">Title</th>
+            <th class="text-xs text-uppercase">Type</th>
+            <th class="text-xs text-uppercase">Category</th>
+            <th class="text-xs text-uppercase">Branch</th>
+            <th class="text-xs text-uppercase">Method</th>
+            <th class="text-xs text-uppercase text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tx in recent_transactions %}
+          <tr>
+            <td class="text-sm">{{ tx.transaction_date }}</td>
+            <td class="text-sm font-weight-bold">{{ tx.title }}</td>
+            <td>
+              {% if tx.transaction_type == 'income' %}
+                <span class="badge bg-success">Income</span>
+              {% else %}
+                <span class="badge bg-danger">Expense</span>
+              {% endif %}
+            </td>
+            <td class="text-sm">{{ tx.category.name|default:"-" }}</td>
+            <td class="text-sm">{{ tx.branch.name|default:"-" }}</td>
+            <td class="text-sm text-capitalize">{{ tx.payment_method }}</td>
+            <td class="text-sm font-weight-bold text-end {% if tx.transaction_type == 'income' %}text-success{% else %}text-danger{% endif %}">
+              {% if tx.transaction_type == 'income' %}+{% else %}-{% endif %}Rs. {{ tx.amount|floatformat:2 }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4">No transactions yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

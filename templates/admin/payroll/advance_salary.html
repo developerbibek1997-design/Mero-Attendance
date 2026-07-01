@@ -1,0 +1,157 @@
+{% extends 'dashboard.html' %}
+{% block title %}Advance Salary | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+  .adv-card { border:none; border-radius:14px; box-shadow:0 4px 18px rgba(0,0,0,.06); }
+  .adv-header { background:#0f172a; color:#fff; border-radius:14px 14px 0 0; padding:1rem 1.5rem; }
+  .pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:700; }
+  .pill-green  { background:#d1fae5; color:#065f46; }
+  .pill-yellow { background:#fef9c3; color:#854d0e; }
+  .pill-gray   { background:#f3f4f6; color:#4b5563; }
+  .pill-red    { background:#fee2e2; color:#991b1b; }
+  .prog-wrap { background:#e5e7eb; border-radius:999px; height:6px; overflow:hidden; margin-top:4px; }
+  .prog-bar  { height:6px; border-radius:999px; background:#e11d48; }
+</style>
+
+<div class="container-fluid py-3">
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="row g-3">
+
+    <!-- ── New Advance Form ── -->
+    <div class="col-lg-4">
+      <div class="card adv-card">
+        <div class="adv-header">
+          <h6 class="mb-0 text-white"><i class="fas fa-money-bill-wave me-2"></i>Approve New Advance</h6>
+        </div>
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create">
+            <div class="mb-3">
+              <label class="text-xs fw-bold">Member *</label>
+              <select name="member_id" class="form-select" required>
+                <option value="">— Select Member —</option>
+                {% for m in members %}
+                <option value="{{ m.id }}">{{ m.name }} — Rs. {{ m.salary_amount|floatformat:0 }}/mo</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="text-xs fw-bold">Total Advance Amount (Rs.) *</label>
+              <input type="number" name="total_amount" class="form-control" step="0.01" min="1" required placeholder="e.g. 15000">
+            </div>
+            <div class="mb-3">
+              <label class="text-xs fw-bold">Recover Over (months) *</label>
+              <input type="number" name="num_installments" class="form-control" min="1" max="24" value="1" required>
+              <small class="text-muted">Installment per month = Total ÷ Months</small>
+            </div>
+            <div class="mb-3">
+              <label class="text-xs fw-bold">Recovery Starts From</label>
+              <input type="date" name="effective_date" class="form-control" value="{{ today }}">
+            </div>
+            <div class="mb-3">
+              <label class="text-xs fw-bold">Purpose</label>
+              <input type="text" name="purpose" class="form-control" placeholder="e.g. Medical emergency">
+            </div>
+            <div class="mb-3">
+              <label class="text-xs fw-bold">Notes</label>
+              <textarea name="notes" class="form-control" rows="2" placeholder="Internal notes..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-danger w-100 fw-bold">
+              <i class="fas fa-check me-1"></i> Approve Advance
+            </button>
+          </form>
+          <div class="mt-3 p-2 rounded-3" style="background:#eff6ff;border:1px solid #bfdbfe;font-size:.77rem;">
+            <i class="fas fa-info-circle text-primary me-1"></i>
+            The installment amount is <strong>auto-deducted</strong> each time a payslip is generated for this member. Advance status updates automatically when fully recovered.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Advances Table ── -->
+    <div class="col-lg-8">
+      <div class="card adv-card">
+        <div class="adv-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 text-white"><i class="fas fa-list me-2"></i>All Advance Records</h6>
+          <span class="badge bg-light text-dark">{{ advances|length }} total</span>
+        </div>
+        <div class="card-body p-0">
+          {% if advances %}
+          <div class="table-responsive">
+            <table class="table mb-0" style="font-size:.85rem;">
+              <thead style="background:#f9fafb;">
+                <tr>
+                  <th class="px-3 py-2 text-xs text-muted">Member</th>
+                  <th class="px-3 py-2 text-xs text-muted">Total</th>
+                  <th class="px-3 py-2 text-xs text-muted">Installment</th>
+                  <th class="px-3 py-2 text-xs text-muted">Progress</th>
+                  <th class="px-3 py-2 text-xs text-muted">Remaining</th>
+                  <th class="px-3 py-2 text-xs text-muted">Status</th>
+                  <th class="px-3 py-2 text-xs text-muted">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for adv in advances %}
+                <tr>
+                  <td class="px-3 py-2">
+                    <strong>{{ adv.member.name }}</strong>
+                    {% if adv.purpose %}<br><small class="text-muted">{{ adv.purpose }}</small>{% endif %}
+                    {% if adv.effective_date %}<br><small class="text-muted">From: {{ adv.effective_date }}</small>{% endif %}
+                  </td>
+                  <td class="px-3 py-2 fw-bold text-danger">Rs. {{ adv.total_amount|floatformat:0 }}</td>
+                  <td class="px-3 py-2">Rs. {{ adv.installment_amount|floatformat:0 }}/mo</td>
+                  <td class="px-3 py-2" style="min-width:120px;">
+                    <small>{{ adv.paid_installments }}/{{ adv.num_installments }}</small>
+                    <div class="prog-wrap">
+                      {% widthratio adv.paid_installments adv.num_installments 100 as pct %}
+                      <div class="prog-bar" style="width:{{ pct }}%;background:{% if adv.status == 'fully_recovered' %}#22c55e{% else %}#e11d48{% endif %};"></div>
+                    </div>
+                  </td>
+                  <td class="px-3 py-2 fw-bold">Rs. {{ adv.remaining_balance|floatformat:0 }}</td>
+                  <td class="px-3 py-2">
+                    {% if adv.status == 'active' %}<span class="pill pill-yellow">Active</span>
+                    {% elif adv.status == 'fully_recovered' %}<span class="pill pill-green">Recovered</span>
+                    {% else %}<span class="pill pill-gray">Cancelled</span>{% endif %}
+                  </td>
+                  <td class="px-3 py-2">
+                    {% if adv.status == 'active' %}
+                    <form method="post" class="d-inline" onsubmit="return confirm('Apply one installment manually?')">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="apply_installment">
+                      <input type="hidden" name="adv_pk" value="{{ adv.pk }}">
+                      <button class="btn btn-xs btn-outline-success mb-0 px-2 py-0" title="Apply installment"><i class="fas fa-check"></i></button>
+                    </form>
+                    <form method="post" class="d-inline" onsubmit="return confirm('Cancel this advance?')">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="cancel">
+                      <input type="hidden" name="adv_pk" value="{{ adv.pk }}">
+                      <button class="btn btn-xs btn-outline-danger mb-0 px-2 py-0" title="Cancel advance"><i class="fas fa-times"></i></button>
+                    </form>
+                    {% elif adv.status == 'fully_recovered' %}
+                    <span class="pill pill-green"><i class="fas fa-check me-1"></i>Done</span>
+                    {% else %}
+                    <span class="text-muted text-xs">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="fas fa-hand-holding-usd fa-3x mb-3 text-light"></i>
+            <p class="mb-0">No advance salary records yet.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

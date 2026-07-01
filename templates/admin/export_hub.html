@@ -1,0 +1,276 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Data Export | {{ org.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+      <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="text-white mb-0"><i class="fas fa-download me-2"></i>Data Export & Backup</h6>
+          <p class="text-white opacity-8 text-xs mb-0">Download reports as Excel (.xlsx) or CSV</p>
+        </div>
+        {% if nepali_enabled %}
+        <span class="badge bg-warning text-dark"><i class="fas fa-calendar me-1"></i>Nepali Date (BS) enabled</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card-body p-4">
+      <p class="text-sm text-muted mb-0">
+        All exports include Nepali BS dates alongside AD dates when Nepali Calendar is enabled for this organization.
+        Use the filters below each section to narrow the export range.
+      </p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Attendance -->
+    <div class="col-md-6 col-xl-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="icon icon-shape shadow border-radius-md bg-gradient-primary text-center" style="width:48px;height:48px;">
+              <i class="fas fa-user-clock text-white fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 font-weight-bolder">Attendance Records</h6>
+              <p class="text-xs text-muted mb-0">All check-in/out scans</p>
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="text-xs text-muted">From Date</label>
+              <input type="date" id="att_from" class="form-control form-control-sm">
+            </div>
+            <div class="col-6">
+              <label class="text-xs text-muted">To Date</label>
+              <input type="date" id="att_to" class="form-control form-control-sm">
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button onclick="doExport('{% url 'schooladmin:export_attendance' %}','excel',{from_date:document.getElementById('att_from').value,to_date:document.getElementById('att_to').value})" class="btn btn-primary btn-sm flex-fill">
+              <i class="fas fa-file-excel me-1"></i>Excel
+            </button>
+            <button onclick="doExport('{% url 'schooladmin:export_attendance' %}','csv',{from_date:document.getElementById('att_from').value,to_date:document.getElementById('att_to').value})" class="btn btn-outline-primary btn-sm flex-fill">
+              <i class="fas fa-file-csv me-1"></i>CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payslips -->
+    {% if org.feature_payroll %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="icon icon-shape shadow border-radius-md text-center" style="width:48px;height:48px;background:linear-gradient(135deg,#16a34a,#22c55e);">
+              <i class="fas fa-file-invoice-dollar text-white fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 font-weight-bolder">Payslips</h6>
+              <p class="text-xs text-muted mb-0">Salary & payroll records</p>
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="text-xs text-muted">From Date</label>
+              <input type="date" id="pay_from" class="form-control form-control-sm">
+            </div>
+            <div class="col-6">
+              <label class="text-xs text-muted">To Date</label>
+              <input type="date" id="pay_to" class="form-control form-control-sm">
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button onclick="doExport('{% url 'schooladmin:export_payslips' %}','excel',{from_date:document.getElementById('pay_from').value,to_date:document.getElementById('pay_to').value})" class="btn btn-success btn-sm flex-fill">
+              <i class="fas fa-file-excel me-1"></i>Excel
+            </button>
+            <button onclick="doExport('{% url 'schooladmin:export_payslips' %}','csv',{from_date:document.getElementById('pay_from').value,to_date:document.getElementById('pay_to').value})" class="btn btn-outline-success btn-sm flex-fill">
+              <i class="fas fa-file-csv me-1"></i>CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Stock -->
+    {% if org.feature_stock %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="icon icon-shape shadow border-radius-md text-center" style="width:48px;height:48px;background:linear-gradient(135deg,#d97706,#f59e0b);">
+              <i class="fas fa-boxes text-white fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 font-weight-bolder">Stock / Inventory</h6>
+              <p class="text-xs text-muted mb-0">Items and movement history</p>
+            </div>
+          </div>
+          <div class="mb-3">
+            <select id="stock_type" class="form-select form-select-sm">
+              <option value="items">Stock Items</option>
+              <option value="movements">Movement History</option>
+            </select>
+          </div>
+          <div class="d-flex gap-2">
+            <button onclick="doExport('{% url 'schooladmin:export_stock' %}','excel',{type:document.getElementById('stock_type').value})" class="btn btn-warning btn-sm flex-fill text-white">
+              <i class="fas fa-file-excel me-1"></i>Excel
+            </button>
+            <button onclick="doExport('{% url 'schooladmin:export_stock' %}','csv',{type:document.getElementById('stock_type').value})" class="btn btn-outline-warning btn-sm flex-fill">
+              <i class="fas fa-file-csv me-1"></i>CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Finance -->
+    {% if org.feature_finance %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="icon icon-shape shadow border-radius-md text-center" style="width:48px;height:48px;background:linear-gradient(135deg,#15803d,#4ade80);">
+              <i class="fas fa-chart-pie text-white fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 font-weight-bolder">Finance</h6>
+              <p class="text-xs text-muted mb-0">Income & expense transactions</p>
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-12">
+              <select id="fin_type" class="form-select form-select-sm mb-2">
+                <option value="all">All Transactions</option>
+                <option value="income">Income Only</option>
+                <option value="expense">Expense Only</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <input type="date" id="fin_from" class="form-control form-control-sm" placeholder="From">
+            </div>
+            <div class="col-6">
+              <input type="date" id="fin_to" class="form-control form-control-sm" placeholder="To">
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button onclick="doExport('{% url 'schooladmin:export_finance' %}','excel',{type:document.getElementById('fin_type').value,from_date:document.getElementById('fin_from').value,to_date:document.getElementById('fin_to').value})" class="btn btn-sm flex-fill text-white" style="background:#15803d;">
+              <i class="fas fa-file-excel me-1"></i>Excel
+            </button>
+            <button onclick="doExport('{% url 'schooladmin:export_finance' %}','csv',{type:document.getElementById('fin_type').value,from_date:document.getElementById('fin_from').value,to_date:document.getElementById('fin_to').value})" class="btn btn-outline-success btn-sm flex-fill">
+              <i class="fas fa-file-csv me-1"></i>CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Leave -->
+    {% if org.feature_leave %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="icon icon-shape shadow border-radius-md text-center" style="width:48px;height:48px;background:linear-gradient(135deg,#7c3aed,#a78bfa);">
+              <i class="fas fa-calendar-times text-white fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 font-weight-bolder">Leave Reports</h6>
+              <p class="text-xs text-muted mb-0">All leave applications</p>
+            </div>
+          </div>
+          <div class="mb-3">
+            <p class="text-xs text-muted mb-0">Exports all leave requests with status, dates, and reason.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button onclick="doExport('{% url 'schooladmin:export_leave' %}','excel',{})" class="btn btn-sm flex-fill text-white" style="background:#7c3aed;">
+              <i class="fas fa-file-excel me-1"></i>Excel
+            </button>
+            <button onclick="doExport('{% url 'schooladmin:export_leave' %}','csv',{})" class="btn btn-outline-secondary btn-sm flex-fill">
+              <i class="fas fa-file-csv me-1"></i>CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Members -->
+    <div class="col-md-6 col-xl-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="icon icon-shape shadow border-radius-md text-center" style="width:48px;height:48px;background:linear-gradient(135deg,#0369a1,#38bdf8);">
+              <i class="fas fa-users text-white fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 font-weight-bolder">Member List</h6>
+              <p class="text-xs text-muted mb-0">All members with details</p>
+            </div>
+          </div>
+          <div class="mb-3">
+            <p class="text-xs text-muted mb-0">Full member directory with contact info, salary, and status.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button onclick="doExport('{% url 'schooladmin:export_members' %}','excel',{})" class="btn btn-sm flex-fill text-white" style="background:#0369a1;">
+              <i class="fas fa-file-excel me-1"></i>Excel
+            </button>
+            <button onclick="doExport('{% url 'schooladmin:export_members' %}','csv',{})" class="btn btn-outline-primary btn-sm flex-fill">
+              <i class="fas fa-file-csv me-1"></i>CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tasks -->
+    {% if org.feature_tasks %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="icon icon-shape shadow border-radius-md text-center" style="width:48px;height:48px;background:linear-gradient(135deg,#6d28d9,#c084fc);">
+              <i class="fas fa-tasks text-white fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 font-weight-bolder">Tasks</h6>
+              <p class="text-xs text-muted mb-0">All task instances with status</p>
+            </div>
+          </div>
+          <div class="mb-3">
+            <p class="text-xs text-muted mb-0">Every task assignment with due dates, completion notes, and priority.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button onclick="doExport('{% url 'schooladmin:export_tasks' %}','excel',{})" class="btn btn-sm flex-fill text-white" style="background:#6d28d9;">
+              <i class="fas fa-file-excel me-1"></i>Excel
+            </button>
+            <button onclick="doExport('{% url 'schooladmin:export_tasks' %}','csv',{})" class="btn btn-outline-secondary btn-sm flex-fill">
+              <i class="fas fa-file-csv me-1"></i>CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- /row -->
+</div>
+
+<script>
+function doExport(url, fmt, params) {
+  const qs = new URLSearchParams({fmt, ...params});
+  // Remove empty params
+  for (const [k, v] of [...qs.entries()]) { if (!v) qs.delete(k); }
+  window.location.href = url + '?' + qs.toString();
+}
+</script>
+{% endblock %}

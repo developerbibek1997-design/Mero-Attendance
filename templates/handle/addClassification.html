@@ -1,178 +1,513 @@
 {% extends 'dashboard.html' %}
-
-{% block title %}
-    Classification Management | Attendance Management System
-{% endblock title %}
+{% block title %}Manage Structure | {{ org.name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header pb-0 d-flex justify-content-between align-items-center">
-                    <h5>Add New Classification</h5>
-                    <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#addClassificationForm">
-                        <i class="fas fa-plus me-1"></i> Toggle Form
-                    </button>
-                </div>
-                <div class="card-body pt-0 collapse show" id="addClassificationForm">
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                    {% endfor %}
-                    
-                    <form method="post" class="needs-validation" novalidate>
-                        {% csrf_token %}
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div class="form-group">
-                                    <label for="id_name" class="form-label">Classification Name</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-tag"></i></span>
-                                        {{ form.name }}
-                                    </div>
-                                    <div class="invalid-feedback">
-                                        Please provide a valid classification name.
-                                    </div>
-                                    {% if form.name.errors %}
-                                        <div class="text-danger small">{{ form.name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-4 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fas fa-save me-1"></i> Save Classification
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header pb-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5>Classification List</h5>
-                        <span class="badge bg-gradient-primary">{{ clas.count }} classifications</span>
-                    </div>
-                    <p class="text-sm mb-0">Manage your organization's classification categories</p>
-                </div>
-                <div class="card-body px-0 pt-0 pb-2">
-                    <div class="table-responsive p-0">
-                        {% if clas %}
-                        <table class="table align-items-center mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Classification</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for classification in clas %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex px-3 py-1">
-                                            <div class="d-flex flex-column justify-content-center">
-                                                <h6 class="mb-0 text-sm text-capitalize">{{ classification.name }}</h6>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        <a href="{% url 'handle:editClassification' classification.id %}" class="btn btn-sm btn-outline-primary mx-1" data-toggle="tooltip" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <button class="btn btn-sm btn-outline-danger mx-1" data-bs-toggle="modal" data-bs-target="#deleteModal{{classification.id}}" title="Delete">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-
-                                <!-- Delete Confirmation Modal -->
-                                <div class="modal fade" id="deleteModal{{classification.id}}" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <p>Are you sure you want to delete the classification <strong>"{{ classification.name }}"</strong>?</p>
-                                                <p class="text-danger"><small>This action cannot be undone.</small></p>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                <a href="{% url 'handle:deleteClassification' classification.id %}" class="btn btn-danger">Delete</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                        {% else %}
-                        <div class="text-center p-4">
-                            <img src="https://cdn-icons-png.flaticon.com/512/4076/4076478.png" height="100" alt="No classifications">
-                            <h5 class="mt-3">No Classifications Found</h5>
-                            <p class="text-muted">Start by adding your first classification above</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <style>
-    .card {
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    }
-    .card-header {
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    }
-    .table th {
-        background-color: #f8f9fa;
-    }
-    .form-control, .input-group-text {
-        height: 42px;
-    }
-    .input-group-text {
-        background-color: #f8f9fa;
-    }
-    .badge {
-        font-size: 0.75rem;
-        padding: 0.35em 0.65em;
-    }
+:root {
+  --ink: #0f172a; --slate: #334155; --muted: #64748b;
+  --border: #e2e8f0; --bg: #f8fafc;
+  --indigo: #6366f1; --indigo-dk: #4f46e5; --indigo-lt: #eef2ff;
+}
+
+.pg-wrap { background: var(--bg); min-height: 100vh; padding: 2rem; }
+
+/* ── Page header ────────────────────────────────── */
+.pg-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);
+  border-radius: 20px; padding: 2rem 2.2rem 2.4rem; position: relative; overflow: hidden; margin-bottom: -1rem;
+}
+.pg-header::before {
+  content: ''; position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M0 0h20v20H0zM20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E");
+}
+.pg-header-title { color: #fff; font-size: 1.4rem; font-weight: 800; margin: 0; }
+.pg-header-sub { color: #94a3b8; font-size: .83rem; margin: .3rem 0 0; }
+
+/* ── Tab card ───────────────────────────────────── */
+.tab-card {
+  background: #fff; border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.07);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  position: relative; z-index: 1;
+}
+
+/* ── Tabs ───────────────────────────────────────── */
+.tab-nav {
+  display: flex; border-bottom: 1px solid var(--border);
+  background: #fafbff; padding: .5rem .5rem 0; gap: .25rem;
+}
+.tab-btn {
+  padding: .65rem 1.2rem; border: none; background: transparent;
+  border-radius: 10px 10px 0 0; font-size: .82rem; font-weight: 700;
+  color: var(--muted); cursor: pointer; transition: all .18s;
+  display: flex; align-items: center; gap: .45rem; border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--indigo); background: var(--indigo-lt); }
+.tab-btn.active { color: var(--indigo); background: #fff; border-bottom-color: var(--indigo); border: 1px solid var(--border); border-bottom-color: var(--indigo); }
+.tab-btn .tab-icon { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: .75rem; }
+.tab-btn.active .tab-icon { background: var(--indigo-lt); color: var(--indigo); }
+
+.tab-pane { display: none; padding: 2rem; }
+.tab-pane.active { display: block; }
+
+/* ── Section heading inside tab ─────────────────── */
+.sec-hd {
+  display: flex; align-items: center; gap: .8rem; margin-bottom: 1.5rem;
+  padding-bottom: 1rem; border-bottom: 1px solid var(--border);
+}
+.sec-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0;
+}
+.sec-icon.indigo { background: var(--indigo-lt); color: var(--indigo); }
+.sec-icon.amber { background: #fef3c7; color: #d97706; }
+.sec-icon.teal { background: #ccfbf1; color: #0d9488; }
+.sec-icon.rose { background: #ffe4e6; color: #e11d48; }
+.sec-title { font-size: .9rem; font-weight: 800; color: var(--ink); margin: 0; }
+.sec-sub { font-size: .75rem; color: var(--muted); margin: .1rem 0 0; }
+
+/* ── Form controls ──────────────────────────────── */
+.f-label {
+  font-size: .72rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .05em; margin-bottom: .4rem; display: block;
+}
+.pg-wrap input[type=text], .pg-wrap input[type=email], .pg-wrap input[type=tel],
+.pg-wrap input[type=number], .pg-wrap select, .pg-wrap textarea {
+  width: 100%; border: 1.5px solid var(--border); border-radius: 10px;
+  padding: .7rem 1rem; font-size: .88rem; color: var(--ink);
+  background: #fff; transition: border-color .15s, box-shadow .15s; outline: none;
+  min-height: 44px;
+}
+.pg-wrap input:focus, .pg-wrap select:focus, .pg-wrap textarea:focus {
+  border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+}
+.pg-wrap select[multiple] { min-height: 110px; padding: .5rem .75rem; }
+
+.btn-save {
+  background: linear-gradient(135deg, var(--indigo), var(--indigo-dk));
+  color: #fff; border: none; border-radius: 10px;
+  padding: .7rem 2rem; font-size: .88rem; font-weight: 700; cursor: pointer;
+  transition: opacity .15s; display: inline-flex; align-items: center; gap: .5rem;
+  min-height: 44px;
+}
+.btn-save:hover { opacity: .88; }
+.btn-save-outline {
+  background: transparent; color: var(--indigo); border: 1.5px solid var(--indigo);
+  border-radius: 10px; padding: .7rem 2rem; font-size: .88rem; font-weight: 700;
+  cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: .5rem;
+  min-height: 44px;
+}
+.btn-save-outline:hover { background: var(--indigo-lt); }
+
+/* ── List card ──────────────────────────────────── */
+.list-card {
+  background: #fff; border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.05);
+  border: 1px solid var(--border); overflow: hidden;
+}
+.list-card-hd {
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.list-card-hd-title { font-size: .9rem; font-weight: 800; color: var(--ink); margin: 0; }
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th {
+  font-size: .68rem; font-weight: 700; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .05em; padding: .75rem 1.25rem; background: #fafbff;
+  border-bottom: 1px solid var(--border); text-align: left;
+}
+.tbl td { padding: .85rem 1.25rem; border-bottom: 1px solid #f1f5f9; font-size: .85rem; color: var(--ink); }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: #fafbff; }
+
+.badge-pill {
+  display: inline-block; padding: .2rem .65rem; border-radius: 99px;
+  font-size: .7rem; font-weight: 700; background: var(--indigo-lt); color: var(--indigo);
+  border: 1px solid #c7d2fe;
+}
+.badge-pill.neutral { background: #f1f5f9; color: var(--slate); border-color: var(--border); }
+
+.action-btn {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .3rem .75rem; border-radius: 8px; font-size: .78rem; font-weight: 700;
+  border: 1px solid var(--border); color: var(--slate); text-decoration: none;
+  transition: all .15s; cursor: pointer; background: #fff;
+}
+.action-btn:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-lt); }
+.action-btn.danger:hover { border-color: #e11d48; color: #e11d48; background: #ffe4e6; }
+
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+.empty-state i { font-size: 2.5rem; margin-bottom: .75rem; opacity: .35; }
+
+/* ── Alert ──────────────────────────────────────── */
+.pg-alert {
+  border-radius: 12px; padding: .85rem 1.1rem; margin-bottom: 1rem;
+  font-size: .85rem; display: flex; align-items: center; gap: .6rem;
+}
+.pg-alert.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+.pg-alert.error { background: #fff1f2; border: 1px solid #fecdd3; color: #9f1239; }
 </style>
 
-<script>
-    // Enable tooltips
-    $(function () {
-        $('[data-toggle="tooltip"]').tooltip()
-    })
+<div class="pg-wrap">
 
-    // Form validation
-    (function () {
-        'use strict'
-        var forms = document.querySelectorAll('.needs-validation')
-        Array.prototype.slice.call(forms)
-            .forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    if (!form.checkValidity()) {
-                        event.preventDefault()
-                        event.stopPropagation()
-                    }
-                    form.classList.add('was-validated')
-                }, false)
-            })
-    })()
+  <!-- Header -->
+  <div class="pg-header mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 position-relative">
+      <div>
+        <div style="font-size:.7rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:.4rem;">{{ org.name }}</div>
+        <h4 class="pg-header-title"><i class="fas fa-sitemap me-2 opacity-75"></i>Manage Structure</h4>
+        <p class="pg-header-sub">Branches · Classifications · Sections · Courses</p>
+      </div>
+      <a href="javascript:history.back()" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:.4rem .9rem;font-size:.8rem;font-weight:600;text-decoration:none;">
+        <i class="fas fa-arrow-left me-1"></i>Back
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% for message in messages %}
+  <div class="pg-alert {% if message.tags == 'success' %}success{% else %}error{% endif %} mb-3">
+    <i class="fas {% if message.tags == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}"></i>
+    {{ message }}
+  </div>
+  {% endfor %}
+
+  <!-- Tab Card -->
+  <div class="tab-card mb-4">
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('branch', this)">
+        <div class="tab-icon"><i class="fas fa-code-branch"></i></div>Branch
+      </button>
+      <button class="tab-btn" onclick="switchTab('classification', this)">
+        <div class="tab-icon"><i class="fas fa-layer-group"></i></div>Classification
+      </button>
+      <button class="tab-btn" onclick="switchTab('section', this)">
+        <div class="tab-icon"><i class="fas fa-object-group"></i></div>Section
+      </button>
+      <button class="tab-btn" onclick="switchTab('course', this)">
+        <div class="tab-icon"><i class="fas fa-book-open"></i></div>Course
+      </button>
+    </div>
+
+    <!-- Branch Tab -->
+    <div class="tab-pane active" id="tab-branch">
+      <div class="sec-hd">
+        <div class="sec-icon rose"><i class="fas fa-code-branch"></i></div>
+        <div>
+          <div class="sec-title">Add Branch</div>
+          <div class="sec-sub">A branch groups members and classifications under a physical or logical location</div>
+        </div>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="add_branch" value="1">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="f-label">Branch Name <span style="color:#e11d48">*</span></label>
+            {{ branch_form.name }}
+          </div>
+          <div class="col-md-2">
+            <label class="f-label">Code</label>
+            {{ branch_form.code }}
+          </div>
+          <div class="col-md-3">
+            <label class="f-label">Manager</label>
+            {{ branch_form.manager }}
+          </div>
+          <div class="col-md-3">
+            <label class="f-label">Status</label>
+            {{ branch_form.status }}
+          </div>
+          <div class="col-md-4">
+            <label class="f-label">Address</label>
+            {{ branch_form.address }}
+          </div>
+          <div class="col-md-4">
+            <label class="f-label">Phone</label>
+            {{ branch_form.phone }}
+          </div>
+          <div class="col-md-4">
+            <label class="f-label">Email</label>
+            {{ branch_form.email }}
+          </div>
+          <div class="col-12 d-flex justify-content-end pt-2">
+            <button type="submit" class="btn-save"><i class="fas fa-code-branch"></i>Save Branch</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Classification Tab -->
+    <div class="tab-pane" id="tab-classification">
+      <div class="sec-hd">
+        <div class="sec-icon indigo"><i class="fas fa-layer-group"></i></div>
+        <div>
+          <div class="sec-title">Add Classification</div>
+          <div class="sec-sub">A classification represents a department, class, grade, or team within a branch</div>
+        </div>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="f-label">Classification Name <span style="color:#e11d48">*</span></label>
+            {{ form.name }}
+            {% if form.name.errors %}<div style="color:#e11d48;font-size:.78rem;margin-top:.3rem;">{{ form.name.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="f-label">Branch</label>
+            {{ form.branch }}
+          </div>
+          <div class="col-md-3">
+            <label class="f-label">Status</label>
+            {{ form.status }}
+          </div>
+          <div class="col-12 d-flex justify-content-end pt-2">
+            <button type="submit" class="btn-save"><i class="fas fa-layer-group"></i>Save Classification</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Section Tab -->
+    <div class="tab-pane" id="tab-section">
+      <div class="sec-hd">
+        <div class="sec-icon teal"><i class="fas fa-object-group"></i></div>
+        <div>
+          <div class="sec-title">Add Section</div>
+          <div class="sec-sub">Sections subdivide a classification (e.g., Section A, Morning Batch)</div>
+        </div>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="add_section" value="1">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="f-label">Classification <span style="color:#e11d48">*</span></label>
+            {{ section_form.classification }}
+          </div>
+          <div class="col-md-4">
+            <label class="f-label">Branch</label>
+            {{ section_form.branch }}
+          </div>
+          <div class="col-md-4">
+            <label class="f-label">Status</label>
+            {{ section_form.status }}
+          </div>
+          <div class="col-md-5">
+            <label class="f-label">Section Name <span style="color:#e11d48">*</span></label>
+            {{ section_form.name }}
+          </div>
+          <div class="col-md-3">
+            <label class="f-label">Code</label>
+            {{ section_form.code }}
+          </div>
+          <div class="col-12 d-flex justify-content-end pt-2">
+            <button type="submit" class="btn-save"><i class="fas fa-object-group"></i>Save Section</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Course Tab -->
+    <div class="tab-pane" id="tab-course">
+      <div class="sec-hd">
+        <div class="sec-icon amber"><i class="fas fa-book-open"></i></div>
+        <div>
+          <div class="sec-title">Add Course / Subject</div>
+          <div class="sec-sub">Courses track attendance per subject and can be assigned to multiple classifications</div>
+        </div>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="add_course" value="1">
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="f-label">Course Title <span style="color:#e11d48">*</span></label>
+            {{ course_form.name }}
+          </div>
+          <div class="col-md-2">
+            <label class="f-label">Code</label>
+            {{ course_form.code }}
+          </div>
+          <div class="col-md-3">
+            <label class="f-label">Branch</label>
+            {{ course_form.branch }}
+          </div>
+          <div class="col-md-2">
+            <label class="f-label">Status</label>
+            {{ course_form.status }}
+          </div>
+          <div class="col-md-4">
+            <label class="f-label">Teacher</label>
+            {{ course_form.teacher }}
+          </div>
+          <div class="col-md-2">
+            <label class="f-label">Credit Hours</label>
+            {{ course_form.credit_hour }}
+          </div>
+          <div class="col-md-3">
+            <label class="f-label">Classifications</label>
+            {{ course_form.classifications }}
+          </div>
+          <div class="col-md-3">
+            <label class="f-label">Sections</label>
+            {{ course_form.sections }}
+          </div>
+          <div class="col-12">
+            <label class="f-label">Description</label>
+            {{ course_form.description }}
+          </div>
+          <div class="col-12 d-flex justify-content-end pt-2">
+            <button type="submit" class="btn-save"><i class="fas fa-book-open"></i>Save Course</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Classifications List -->
+  <div class="list-card mb-4">
+    <div class="list-card-hd">
+      <div class="list-card-hd-title"><i class="fas fa-layer-group me-2" style="color:var(--indigo);"></i>Classifications</div>
+      <span class="badge-pill">{{ clas.count }} total</span>
+    </div>
+    {% if clas %}
+    <div style="overflow-x:auto;">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Classification</th>
+            <th>Branch</th>
+            <th>Sections</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for classification in clas %}
+          <tr>
+            <td><span style="font-weight:700;">{{ classification.name }}</span></td>
+            <td><span class="badge-pill neutral">{{ classification.branch|default:"All branches" }}</span></td>
+            <td>
+              {% for section in classification.sections.all %}
+                <span class="badge-pill" style="margin:.1rem;">{{ section.name }}</span>
+              {% empty %}
+                <span style="color:var(--muted);font-size:.78rem;">—</span>
+              {% endfor %}
+            </td>
+            <td style="text-align:right;">
+              <a href="{% url 'schooladmin:classification_detail' classification.id %}" class="action-btn me-1">
+                <i class="fas fa-gauge-high"></i>Hub
+              </a>
+              <a href="{% url 'handle:editClassification' classification.id %}" class="action-btn me-1">
+                <i class="fas fa-pen"></i>Edit
+              </a>
+              <button class="action-btn danger" data-bs-toggle="modal" data-bs-target="#delModal{{ classification.id }}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state"><i class="fas fa-layer-group d-block"></i>No classifications yet — add one above.</div>
+    {% endif %}
+  </div>
+
+  <!-- Branches & Courses side by side -->
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="list-card">
+        <div class="list-card-hd">
+          <div class="list-card-hd-title"><i class="fas fa-code-branch me-2" style="color:#e11d48;"></i>Branches</div>
+          <span class="badge-pill" style="background:#ffe4e6;color:#e11d48;border-color:#fecdd3;">{{ branches|length }} total</span>
+        </div>
+        {% if branches %}
+        <div style="padding:.5rem 0;">
+          {% for branch in branches %}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.85rem 1.25rem;border-bottom:1px solid #f1f5f9;">
+            <div>
+              <div style="font-weight:700;font-size:.88rem;color:var(--ink);">{{ branch.name }}</div>
+              <div style="font-size:.75rem;color:var(--muted);">{{ branch.code }}{% if branch.phone %} · {{ branch.phone }}{% endif %}</div>
+            </div>
+            <span class="badge-pill neutral">{{ branch.status }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state"><i class="fas fa-code-branch d-block"></i>No branches yet.</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="list-card">
+        <div class="list-card-hd">
+          <div class="list-card-hd-title"><i class="fas fa-book-open me-2" style="color:#d97706;"></i>Courses</div>
+          <span class="badge-pill" style="background:#fef3c7;color:#d97706;border-color:#fde68a;">{{ courses|length }} total</span>
+        </div>
+        {% if courses %}
+        <div style="padding:.5rem 0;">
+          {% for course in courses %}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.85rem 1.25rem;border-bottom:1px solid #f1f5f9;">
+            <div>
+              <div style="font-weight:700;font-size:.88rem;color:var(--ink);">{{ course.name }}</div>
+              <div style="font-size:.75rem;color:var(--muted);">
+                {{ course.code|default:"No code" }} · {{ course.branch|default:"All branches" }}
+                {% if course.teacher %} · {% if course.teacher.get_full_name %}{{ course.teacher.get_full_name }}{% else %}{{ course.teacher.email }}{% endif %}{% endif %}
+              </div>
+            </div>
+            <span class="badge-pill neutral">{{ course.status }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state"><i class="fas fa-book-open d-block"></i>No courses yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Delete Modals -->
+{% for classification in clas %}
+<div class="modal fade" id="delModal{{ classification.id }}" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:none;box-shadow:0 20px 60px rgba(0,0,0,.15);">
+      <div class="modal-body p-4 text-center">
+        <div style="width:56px;height:56px;background:#ffe4e6;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.3rem;color:#e11d48;">
+          <i class="fas fa-trash"></i>
+        </div>
+        <h5 style="font-weight:800;color:#0f172a;">Delete Classification?</h5>
+        <p style="color:#64748b;font-size:.88rem;">This will permanently delete <strong>{{ classification.name }}</strong> and cannot be undone.</p>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+          <button type="button" class="btn-save-outline" data-bs-dismiss="modal">Cancel</button>
+          <a href="{% url 'handle:deleteClassification' classification.id %}" style="background:#e11d48;color:#fff;border:none;border-radius:10px;padding:.7rem 1.5rem;font-size:.88rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;">
+            <i class="fas fa-trash"></i>Delete
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// If there were form errors, auto-switch to the right tab
+{% if form.errors %}switchTab('classification', document.querySelectorAll('.tab-btn')[1]);{% endif %}
+{% if branch_form.errors %}switchTab('branch', document.querySelectorAll('.tab-btn')[0]);{% endif %}
+{% if section_form.errors %}switchTab('section', document.querySelectorAll('.tab-btn')[2]);{% endif %}
+{% if course_form.errors %}switchTab('course', document.querySelectorAll('.tab-btn')[3]);{% endif %}
 </script>
 {% endblock content %}

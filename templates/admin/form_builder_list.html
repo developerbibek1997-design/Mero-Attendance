@@ -1,0 +1,148 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Form Builder — {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Page Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+      <h4 class="fw-bold mb-1" style="color:#0f172a;">Form Builder</h4>
+      <p class="text-muted mb-0 small">Create public forms to collect responses from anyone</p>
+    </div>
+    <a href="{% url 'schooladmin:form_builder_new' %}" class="btn btn-danger btn-sm">
+      <i class="fa fa-plus"></i> Create New Form
+    </a>
+  </div>
+
+  <!-- Messages -->
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <!-- Forms Table -->
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-header bg-white border-bottom d-flex align-items-center gap-2 py-3" style="border-radius:12px 12px 0 0;">
+      <i class="fa fa-wpforms text-danger"></i>
+      <h6 class="mb-0 fw-bold">Your Forms</h6>
+      <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">{{ forms.count }}</span>
+    </div>
+    <div class="card-body p-0">
+      {% if forms %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Title</th>
+              <th class="text-center">Fields</th>
+              <th class="text-center">Submissions</th>
+              <th class="text-center">Status</th>
+              <th>Public Link</th>
+              <th class="text-end pe-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in forms %}
+            <tr>
+              <td class="ps-4">
+                <div class="fw-semibold">{{ f.title }}</div>
+                {% if f.description %}
+                  <div class="text-muted small">{{ f.description|truncatechars:60 }}</div>
+                {% endif %}
+                <div class="text-muted" style="font-size:.72rem;">Created {{ f.created_at|date:"d M Y" }}</div>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-light text-dark border">{{ f.fields.count }}</span>
+              </td>
+              <td class="text-center">
+                <a href="{% url 'schooladmin:form_submissions' f.pk %}" class="text-decoration-none">
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ f.submissions.count }}</span>
+                </a>
+              </td>
+              <td class="text-center">
+                {% if f.is_active %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary border">Inactive</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="input-group input-group-sm" style="max-width:280px;">
+                  <input type="text" class="form-control form-control-sm bg-light border-end-0 public-link"
+                         value="{{ request.scheme }}://{{ request.get_host }}/forms/{{ f.uuid }}/"
+                         readonly id="formLink{{ f.pk }}">
+                  <button class="btn btn-outline-secondary btn-sm" type="button"
+                          onclick="copyFormLink('formLink{{ f.pk }}', this)">
+                    <i class="fa fa-copy"></i>
+                  </button>
+                </div>
+              </td>
+              <td class="text-end pe-4">
+                <div class="btn-group btn-group-sm">
+                  <a href="{% url 'schooladmin:form_builder_edit' f.pk %}" class="btn btn-outline-primary">
+                    <i class="fa fa-pen"></i> Edit
+                  </a>
+                  <a href="{% url 'schooladmin:form_submissions' f.pk %}" class="btn btn-outline-secondary">
+                    <i class="fa fa-inbox"></i> Submissions
+                  </a>
+                  <button class="btn btn-outline-danger"
+                          data-bs-toggle="modal" data-bs-target="#deleteFormModal{{ f.pk }}">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fa fa-wpforms fa-3x mb-3 d-block opacity-25"></i>
+        <h6 class="fw-semibold">No forms yet</h6>
+        <p class="small mb-3">Create your first form to start collecting responses</p>
+        <a href="{% url 'schooladmin:form_builder_new' %}" class="btn btn-danger btn-sm">
+          <i class="fa fa-plus"></i> Create Form
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modals -->
+{% for f in forms %}
+<div class="modal fade" id="deleteFormModal{{ f.pk }}" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <form method="POST" action="{% url 'schooladmin:form_builder_edit' f.pk %}" class="modal-content" style="border-radius:12px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete_form">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold">Delete Form?</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body small text-muted">
+        This will permanently delete "<strong>{{ f.title }}</strong>" and all its submissions.
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endfor %}
+
+<script>
+function copyFormLink(inputId, btn) {
+  const input = document.getElementById(inputId);
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    btn.innerHTML = '<i class="fa fa-check"></i>';
+    setTimeout(() => btn.innerHTML = '<i class="fa fa-copy"></i>', 2000);
+  });
+}
+</script>
+{% endblock %}

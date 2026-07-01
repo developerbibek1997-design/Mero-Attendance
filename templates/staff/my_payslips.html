@@ -1,0 +1,171 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}My Payslips | Staff Portal{% endblock title %}
+
+{% block content %}
+<style>
+    .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; }
+    
+    /* Print Specific Styling for the Payslip Modal */
+    @media print {
+        body * { visibility: hidden; }
+        .modal-content, .modal-content * { visibility: visible; }
+        .modal-content { position: absolute; left: 0; top: 0; width: 100%; border: none !important; box-shadow: none !important; }
+        .modal-header .btn-close, .modal-footer { display: none !important; }
+        .print-bg-light { background-color: #f8f9fe !important; -webkit-print-color-adjust: exact; }
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card p-4 border-0 shadow-sm d-flex flex-row align-items-center bg-white">
+                <div class="icon icon-shape bg-gradient-warning shadow-warning text-center border-radius-md me-4" style="width: 60px; height: 60px;">
+                    <i class="fas fa-file-invoice-dollar text-white text-2xl" style="line-height: 60px;"></i>
+                </div>
+                <div>
+                    <h4 class="mb-1 text-dark">Salary & Payslips</h4>
+                    <p class="text-sm text-muted mb-0">View, download, and print your compensation history.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger text-white">{{ error }}</div>
+    {% endif %}
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-light border-bottom p-3">
+            <h6 class="mb-0 font-weight-bolder text-dark">Compensation History</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-items-center mb-0">
+                <thead>
+                    <tr>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Month / Period</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Gross Salary</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Tax Deduction</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Net Pay</th>
+                        <th class="text-secondary opacity-7"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slip in payslips %}
+                    <tr class="card-hover" data-bs-toggle="modal" data-bs-target="#payslipModal{{ slip.id }}">
+                        <td>
+                            <div class="d-flex px-3 py-1">
+                                <div class="d-flex flex-column justify-content-center">
+                                    <h6 class="mb-0 text-sm text-dark font-weight-bold">{{ slip.month_name }}</h6>
+                                    <p class="text-xs text-secondary mb-0">{{ slip.from_date|date:"M d, Y" }} - {{ slip.to_date|date:"M d, Y" }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td><p class="text-sm font-weight-bold mb-0">Rs. {{ slip.gross_salary }}</p></td>
+                        <td><p class="text-sm text-danger mb-0">- Rs. {{ slip.tax_deduction }}</p></td>
+                        <td class="align-middle">
+                            <span class="badge bg-gradient-success px-3 py-2 text-sm">Rs. {{ slip.net_payable }}</span>
+                        </td>
+                        <td class="align-middle text-end pe-4">
+                            <button class="btn btn-sm btn-outline-primary mb-0 d-print-none">View Details</button>
+                        </td>
+                    </tr>
+
+                    <div class="modal fade" id="payslipModal{{ slip.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content border-0 shadow-lg">
+                                <div class="modal-header bg-white border-bottom">
+                                    <h5 class="modal-title font-weight-bolder text-dark"><i class="fas fa-receipt me-2 text-warning"></i> Payslip Details</h5>
+                                    <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body p-5">
+                                    
+                                    <div class="text-center mb-4 border-bottom pb-4">
+                                        <h4 class="font-weight-bolder text-dark mb-1">{{ org.name }}</h4>
+                                        <p class="text-sm text-muted mb-0">Salary Slip for the month of <strong>{{ slip.month_name }}</strong></p>
+                                        <p class="text-xs text-muted">Period: {{ slip.from_date|date:"M d, Y" }} to {{ slip.to_date|date:"M d, Y" }}</p>
+                                    </div>
+
+                                    <div class="row mb-5 print-bg-light p-3 rounded">
+                                        <div class="col-sm-6">
+                                            <p class="text-sm mb-1"><span class="text-muted">Employee Name:</span> <strong class="text-dark">{{ memb.name }}</strong></p>
+                                            <p class="text-sm mb-1"><span class="text-muted">Employee ID:</span> <strong class="text-dark">{{ memb.id }}</strong></p>
+                                        </div>
+                                        <div class="col-sm-6 text-sm-end mt-3 mt-sm-0">
+                                            <p class="text-sm mb-1"><span class="text-muted">Department:</span> <strong class="text-dark">{{ memb.classification.name }}</strong></p>
+                                            <p class="text-sm mb-1"><span class="text-muted">Generated On:</span> <strong class="text-dark">{{ slip.generated_on|date:"M d, Y" }}</strong></p>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered mb-0">
+                                            <thead class="print-bg-light">
+                                                <tr>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Earnings / Details</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder text-end">Amount (Rs.)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="text-sm">Basic Gross Salary</td>
+                                                    <td class="text-sm text-end font-weight-bold">{{ slip.gross_salary }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="text-sm text-success">Allowance / Bonus</td>
+                                                    <td class="text-sm text-end text-success font-weight-bold">+ {{ slip.allowance_total|add:slip.bonus_total }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="text-sm text-danger">Tax Deduction</td>
+                                                    <td class="text-sm text-end text-danger font-weight-bold">- {{ slip.tax_deduction }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="text-sm text-danger">PF / SSF</td>
+                                                    <td class="text-sm text-end text-danger font-weight-bold">- {{ slip.pf_employee|add:slip.ssf_employee }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="text-sm text-danger">Advance / Loan</td>
+                                                    <td class="text-sm text-end text-danger font-weight-bold">- {{ slip.advance_deduction|add:slip.loan_deduction }}</td>
+                                                </tr>
+                                            </tbody>
+                                            <tfoot class="print-bg-light">
+                                                <tr>
+                                                    <td class="font-weight-bolder text-dark">Net Payable Salary</td>
+                                                    <td class="font-weight-bolder text-dark text-end text-lg">Rs. {{ slip.net_payable }}</td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+
+                                    <div class="mt-5 pt-3 text-center text-muted border-top">
+                                        <p class="text-xs mb-0">This is a computer-generated document. No signature is required.</p>
+                                    </div>
+
+                                </div>
+                                <div class="modal-footer bg-light border-0">
+                                    <button type="button" class="btn btn-secondary mb-0" data-bs-dismiss="modal">Close</button>
+                                    <button type="button" class="btn bg-gradient-primary mb-0" onclick="window.print()">
+                                        <i class="fas fa-print me-1"></i> Print Payslip
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="fas fa-file-invoice text-4xl mb-3 opacity-5"></i>
+                                <h6>No payslips generated yet</h6>
+                                <p class="text-sm">Your salary slips will appear here once processed by administration.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}

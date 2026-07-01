@@ -1,0 +1,185 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block title %}Payroll Settings | Mero Attendance{% endblock title %}
+
+{% block content %}
+<style>
+    .payroll-shell { background: #f7f8fa; min-height: 100vh; }
+    .payroll-card { background: #fff; border: 1px solid #eceff3; border-radius: 8px; box-shadow: 0 8px 24px rgba(18, 24, 40, 0.06); }
+    .payroll-card-header { border-bottom: 1px solid #eceff3; padding: 16px 18px; }
+    .payroll-card-body { padding: 18px; }
+    .payroll-title { color: #111827; font-weight: 800; margin: 0; }
+    .payroll-muted { color: #6b7280; font-size: 13px; }
+    .metric { border-left: 4px solid #dc2626; border-radius: 8px; background: #fff; border-top: 1px solid #eceff3; border-right: 1px solid #eceff3; border-bottom: 1px solid #eceff3; padding: 14px 16px; }
+    .metric strong { display: block; font-size: 22px; color: #111827; }
+    .metric span { color: #6b7280; font-size: 12px; text-transform: uppercase; font-weight: 700; }
+    .btn-payroll { background: #dc2626; color: #fff; border: 0; }
+    .btn-payroll:hover { background: #b91c1c; color: #fff; }
+    .table-payroll th { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0; background: #f9fafb; }
+    .table-payroll td { vertical-align: middle; font-size: 13px; }
+    .form-control, .form-select { border-radius: 6px; border-color: #d8dde6; min-height: 40px; }
+</style>
+
+<div class="container-fluid py-4 payroll-shell">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h4 class="payroll-title">HR Payroll</h4>
+            <div class="payroll-muted">Probation, PF, SSF, advances, loans and payroll deductions</div>
+        </div>
+        <a href="{% url 'schooladmin:playslip' %}" class="btn btn-outline-dark btn-sm">Open Payslips</a>
+    </div>
+
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="metric"><span>PF Employee</span><strong>{{ policy.pf_employee_percentage }}%</strong></div></div>
+        <div class="col-md-3"><div class="metric"><span>PF Employer</span><strong>{{ policy.pf_employer_percentage }}%</strong></div></div>
+        <div class="col-md-3"><div class="metric"><span>SSF Employee</span><strong>{{ policy.ssf_employee_percentage }}%</strong></div></div>
+        <div class="col-md-3"><div class="metric"><span>Probation Salary</span><strong>{{ policy.probation_salary_percentage }}%</strong></div></div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-5">
+            <div class="payroll-card h-100">
+                <div class="payroll-card-header"><h6 class="mb-0">Payroll Policy</h6></div>
+                <div class="payroll-card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="policy">
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label">PF Employee %</label>{{ policy_form.pf_employee_percentage }}</div>
+                            <div class="col-md-6"><label class="form-label">PF Employer %</label>{{ policy_form.pf_employer_percentage }}</div>
+                            <div class="col-md-6"><label class="form-label">SSF Employee %</label>{{ policy_form.ssf_employee_percentage }}</div>
+                            <div class="col-md-6"><label class="form-label">SSF Employer %</label>{{ policy_form.ssf_employer_percentage }}</div>
+                            <div class="col-md-6"><label class="form-label">Probation Salary %</label>{{ policy_form.probation_salary_percentage }}</div>
+                            <div class="col-md-6"><label class="form-label">Reminder Days</label>{{ policy_form.probation_reminder_days }}</div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    {{ policy_form.probation_leave_cut_enabled }}
+                                    <label class="form-check-label">Enable probation leave cut rules</label>
+                                </div>
+                            </div>
+                            <div class="col-12"><button class="btn btn-payroll w-100" type="submit">Save Policy</button></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-7">
+            <div class="payroll-card h-100">
+                <div class="payroll-card-header"><h6 class="mb-0">Allowance, Bonus, Advance, Loan</h6></div>
+                <div class="payroll-card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="adjustment">
+                        <div class="row g-3">
+                            <div class="col-md-4"><label class="form-label">Member</label>{{ adjustment_form.member }}</div>
+                            <div class="col-md-3"><label class="form-label">Type</label>{{ adjustment_form.adjustment_type }}</div>
+                            <div class="col-md-5"><label class="form-label">Title</label>{{ adjustment_form.title }}</div>
+                            <div class="col-md-3"><label class="form-label">Amount</label>{{ adjustment_form.amount }}</div>
+                            <div class="col-md-3"><label class="form-label">Effective Date</label>{{ adjustment_form.effective_date }}</div>
+                            <div class="col-md-3"><label class="form-label">Status</label>{{ adjustment_form.status }}</div>
+                            <div class="col-md-3"><label class="form-label">Notes</label>{{ adjustment_form.notes }}</div>
+                            <div class="col-12"><button class="btn btn-payroll w-100" type="submit">Save Adjustment</button></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-5">
+            <div class="payroll-card h-100">
+                <div class="payroll-card-header"><h6 class="mb-0">Probation Review</h6></div>
+                <div class="payroll-card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="review">
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label">Member</label>{{ review_form.member }}</div>
+                            <div class="col-md-3"><label class="form-label">Date</label>{{ review_form.review_date }}</div>
+                            <div class="col-md-3"><label class="form-label">Status</label>{{ review_form.status }}</div>
+                            <div class="col-12"><label class="form-label">Notes</label>{{ review_form.notes }}</div>
+                            <div class="col-12"><button class="btn btn-payroll w-100" type="submit">Save Review</button></div>
+                        </div>
+                    </form>
+
+                    <h6 class="mt-4">Probation Ending Soon</h6>
+                    {% for person in probation_members %}
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <strong>{{ person.name }}</strong><span class="payroll-muted">{{ person.probation_end_date }}</span>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted mb-0">No probation reminders right now.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-7">
+            <div class="payroll-card h-100">
+                <div class="payroll-card-header"><h6 class="mb-0">Recent Adjustments</h6></div>
+                <div class="payroll-card-body">
+                    <div class="table-responsive">
+                        <table class="table table-payroll mb-0">
+                            <thead><tr><th>Date</th><th>Member</th><th>Type</th><th>Title</th><th>Amount</th><th>Status</th></tr></thead>
+                            <tbody>
+                                {% for item in adjustments %}
+                                <tr><td>{{ item.effective_date }}</td><td>{{ item.member.name }}</td><td>{{ item.get_adjustment_type_display }}</td><td>{{ item.title }}</td><td>Rs. {{ item.amount }}</td><td>{{ item.status }}</td></tr>
+                                {% empty %}
+                                <tr><td colspan="6" class="text-muted">No payroll adjustments yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-6">
+            <div class="payroll-card">
+                <div class="payroll-card-header"><h6 class="mb-0">Provident Fund Records</h6></div>
+                <div class="payroll-card-body">
+                    <table class="table table-payroll mb-0">
+                        <thead><tr><th>Month</th><th>Member</th><th>Employee</th><th>Employer</th></tr></thead>
+                        <tbody>
+                            {% for item in pf_records %}
+                            <tr><td>{{ item.month_name }}</td><td>{{ item.member.name }}</td><td>Rs. {{ item.employee_contribution }}</td><td>Rs. {{ item.employer_contribution }}</td></tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-muted">No PF records yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="payroll-card">
+                <div class="payroll-card-header"><h6 class="mb-0">Social Security Fund Records</h6></div>
+                <div class="payroll-card-body">
+                    <table class="table table-payroll mb-0">
+                        <thead><tr><th>Month</th><th>Member</th><th>Employee</th><th>Employer</th></tr></thead>
+                        <tbody>
+                            {% for item in ssf_records %}
+                            <tr><td>{{ item.month_name }}</td><td>{{ item.member.name }}</td><td>Rs. {{ item.employee_contribution }}</td><td>Rs. {{ item.employer_contribution }}</td></tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-muted">No SSF records yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

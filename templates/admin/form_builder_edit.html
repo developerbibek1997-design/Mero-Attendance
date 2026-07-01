@@ -1,0 +1,237 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}{% if form_obj %}Edit Form{% else %}New Form{% endif %} — {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Page Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1" style="font-size:.82rem;">
+          <li class="breadcrumb-item"><a href="{% url 'schooladmin:form_builder' %}" class="text-danger text-decoration-none">Form Builder</a></li>
+          <li class="breadcrumb-item active">{% if form_obj %}{{ form_obj.title|truncatechars:30 }}{% else %}New Form{% endif %}</li>
+        </ol>
+      </nav>
+      <h4 class="fw-bold mb-0" style="color:#0f172a;">
+        {% if form_obj %}Edit Form{% else %}Create New Form{% endif %}
+      </h4>
+    </div>
+    {% if form_obj %}
+    <div class="d-flex gap-2">
+      <a href="/forms/{{ form_obj.uuid }}/" target="_blank" class="btn btn-outline-secondary btn-sm">
+        <i class="fa fa-external-link-alt"></i> Preview
+      </a>
+      <a href="{% url 'schooladmin:form_submissions' form_obj.pk %}" class="btn btn-outline-primary btn-sm">
+        <i class="fa fa-inbox"></i> Submissions ({{ form_obj.submissions.count }})
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Messages -->
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <div class="row g-4">
+
+    <!-- Left: Form Settings -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm" style="border-radius:12px;position:sticky;top:90px;">
+        <div class="card-header bg-white border-bottom d-flex align-items-center gap-2 py-3" style="border-radius:12px 12px 0 0;">
+          <i class="fa fa-sliders text-danger"></i>
+          <h6 class="mb-0 fw-bold">Form Settings</h6>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{% if form_obj %}{% url 'schooladmin:form_builder_edit' form_obj.pk %}{% else %}{% url 'schooladmin:form_builder_new' %}{% endif %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_form">
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Form Title <span class="text-danger">*</span></label>
+              <input type="text" name="title" class="form-control" placeholder="e.g. Contact Us"
+                     value="{% if form_obj %}{{ form_obj.title }}{% endif %}" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Description</label>
+              <textarea name="description" class="form-control" rows="3"
+                        placeholder="Short description shown on the form...">{% if form_obj %}{{ form_obj.description }}{% endif %}</textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Success Message</label>
+              <textarea name="success_message" class="form-control" rows="2"
+                        placeholder="Message shown after submission...">{% if form_obj %}{{ form_obj.success_message }}{% else %}Thank you! Your response has been submitted.{% endif %}</textarea>
+            </div>
+            <div class="mb-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="is_active" id="isActive"
+                       {% if not form_obj or form_obj.is_active %}checked{% endif %}>
+                <label class="form-check-label fw-semibold small" for="isActive">Form is Active (public)</label>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-danger w-100">
+              <i class="fa fa-save"></i> {% if form_obj %}Save Settings{% else %}Create Form{% endif %}
+            </button>
+          </form>
+
+          {% if form_obj %}
+          <hr class="my-3">
+          <div class="small text-muted mb-1 fw-semibold">Public Link</div>
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control bg-light border-end-0" id="publicLinkInput"
+                   value="{{ request.scheme }}://{{ request.get_host }}/forms/{{ form_obj.uuid }}/" readonly>
+            <button class="btn btn-outline-secondary" type="button" onclick="copyPublicLink()">
+              <i class="fa fa-copy"></i>
+            </button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Fields -->
+    <div class="col-lg-8">
+      {% if form_obj %}
+      <!-- Existing Fields -->
+      <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
+        <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-3" style="border-radius:12px 12px 0 0;">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa fa-list text-danger"></i>
+            <h6 class="mb-0 fw-bold">Fields</h6>
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">{{ fields|length }}</span>
+          </div>
+          <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addFieldModal">
+            <i class="fa fa-plus"></i> Add Field
+          </button>
+        </div>
+        <div class="card-body p-0">
+          {% if fields %}
+          <ul class="list-group list-group-flush" style="border-radius:0 0 12px 12px;">
+            {% for field in fields %}
+            <li class="list-group-item d-flex align-items-center gap-3 py-3">
+              <div class="text-muted" style="font-size:.75rem;min-width:24px;text-align:center;">
+                <i class="fa fa-grip-vertical opacity-25"></i>
+                <div class="fw-bold">{{ forloop.counter }}</div>
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <span class="fw-semibold">{{ field.label }}</span>
+                  {% if field.required %}<span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:.7rem;">Required</span>{% endif %}
+                  <span class="badge bg-light text-muted border" style="font-size:.7rem;">{{ field.get_field_type_display }}</span>
+                </div>
+                {% if field.placeholder %}<div class="text-muted small">Placeholder: {{ field.placeholder }}</div>{% endif %}
+                {% if field.options %}<div class="text-muted small">Options: {{ field.options }}</div>{% endif %}
+              </div>
+              <form method="POST" action="{% url 'schooladmin:form_builder_edit' form_obj.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_field">
+                <input type="hidden" name="field_pk" value="{{ field.pk }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this field?')">
+                  <i class="fa fa-times"></i>
+                </button>
+              </form>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="fa fa-layer-group fa-2x mb-3 d-block opacity-25"></i>
+            <div class="small">No fields yet. Add fields to build your form.</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Live Preview hint -->
+      <div class="alert alert-light border d-flex align-items-center gap-2" style="border-radius:10px;">
+        <i class="fa fa-eye text-danger"></i>
+        <span class="small">
+          Preview your form: <a href="/forms/{{ form_obj.uuid }}/" target="_blank" class="text-danger fw-semibold">/forms/{{ form_obj.uuid }}/</a>
+        </span>
+      </div>
+
+      {% else %}
+      <div class="card border-0 shadow-sm" style="border-radius:12px;">
+        <div class="card-body text-center py-5 text-muted">
+          <i class="fa fa-wpforms fa-2x mb-3 d-block opacity-25"></i>
+          <div class="fw-semibold mb-1">Save your form first</div>
+          <div class="small">Fill in the form settings on the left and save to start adding fields.</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if form_obj %}
+<!-- Add Field Modal -->
+<div class="modal fade" id="addFieldModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" action="{% url 'schooladmin:form_builder_edit' form_obj.pk %}" class="modal-content" style="border-radius:12px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_field">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold">Add Field</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Field Label <span class="text-danger">*</span></label>
+          <input type="text" name="label" class="form-control" placeholder="e.g. Full Name" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Field Type</label>
+          <select name="field_type" class="form-select" id="fieldTypeSelect" onchange="toggleOptions(this.value)">
+            <option value="text">Short Text</option>
+            <option value="textarea">Long Text</option>
+            <option value="email">Email</option>
+            <option value="tel">Phone</option>
+            <option value="number">Number</option>
+            <option value="date">Date</option>
+            <option value="select">Dropdown</option>
+            <option value="radio">Radio Buttons</option>
+            <option value="checkbox">Checkboxes</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Placeholder</label>
+          <input type="text" name="placeholder" class="form-control" placeholder="Placeholder text (optional)">
+        </div>
+        <div class="mb-3" id="optionsGroup" style="display:none;">
+          <label class="form-label fw-semibold small">Options <span class="text-muted">(comma-separated)</span></label>
+          <input type="text" name="options" class="form-control" placeholder="Option 1, Option 2, Option 3">
+          <div class="form-text">Separate each option with a comma</div>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" name="required" id="fieldRequired" checked>
+          <label class="form-check-label fw-semibold small" for="fieldRequired">Required Field</label>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger">Add Field</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<script>
+function toggleOptions(val) {
+  const g = document.getElementById('optionsGroup');
+  if (g) g.style.display = ['select','radio','checkbox'].includes(val) ? 'block' : 'none';
+}
+function copyPublicLink() {
+  const input = document.getElementById('publicLinkInput');
+  if (!input) return;
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = input.nextElementSibling;
+    btn.innerHTML = '<i class="fa fa-check"></i>';
+    setTimeout(() => btn.innerHTML = '<i class="fa fa-copy"></i>', 2000);
+  });
+}
+</script>
+{% endblock %}

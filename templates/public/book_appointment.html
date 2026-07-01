@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Appointment — {{ org.name }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    :root {
+      --primary: #e11d48;
+      --primary-dark: #be123c;
+      --dark: #0f172a;
+      --surface: #ffffff;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+    }
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+    .ma-header {
+      background: var(--dark);
+      color: #fff;
+      padding: 1.25rem 0;
+      border-bottom: 3px solid var(--primary);
+    }
+    .ma-header .brand {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+    .ma-header .brand i { color: var(--primary); }
+    .ma-header .org-name {
+      font-size: .9rem;
+      color: #94a3b8;
+      margin-top: .1rem;
+    }
+    .section-main {
+      padding: 3rem 0 4rem;
+    }
+    .card-panel {
+      background: var(--surface);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      padding: 2rem;
+    }
+    .type-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: .75rem;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .type-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(225,29,72,.1);
+    }
+    .type-color-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+    .type-name { font-weight: 600; font-size: .95rem; color: var(--dark); }
+    .type-desc { font-size: .82rem; color: var(--muted); margin-top: 2px; }
+    .type-dur {
+      font-size: .78rem;
+      background: #fef2f2;
+      color: var(--primary);
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-top: 4px;
+      display: inline-block;
+      font-weight: 600;
+    }
+    .form-label { font-weight: 600; font-size: .88rem; color: var(--dark); }
+    .form-control, .form-select {
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      padding: .65rem .9rem;
+      font-size: .9rem;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(225,29,72,.1);
+    }
+    .btn-book {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: .85rem 2.5rem;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+      width: 100%;
+    }
+    .btn-book:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .success-card {
+      text-align: center;
+      padding: 3rem 2rem;
+    }
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      background: #dcfce7;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2rem;
+      color: #16a34a;
+    }
+    .success-card h2 { font-weight: 700; color: var(--dark); margin-bottom: .5rem; }
+    .success-card p { color: var(--muted); font-size: .95rem; }
+    .section-heading {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 1.25rem;
+      padding-bottom: .6rem;
+      border-bottom: 2px solid var(--primary);
+      display: inline-block;
+    }
+    .alert-danger { border-radius: 10px; }
+    .no-types { color: var(--muted); font-size: .9rem; font-style: italic; }
+  </style>
+</head>
+<body>
+  <header class="ma-header">
+    <div class="container">
+      <div class="d-flex align-items-center gap-3">
+        {% if org.profile_pic %}
+          <img src="{{ org.profile_pic.url }}" alt="{{ org.name }}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">
+        {% else %}
+          <div style="width:44px;height:44px;border-radius:8px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.2rem;">
+            <i class="fa-solid fa-building"></i>
+          </div>
+        {% endif %}
+        <div>
+          <a class="brand" href="#"><i class="fa-solid fa-user-check"></i> Mero Attendance</a>
+          <div class="org-name">{{ org.name }}</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="section-main">
+    <div class="container">
+      <div class="row g-4">
+        <!-- Left Panel: Org Info & Types -->
+        <div class="col-lg-4">
+          <div class="card-panel">
+            <div class="section-heading">Appointment Types</div>
+            {% if types %}
+              {% for t in types %}
+              <div class="type-card">
+                <div class="type-color-dot" style="background:{{ t.color }};"></div>
+                <div>
+                  <div class="type-name">{{ t.name }}</div>
+                  {% if t.description %}<div class="type-desc">{{ t.description }}</div>{% endif %}
+                  <span class="type-dur"><i class="fa fa-clock" style="font-size:.7rem;"></i> {{ t.duration_minutes }} min</span>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <p class="no-types">General appointment booking available.</p>
+            {% endif %}
+
+            <div class="mt-4 p-3" style="background:#fef2f2;border-radius:10px;border:1px solid #fecdd3;">
+              <div style="font-size:.82rem;color:var(--primary);font-weight:600;margin-bottom:.3rem;">
+                <i class="fa fa-info-circle"></i> How it works
+              </div>
+              <ul style="font-size:.82rem;color:#64748b;margin:0;padding-left:1.1rem;">
+                <li>Fill the form with your details</li>
+                <li>Select a date and preferred time</li>
+                <li>Submit — we'll confirm soon</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel: Booking Form -->
+        <div class="col-lg-8">
+          <div class="card-panel">
+            {% if booked %}
+              <div class="success-card">
+                <div class="success-icon"><i class="fa fa-check"></i></div>
+                <h2>Appointment Requested!</h2>
+                <p>Thank you! Your appointment has been submitted.<br>We'll review and confirm it shortly.</p>
+                <button class="btn-book mt-3" style="width:auto;padding:.65rem 2rem;" onclick="window.location.reload()">
+                  <i class="fa fa-plus"></i> Book Another
+                </button>
+              </div>
+            {% else %}
+              <div class="section-heading">Book an Appointment</div>
+              {% if error %}
+                <div class="alert alert-danger mb-3"><i class="fa fa-exclamation-triangle"></i> {{ error }}</div>
+              {% endif %}
+              <form method="POST" autocomplete="off">
+                {% csrf_token %}
+                <div class="row g-3">
+                  {% if types %}
+                  <div class="col-12">
+                    <label class="form-label">Appointment Type</label>
+                    <select name="appointment_type" class="form-select">
+                      <option value="">— Select a type (optional) —</option>
+                      {% for t in types %}
+                        <option value="{{ t.pk }}">{{ t.name }} ({{ t.duration_minutes }} min)</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  {% endif %}
+                  <div class="col-md-6">
+                    <label class="form-label">Full Name <span style="color:var(--primary)">*</span></label>
+                    <input type="text" name="name" class="form-control" placeholder="Your full name" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Email <span style="color:var(--primary)">*</span></label>
+                    <input type="email" name="email" class="form-control" placeholder="your@email.com" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" name="phone" class="form-control" placeholder="+977 98XXXXXXXX">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Date <span style="color:var(--primary)">*</span></label>
+                    <input type="date" name="date" class="form-control" min="{{ today }}" required>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Time <span style="color:var(--primary)">*</span></label>
+                    <input type="time" name="time" class="form-control" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Message / Reason</label>
+                    <textarea name="message" class="form-control" rows="3" placeholder="Brief reason for appointment (optional)"></textarea>
+                  </div>
+                  <div class="col-12 mt-2">
+                    <button type="submit" class="btn-book">
+                      <i class="fa fa-calendar-check"></i> Confirm Appointment
+                    </button>
+                  </div>
+                </div>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer style="background:var(--dark);color:#94a3b8;text-align:center;padding:1.2rem;font-size:.8rem;">
+    Powered by <strong style="color:var(--primary);">Mero Attendance</strong> — Wake and Tech Nepal Pvt. Ltd.
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

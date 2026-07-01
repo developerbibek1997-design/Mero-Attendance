@@ -1,193 +1,129 @@
 {% extends 'dashboard.html' %}
-
-{% block title %}
-    {{org.name}} - Organization Report
-{% endblock title %}
+{% load static %}
+{% block title %}{{ org.name }} | Profile{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- Organization Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-body d-flex align-items-center">
+<style>
+    .nav-pills .nav-link.active, .nav-pills .show>.nav-link { background-color: #5e72e4; color: white; }
+    .nav-pills .nav-link { color: #344767; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; margin-right: 0.5rem; transition: all 0.3s ease; }
+    .nav-pills .nav-link:hover { background-color: #f8f9fa; }
+    .stat-card { border-left: 4px solid #5e72e4; border-radius: 0.5rem; }
+    .org-header-img { height: 150px; width: 150px; object-fit: cover; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+</style>
+
+<!-- Add Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="container-fluid py-4">
+    <!-- Header Area -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-auto">
                     {% if org.image %}
-                    <img src="{{ org.image.url }}" alt="{{ org.name }}" class="rounded-circle me-4" width="100" height="100">
+                        <img src="{{ org.image.url }}" alt="{{ org.name }}" class="org-header-img">
+                    {% else %}
+                        <img src="{% static 'res/click.png' %}" alt="Placeholder" class="org-header-img bg-light p-3">
                     {% endif %}
-                    <div>
-                        <h1 class="h3 mb-1">{{ org.name }}</h1>
-                        <p class="text-muted mb-1">
-                            <i class="fas fa-map-marker-alt me-2"></i>{{ org.address|default:"No address provided" }}
-                        </p>
-                        <p class="text-muted mb-0">
-                            <i class="fas fa-users me-2"></i>Member Limit: {{ org.member_limit }} | 
-                            <i class="fas fa-calendar-alt me-2"></i>Expires: {{ org.expire_on|date:"M d, Y" }} | 
-                            Status: <span class="badge bg-{% if org.activate %}success{% else %}danger{% endif %}">
-                                {% if org.activate %}Active{% else %}Inactive{% endif %}
+                </div>
+                <div class="col">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-1">{{ org.name }}</h3>
+                            <p class="text-muted mb-2"><i class="ni ni-pin-3 me-2"></i>{{ org.address|default:"No Address Provided" }}</p>
+                            <span class="badge bg-gradient-success me-2">{{ org.get_category_display }}</span>
+                            <span class="badge {% if org.activate %}bg-gradient-info{% else %}bg-gradient-secondary{% endif %}">
+                                {% if org.activate %}Active License{% else %}Inactive{% endif %}
                             </span>
-                        </p>
-                        <hr>
-
-                        {% if org.activate %}
-                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop" title="Delete">
-                                Deactivate Organization
-                                <i class="fas fa-ban ms-2"></i>
-                            </button>
-
-                            <!-- Delete Modal -->
-                            <div class="modal fade" id="staticBackdrop" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered" role="document">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="deleteModalLabel">Confirm Deactivate</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <p>Are you sure you want to deactiavte service for<strong>{{ org.name }}</strong></p>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <a href="{% url 'superadmin:deactivate' org.id %}">
-                                                <button type="button" class="btn btn-danger">Deactivate>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                    
-                        {% else %}
+                        </div>
+                        <div class="text-end">
+                            <a href="{% url 'superadmin:editOrg' org.id %}" class="btn btn-outline-primary mb-2 me-2"><i class="ni ni-settings-gear-65 me-1"></i> Edit Configuration</a>
                             
-
-                             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop" title="Delete">
-                                Activate Organization
-                                <i class="fas fa-ban ms-2"></i>
-                            </button>
-
-                            <!-- Delete Modal -->
-                            <div class="modal fade" id="staticBackdrop" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered" role="document">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="deleteModalLabel">Confirm Activate</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <p>Are you sure you want to activate service for<strong>{{ org.name }}</strong></p>
-                                      
-                                                <form action="{% url 'superadmin:activate' org.id %}" method="post">
-                                                    {% csrf_token %}
-                                                    <p>
-                                                        Please select next expire date:
-                                                    </p>
-                                                    <input type="date" name="date" class="form-control" required>
-                                                    <br>
-                                                    <button type="submit" class="btn btn-danger">Activate
-
-                                                </form>
-                                                
-                                     
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                          
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                     
-                        
-                    
-                        
-                        {% endif %}
-                    
-
-                      
+                            <!-- Activate/Deactivate Logic from Old Template -->
+                            {% if org.activate %}
+                                <button class="btn btn-danger mb-2" data-bs-toggle="modal" data-bs-target="#deactivateModal" title="Deactivate">
+                                    <i class="ni ni-fat-remove me-1"></i> Deactivate Service
+                                </button>
+                            {% else %}
+                                <button class="btn btn-success mb-2" data-bs-toggle="modal" data-bs-target="#activateModal" title="Activate">
+                                    <i class="ni ni-check-bold me-1"></i> Activate Service
+                                </button>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- Quick Stats Row (Utilization fixed based on your old code) -->
     <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Total Members</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_members }}</div>
+        <div class="col-xl-3 col-sm-6 mb-4">
+            <div class="card shadow-sm stat-card h-100">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <p class="text-sm mb-0 text-capitalize font-weight-bold">Total Members</p>
+                            <h4 class="font-weight-bolder mb-0">{{ total_members }}</h4>
                         </div>
-                        <div class="col-auto">
-                            <i class="fas fa-users fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Active Members</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_members }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user-check fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Blacklisted Members</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ blacklisted_members }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user-slash fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Utilization</div>
-                            <div class="row no-gutters align-items-center">
-                                <div class="col-auto">
-                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">
-                                        {{ total_members|floatformat:0 }}/{{ org.member_limit }}
-                                    </div>
-                                </div>
-                                <div class="col">
-                                    <div class="progress progress-sm mr-2">
-                                        <div class="progress-bar bg-info" role="progressbar" 
-                                            style="width: 100px;" 
-                                            aria-valuenow="{{ total_members }}" 
-                                            aria-valuemin="0" 
-                                            aria-valuemax="{{ org.member_limit }}">
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-md">
+                                <i class="ni ni-circle-08 text-lg opacity-10" aria-hidden="true"></i>
                             </div>
                         </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-4">
+            <div class="card shadow-sm stat-card h-100" style="border-left-color: #2dce89;">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <p class="text-sm mb-0 text-capitalize font-weight-bold">Active Members</p>
+                            <h4 class="font-weight-bolder mb-0">{{ active_members }}</h4>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-success shadow text-center border-radius-md">
+                                <i class="ni ni-check-bold text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-4">
+            <div class="card shadow-sm stat-card h-100" style="border-left-color: #11cdef;">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <p class="text-sm mb-0 text-capitalize font-weight-bold">Utilization</p>
+                            <h5 class="font-weight-bolder mb-1">{{ total_members }} / {{ org.member_limit }}</h5>
+                            <div class="progress progress-sm">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: {% widthratio total_members org.member_limit 100 %}%;"></div>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-info shadow text-center border-radius-md">
+                                <i class="ni ni-chart-bar-32 text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-4">
+            <div class="card shadow-sm stat-card h-100" style="border-left-color: #fb6340;">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <p class="text-sm mb-0 text-capitalize font-weight-bold">Total Scans</p>
+                            <h4 class="font-weight-bolder mb-0">{{ total_attendance }}</h4>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-warning shadow text-center border-radius-md">
+                                <i class="ni ni-watch-time text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -195,171 +131,288 @@
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="row">
-        <!-- Classification Distribution -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Member Classification</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-pie pt-4 pb-2">
-                        <canvas id="classificationChart"></canvas>
-                    </div>
-                    <div class="mt-4 text-center small">
-                        {% for item in classification_distribution %}
-                            <span class="mr-2">
-                                <i class="fas fa-circle" ></i> {{ item.name }}
-                            </span>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+    <!-- Tabs Navigation -->
+    <div class="card shadow-sm">
+        <div class="card-header pb-0 border-bottom p-3">
+            <ul class="nav nav-pills" id="pills-tab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="pills-overview-tab" data-bs-toggle="pill" data-bs-target="#pills-overview" type="button" role="tab">Overview & Settings</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pills-members-tab" data-bs-toggle="pill" data-bs-target="#pills-members" type="button" role="tab">Members ({{ total_members }})</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pills-holidays-tab" data-bs-toggle="pill" data-bs-target="#pills-holidays" type="button" role="tab">Holidays</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pills-infra-tab" data-bs-toggle="pill" data-bs-target="#pills-infra" type="button" role="tab">Hardware & Staff</button>
+                </li>
+            </ul>
         </div>
+        
+        <div class="card-body p-4">
+            <div class="tab-content" id="pills-tabContent">
+                
+                <!-- TAB 1: Overview -->
+                <div class="tab-pane fade show active" id="pills-overview" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <h6 class="text-uppercase text-muted text-xs font-weight-bolder">License Details</h6>
+                            <ul class="list-group list-group-flush mt-2">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">Serial Key <span class="badge bg-light text-dark">{{ org.serial_key }}</span></li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">Activation Key <span class="badge bg-light text-dark">{{ org.new_serial_key }}</span></li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">Expires On <span class="font-weight-bold text-danger">{{ org.expire_on|date:"M d, Y" }}</span></li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">Client Since <span class="font-weight-bold">{{ connected_year }}</span></li>
+                            </ul>
 
-        <!-- Recent Members -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Recent Members</h6>
-                    <a href="{% url 'superadmin:memberList' %}" class="btn btn-sm btn-primary">View All</a>
+                            <h6 class="text-uppercase text-muted text-xs font-weight-bolder mt-4">Enabled Features</h6>
+                            <div class="mt-2">
+                                {% if org.manual_attendance %}<span class="badge bg-gradient-primary me-2 mb-2">Manual</span>{% endif %}
+                                {% if org.qr_based %}<span class="badge bg-gradient-primary me-2 mb-2">QR Based</span>{% endif %}
+                                {% if org.rfid_based %}<span class="badge bg-gradient-primary me-2 mb-2">RFID Based</span>{% endif %}
+                                {% if org.location_based %}<span class="badge bg-gradient-primary me-2 mb-2">GPS Location</span>{% endif %}
+                                {% if org.auto_checkin %}<span class="badge bg-gradient-primary me-2 mb-2">Auto Check-in</span>{% endif %}
+                                {% if org.nepali_date %}<span class="badge bg-gradient-dark me-2 mb-2">Nepali Date (BS)</span>{% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Classification Chart Column -->
+                        <div class="col-md-6 mb-4">
+                            <h6 class="text-uppercase text-muted text-xs font-weight-bolder mb-3">Member Classification Distribution</h6>
+                            <div class="chart-pie pt-4 pb-2" style="height: 250px;">
+                                <canvas id="classificationChart"></canvas>
+                            </div>
+                            <div class="mt-4 text-center small">
+                                {% for cls in classifications %}
+                                    <span class="badge border border-primary text-primary me-2 mb-2 px-3 py-2">{{ cls.name }}</span>
+                                {% empty %}
+                                    <p class="text-sm text-muted">No classifications configured.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
+
+                <!-- TAB 2: Members List -->
+                <div class="tab-pane fade" id="pills-members" role="tabpanel">
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table align-items-center mb-0">
+                            <thead class="sticky-top bg-white">
                                 <tr>
-                                    <th>Name</th>
-                                    <th>Card ID</th>
-                                    <th>Status</th>
-                                    <th>Joined</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member Name</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Card / Device ID</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Classification</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for m in members %}
+                                {% for mem in members %}
                                 <tr>
-                                    <td>{{ m.name }}</td>
-                                    <td>{{ m.card }}</td>
                                     <td>
-                                        <span class="badge bg-{% if m.black_list %}danger{% else %}success{% endif %}">
-                                            {% if m.black_list %}Blacklisted{% else %}Active{% endif %}
-                                        </span>
+                                        <div class="d-flex px-2 py-1">
+                                            <div class="d-flex flex-column justify-content-center">
+                                                <h6 class="mb-0 text-sm">{{ mem.name }}</h6>
+                                                <p class="text-xs text-secondary mb-0">{{ mem.phone|default:"No Phone" }}</p>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td>{{ m.created_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <p class="text-xs font-weight-bold mb-0">{{ mem.card|default:"N/A" }}</p>
+                                        <p class="text-xxs text-muted mb-0">ID: {{ mem.device_id|default:"-" }}</p>
+                                    </td>
+                                    <td><span class="text-sm">{{ mem.classification.name|default:"Unassigned" }}</span></td>
+                                    <td class="align-middle text-center text-sm">
+                                        {% if mem.black_list %}
+                                            <span class="badge badge-sm bg-gradient-danger">Blacklisted</span>
+                                        {% else %}
+                                            <span class="badge badge-sm bg-gradient-success">Active</span>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 {% empty %}
-                                <tr>
-                                    <td colspan="4" class="text-center">No members found</td>
-                                </tr>
+                                <tr><td colspan="4" class="text-center py-4">No members registered yet.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Holidays and Occasions -->
-    <div class="row">
-        <!-- Holidays -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Holidays</h6>
-                </div>
-                <div class="card-body">
-                    {% if holidays %}
-                        <ul class="list-group list-group-flush">
-                            {% for holiday in holidays %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                {{ holiday.holiday }}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="text-muted">No holidays defined</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Occasions -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Upcoming Occasions</h6>
-                </div>
-                <div class="card-body">
-                    {% if occasions %}
-                        <div class="list-group">
-                            {% for occasion in occasions %}
-                            <a href="#" class="list-group-item list-group-item-action flex-column align-items-start">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h5 class="mb-1">{{ occasion.name }}</h5>
-                                    <small>{{ occasion.date|date:"M d" }}{% if occasion.end_date %} - {{ occasion.end_date|date:"M d" }}{% endif %}</small>
-                                </div>
-                                <p class="mb-1">Organization-wide event</p>
-                            </a>
-                            {% endfor %}
+                <!-- TAB 3: Holidays -->
+                <div class="tab-pane fade" id="pills-holidays" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6 border-end">
+                            <h6 class="text-primary mb-3">Weekly Off-Days</h6>
+                            <ul class="list-group list-group-flush">
+                                {% for wh in weekly_holidays %}
+                                    <li class="list-group-item px-0"><i class="ni ni-calendar-grid-58 me-2 text-primary"></i>{{ wh.holiday }}</li>
+                                {% empty %}
+                                    <p class="text-muted text-sm">No weekly holidays configured.</p>
+                                {% endfor %}
+                            </ul>
                         </div>
-                    {% else %}
-                        <p class="text-muted">No upcoming occasions</p>
-                    {% endif %}
+                        <div class="col-md-6 px-4">
+                            <h6 class="text-success mb-3">Occasions & Festivals</h6>
+                            <div class="table-responsive">
+                                <table class="table text-sm">
+                                    <tbody>
+                                        {% for occ in occasions %}
+                                        <tr>
+                                            <td class="ps-0"><span class="badge bg-gradient-success">{{ occ.name }}</span></td>
+                                            <td class="text-end">
+                                                {{ occ.date|date:"M d, Y" }}
+                                                {% if occ.end_date %}<br><small class="text-muted">to {{ occ.end_date|date:"M d, Y" }}</small>{% endif %}
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr><td class="text-muted text-sm">No occasions added.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+             <!-- TAB 4: Infrastructure & Staff -->
+                <div class="tab-pane fade" id="pills-infra" role="tabpanel">
+                    <div class="row">
+                        <!-- Devices Column -->
+                        <div class="col-md-6 mb-4 border-end">
+                            <h6 class="text-uppercase text-muted text-xs font-weight-bolder mb-3">Connected Devices ({{ devices.count }})</h6>
+                            <ul class="list-group">
+                                {% for dev in devices %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                        <div>
+                                            <h6 class="mb-0 text-sm"><i class="ni ni-laptop text-primary me-2"></i>{{ dev.name }}</h6>
+                                            <small class="text-muted ms-4">IP: {{ dev.ip_address }}:{{ dev.port_no }}</small>
+                                        </div>
+                                        <span class="badge bg-light text-success"><i class="ni ni-check-bold me-1"></i>Linked</span>
+                                    </li>
+                                {% empty %}
+                                    <div class="text-center py-3">
+                                        <i class="ni ni-building text-muted opacity-4 text-4xl mb-2"></i>
+                                        <p class="text-muted text-sm">No hardware devices currently linked.</p>
+                                    </div>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <!-- Staff Column -->
+                        <div class="col-md-6 mb-4 px-4">
+                            <h6 class="text-uppercase text-muted text-xs font-weight-bolder mb-3">Organization Admins & Staff</h6>
+                            <ul class="list-group">
+                                <!-- Organization Admins (Schooladmin) -->
+                                {% for admin in school_admins %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                        <div>
+                                            <h6 class="mb-0 text-sm">{{ admin.admin.first_name }} {{ admin.admin.last_name }}</h6>
+                                            <small class="text-muted">{{ admin.number|default:"No Phone" }} | {{ admin.admin.email }}</small>
+                                        </div>
+                                        <span class="badge bg-gradient-primary">Org Admin</span>
+                                    </li>
+                                {% endfor %}
+
+                                <!-- Standard Staff -->
+                                {% for staff in staff_members %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 mt-2">
+                                        <div>
+                                            <h6 class="mb-0 text-sm">{{ staff.admin.first_name }} {{ staff.admin.last_name|default:staff.admin.email }}</h6>
+                                            <small class="text-muted">{{ staff.number|default:"No Phone" }}</small>
+                                        </div>
+                                        <span class="badge bg-gradient-secondary">Staff</span>
+                                    </li>
+                                {% endfor %}
+                                
+                                {% if not school_admins and not staff_members %}
+                                    <div class="text-center py-3">
+                                        <i class="ni ni-single-02 text-muted opacity-4 text-4xl mb-2"></i>
+                                        <p class="text-muted text-sm">No administrative staff assigned.</p>
+                                    </div>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<!-- Activate Modal -->
+<div class="modal fade" id="activateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Activate Organization License</h5>
+                <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'superadmin:activate' org.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Are you sure you want to activate the service for <strong>{{ org.name }}</strong>?</p>
+                    <div class="form-group mt-3">
+                        <label class="form-control-label">Please select the new expiration date:</label>
+                        <input type="date" name="date" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Confirm Activation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Deactivate Modal -->
+<div class="modal fade" id="deactivateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">Deactivate Organization License</h5>
+                <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to suspend all services for <strong>{{ org.name }}</strong>? Members will not be able to scan attendance.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{% url 'superadmin:deactivate' org.id %}" class="btn btn-danger">Yes, Deactivate</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Initialize Chart.js -->
 <script>
-    // Classification Pie Chart
-    var ctx = document.getElementById("classificationChart");
-    var classificationChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: [
-                {% for item in classification_distribution %}
-                    "{{ item.name }}",
-                {% endfor %}
-            ],
-            datasets: [{
-                data: [
-                    {% for item in classification_distribution %}
-                        {{ item.count }},
-                    {% endfor %}
-                ],
-                backgroundColor: [
-                    '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', 
-                    '#858796', '#5a5c69', '#3a3b45', '#2e59d9', '#17a673'
-                ],
-                hoverBackgroundColor: [
-                    '#2e59d9', '#17a673', '#2c9faf', '#dda20a', '#be2617',
-                    '#656776', '#42444e', '#24252e', '#2444b8', '#0f8d5f'
-                ],
-                hoverBorderColor: "rgba(234, 236, 244, 1)",
-            }],
-        },
-        options: {
-            maintainAspectRatio: false,
-            tooltips: {
-                backgroundColor: "rgb(255,255,255)",
-                bodyFontColor: "#858796",
-                borderColor: '#dddfeb',
-                borderWidth: 1,
-                xPadding: 15,
-                yPadding: 15,
-                displayColors: false,
-                caretPadding: 10,
-            },
-            legend: {
-                display: false
-            },
-            cutoutPercentage: 80,
-        },
+    document.addEventListener("DOMContentLoaded", function() {
+        var ctx = document.getElementById("classificationChart");
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        {% for item in classification_distribution %}"{{ item.name }}",{% endfor %}
+                    ],
+                    datasets: [{
+                        data: [
+                            {% for item in classification_distribution %}{{ item.count }},{% endfor %}
+                        ],
+                        backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796', '#5a5c69'],
+                        hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf', '#dda20a', '#be2617', '#656776', '#42444e'],
+                        borderWidth: 1
+                    }],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
     });
 </script>
 {% endblock %}

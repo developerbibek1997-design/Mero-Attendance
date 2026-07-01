@@ -1,210 +1,289 @@
 {% extends 'dashboard.html' %}
 {% load static %}
-{% block title %}
-    Leave Report 
-{% endblock title %}
+
+{% block title %} Leave Report | Admin Dashboard {% endblock title %}
+
 {% block content %}
 <style>
+  /* 🎨 BEAUTIFUL UI CUSTOMIZATIONS */
   .leave-card {
-    border-radius: 12px;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border: none;
+    background: #ffffff;
     margin-bottom: 24px;
   }
-  .card-header {
+  .card-header-premium {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 1.5rem;
+    padding: 1.5rem 2rem;
+    border-radius: 16px 16px 0 0 !important;
     border-bottom: none;
   }
-  .member-name {
-    font-weight: 600;
-    color: #4a5568;
-    cursor: pointer;
+  
+  .leave-item {
+    padding: 1.5rem;
+    border: 1px solid #f1f5f9;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
     transition: all 0.3s ease;
+    background: #ffffff;
   }
-  .member-name:hover {
-    color: #667eea;
-    transform: translateX(3px);
+  .leave-item:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.04);
+    transform: translateY(-2px);
+    border-color: #e2e8f0;
   }
-  .leave-dates {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
+  
+  .member-name {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 1.1rem;
+    margin-bottom: 5px;
   }
-  .date-badge {
-    background: #edf2f7;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
+  .member-dept {
+    font-size: 0.85rem;
+    color: #64748b;
     font-weight: 500;
   }
+
+  .leave-dates-box {
+    display: inline-flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 8px 15px;
+    border-radius: 10px;
+  }
+  .date-text { font-weight: 600; color: #334155; }
+  .date-divider { margin: 0 10px; color: #94a3b8; font-size: 0.8rem; }
+  
   .reason-container {
     background: #f8fafc;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-top: 0.5rem;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    margin-top: 1rem;
     border-left: 4px solid #667eea;
   }
-  .action-buttons {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
-  }
+  .reason-container p { color: #475569; font-weight: 500; }
+  
+  /* Status Badges */
   .status-badge {
-    padding: 0.35rem 0.75rem;
+    padding: 6px 15px;
     border-radius: 50px;
-    font-weight: 600;
-    font-size: 0.75rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
   }
-  .approved {
-    background-color: #e6fffa;
-    color: #38b2ac;
-  }
-  .rejected {
-    background-color: #fff5f5;
-    color: #f56565;
-  }
-  .modal-header {
+  .status-approved { background-color: #d1fae5; color: #059669; }
+  .status-rejected { background-color: #fee2e2; color: #b91c1c; }
+  .status-pending { background-color: #fef3c7; color: #d97706; }
+  
+  /* Modals */
+  .modal-header-premium {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
   }
+  .btn-close-white { filter: invert(1) grayscale(100%) brightness(200%); }
 </style>
 
-<div class="row">
-  <div class="col-12">
-    <div class="card leave-card">
-      <div class="card-header pb-0 d-flex justify-content-between align-items-center">
-        <div>
-          <h5 class="mb-0">{{date}}</h5>
-        </div>
-        <div>
-          <h5 class=" text-light p-2">{{org}} - Leave Report</h5>
-        </div>
-      </div>
-      
-      <div class="card-body px-4 pt-4 pb-2">
-        {% for i in leave %}
-        <div class="leave-item mb-4 pb-3 border-bottom">
-          <div class="row align-items-center">
-            <div class="col-md-3">
-              <p class="member-name mb-0 text-bolder" data-bs-toggle="modal" data-bs-target="#exampleModal{{i.id}}">
-                <i class="fas fa-user-circle me-2"></i>{{i.member.name}}
+<div class="container-fluid py-4">
+
+    {% for i in messages %}
+    <div class="alert alert-success alert-dismissible fade show text-white shadow-sm" role="alert" style="border-radius: 12px;">
+        <strong><i class="fas fa-check-circle me-2"></i></strong> {{i}}
+        <button type="button" class="btn-close text-white" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+
+    <div class="row">
+      <div class="col-12">
+        <div class="card leave-card">
+          
+          <div class="card-header-premium d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <h4 class="mb-0 text-white font-weight-bolder">Leave Requests</h4>
+              <p class="text-sm mb-0 opacity-8">
+                Manage and review employee time-off
+                {% if total_pending > 0 %}
+                — <span class="badge bg-warning text-dark">{{ total_pending }} Pending</span>
+                {% endif %}
               </p>
             </div>
-            
-            <div class="col-md-3">
-              <div class="leave-dates">
-                <div class="date-badge">
-                  <i class="far fa-calendar-alt me-2"></i>{{i.gap_start}}
-                </div>
-                <span class="text-muted">to</span>
-                <div class="date-badge">
-                  <i class="far fa-calendar-alt me-2"></i>{{i.gap_end}}
-                </div>
-              </div>
-            </div>
-            
-            <div class="col-md-3">
-              {% if i.approved %}
-                <span class="status-badge approved">
-                  <i class="fas fa-check-circle me-1"></i>Approved
-                </span>
-              {% elif i.rejected %}
-                <span class="status-badge rejected">
-                  <i class="fas fa-times-circle me-1"></i>Rejected
-                </span>
-              {% else %}
-                <span class="text-muted">Pending</span>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-3">
-              <div class="action-buttons">
-                {% if not i.approved and not i.rejected %}
-                  <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#approveModal{{i.id}}">
-                    <i class="fas fa-check me-1"></i>Approve
-                  </button>
-                  <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{i.id}}">
-                    <i class="fas fa-times me-1"></i>Reject
-                  </button>
-                {% endif %}
+            <div class="text-end">
+              <h5 class="text-white mb-1">{{org.name}}</h5>
+              <div class="d-flex gap-2 justify-content-end flex-wrap mt-2">
+                <a href="?status=all" class="btn btn-sm {% if status_filter == 'all' %}btn-white text-dark{% else %}btn-outline-light{% endif %}">All</a>
+                <a href="?status=pending" class="btn btn-sm {% if status_filter == 'pending' %}btn-warning text-dark{% else %}btn-outline-light{% endif %}">Pending</a>
+                <a href="?status=approved" class="btn btn-sm {% if status_filter == 'approved' %}btn-success{% else %}btn-outline-light{% endif %}">Approved</a>
+                <a href="?status=rejected" class="btn btn-sm {% if status_filter == 'rejected' %}btn-danger{% else %}btn-outline-light{% endif %}">Rejected</a>
+                <a href="{% url 'schooladmin:export_leave' %}?fmt=excel" class="btn btn-sm btn-light"><i class="fas fa-file-excel me-1 text-success"></i>Excel</a>
+                <a href="{% url 'schooladmin:export_leave' %}?fmt=csv" class="btn btn-sm btn-light"><i class="fas fa-file-csv me-1 text-secondary"></i>CSV</a>
               </div>
             </div>
           </div>
           
-          <div class="row mt-3">
-            <div class="col-12">
-              <div class="reason-container">
-                <h6 class="text-sm text-muted mb-2">Reason:</h6>
-                <p class="mb-0">{{i.reason}}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+          <div class="card-body p-4">
+            
+            {% for i in leave %}
+            <div class="leave-item">
+              <div class="row align-items-center">
+                
+                <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
+                  <div class="d-flex align-items-center">
+                    <div class="avatar bg-gradient-info text-white rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px; font-size: 1.2rem;">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <h6 class="member-name">{{i.member.name}}</h6>
+                        <span class="member-dept"><i class="fas fa-briefcase me-1"></i>{{i.member.classification|default:"Staff"}}</span>
+                        {% if i.leave_type %}
+                        <div class="mt-1">
+                          <span class="badge bg-light text-dark border" style="font-size:.68rem;">{{ i.leave_type.name }}</span>
+                          {% if i.is_paid_leave %}
+                          <span class="badge bg-success text-white" style="font-size:.68rem;">Paid</span>
+                          {% else %}
+                          <span class="badge bg-danger text-white" style="font-size:.68rem;">Unpaid</span>
+                          {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                  </div>
+                </div>
 
-        <!-- Approve Modal -->
-        <div class="modal fade" id="approveModal{{i.id}}" tabindex="-1" aria-labelledby="approveModalLabel{{i.id}}" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="approveModalLabel{{i.id}}">Confirm Approval</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="col-lg-4 col-md-6 mb-3 mb-lg-0 text-lg-center">
+                  <div class="leave-dates-box">
+                    <i class="far fa-calendar-alt text-primary me-2"></i>
+                    <span class="date-text">{{i.start_display}}</span>
+                    {% if i.end_display %}
+                        <span class="date-divider"><i class="fas fa-arrow-right"></i></span>
+                        <span class="date-text">{{i.end_display}}</span>
+                        <span class="ms-2 badge bg-secondary text-white" style="font-size: 0.7rem;">{{ i.total_leave_days }}d</span>
+                    {% else %}
+                        <span class="ms-2 badge bg-secondary text-white" style="font-size: 0.7rem;">1 Day</span>
+                    {% endif %}
+                  </div>
+                  {% if nepali_enabled %}
+                    <small class="d-block text-muted mt-1 text-xs">(BS Calendar)</small>
+                  {% endif %}
+                  {% if i.reason %}
+                  <small class="d-block text-muted mt-1 text-xs text-truncate" style="max-width:200px;" title="{{ i.reason }}">{{ i.reason }}</small>
+                  {% endif %}
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-3 mb-lg-0 text-lg-center">
+                  {% if i.approved %}
+                    <span class="status-badge status-approved"><i class="fas fa-check-circle me-2"></i>Approved</span>
+                  {% elif i.rejected %}
+                    <span class="status-badge status-rejected"><i class="fas fa-times-circle me-2"></i>Rejected</span>
+                  {% else %}
+                    <span class="status-badge status-pending"><i class="fas fa-hourglass-half me-2"></i>Pending Review</span>
+                  {% endif %}
+                </div>
+                
+                <div class="col-lg-3 col-md-6 text-lg-end">
+                  {% if not i.approved and not i.rejected %}
+                    <button class="btn btn-success mb-0 me-2 px-3 py-2" data-bs-toggle="modal" data-bs-target="#approveModal{{i.id}}" title="Approve Leave">
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-danger mb-0 px-3 py-2" data-bs-toggle="modal" data-bs-target="#rejectModal{{i.id}}" title="Reject Leave">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  {% else %}
+                     <button class="btn btn-outline-secondary mb-0 px-3 py-2 disabled" disabled>Action Taken</button>
+                  {% endif %}
+                </div>
               </div>
-              <div class="modal-body">
-                <p>Are you sure you want to approve this leave request for <strong>{{i.member.name}}</strong>?</p>
-                <p class="text-muted">From {{i.gap_start}} to {{i.gap_end}}</p>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="{% url 'schooladmin:acceptReject' i.id 'accept' %}">
-                  <button type="button" class="btn btn-success">
-                    <i class="fas fa-check me-1"></i>Confirm Approval
-                  </button>
-                </a>
+              
+              <div class="row">
+                <div class="col-12">
+                  <div class="reason-container">
+                    <h6 class="text-xs text-uppercase text-muted font-weight-bolder mb-1">Reason for Leave:</h6>
+                    <p class="mb-0 text-sm">{{i.reason|default:"No reason provided."}}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Reject Modal -->
-        <div class="modal fade" id="rejectModal{{i.id}}" tabindex="-1" aria-labelledby="rejectModalLabel{{i.id}}" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="rejectModalLabel{{i.id}}">Confirm Rejection</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <p>Are you sure you want to reject this leave request for <strong>{{i.member.name}}</strong>?</p>
-                <p class="text-muted">From {{i.gap_start}} to {{i.gap_end}}</p>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="{% url 'schooladmin:acceptReject' i.id 'reject' %}">
-                  <button type="button" class="btn btn-danger">
-                    <i class="fas fa-times me-1"></i>Confirm Rejection
-                  </button>
-                </a>
+            <div class="modal fade" id="approveModal{{i.id}}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border-radius: 15px; overflow: hidden;">
+                  <div class="modal-header modal-header-premium">
+                    <h5 class="modal-title text-white"><i class="fas fa-check-circle me-2"></i>Confirm Approval</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body p-4 text-center">
+                    <div class="mb-3 text-success" style="font-size: 3rem;"><i class="fas fa-check-circle"></i></div>
+                    <h5>Approve leave for <strong>{{i.member.name}}</strong>?</h5>
+                    <p class="text-muted mb-0">From <b>{{i.start_display}}</b> {% if i.end_display %}to <b>{{i.end_display}}</b>{% endif %}</p>
+                  </div>
+                  <div class="modal-footer bg-light justify-content-center border-top-0">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                    <a href="{% url 'schooladmin:acceptReject' i.id 'accept' %}" class="btn btn-success px-4">
+                      Yes, Approve Leave
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <div class="modal fade" id="rejectModal{{i.id}}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border-radius: 15px; overflow: hidden;">
+                  <div class="modal-header bg-gradient-danger">
+                    <h5 class="modal-title text-white"><i class="fas fa-times-circle me-2"></i>Confirm Rejection</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body p-4 text-center">
+                    <div class="mb-3 text-danger" style="font-size: 3rem;"><i class="fas fa-times-circle"></i></div>
+                    <h5>Reject leave for <strong>{{i.member.name}}</strong>?</h5>
+                    <p class="text-muted mb-0">From <b>{{i.start_display}}</b> {% if i.end_display %}to <b>{{i.end_display}}</b>{% endif %}</p>
+                  </div>
+                  <div class="modal-footer bg-light justify-content-center border-top-0">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                    <a href="{% url 'schooladmin:acceptReject' i.id 'reject' %}" class="btn btn-danger px-4">
+                      Yes, Reject Leave
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {% empty %}
+            <div class="text-center py-5">
+                <div class="p-4">
+                    <i class="fas fa-calendar-check fa-4x mb-3 text-light"></i>
+                    <h4 class="text-secondary font-weight-bold">All Caught Up!</h4>
+                    <p class="text-muted">No leave requests match the selected filter.</p>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if page_obj.has_other_pages %}
+            <nav class="mt-3 d-flex justify-content-center">
+              <ul class="pagination pagination-sm">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?status={{ status_filter }}&page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                  {% if page_obj.number == num %}
+                  <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                  {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                  <li class="page-item"><a class="page-link" href="?status={{ status_filter }}&page={{ num }}">{{ num }}</a></li>
+                  {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?status={{ status_filter }}&page={{ page_obj.next_page_number }}">&raquo;</a></li>
+                {% endif %}
+              </ul>
+            </nav>
+            <p class="text-center text-xs text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} — {{ page_obj.paginator.count }} total records</p>
+            {% endif %}
+
           </div>
         </div>
-        {% endfor %}
       </div>
     </div>
-  </div>
 </div>
-
-<script>
-  function printData(tId) {
-    var printContents = document.getElementById(tId).innerHTML;
-    var originalContents = document.body.innerHTML;
-
-    document.body.innerHTML = printContents;
-
-    window.print();
-
-    document.body.innerHTML = originalContents;
-  }
-</script>
 {% endblock content %}

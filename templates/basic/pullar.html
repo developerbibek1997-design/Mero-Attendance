@@ -1,36 +1,521 @@
 {% extends 'pillar.html' %}
 {% load static %}
+
+{% block title %}
+Download Mero Attendance Puller | Desktop Device Sync and Mobile Apps
+{% endblock title %}
+
 {% block content %}
-    <style>
-    .loader{
-      display: none;
+<style>
+  .download-modern {
+    --download-red: #e11d48;
+    --download-red-dark: #be123c;
+    --download-ink: #0f172a;
+    --download-muted: #64748b;
+    --download-line: rgba(15, 23, 42, 0.10);
+    --download-soft: #f8fafc;
+    background: #ffffff;
+    color: var(--download-ink);
+    overflow: hidden;
+  }
+
+  .download-hero {
+    min-height: calc(84vh - 78px);
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding: 78px 0 54px;
+    background:
+      linear-gradient(90deg, rgba(15, 23, 42, 0.90), rgba(15, 23, 42, 0.66), rgba(15, 23, 42, 0.34)),
+      url("{% static 'res/zkteco.jpg' %}") center/cover no-repeat;
+  }
+
+  .download-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 100px;
+    background: linear-gradient(180deg, transparent, #ffffff);
+  }
+
+  .download-hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+  }
+
+  .download-kicker,
+  .download-section-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    border-radius: 999px;
+    padding: 9px 14px;
+    font-size: 0.82rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0;
+  }
+
+  .download-kicker {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+  }
+
+  .download-section-kicker {
+    color: var(--download-red);
+    background: #fff1f2;
+    border: 1px solid rgba(225, 29, 72, 0.16);
+  }
+
+  .download-title {
+    color: #ffffff;
+    font-size: clamp(2.55rem, 5.8vw, 5.65rem);
+    line-height: 1.03;
+    font-weight: 950;
+    margin: 20px 0 22px;
+  }
+
+  .download-title span {
+    color: #fb7185;
+  }
+
+  .download-lead {
+    max-width: 760px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin-bottom: 28px;
+  }
+
+  .download-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .download-btn {
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    border-radius: 999px;
+    padding: 12px 21px;
+    font-weight: 900;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    border: 1px solid transparent;
+  }
+
+  .download-btn:hover {
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  .download-btn-primary {
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--download-red), var(--download-red-dark));
+    box-shadow: 0 18px 36px rgba(225, 29, 72, 0.32);
+  }
+
+  .download-btn-primary:hover {
+    color: #ffffff;
+  }
+
+  .download-btn-light {
+    color: var(--download-ink);
+    background: #ffffff;
+  }
+
+  .download-btn-light:hover {
+    color: var(--download-red);
+  }
+
+  .download-btn-outline {
+    color: var(--download-ink);
+    background: #ffffff;
+    border-color: var(--download-line);
+  }
+
+  .download-btn-outline:hover {
+    color: var(--download-red);
+  }
+
+  .download-section {
+    padding: 82px 0;
+  }
+
+  .download-section-soft {
+    background: var(--download-soft);
+  }
+
+  .download-head {
+    max-width: 850px;
+    margin-bottom: 36px;
+  }
+
+  .download-head.center {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .download-head h2 {
+    margin: 16px 0 12px;
+    font-size: clamp(2rem, 4vw, 3.55rem);
+    line-height: 1.08;
+    font-weight: 950;
+  }
+
+  .download-head p {
+    color: var(--download-muted);
+    line-height: 1.8;
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  .download-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .download-card {
+    border: 1px solid var(--download-line);
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 26px;
+    min-height: 330px;
+    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.07);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .download-card.featured {
+    color: #ffffff;
+    background:
+      linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.88)),
+      url("{% static 'res/access.jpeg' %}") center/cover no-repeat;
+    border-color: rgba(15, 23, 42, 0.2);
+  }
+
+  .download-card-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    font-size: 1.55rem;
+    background: #fff1f2;
+    color: var(--download-red);
+    margin-bottom: 20px;
+  }
+
+  .download-card.featured .download-card-icon {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  .download-card h3 {
+    font-size: 1.28rem;
+    font-weight: 950;
+    margin-bottom: 10px;
+  }
+
+  .download-card p {
+    color: var(--download-muted);
+    line-height: 1.7;
+    margin-bottom: 22px;
+    font-size: 0.94rem;
+  }
+
+  .download-card.featured p {
+    color: rgba(255, 255, 255, 0.76);
+  }
+
+  .download-card .download-actions {
+    margin-top: auto;
+  }
+
+  .setup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: center;
+  }
+
+  .setup-media {
+    min-height: 440px;
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0.44)),
+      url("{% static 'res/access.webp' %}") center/cover no-repeat;
+    box-shadow: 0 28px 70px rgba(15, 23, 42, 0.16);
+  }
+
+  .setup-steps {
+    display: grid;
+    gap: 14px;
+  }
+
+  .setup-step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 14px;
+    padding: 18px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid var(--download-line);
+  }
+
+  .setup-step-number {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: var(--download-ink);
+    color: #ffffff;
+    font-weight: 950;
+  }
+
+  .setup-step h3 {
+    font-size: 1rem;
+    font-weight: 950;
+    margin: 0 0 6px;
+  }
+
+  .setup-step p {
+    color: var(--download-muted);
+    line-height: 1.65;
+    font-size: 0.92rem;
+    margin: 0;
+  }
+
+  .support-band {
+    padding: 76px 0;
+    color: #ffffff;
+    background:
+      linear-gradient(90deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.76)),
+      url("{% static 'res/time.png' %}") center/cover no-repeat;
+  }
+
+  .support-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .support-band h2 {
+    max-width: 760px;
+    font-size: clamp(2rem, 4vw, 3.45rem);
+    line-height: 1.08;
+    font-weight: 950;
+    margin: 0 0 12px;
+  }
+
+  .support-band p {
+    max-width: 690px;
+    color: rgba(255, 255, 255, 0.76);
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  @media (max-width: 991px) {
+    .download-hero {
+      min-height: auto;
     }
 
-  </style>
-    <div class="container-fluid" id="background">
-        <br><br>
-        <div class="row">
-            <div class="col-lg-12 col-12 col-md-12 ">
-               <h1 class="text-center">
-                Puller Download
-               </h1>
-               <hr>
-               <h6 class="text-center">
-                Click the link below to download puller app for meroattendance.com
-               </h6>
-               <br>
-               <div class="text-center">
-                <a href="{%static 'res/puller.zip'%}" download>
-                    <button class="btn btn-danger p-3">
-                        <h3> Download</h3>
-                       
-                    </button>
-                   </a>
-               </div>
-              
-          
-            </div>
+    .download-cards,
+    .setup-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .setup-media {
+      min-height: 320px;
+    }
+
+    .support-inner {
+      display: block;
+    }
+
+    .support-band .download-actions {
+      margin-top: 24px;
+    }
+  }
+
+  @media (max-width: 575px) {
+    .download-section {
+      padding: 62px 0;
+    }
+
+    .download-title {
+      font-size: 2.45rem;
+    }
+
+    .download-actions .download-btn {
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="download-modern">
+  <section class="download-hero">
+    <div class="container">
+      <div class="download-hero-content">
+        <div class="download-kicker">
+          <i class="fa-solid fa-fingerprint"></i>
+          Device sync and mobile access
         </div>
+        <h1 class="download-title">Download <span>Mero Attendance Puller</span></h1>
+        <p class="download-lead">
+          Use the desktop puller to connect compatible attendance devices with the Mero Attendance cloud.
+          Mobile app links are also available for staff and user workflows. If you need the
+          current desktop installer, request it from the support team so they can confirm your device setup.
+        </p>
+        <div class="download-actions">
+          <a href="{% url 'management:contact' %}" class="download-btn download-btn-primary">
+            <i class="fa-solid fa-headset"></i>
+            Request Desktop Puller
+          </a>
+          <a href="#mobile-apps" class="download-btn download-btn-light">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+            Mobile Apps
+          </a>
+          <a href="{% url 'management:contact' %}" class="download-btn download-btn-light">
+            <i class="fa-solid fa-headset"></i>
+            Need Setup Help
+          </a>
+        </div>
+      </div>
     </div>
+  </section>
+
+  <section class="download-section">
+    <div class="container">
+      <div class="download-head center">
+        <div class="download-section-kicker">
+          <i class="fa-solid fa-box-open"></i>
+          Download options
+        </div>
+        <h2>Choose the app your workflow needs.</h2>
+        <p>
+          Desktop puller is for attendance device sync. Mobile apps are useful for staff,
+          users and field workflows where phone-based access is needed.
+        </p>
+      </div>
+
+      <div class="download-cards">
+        <div class="download-card featured">
+          <div class="download-card-icon"><i class="fa-solid fa-desktop"></i></div>
+          <h3>Desktop Puller</h3>
+          <p>
+            Install the puller on the computer connected to your attendance device network.
+            Request the latest installer so support can confirm your device model and setup path.
+          </p>
+          <div class="download-actions">
+            <a href="{% url 'management:contact' %}" class="download-btn download-btn-primary">
+              <i class="fa-solid fa-headset"></i>
+              Request ZIP
+            </a>
+          </div>
+        </div>
+
+        <div class="download-card" id="mobile-apps">
+          <div class="download-card-icon"><i class="fa-brands fa-google-play"></i></div>
+          <h3>Android App</h3>
+          <p>
+            Open mobile workflows from Android devices for organization users who need quick access on phone.
+          </p>
+          <div class="download-actions">
+            <a href="https://play.google.com/store/apps/details?id=com.gharbhada.fullsewa.rentbill&pli=1" class="download-btn download-btn-outline">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              Open Play Store
+            </a>
+          </div>
+        </div>
+
+        <div class="download-card">
+          <div class="download-card-icon"><i class="fa-brands fa-apple"></i></div>
+          <h3>iOS App</h3>
+          <p>
+            Use the App Store link for iPhone users who need mobile access to supported app workflows.
+          </p>
+          <div class="download-actions">
+            <a href="https://apps.apple.com/np/app/ghar-bhada/id6762967907" class="download-btn download-btn-outline">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              Open App Store
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="download-section download-section-soft">
+    <div class="container">
+      <div class="setup-grid">
+        <div>
+          <div class="download-section-kicker">
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+            Setup flow
+          </div>
+          <div class="download-head mb-4">
+            <h2>Install once, then keep attendance moving.</h2>
+            <p>
+              The puller is meant to run near your attendance device network and send verified
+              records to the cloud account configured for your organization.
+            </p>
+          </div>
+          <div class="setup-steps">
+            <div class="setup-step">
+              <div class="setup-step-number">1</div>
+              <div>
+                <h3>Download and extract</h3>
+                <p>Download the ZIP, extract it on the device-sync computer, and keep the folder in a safe location.</p>
+              </div>
+            </div>
+            <div class="setup-step">
+              <div class="setup-step-number">2</div>
+              <div>
+                <h3>Configure device access</h3>
+                <p>Enter the required organization and device details provided by your admin or support team.</p>
+              </div>
+            </div>
+            <div class="setup-step">
+              <div class="setup-step-number">3</div>
+              <div>
+                <h3>Sync and review</h3>
+                <p>Run sync, then verify attendance records in the cloud dashboard reports.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="setup-media" aria-label="Device access setup visual"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="support-band">
+    <div class="container support-inner">
+      <div>
+        <h2>Not sure which app or setup path you need?</h2>
+        <p>
+          Tell us your device model, network setup and organization workflow.
+          We can guide the puller setup and confirm whether your current device is supported.
+        </p>
+      </div>
+      <div class="download-actions mb-0">
+        <a href="{% url 'management:contact' %}" class="download-btn download-btn-primary">
+          <i class="fa-solid fa-headset"></i>
+          Contact Support
+        </a>
+      </div>
+    </div>
+  </section>
+</div>
 {% endblock content %}
-    

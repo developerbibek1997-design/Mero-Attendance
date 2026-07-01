@@ -1,0 +1,143 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Staff Permissions | {{ org.name }}{% endblock %}
+
+{% block content %}
+<style>
+  .sp-header { background:linear-gradient(135deg,#1e293b,#0f172a); border-radius:16px; padding:28px 32px; color:#fff; margin-bottom:24px; }
+  .sp-search-card { background:#fff; border-radius:14px; border:1px solid #e2e8f0; padding:20px 24px; margin-bottom:20px; }
+  .sp-table { background:#fff; border-radius:14px; border:1px solid #e2e8f0; overflow:hidden; }
+  .sp-table table { margin:0; }
+  .sp-table thead th { background:#f8fafc; font-size:.75rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:#64748b; border-bottom:1px solid #e2e8f0; padding:12px 16px; }
+  .sp-table tbody td { padding:14px 16px; vertical-align:middle; font-size:.85rem; border-bottom:1px solid #f1f5f9; }
+  .sp-table tbody tr:last-child td { border-bottom:none; }
+  .sp-table tbody tr:hover { background:#f8fafc; }
+  .sp-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#6366f1,#8b5cf6); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:.85rem; flex-shrink:0; }
+  .sp-level-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:999px; font-size:.72rem; font-weight:800; }
+  .sp-level-1 { background:#f1f5f9; color:#64748b; }
+  .sp-level-2 { background:#dbeafe; color:#1d4ed8; }
+  .sp-level-3 { background:#d1fae5; color:#065f46; }
+  .sp-level-4 { background:#fef3c7; color:#92400e; }
+  .sp-level-5 { background:#fce7f3; color:#9d174d; }
+  .sp-perm-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .sp-perm-on  { background:#22c55e; }
+  .sp-perm-off { background:#e2e8f0; }
+  .btn-edit-perm { font-size:.75rem; font-weight:700; padding:5px 12px; border-radius:8px; }
+</style>
+
+<div class="container-fluid py-2">
+
+  <div class="sp-header">
+    <h3 style="font-size:1.4rem;font-weight:900;margin:0 0 6px;">Staff Permissions</h3>
+    <p style="margin:0;opacity:.75;font-size:.88rem;">
+      Control exactly what each staff member can view and do.
+      Permissions only show for features enabled in <strong>Feature Settings</strong>.
+    </p>
+  </div>
+
+  <!-- Search -->
+  <div class="sp-search-card">
+    <form method="get" class="d-flex gap-3 align-items-center">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by name..."
+             class="form-control" style="max-width:320px;">
+      <button class="btn btn-primary" type="submit"><i class="fas fa-search me-1"></i> Search</button>
+      {% if q %}<a href="{% url 'schooladmin:staff_permissions' %}" class="btn btn-outline-secondary">Clear</a>{% endif %}
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div class="sp-table">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>Type</th>
+          <th>Privilege Level</th>
+          <th>Key Permissions</th>
+          <th style="text-align:right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in members %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              <div class="sp-avatar">{{ m.name|slice:":1"|upper }}</div>
+              <div>
+                <div style="font-weight:700;color:#0f172a;">{{ m.name }}</div>
+                <div style="font-size:.75rem;color:#94a3b8;">{{ m.member_type|title }}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge bg-light text-dark" style="font-size:.72rem;">{{ m.member_type|title }}</span></td>
+          <td>
+            <span class="sp-level-badge sp-level-{{ m.privilege }}">
+              {% if m.privilege == 1 %}Self Only
+              {% elif m.privilege == 2 %}Class Level
+              {% elif m.privilege == 3 %}Branch Level
+              {% elif m.privilege == 4 %}Org Level
+              {% elif m.privilege == 5 %}Full Admin
+              {% else %}Level {{ m.privilege }}{% endif %}
+            </span>
+          </td>
+          <td>
+            {% with sp=m.staff_permission %}
+            <div class="d-flex gap-2 flex-wrap">
+              {% if features.payroll %}
+              <span title="Payroll" class="sp-perm-dot {% if sp.can_view_payroll %}sp-perm-on{% else %}sp-perm-off{% endif %}"></span>
+              {% endif %}
+              {% if features.leave %}
+              <span title="Leave" class="sp-perm-dot {% if sp.can_approve_leave %}sp-perm-on{% else %}sp-perm-off{% endif %}"></span>
+              {% endif %}
+              {% if features.tasks %}
+              <span title="Tasks" class="sp-perm-dot {% if sp.can_assign_tasks %}sp-perm-on{% else %}sp-perm-off{% endif %}"></span>
+              {% endif %}
+              {% if features.billing %}
+              <span title="Billing" class="sp-perm-dot {% if sp.can_view_billing %}sp-perm-on{% else %}sp-perm-off{% endif %}"></span>
+              {% endif %}
+              {% if features.stock %}
+              <span title="Stock" class="sp-perm-dot {% if sp.can_view_stock %}sp-perm-on{% else %}sp-perm-off{% endif %}"></span>
+              {% endif %}
+              {% if features.results %}
+              <span title="Results" class="sp-perm-dot {% if sp.can_view_result_report %}sp-perm-on{% else %}sp-perm-off{% endif %}"></span>
+              {% endif %}
+              {% if not sp %}<span style="font-size:.75rem;color:#94a3b8;">Default</span>{% endif %}
+            </div>
+            <div style="font-size:.7rem;color:#94a3b8;margin-top:4px;">
+              {% if sp %}
+              Att:{% if sp.can_edit_attendance %}✓{% else %}—{% endif %}
+              Reports:{% if sp.can_view_reports %}✓{% else %}—{% endif %}
+              Export:{% if sp.can_bulk_export %}✓{% else %}—{% endif %}
+              {% else %}No custom permissions set{% endif %}
+            </div>
+            {% endwith %}
+          </td>
+          <td style="text-align:right;">
+            <a href="{% url 'schooladmin:edit_staff_permissions' m.id %}"
+               class="btn btn-outline-primary btn-edit-perm">
+              <i class="fas fa-key me-1"></i> Edit Permissions
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center py-5 text-muted">No members found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="d-flex justify-content-center mt-4">
+    <nav><ul class="pagination">
+      {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">«</a></li>{% endif %}
+      {% for n in page_obj.paginator.page_range %}
+      <li class="page-item {% if n == page_obj.number %}active{% endif %}"><a class="page-link" href="?page={{ n }}{% if q %}&q={{ q }}{% endif %}">{{ n }}</a></li>
+      {% endfor %}
+      {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}">»</a></li>{% endif %}
+    </ul></nav>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

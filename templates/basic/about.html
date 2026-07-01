@@ -1,72 +1,694 @@
 {% extends 'pillar.html' %}
 {% load static %}
 
+{% block title %}About Mero Attendance | Cloud Attendance, HRMS, Payroll & School ERP Nepal{% endblock title %}
+
+{% block extra_css %}
+<style>
+/* ── tokens ──────────────────────────────────────────────── */
+.ab {
+  --red:    #e11d48; --red-dk:#be123c; --red-lt:#fff1f2;
+  --ink:    #0f172a; --slate: #334155; --muted: #64748b;
+  --line:   rgba(15,23,42,.09); --soft: #f8fafc;
+  --green:  #16a34a; --green-lt:#f0fdf4;
+  --blue:   #2563eb; --blue-lt: #eff6ff;
+  --violet: #7c3aed; --violet-lt:#f5f3ff;
+  --amber:  #d97706; --amber-lt:#fffbeb;
+  --teal:   #0d9488; --teal-lt: #f0fdfa;
+  background: #fff; color: var(--ink);
+}
+
+/* ── shared ─────────────────────────────────────────────── */
+.ab-sec     { padding: 88px 0; }
+.ab-sec-soft{ background: var(--soft); }
+.ab-sec-dark{ background: #0a1124; }
+
+.ab-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 15px; border-radius: 99px;
+  font-size: .76rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.ab-badge-red    { background:var(--red-lt);    color:var(--red);    border:1px solid rgba(225,29,72,.14); }
+.ab-badge-green  { background:var(--green-lt);  color:var(--green);  border:1px solid rgba(22,163,74,.14); }
+.ab-badge-blue   { background:var(--blue-lt);   color:var(--blue);   border:1px solid rgba(37,99,235,.14); }
+.ab-badge-violet { background:var(--violet-lt); color:var(--violet); border:1px solid rgba(124,58,237,.14); }
+.ab-badge-amber  { background:var(--amber-lt);  color:var(--amber);  border:1px solid rgba(217,119,6,.14); }
+.ab-badge-teal   { background:var(--teal-lt);   color:var(--teal);   border:1px solid rgba(13,148,136,.14); }
+.ab-badge-white  { background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.18); }
+
+.ab-h2 {
+  font-size: clamp(2rem,4vw,3.5rem);
+  font-weight: 950; line-height: 1.07; letter-spacing: -.04em;
+  margin: 14px 0 12px;
+}
+.ab-h2-white { color: #fff; }
+.ab-lead { color:var(--muted); font-size:1rem; line-height:1.8; margin:0; max-width:720px; }
+.ab-lead-white { color:rgba(255,255,255,.72); }
+.ab-head { margin-bottom:52px; }
+.ab-head.ctr { text-align:center; }
+.ab-head.ctr .ab-lead { margin:0 auto; }
+
+.ab-btn {
+  display:inline-flex; align-items:center; gap:8px;
+  min-height:46px; padding:10px 22px; border-radius:99px;
+  font-weight:800; font-size:.88rem; transition:all .18s;
+  border:none; cursor:pointer;
+}
+.ab-btn:hover { transform:translateY(-2px); text-decoration:none; }
+.ab-btn-red   { background:linear-gradient(135deg,var(--red),var(--red-dk)); color:#fff; box-shadow:0 14px 30px rgba(225,29,72,.28); }
+.ab-btn-red:hover  { color:#fff; box-shadow:0 20px 40px rgba(225,29,72,.38); }
+.ab-btn-white { background:#fff; color:var(--ink); }
+.ab-btn-white:hover { color:var(--red); }
+.ab-btn-ghost { background:rgba(255,255,255,.1); border:1.5px solid rgba(255,255,255,.22); color:#fff; }
+.ab-btn-ghost:hover { background:rgba(255,255,255,.18); color:#fff; }
+.ab-btn-outline { background:transparent; border:1.5px solid var(--line); color:var(--slate); }
+.ab-btn-outline:hover { border-color:var(--red); color:var(--red); }
+.ab-btns { display:flex; flex-wrap:wrap; gap:12px; }
+
+.ic { width:48px; height:48px; border-radius:12px; display:grid; place-items:center; font-size:1.1rem; flex-shrink:0; }
+.ic-red    { background:var(--red-lt);    color:var(--red); }
+.ic-green  { background:var(--green-lt);  color:var(--green); }
+.ic-blue   { background:var(--blue-lt);   color:var(--blue); }
+.ic-violet { background:var(--violet-lt); color:var(--violet); }
+.ic-amber  { background:var(--amber-lt);  color:var(--amber); }
+.ic-teal   { background:var(--teal-lt);   color:var(--teal); }
+.ic-ink    { background:var(--ink);       color:#fff; }
+.ic-slate  { background:#f1f5f9;          color:var(--slate); }
+.ic-lime   { background:#f7fee7;          color:#65a30d; }
+.ic-cyan   { background:#ecfeff;          color:#0891b2; }
+
+/* ══════════════════════════════════════════════════════════
+   1 · HERO
+══════════════════════════════════════════════════════════ */
+.ab-hero {
+  position:relative; min-height:calc(86vh - 68px);
+  display:flex; align-items:center;
+  padding:80px 0 64px;
+  background:
+    linear-gradient(105deg, rgba(10,17,36,.96) 0%, rgba(10,17,36,.80) 55%, rgba(10,17,36,.50) 100%),
+    url("{% static 'res/about-bg.png' %}") center/cover no-repeat,
+    url("{% static 'res/background.jpg' %}") center/cover no-repeat;
+}
+.ab-hero::after {
+  content:""; position:absolute; inset:auto 0 -2px;
+  height:90px; background:linear-gradient(transparent,#fff); pointer-events:none;
+}
+.ab-hero-content { position:relative; z-index:1; max-width:860px; }
+.ab-hero-kicker {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18);
+  border-radius:99px; padding:8px 15px; font-size:.76rem; font-weight:800;
+  text-transform:uppercase; letter-spacing:.06em; color:#fff; margin-bottom:22px;
+}
+.ab-hero-h1 {
+  font-size:clamp(2.6rem,5.5vw,5.4rem);
+  font-weight:950; line-height:1.02; letter-spacing:-.04em;
+  color:#fff; margin:0 0 22px;
+}
+.ab-hero-h1 span { color:#fb7185; }
+.ab-hero-sub {
+  color:rgba(255,255,255,.76); font-size:1.05rem;
+  line-height:1.8; max-width:700px; margin-bottom:32px;
+}
+
+/* hero stat pills */
+.ab-hero-pills { display:flex; flex-wrap:wrap; gap:10px; }
+.ab-hero-pill {
+  display:flex; align-items:center; gap:7px;
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14);
+  border-radius:99px; padding:8px 15px;
+  color:rgba(255,255,255,.82); font-size:.78rem; font-weight:700;
+}
+.ab-hero-pill i { color:#4ade80; }
+
+/* ══════════════════════════════════════════════════════════
+   2 · MISSION & VISION (two-col)
+══════════════════════════════════════════════════════════ */
+.ab-mv-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:24px;
+}
+.ab-mv-card {
+  border-radius:20px; padding:40px 36px; position:relative; overflow:hidden;
+}
+.ab-mv-card.mission {
+  background:linear-gradient(135deg, var(--ink) 0%, #1e293b 100%);
+  color:#fff;
+}
+.ab-mv-card.vision {
+  background:linear-gradient(135deg, var(--red) 0%, var(--red-dk) 100%);
+  color:#fff;
+}
+.ab-mv-card::before {
+  content:""; position:absolute; width:180px; height:180px; border-radius:50%;
+  background:rgba(255,255,255,.05); right:-50px; top:-50px;
+}
+.ab-mv-icon {
+  width:56px; height:56px; border-radius:14px;
+  background:rgba(255,255,255,.15); display:grid; place-items:center;
+  font-size:1.3rem; color:#fff; margin-bottom:20px; position:relative;z-index:1;
+}
+.ab-mv-card h3 {
+  font-size:1.3rem; font-weight:950; margin:0 0 14px;
+  position:relative;z-index:1;
+}
+.ab-mv-card p {
+  color:rgba(255,255,255,.78); line-height:1.8; margin:0;
+  position:relative;z-index:1;
+}
+
+/* ══════════════════════════════════════════════════════════
+   3 · WHAT WE BUILT (module pills)
+══════════════════════════════════════════════════════════ */
+.ab-modules {
+  display:flex; flex-wrap:wrap; gap:12px;
+}
+.ab-module-pill {
+  display:inline-flex; align-items:center; gap:9px;
+  background:#fff; border:1px solid var(--line);
+  border-radius:12px; padding:12px 18px;
+  font-size:.85rem; font-weight:800; color:var(--ink);
+  box-shadow:0 4px 14px rgba(15,23,42,.06);
+  transition:all .18s;
+}
+.ab-module-pill:hover { transform:translateY(-3px); box-shadow:0 12px 30px rgba(15,23,42,.1); border-color:rgba(225,29,72,.2); }
+.ab-module-pill i { font-size:.9rem; }
+
+.ab-story-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center;
+}
+.ab-story-visual {
+  border-radius:20px; min-height:460px; overflow:hidden;
+  background:
+    linear-gradient(180deg, rgba(10,17,36,.1), rgba(10,17,36,.5)),
+    url("{% static 'res/attendance.png' %}") center/cover no-repeat;
+  box-shadow:0 32px 80px rgba(15,23,42,.18);
+  position:relative;
+}
+.ab-story-visual .sv-badge {
+  position:absolute; bottom:24px; left:24px; right:24px;
+  background:rgba(255,255,255,.95); border-radius:14px;
+  padding:16px 20px; display:flex; gap:14px; align-items:center;
+  box-shadow:0 12px 32px rgba(15,23,42,.14);
+}
+.sv-badge h5 { margin:0; font-size:.9rem; font-weight:900; }
+.sv-badge p  { margin:0; font-size:.76rem; color:var(--muted); }
+
+/* ══════════════════════════════════════════════════════════
+   4 · WHY MERO ATTENDANCE (cards)
+══════════════════════════════════════════════════════════ */
+.ab-why-grid {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:18px;
+}
+.ab-why-card {
+  background:#fff; border:1px solid var(--line); border-radius:18px;
+  padding:28px 24px; transition:transform .22s, box-shadow .22s;
+  position:relative; overflow:hidden;
+}
+.ab-why-card::after {
+  content:""; position:absolute; width:80px; height:80px; border-radius:50%;
+  background:rgba(225,29,72,.04); right:-25px; top:-25px; transition:transform .3s;
+}
+.ab-why-card:hover { transform:translateY(-6px); box-shadow:0 22px 56px rgba(15,23,42,.1); }
+.ab-why-card:hover::after { transform:scale(2.2); }
+.ab-why-card .wc-icon { margin-bottom:16px; }
+.ab-why-card h3 { font-size:.95rem; font-weight:900; margin:0 0 8px; }
+.ab-why-card p  { font-size:.82rem; color:var(--muted); line-height:1.7; margin:0; }
+
+/* ══════════════════════════════════════════════════════════
+   5 · VALUES
+══════════════════════════════════════════════════════════ */
+.ab-values-layout {
+  display:grid; grid-template-columns:1fr 1fr; gap:28px; align-items:start;
+}
+.ab-value-dark {
+  background:
+    linear-gradient(160deg, rgba(10,17,36,.95), rgba(10,17,36,.80)),
+    url("{% static 'res/time.webp' %}") center/cover no-repeat;
+  border-radius:20px; padding:44px 38px;
+  color:#fff; min-height:460px;
+  display:flex; flex-direction:column; justify-content:flex-end;
+}
+.ab-value-dark h3 {
+  font-size:clamp(1.8rem,3vw,2.8rem);
+  font-weight:950; line-height:1.1; margin:0 0 14px; letter-spacing:-.04em;
+}
+.ab-value-dark p { color:rgba(255,255,255,.72); line-height:1.8; margin:0; }
+
+.ab-values-list { display:grid; gap:14px; }
+.ab-value-item {
+  background:#fff; border:1px solid var(--line);
+  border-radius:14px; padding:22px;
+  transition:transform .2s, box-shadow .2s;
+  display:flex; gap:14px; align-items:flex-start;
+}
+.ab-value-item:hover { transform:translateY(-3px); box-shadow:0 14px 36px rgba(15,23,42,.09); }
+.ab-value-item h4 { font-size:.9rem; font-weight:900; margin:0 0 5px; }
+.ab-value-item p  { font-size:.8rem; color:var(--muted); line-height:1.7; margin:0; }
+
+/* ══════════════════════════════════════════════════════════
+   6 · TEAM / DEVELOPER SECTION
+══════════════════════════════════════════════════════════ */
+.ab-team-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:24px;
+}
+.ab-team-card {
+  background:#fff; border:1px solid var(--line);
+  border-radius:20px; padding:36px 32px;
+  box-shadow:0 8px 28px rgba(15,23,42,.06);
+}
+.ab-team-logo {
+  width:64px; height:64px; border-radius:16px;
+  background:linear-gradient(135deg,var(--red),var(--red-dk));
+  display:grid; place-items:center;
+  color:#fff; font-size:1.5rem;
+  margin-bottom:20px;
+  box-shadow:0 14px 32px rgba(225,29,72,.28);
+}
+.ab-team-card h3 { font-size:1.1rem; font-weight:950; margin:0 0 6px; }
+.ab-team-card .ab-role { font-size:.76rem; color:var(--red); font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:14px; }
+.ab-team-card p { font-size:.84rem; color:var(--muted); line-height:1.8; margin:0; }
+
+.ab-built-on {
+  border-radius:20px; padding:36px 32px;
+  background:var(--soft); border:1px solid var(--line);
+}
+.ab-built-on h3 { font-size:1.05rem; font-weight:950; margin:0 0 20px; }
+.ab-tech-list { display:flex; flex-wrap:wrap; gap:10px; }
+.ab-tech-pill {
+  display:inline-flex; align-items:center; gap:7px;
+  background:#fff; border:1px solid var(--line);
+  border-radius:99px; padding:8px 14px;
+  font-size:.78rem; font-weight:700; color:var(--slate);
+}
+.ab-tech-pill i { color:var(--red); font-size:.8rem; }
+
+/* ══════════════════════════════════════════════════════════
+   7 · FINAL CTA
+══════════════════════════════════════════════════════════ */
+.ab-cta {
+  background:
+    linear-gradient(105deg, rgba(10,17,36,.96) 0%, rgba(10,17,36,.84) 100%),
+    url("{% static 'res/access.webp' %}") center/cover no-repeat;
+  padding:88px 0; color:#fff;
+}
+.ab-cta-inner {
+  max-width:860px; margin:0 auto; text-align:center;
+}
+.ab-cta-inner h2 {
+  font-size:clamp(2rem,4vw,3.5rem);
+  font-weight:950; line-height:1.08; letter-spacing:-.04em;
+  margin:16px 0 14px;
+}
+.ab-cta-inner p { color:rgba(255,255,255,.72); font-size:1rem; line-height:1.8; margin-bottom:32px; }
+.ab-cta-btns { display:flex; justify-content:center; flex-wrap:wrap; gap:12px; }
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width:991px) {
+  .ab-sec          { padding:68px 0; }
+  .ab-mv-grid,
+  .ab-story-grid,
+  .ab-values-layout,
+  .ab-team-grid    { grid-template-columns:1fr; }
+  .ab-why-grid     { grid-template-columns:repeat(2,1fr); }
+  .ab-hero         { min-height:auto; padding:72px 0 60px; }
+  .ab-story-visual { min-height:320px; }
+  .ab-value-dark   { min-height:auto; }
+}
+@media (max-width:767px) {
+  .ab-why-grid     { grid-template-columns:1fr; }
+  .ab-btns .ab-btn { width:100%; justify-content:center; }
+}
+@media (max-width:575px) {
+  .ab-hero-h1 { font-size:2.3rem; }
+  .ab-cta-btns .ab-btn { width:100%; justify-content:center; }
+}
+</style>
+{% endblock extra_css %}
+
 {% block content %}
-    <div class="about-bg m-auto">
-        <div class="glassBox my-auto">
-            <h3 class="text-center p-2">
-                Nepal's <span class="text-danger">1st</span> cloud attendance system
-            </h3>
-            <p class="text-center text-black-50 p-2">ESTD 2020</p>
+<div class="ab">
 
-            <div class="row p-0 m-0">
-                <div  class="col-6 mt-3 col-lg-3">
-                    <img src="{%static 'res/time.webp'%}" alt="">
-                    <p class="text-dark text-center">SAVE TIME</p>
-                </div>
-                <div  class="col-6 mt-3 col-lg-3">
-                    <img src="{%static 'res/papers.png'%}" alt="">
-                    <p class="text-dark text-center">SAVE PAPERS</p>
-                </div>
-                <div  class="col-6 mt-3 col-lg-3">
-                    <img src="{%static 'res/money.png'%}" alt="">
-                    <p class="text-dark text-center">SAVE MONEY</p>
-                </div>
-
-                <div  class="col-6 mt-3 col-lg-3">
-                    <img src="{%static 'res/acces.png'%}" alt="">
-                    <p class="text-dark text-center">EASY ACCESS</p>
-                </div>
-                
-            </div>
-        </div>
+<!-- ══════════════════════════════════════════════
+     1 · HERO
+══════════════════════════════════════════════ -->
+<section class="ab-hero">
+  <div class="container">
+    <div class="ab-hero-content">
+      <div class="ab-hero-kicker">
+        <i class="fa-solid fa-building-columns"></i>
+        <span data-i18n="about.hero.kicker">Built for Nepal — used across organization types</span>
+      </div>
+      <h1 class="ab-hero-h1">
+        <span data-i18n="about.hero.h1.1">About Mero Attendance</span>
+      </h1>
+      <p class="ab-hero-sub" data-i18n="about.hero.sub">
+        A smart cloud-based platform built to simplify attendance, HR, payroll, school management,
+        billing, reporting and organization operations — all in one practical system for Nepal and beyond.
+      </p>
+      <div class="ab-btns mb-4">
+        <a href="{% url 'management:contact' %}" class="ab-btn ab-btn-red">
+          <i class="fa-solid fa-headset"></i> <span data-i18n="about.hero.btn.contact">Talk to the Team</span>
+        </a>
+        <a href="{% url 'management:pricing' %}" class="ab-btn ab-btn-white">
+          <i class="fa-solid fa-tags"></i> <span data-i18n="about.hero.btn.pricing">View Pricing</span>
+        </a>
+        <a href="{% url 'management:pullar' %}" class="ab-btn ab-btn-ghost">
+          <i class="fa-solid fa-download"></i> <span data-i18n="about.hero.btn.download">Download Puller</span>
+        </a>
+      </div>
+      <div class="ab-hero-pills">
+        <div class="ab-hero-pill"><i class="fa-solid fa-check-circle"></i> <span data-i18n="about.hero.pill.modules">17+ System Modules</span></div>
+        <div class="ab-hero-pill"><i class="fa-solid fa-check-circle"></i> <span data-i18n="about.hero.pill.calendar">Nepali Calendar Support</span></div>
+        <div class="ab-hero-pill"><i class="fa-solid fa-check-circle"></i> <span data-i18n="about.hero.pill.bio">Biometric Device Sync</span></div>
+        <div class="ab-hero-pill"><i class="fa-solid fa-check-circle"></i> <span data-i18n="about.hero.pill.branch">Multi-Branch Ready</span></div>
+      </div>
     </div>
+  </div>
+</section>
 
-    <div class="container-fluid mt-5 pb-5">
-        <h3 class="mt-3 text-center">Our Partners</h3>
-        <br>
-        <div class="row">
-            <div class="col-lg-3 col-6 mt-3 p-2 text-center">
-                <img class="partner" src="{%static 'res/partner/idb.gif'%}" alt="">
-            </div>
-            <div class="col-lg-3 col-6 mt-3 p-2 text-center">
-                <img class="partner" src="{%static 'res/partner/jaljala.png'%}" alt="">
-                <p>Jaljala Gaupalika</p>
-            </div>
-            <div class="col-lg-3 col-6 mt-3 p-2 text-center">
-                <img class="partner" src="{%static 'res/partner/ktm.png'%}" alt="">
-            </div>
-            <div class="col-lg-3 col-6 mt-3 p-2 text-center">
-                <img class="partner" src="{%static 'res/partner/nepal.png'%}" alt="">
-            </div>
 
-            <div class="col-lg-3 col-6 mt-3 p-2 text-center">
-                <img class="partner" src="{%static 'res/partner/soham.png'%}" alt="">
-            </div>
-    
-            <div class="col-lg-3 col-6 mt-3 p-2 text-center">
-                <img class="partner" src="{%static 'res/partner/pasupati.png'%}" alt="">
-            </div>
-    
-            <div class="col-lg-3 col-6 mt-3 p-2 text-center">
-                <img class="partner" src="{%static 'res/partner/wake.jpeg'%}" alt="">
-            </div>
-    
-            <div class="col-lg-3 col-6 mt-3 p-2 text-center">
-                <img class="partner" src="{%static 'res/partner/adhikari.png'%}" alt="">
-            </div>
+<!-- ══════════════════════════════════════════════
+     2 · MISSION & VISION
+══════════════════════════════════════════════ -->
+<section class="ab-sec">
+  <div class="container">
+    <div class="ab-head ctr">
+      <div class="ab-badge ab-badge-red"><i class="fa-solid fa-bullseye"></i> <span data-i18n="about.sec.purpose.badge">Purpose</span></div>
+      <h2 class="ab-h2" data-i18n="about.sec.purpose.h2">Our Mission & Vision</h2>
+      <p class="ab-lead" data-i18n="about.sec.purpose.lead">
+        We started Mero Attendance to fix a simple frustration: attendance data never flows anywhere useful.
+        We built the system we wished existed.
+      </p>
+    </div>
+    <div class="ab-mv-grid">
+      <div class="ab-mv-card mission">
+        <div class="ab-mv-icon"><i class="fa-solid fa-rocket"></i></div>
+        <h3 data-i18n="about.mission.title">Our Mission</h3>
+        <p data-i18n="about.mission.desc">
+          To make attendance, HRMS, payroll, billing, reporting and organization management
+          simple, digital, transparent and affordable for schools, offices,
+          institutes, colleges and businesses of all sizes — eliminating manual processes and spreadsheet dependency.
+        </p>
+      </div>
+      <div class="ab-mv-card vision">
+        <div class="ab-mv-icon"><i class="fa-solid fa-eye"></i></div>
+        <h3 data-i18n="about.vision.title">Our Vision</h3>
+        <p data-i18n="about.vision.desc">
+          To become Nepal's most trusted cloud attendance and HRMS platform
+          and expand as a complete organization management system that serves schools, corporates, NGOs and government
+          institutions — both nationally and internationally.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     3 · WHAT WE BUILT
+══════════════════════════════════════════════ -->
+<section class="ab-sec ab-sec-soft">
+  <div class="container">
+    <div class="ab-story-grid">
+      <div class="ab-story-visual">
+        <div class="sv-badge">
+          <div class="ic ic-red"><i class="fa-solid fa-user-check"></i></div>
+          <div>
+            <h5>All-in-One Platform</h5>
+            <p>Attendance → HRMS → Payroll → School ERP → Reports</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="ab-badge ab-badge-blue mb-3"><i class="fa-solid fa-circle-nodes"></i> <span data-i18n="about.sec.built.badge">What We Built</span></div>
+        <h2 class="ab-h2" data-i18n="about.built.h2">One system for every part of your organization</h2>
+        <p class="ab-lead mb-4" data-i18n="about.built.lead">
+          Mero Attendance combines everything an organization needs to run daily operations into one connected platform.
+          No more switching between tools or copying data between spreadsheets.
+        </p>
+        <div class="ab-modules">
+          <div class="ab-module-pill"><i class="fa-solid fa-user-check" style="color:#e11d48;"></i> Attendance</div>
+          <div class="ab-module-pill"><i class="fa-solid fa-people-roof" style="color:#2563eb;"></i> HRMS</div>
+          <div class="ab-module-pill"><i class="fa-solid fa-file-invoice-dollar" style="color:#16a34a;"></i> Payroll</div>
+          <div class="ab-module-pill"><i class="fa-solid fa-calendar-xmark" style="color:#7c3aed;"></i> Leave</div>
+          <div class="ab-module-pill"><i class="fa-solid fa-user-graduate" style="color:#d97706;"></i> Students</div>
+          <div class="ab-module-pill"><i class="fa-solid fa-graduation-cap" style="color:#0d9488;"></i> Results</div>
+          <div class="ab-module-pill"><i class="fa-solid fa-receipt" style="color:#db2777;"></i> Billing</div>
+          <div class="ab-module-pill"><i class="fa-solid fa-boxes-stacked" style="color:#0891b2;"></i> Stock</div>
+          <div class="ab-module-pill"><i class="fa-solid fa-chart-line" style="color:#a21caf;"></i> Finance</div>
+          <div class="ab-module-pill"><i class="fa-solid fa-calendar-days" style="color:#ea580c;"></i> Events</div>
+          <div class="ab-module-pill"><i class="fa-solid fa-list-check" style="color:#334155;"></i> Tasks</div>
+          <div class="ab-module-pill"><i class="fa-solid fa-file-export" style="color:#2563eb;"></i> Reports</div>
+          <div class="ab-module-pill"><i class="fa-solid fa-building-columns" style="color:#16a34a;"></i> Multi-Branch</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     4 · WHY MERO ATTENDANCE
+══════════════════════════════════════════════ -->
+<section class="ab-sec">
+  <div class="container">
+    <div class="ab-head ctr">
+      <div class="ab-badge ab-badge-violet"><i class="fa-solid fa-star"></i> <span data-i18n="about.sec.why.badge">Why Choose Us</span></div>
+      <h2 class="ab-h2" data-i18n="about.why.h2">Built differently, for organizations like yours</h2>
+      <p class="ab-lead" data-i18n="about.why.lead">
+        We didn't build a generic HR tool. We built a platform specifically shaped around how
+        Nepali schools, offices and institutions actually operate.
+      </p>
+    </div>
+    <div class="ab-why-grid">
+
+      <div class="ab-why-card">
+        <div class="wc-icon ic ic-teal"><i class="fa-solid fa-calendar"></i></div>
+        <h3 data-i18n="about.why.cal.title">Nepali Calendar Support</h3>
+        <p data-i18n="about.why.cal.desc">Full Bikram Sambat (BS) calendar integration alongside English (AD) date — switchable per organization preference. Built for Nepal first.</p>
+      </div>
+
+      <div class="ab-why-card">
+        <div class="wc-icon ic ic-red"><i class="fa-solid fa-fingerprint"></i></div>
+        <h3 data-i18n="about.why.bio.title">Biometric Device Support</h3>
+        <p data-i18n="about.why.bio.desc">Sync ZKTeco and Hikvision devices using the Puller app. Attendance flows from the machine directly into the cloud dashboard without manual import.</p>
+      </div>
+
+      <div class="ab-why-card">
+        <div class="wc-icon ic ic-blue"><i class="fa-solid fa-people-roof"></i></div>
+        <h3 data-i18n="about.why.staff.title">Staff & Student in One</h3>
+        <p data-i18n="about.why.staff.desc">Manage both employees and students/members in the same system — with separate workflows, dashboards and reports for each type.</p>
+      </div>
+
+      <div class="ab-why-card">
+        <div class="wc-icon ic ic-green"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+        <h3 data-i18n="about.why.payroll.title">Payroll Automation</h3>
+        <p data-i18n="about.why.payroll.desc">Generate salary sheets from attendance data, calculate PF/SSF/TDS automatically and produce printable payslips without manual calculations.</p>
+      </div>
+
+      <div class="ab-why-card">
+        <div class="wc-icon ic ic-violet"><i class="fa-solid fa-building-columns"></i></div>
+        <h3 data-i18n="about.why.branch.title">Multi-Branch Ready</h3>
+        <p data-i18n="about.why.branch.desc">Manage 1 or 50 branches from one admin panel. Staff, attendance, finance and reports stay organized per branch with central oversight.</p>
+      </div>
+
+      <div class="ab-why-card">
+        <div class="wc-icon ic ic-amber"><i class="fa-solid fa-cloud"></i></div>
+        <h3 data-i18n="about.why.cloud.title">Cloud Access, No Setup</h3>
+        <p data-i18n="about.why.cloud.desc">Log in from any device — desktop, tablet or mobile. No software to install, no server to maintain. Your data is always available and secure.</p>
+      </div>
+
+      <div class="ab-why-card">
+        <div class="wc-icon ic ic-cyan"><i class="fa-solid fa-mobile-screen"></i></div>
+        <h3 data-i18n="about.why.mobile.title">Mobile-Friendly Dashboard</h3>
+        <p data-i18n="about.why.mobile.desc">The dashboard is fully responsive — staff can check attendance, apply for leave and view payslips from their phone without any app download.</p>
+      </div>
+
+      <div class="ab-why-card">
+        <div class="wc-icon ic ic-red"><i class="fa-solid fa-school"></i></div>
+        <h3 data-i18n="about.why.school.title">Complete School ERP</h3>
+        <p data-i18n="about.why.school.desc">Student admission, classification, billing, results and guardian communication — all built into the same platform as your HR and payroll workflows.</p>
+      </div>
+
+      <div class="ab-why-card">
+        <div class="wc-icon ic ic-lime"><i class="fa-solid fa-sliders"></i></div>
+        <h3 data-i18n="about.why.custom.title">Customizable Per Org Type</h3>
+        <p data-i18n="about.why.custom.desc">Enable or disable modules per organization. A school uses billing and results. An office uses payroll. A factory uses shifts. One system, many setups.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     5 · OUR VALUES
+══════════════════════════════════════════════ -->
+<section class="ab-sec ab-sec-soft">
+  <div class="container">
+    <div class="ab-head ctr">
+      <div class="ab-badge ab-badge-green"><i class="fa-solid fa-heart"></i> <span data-i18n="about.sec.values.badge">Our Values</span></div>
+      <h2 class="ab-h2" data-i18n="about.values.h2">What drives every decision we make</h2>
+    </div>
+    <div class="ab-values-layout">
+      <div class="ab-value-dark">
+        <div class="ab-badge ab-badge-white mb-4"><i class="fa-solid fa-quote-left"></i> <span data-i18n="about.val.dark.badge">Guiding principle</span></div>
+        <h3 data-i18n="about.val.dark.title">Built around simple, repeatable daily work.</h3>
+        <p data-i18n="about.val.dark.desc">
+          The best system is one that admins and staff actually use every day without friction.
+          We keep interfaces clean, workflows fast and reports useful. If it slows down your team,
+          it doesn't belong in Mero Attendance.
+        </p>
+      </div>
+      <div class="ab-values-list">
+        <div class="ab-value-item">
+          <div class="ic ic-red"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          <div>
+            <h4 data-i18n="about.val.simplicity.title">Simplicity</h4>
+            <p data-i18n="about.val.simplicity.desc">Every screen is designed for quick action. Search, filter, print, export — available in seconds, not clicks.</p>
+          </div>
+        </div>
+        <div class="ab-value-item">
+          <div class="ic ic-blue"><i class="fa-solid fa-eye"></i></div>
+          <div>
+            <h4 data-i18n="about.val.transparency.title">Transparency</h4>
+            <p data-i18n="about.val.transparency.desc">Staff see their own records. Admins see everything. Everyone operates from the same trusted data.</p>
+          </div>
+        </div>
+        <div class="ab-value-item">
+          <div class="ic ic-green"><i class="fa-solid fa-shield-check"></i></div>
+          <div>
+            <h4 data-i18n="about.val.reliability.title">Reliability</h4>
+            <p data-i18n="about.val.reliability.desc">Attendance records and payroll data must be accurate every time. We engineer for correctness first.</p>
+          </div>
+        </div>
+        <div class="ab-value-item">
+          <div class="ic ic-violet"><i class="fa-solid fa-bolt"></i></div>
+          <div>
+            <h4 data-i18n="about.val.automation.title">Automation</h4>
+            <p data-i18n="about.val.automation.desc">If a calculation, report or notification can be automated, it should be. We eliminate manual repetition.</p>
+          </div>
+        </div>
+        <div class="ab-value-item">
+          <div class="ic ic-amber"><i class="fa-solid fa-lock"></i></div>
+          <div>
+            <h4 data-i18n="about.val.security.title">Security</h4>
+            <p data-i18n="about.val.security.desc">Role-based access, organization isolation and safe data handling are non-negotiable defaults.</p>
+          </div>
+        </div>
+        <div class="ab-value-item">
+          <div class="ic ic-teal"><i class="fa-solid fa-arrows-up-to-line"></i></div>
+          <div>
+            <h4 data-i18n="about.val.improve.title">Continuous Improvement</h4>
+            <p data-i18n="about.val.improve.desc">We ship regular updates based on real feedback from real organizations using the system daily.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     6 · COMPANY / DEVELOPER
+══════════════════════════════════════════════ -->
+<section class="ab-sec">
+  <div class="container">
+    <div class="ab-head ctr">
+      <div class="ab-badge ab-badge-teal"><i class="fa-solid fa-code"></i> <span data-i18n="about.sec.team.badge">The Team</span></div>
+      <h2 class="ab-h2" data-i18n="about.team.h2">Developed by Wake &amp; Tech Nepal</h2>
+      <p class="ab-lead" data-i18n="about.team.lead">
+        Mero Attendance is designed and developed by Wake & Tech Nepal Pvt. Ltd. — a software company
+        focused on digital transformation for schools, offices and institutions across Nepal.
+      </p>
+    </div>
+    <div class="ab-team-grid">
+      <div class="ab-team-card">
+        <div class="ab-team-logo"><i class="fa-solid fa-building"></i></div>
+        <h3>Wake &amp; Tech Nepal Pvt. Ltd.</h3>
+        <div class="ab-role" data-i18n="about.team.card.role">Product Developer &amp; Maintainer</div>
+        <p data-i18n="about.team.card.desc">
+          We are a software development company based in Kathmandu, Nepal. Our focus is building
+          practical digital solutions for Nepali schools, colleges, offices and multi-branch organizations.
+          Mero Attendance is our flagship product — built from real operational needs, not hypothetical requirements.
+          We provide deployment, onboarding, training and ongoing support to every organization we work with.
+        </p>
+        <div class="mt-4" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <a href="https://www.facebook.com/wakeandtech" style="color:var(--slate);font-size:.82rem;font-weight:700;display:flex;align-items:center;gap:6px;">
+            <i class="fa-brands fa-facebook" style="color:#1877f2;"></i> Facebook
+          </a>
+          <a href="https://www.instagram.com/wakeandtech" style="color:var(--slate);font-size:.82rem;font-weight:700;display:flex;align-items:center;gap:6px;">
+            <i class="fa-brands fa-instagram" style="color:#e1306c;"></i> Instagram
+          </a>
+          <a href="https://www.wakeandtech.com.np" style="color:var(--slate);font-size:.82rem;font-weight:700;display:flex;align-items:center;gap:6px;">
+            <i class="fa-solid fa-globe" style="color:var(--blue);"></i> Website
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <div class="ab-built-on mb-4">
+          <h3><i class="fa-solid fa-location-dot" style="color:var(--red);margin-right:8px;"></i><span data-i18n="about.team.location.title">Based in Kathmandu, Nepal</span></h3>
+          <p style="font-size:.84rem;color:var(--muted);line-height:1.8;margin:0 0 20px;" data-i18n="about.team.location.desc">
+            We operate from Kathmandu and support organizations across Nepal remotely.
+            Our team provides installation, training, data migration and technical support
+            for every organization that joins Mero Attendance.
+          </p>
+          <div class="ab-tech-list">
+            <div class="ab-tech-pill"><i class="fa-solid fa-circle-check"></i> Django / Python</div>
+            <div class="ab-tech-pill"><i class="fa-solid fa-circle-check"></i> PostgreSQL / SQLite</div>
+            <div class="ab-tech-pill"><i class="fa-solid fa-circle-check"></i> Bootstrap 5</div>
+            <div class="ab-tech-pill"><i class="fa-solid fa-circle-check"></i> Cloud Hosted</div>
+            <div class="ab-tech-pill"><i class="fa-solid fa-circle-check"></i> Nepali Calendar</div>
+            <div class="ab-tech-pill"><i class="fa-solid fa-circle-check"></i> Biometric Sync</div>
+            <div class="ab-tech-pill"><i class="fa-solid fa-circle-check"></i> REST API</div>
+          </div>
         </div>
 
-       
+        <div style="background:linear-gradient(135deg,var(--red-lt),#fff);border:1px solid rgba(225,29,72,.15);border-radius:16px;padding:28px;">
+          <div class="ab-badge ab-badge-red mb-3"><i class="fa-solid fa-headset"></i> <span data-i18n="about.team.support.badge">Support</span></div>
+          <h4 style="font-size:1rem;font-weight:900;margin:0 0 8px;" data-i18n="about.team.support.h4">We support every step of your onboarding</h4>
+          <p style="font-size:.82rem;color:var(--muted);line-height:1.8;margin:0 0 16px;" data-i18n="about.team.support.desc">
+            From initial setup and data import to staff training and device integration —
+            our team is available to guide your organization through every step.
+          </p>
+          <a href="{% url 'management:contact' %}" class="ab-btn ab-btn-red" style="font-size:.84rem;min-height:40px;">
+            <i class="fa-solid fa-envelope"></i> <span data-i18n="about.team.support.btn">Contact Support</span>
+          </a>
+        </div>
+      </div>
     </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     7 · FINAL CTA
+══════════════════════════════════════════════ -->
+<section class="ab-cta">
+  <div class="container">
+    <div class="ab-cta-inner">
+      <div class="ab-badge ab-badge-white" style="margin:0 auto 8px;"><i class="fa-solid fa-rocket"></i> <span data-i18n="about.cta.badge">Let's Get Started</span></div>
+      <h2 data-i18n="about.cta.h2">Let's digitize your organization with Mero Attendance.</h2>
+      <p data-i18n="about.cta.lead">
+        Book a free demo. Share your organization type, staff size, attendance method and operational
+        challenges. We'll show you exactly how Mero Attendance fits your workflow — no generic pitch.
+      </p>
+      <div class="ab-cta-btns">
+        <a href="{% url 'management:contact' %}" class="ab-btn ab-btn-red">
+          <i class="fa-solid fa-calendar-check"></i> <span data-i18n="about.cta.btn.demo">Book Free Demo</span>
+        </a>
+        <a href="{% url 'management:pricing' %}" class="ab-btn ab-btn-white">
+          <i class="fa-solid fa-tags"></i> <span data-i18n="about.cta.btn.pricing">See Pricing</span>
+        </a>
+        <a href="{% url 'management:homepage' %}#login-form" class="ab-btn ab-btn-ghost">
+          <i class="fa-solid fa-right-to-bracket"></i> <span data-i18n="about.cta.btn.login">Login</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /.ab -->
 {% endblock content %}

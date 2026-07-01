@@ -1,59 +1,247 @@
 {% extends 'dashboard.html' %}
 {% load static %}
+
 {% block title %}
     Add Location Based Attendance 
 {% endblock title %}
+
 {% block content %}
+<style>
+    /* Professional Dashboard Styling */
+    .location-card {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        border: 1px solid #edf2f9;
+        padding: 2rem;
+    }
+    .location-header {
+        border-bottom: 2px solid #f8f9fa;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .location-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+    .map-container {
+        position: relative;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+        border: 1px solid #e2e8f0;
+    }
+    #map {
+        height: 450px;
+        width: 100%;
+    }
+    .locate-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 1000;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 8px 15px;
+        font-weight: 600;
+        color: #3498db;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+    }
+    .locate-btn:hover {
+        background: #f8f9fa;
+        color: #2980b9;
+    }
+    /* Style the default Django form inputs slightly */
+    form input[type="text"], form input[type="number"] {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+    .submit-btn {
+        background: #3498db;
+        border: none;
+        padding: 10px 25px;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: transform 0.1s ease;
+    }
+    .submit-btn:hover {
+        transform: translateY(-1px);
+        background: #2980b9;
+    }
+</style>
 
-<div class="row">
-    <h2>Add / Edit Location</h2>
-    <form method="post" >
-      {% csrf_token %}
-      <div class="row">
-          {{form}}
-          <div id="map" class="mt-3" style="height: 400px;"></div>
-          <input class="btn btn-primary mt-3" type="submit" value="Save">
-      </div>
-    
-    </form>
-    
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="location-card">
+                
+                <div class="location-header d-flex justify-content-between align-items-center">
+                    <h2><i class="fas fa-map-marker-alt text-primary me-2"></i> Configure Attendance Location</h2>
+                </div>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=&callback=initMap" async defer></script>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            <div class="p-3 bg-light rounded" style="border: 1px solid #e9ecef;">
+                                <h6 class="text-muted mb-3">Location Details</h6>
+                                {{ form }}
+                                
+                                <button class="btn btn-primary submit-btn w-100 mt-4" type="submit">
+                                    <i class="fas fa-save me-1"></i> Save Configuration
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <div class="map-container">
+                                <button type="button" class="locate-btn" id="locateMeBtn">
+                                    <i class="fas fa-crosshairs"></i> Get My Location
+                                </button>
+                                <div id="map"></div>
+                            </div>
+                            <small class="text-muted mt-2 d-block">
+                                <i class="fas fa-info-circle"></i> Drag the red pin to fine-tune the exact attendance point.
+                            </small>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDiB8fPKqIfAX15qS-qaAdZH3G09PBvt9A&callback=initMap" async defer></script>
+
 <script>
-  let map, marker;
+  let map, marker, circle;
+
   function initMap() {
     const defaultLocation = { lat: 27.700769, lng: 85.300140 };  // Default Kathmandu
+    
+    // 1. Initialize Map
     map = new google.maps.Map(document.getElementById("map"), {
       center: defaultLocation,
-      zoom: 15
+      zoom: 15,
+      mapTypeControl: false,
+      streetViewControl: false, // Clean up UI by removing street view
+      fullscreenControl: true,
     });
 
+    // 2. Initialize Marker
     marker = new google.maps.Marker({
       position: defaultLocation,
-      map,
-      draggable: true
+      map: map,
+      draggable: true,
+      animation: google.maps.Animation.DROP,
     });
 
+    // 3. Initialize Radius Circle
+    circle = new google.maps.Circle({
+      map: map,
+      radius: 50, 
+      fillColor: '#3498db', // Using a professional blue instead of harsh red
+      fillOpacity: 0.15,
+      strokeColor: '#2980b9',
+      strokeOpacity: 0.8,
+      strokeWeight: 2
+    });
+    
+    circle.bindTo('center', marker, 'position');
+
+    // 4. Input Fields
+    const latInput = document.getElementById("id_latitude");
+    const lngInput = document.getElementById("id_longitude");
+    const radiusInput = document.getElementById("id_radius");
+
+    // Load initial radius if editing
+    if (radiusInput && radiusInput.value) {
+        circle.setRadius(parseFloat(radiusInput.value));
+    }
+
+    // 5. Marker Drag Event
     google.maps.event.addListener(marker, 'dragend', function() {
-      document.getElementById("id_latitude").value = marker.getPosition().lat();
-      document.getElementById("id_longitude").value = marker.getPosition().lng();
+      const newPos = marker.getPosition();
+      updateCoordinates(newPos.lat(), newPos.lng());
+      map.panTo(newPos);
     });
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const pos = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        map.setCenter(pos);
-        marker.setPosition(pos);
-        document.getElementById("id_latitude").value = pos.lat;
-        document.getElementById("id_longitude").value = pos.lng;
+    // 6. Radius Input Event (Dynamic Zooming)
+    if (radiusInput) {
+      radiusInput.addEventListener('input', function() {
+        let newRadius = parseFloat(this.value);
+        if (!isNaN(newRadius) && newRadius > 0) {
+            circle.setRadius(newRadius);
+            map.fitBounds(circle.getBounds()); 
+        }
       });
+    }
+
+    // 7. Geolocation Function
+    function getCurrentLocation() {
+        if (navigator.geolocation) {
+            // Change button text to show activity
+            const btn = document.getElementById("locateMeBtn");
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Locating...';
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const pos = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    
+                    map.setCenter(pos);
+                    marker.setPosition(pos);
+                    updateCoordinates(pos.lat, pos.lng);
+                    
+                    if (circle.getRadius() > 0) {
+                        map.fitBounds(circle.getBounds());
+                    } else {
+                        map.setZoom(17); 
+                    }
+                    // Reset button text
+                    btn.innerHTML = originalText;
+                },
+                function(error) {
+                    console.warn("Geolocation failed: ", error.message);
+                    alert("Could not get your location. Please check your browser permissions.");
+                    btn.innerHTML = originalText;
+                },
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 } // Forces GPS over IP location
+            );
+        }
+    }
+
+    // Auto-run geolocation on page load
+    getCurrentLocation();
+
+    // Bind geolocation to the custom UI button
+    document.getElementById("locateMeBtn").addEventListener("click", getCurrentLocation);
+
+    // 8. Helper: Update Inputs
+    function updateCoordinates(lat, lng) {
+      if (latInput) {
+          latInput.value = lat.toFixed(6);
+          // Highlight the input briefly to show it updated automatically
+          latInput.style.backgroundColor = '#e8f0fe';
+          setTimeout(() => latInput.style.backgroundColor = '', 500);
+      }
+      if (lngInput) {
+          lngInput.value = lng.toFixed(6);
+          lngInput.style.backgroundColor = '#e8f0fe';
+          setTimeout(() => lngInput.style.backgroundColor = '', 500);
+      }
     }
   }
 </script>
-</div>
 {% endblock content %}
-    
-    

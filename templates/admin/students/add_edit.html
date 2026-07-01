@@ -1,0 +1,127 @@
+{% extends 'dashboard.html' %}
+{% block title %}{% if instance %}Edit{% else %}Add{% endif %} Student | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+.student-wrap{padding:1rem 1.5rem 2rem;background:#f8fafc;min-height:100vh;}
+.page-head{background:#111827;color:#fff;border-radius:12px;padding:1.2rem 1.5rem;margin-bottom:1rem;}
+.page-head h4{color:#fff;margin:0;font-weight:800;}
+.page-head p{color:#cbd5e1;margin:.25rem 0 0;font-size:.84rem;}
+.form-panel{background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:1rem;}
+.form-hd{padding:.9rem 1rem;border-bottom:1px solid #e2e8f0;font-weight:800;color:#111827;}
+.form-body{padding:1rem;}
+.f-label{font-size:.68rem;text-transform:uppercase;color:#64748b;font-weight:800;letter-spacing:.04em;margin-bottom:.25rem;}
+.f-input,.f-select,.f-textarea{width:100%;border:1px solid #dbe3ef;border-radius:8px;padding:.55rem .7rem;font-size:.84rem;min-height:40px;background:#fff;}
+.f-textarea{min-height:82px;}
+.summary-box{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;position:sticky;top:1rem;}
+.summary-label{font-size:.68rem;text-transform:uppercase;color:#64748b;font-weight:800;letter-spacing:.04em;}
+.summary-value{font-size:1.5rem;font-weight:900;color:#111827;}
+@media(max-width:768px){.student-wrap{padding:.75rem}.summary-box{position:static}}
+</style>
+
+<div class="student-wrap">
+  {% for message in messages %}
+  <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="page-head d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+      <h4>{% if instance %}Edit {{ instance.name }}{% else %}Add Student / Member{% endif %}</h4>
+      <p>Profile, classification, guardian contact, billing setup, and payment summary.</p>
+    </div>
+    <a class="btn btn-light btn-sm" href="{% if instance and instance.classification_id %}{% url 'schooladmin:classification_detail' instance.classification_id %}?tab=students{% else %}{% url 'schooladmin:student_list' %}{% endif %}">Back</a>
+  </div>
+
+  <form method="post" id="studentForm">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="form-panel">
+          <div class="form-hd">Basic Details</div>
+          <div class="form-body">
+            <div class="row g-3">
+              <div class="col-md-7"><label class="f-label">Student / Member Name</label><input class="f-input" name="name" value="{{ instance.name|default:'' }}" required></div>
+              <div class="col-md-5"><label class="f-label">Roll Number / Student ID</label><input class="f-input" name="card" value="{{ instance.card|default:'' }}"></div>
+              <div class="col-md-4"><label class="f-label">Member Type</label><select class="f-select" name="member_type"><option value="student" {% if not instance or instance.member_type == 'student' %}selected{% endif %}>Student</option><option value="member" {% if instance.member_type == 'member' %}selected{% endif %}>Organization Member</option><option value="employee" {% if instance.member_type == 'employee' %}selected{% endif %}>Employee</option><option value="teacher" {% if instance.member_type == 'teacher' %}selected{% endif %}>Teacher</option></select></div>
+              <div class="col-md-4"><label class="f-label">Gender</label><select class="f-select" name="gender"><option value="Male" {% if instance.gender == 'Male' %}selected{% endif %}>Male</option><option value="Female" {% if instance.gender == 'Female' %}selected{% endif %}>Female</option></select></div>
+              <div class="col-md-4"><label class="f-label">Status</label><select class="f-select" name="status">{% for value,label in status_choices %}<option value="{{ value }}" {% if instance.status == value or not instance and value == 'active' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+              <div class="col-md-6"><label class="f-label">Phone</label><input class="f-input" name="phone" value="{{ instance.phone|default:'' }}"></div>
+              <div class="col-md-6"><label class="f-label">Email</label><input type="email" class="f-input" name="email" value="{{ instance.email|default:'' }}"></div>
+              <div class="col-12"><label class="f-label">Address</label><textarea class="f-textarea" name="address">{{ instance.address|default:'' }}</textarea></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-panel">
+          <div class="form-hd">Classification & Guardian</div>
+          <div class="form-body">
+            <div class="row g-3">
+              <div class="col-md-6"><label class="f-label">Classification</label><select class="f-select" name="classification" id="classificationSelect"><option value="">No classification</option>{% for c in classifications %}<option value="{{ c.id }}" {% if instance.classification_id == c.id or request.GET.classification == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-6"><label class="f-label">Section</label><select class="f-select" name="section" id="sectionSelect"><option value="">No section</option>{% for s in sections %}<option value="{{ s.id }}" data-class="{{ s.classification_id }}" {% if instance.section_id == s.id %}selected{% endif %}>{{ s.classification.name }} - {{ s.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-6"><label class="f-label">Admission Date</label><input type="date" class="f-input" name="admission_date" value="{{ instance.admission_date|date:'Y-m-d' }}"></div>
+              <div class="col-md-6"><label class="f-label">Date of Birth</label><input type="date" class="f-input" name="date_of_birth" value="{{ instance.date_of_birth|date:'Y-m-d' }}"></div>
+              <div class="col-md-4"><label class="f-label">Guardian Name</label><input class="f-input" name="guardian_name" value="{{ instance.guardian_name|default:'' }}"></div>
+              <div class="col-md-4"><label class="f-label">Guardian Phone</label><input class="f-input" name="guardian_phone" value="{{ instance.guardian_phone|default:'' }}"></div>
+              <div class="col-md-4"><label class="f-label">Guardian Email</label><input type="email" class="f-input" name="guardian_email" value="{{ instance.guardian_email|default:'' }}"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-panel">
+          <div class="form-hd">Billing Setup</div>
+          <div class="form-body">
+            <div class="row g-3">
+              <div class="col-md-4"><label class="f-label">Billing Type</label><select class="f-select calc-field" name="billing_type" id="billingType">{% for value,label in billing_type_choices %}<option value="{{ value }}" {% if instance.billing_type == value or not instance and value == 'monthly_fee' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+              <div class="col-md-4"><label class="f-label">Monthly / Custom Amount</label><input type="number" step="0.01" class="f-input calc-field" name="monthly_fee" id="monthlyFee" value="{{ instance.monthly_fee|default:0 }}"></div>
+              <div class="col-md-4"><label class="f-label">Due Day of Month</label><input type="number" min="1" max="31" class="f-input" name="due_day" value="{{ instance.due_day|default:15 }}"></div>
+              <div class="col-md-4"><label class="f-label">Discount Type</label><select class="f-select calc-field" name="discount_type" id="discountType"><option value="">No discount</option>{% for value,label in discount_type_choices %}<option value="{{ value }}" {% if instance.discount_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+              <div class="col-md-4"><label class="f-label">Discount Amount</label><input type="number" step="0.01" class="f-input calc-field" name="discount_amount" id="discountAmount" value="{{ instance.discount_amount|default:0 }}"></div>
+              <div class="col-md-4"><label class="f-label">Scholarship Amount</label><input type="number" step="0.01" class="f-input calc-field" name="scholarship_amount" id="scholarshipAmount" value="{{ instance.scholarship_amount|default:0 }}"></div>
+              <div class="col-md-6"><label class="f-label">Billing Start Date</label><input type="date" class="f-input" name="billing_start_date" value="{{ instance.billing_start_date|date:'Y-m-d' }}"></div>
+              <div class="col-md-6"><label class="f-label">Saved Final Monthly Payable</label><input class="f-input" value="Rs. {{ final_fee|floatformat:2 }}" readonly></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="summary-box">
+          <div class="summary-label">Estimated Payable</div>
+          <div class="summary-value" id="payablePreview">Rs. {{ final_fee|floatformat:2 }}</div>
+          <p class="text-sm text-muted mb-3">Course-wise totals are recalculated from active Course / Subject fees when bills are generated.</p>
+          <div class="d-flex justify-content-between border-top pt-3 mt-3"><span class="text-sm text-muted">Pending Due</span><strong class="{% if total_due > 0 %}text-danger{% endif %}">Rs. {{ total_due|floatformat:2 }}</strong></div>
+          <div class="d-flex justify-content-between mt-2"><span class="text-sm text-muted">Payment Status</span><strong>{% if total_due > 0 %}Due{% else %}Clear{% endif %}</strong></div>
+          <button class="btn btn-primary w-100 mt-4" type="submit"><i class="fas fa-save me-1"></i>{% if instance %}Update Student{% else %}Add Student{% endif %}</button>
+          {% if instance %}
+          <a class="btn btn-outline-secondary w-100 mt-2" href="{% url 'schooladmin:student_profile' instance.id %}">View Profile</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+function asNumber(id){ return parseFloat(document.getElementById(id).value) || 0; }
+function updatePayable(){
+  var type = document.getElementById('billingType').value;
+  var base = asNumber('monthlyFee');
+  if (type === 'scholarship') base = 0;
+  var discountType = document.getElementById('discountType').value;
+  var discount = asNumber('discountAmount');
+  if (discountType === 'percentage') discount = base * discount / 100;
+  var scholarship = asNumber('scholarshipAmount');
+  var payable = Math.max(0, base - discount - scholarship);
+  if (type === 'course_wise') document.getElementById('payablePreview').textContent = 'Course-wise at bill generation';
+  else document.getElementById('payablePreview').textContent = 'Rs. ' + payable.toFixed(2);
+}
+document.querySelectorAll('.calc-field').forEach(function(el){ el.addEventListener('input', updatePayable); el.addEventListener('change', updatePayable); });
+document.getElementById('classificationSelect').addEventListener('change', function(){
+  var cid = this.value;
+  document.querySelectorAll('#sectionSelect option[data-class]').forEach(function(opt){
+    opt.hidden = cid && opt.getAttribute('data-class') !== cid;
+  });
+});
+updatePayable();
+document.getElementById('classificationSelect').dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

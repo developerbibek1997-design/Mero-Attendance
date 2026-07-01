@@ -3,201 +3,258 @@
 {% block title %}
     Gap Attendance Report 
 {% endblock title %}
+
 {% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+
 <style>
- @media print
-            {
-            table { page-break-after:auto }
-            tr    { page-break-inside:avoid; page-break-after:auto }
-            td    { page-break-inside:avoid; page-break-after:auto }
-            th    { page-break-inside:avoid; page-break-after:auto }
-            thead { display:table-header-group }
-            tfoot { display:table-footer-group }
-            }
+    @media print {
+        .no-print { display: none !important; }
+        .card { border: none !important; box-shadow: none !important; }
+        table { page-break-after:auto }
+        tr, td { page-break-inside:avoid; page-break-after:auto }
+        thead { display:table-header-group }
+    }
+    .hidden-date-input { display: none !important; }
+    
+    /* 🎨 BEAUTIFUL UI CUSTOMIZATIONS */
+    .filter-card {
+        border-radius: 16px;
+        border: none;
+        background: #ffffff;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        margin-bottom: 25px;
+    }
+    
+    .custom-input {
+        border-radius: 10px;
+        border: 1.5px solid #e2e8f0;
+        padding: 12px 18px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #334155;
+        transition: all 0.3s ease;
+        background-color: #f8fafc;
+        height: 50px;
+    }
+    
+    .custom-input:focus {
+        border-color: #f5a623;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.1);
+        outline: none;
+    }
+
+    .btn-premium {
+        border-radius: 10px;
+        height: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-premium-warning {
+        background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        border: none;
+        color: white;
+        box-shadow: 0 4px 15px rgba(253, 160, 133, 0.3);
+    }
+    
+    .table-premium th {
+        background-color: #f8fafc;
+        color: #64748b;
+        font-size: 0.75rem;
+        padding: 15px;
+        border-bottom: 2px solid #e2e8f0;
+    }
 </style>
-<div class="row">
-  <form action="" method="post">
-    <div class="row">
-        <div class="col-6">
-            <Label for="first_date">From</Label>
-            <input type="date" id="first" class="form-control" name="first_date" value="{{first_date}}" required onchange="checkBtn()">
+
+<div class="card filter-card no-print mt-3">
+  <div class="card-body p-4">
+    <form action="" method="post" id="reportFilterForm">
+      {% csrf_token %}
+      <div class="row g-3">
+        
+        <div class="col-md-3">
+          <label class="form-label" style="font-weight: 600; color: #475569;">
+             <i class="fas fa-calendar-alt text-success me-1"></i> From
+          </label>
+          {% if nepali_enabled %}
+            <input type="text" class="form-control custom-input w-100 nepali-cal" name="first_date_np" id="first-np" value="{{ first_date_np }}" placeholder="YYYY-MM-DD (BS)" autocomplete="off" onchange="checkBtn()" required>
+            <input type="date" class="hidden-date-input" name="first_date" value="{{ first_date|date:'Y-m-d' }}">
+          {% else %}
+            <input type="text" class="form-control custom-input w-100 eng-cal" name="first_date" id="first-ad" value="{{ first_date|date:'Y-m-d' }}" placeholder="Select Date (AD)" autocomplete="off" onchange="checkBtn()" required>
+          {% endif %}
         </div>
-        <div class="col-6">
-            <Label for="last_date">To</Label>
-            <input type="date" id="last" class="form-control" name="last_date" value="{{last_date}}" required onchange="checkBtn()">
-            
+
+        <div class="col-md-3">
+          <label class="form-label" style="font-weight: 600; color: #475569;">
+             <i class="fas fa-calendar-check text-danger me-1"></i> To
+          </label>
+          {% if nepali_enabled %}
+            <input type="text" class="form-control custom-input w-100 nepali-cal" name="last_date_np" id="last-np" value="{{ last_date_np }}" placeholder="YYYY-MM-DD (BS)" autocomplete="off" onchange="checkBtn()" required>
+            <input type="date" class="hidden-date-input" name="last_date" value="{{ last_date|date:'Y-m-d' }}">
+          {% else %}
+            <input type="text" class="form-control custom-input w-100 eng-cal" name="last_date" id="last-ad" value="{{ last_date|date:'Y-m-d' }}" placeholder="Select Date (AD)" autocomplete="off" onchange="checkBtn()" required>
+          {% endif %}
         </div>
-        <!-- <div class="col-6">
-            <label for="filter">Group</label>
-            <select name="filter" class="form-select" id="inputGroupSelect04" aria-label="Example select with button addon" style="height: 42px;">
-                <option {% if 'All' == thisone %} selected {%endif%} value="All">All</option>
-                <option {% if 'Teacher' == thisone %} selected {%endif%} value="Teacher" >Teacher</option>
-                <option {% if 'Staff' == thisone %} selected {%endif%}  value="Staff" >Staff</option>
-                <option {% if 'Student' == thisone %} selected {%endif%} value="Student">Student</option>
-            </select>
-        </div> -->
-        <div class="col-6">
-            <Label for="classification">Classification</Label>
-            <select name="classification" id="" class="form-select">
-                 <option {% if 'All' == thisone %} selected {%endif%} value="All">All</option>
-          
-          {% for c in clas %}
-            <option {% if thisone == c.name  %} selected {%endif%} value="{{c.id}}" >{{c.name}}</option>
-          {% endfor %}
-            </select>
- 
-            
+
+        <div class="col-md-3">
+          <label class="form-label" style="font-weight: 600; color: #475569;">
+              <i class="fas fa-users text-info me-1"></i> Department
+          </label>
+          <select name="classification" class="form-select custom-input w-100">
+            <option {% if 'All' == thisone %} selected {%endif%} value="All">🌐 All Groups</option>
+            {% for c in clas %}
+              <option {% if thisone == c.name  %} selected {%endif%} value="{{c.id}}" >{{c.name}}</option>
+            {% endfor %}
+          </select>
         </div>
-    </div>
-    {% csrf_token %}
-    <button type="submit" id="sub" class="btn btn-outline-secondary m-2" onclick="showload()"> Filter </button>
-    <!-- <button type="submit" class="btn btn-outline-secondary m-2" onclick="showload()"> Filter </button> -->
-  </form>
-  
-  {% if tm %}
-  <button class="btn btn-outline-primary m-2 " onclick="printData('printarea')">Print</button>
-  <div class="col-12" >
-    <div class="card mb-4">
-      <div class="card-header pb-0" style="padding-right:60px; display: flex; justify-content: space-between;">
-        <h6 >{{first_date}} to {{last_date}} </h6>
-        <h6 >{{org}}- {{thisone}}</h6>
-        <!-- <h6>{{date}}</h6> -->
+
+        <div class="col-md-3">
+          <label class="form-label d-none d-md-block" style="visibility: hidden;">&nbsp;</label>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-premium btn-premium-warning flex-fill" type="submit" id="filterBtn">
+              <i class="fas fa-filter"></i> Filter
+            </button>
+            {% if tm %}
+            <button type="button" class="btn btn-premium btn-outline-primary flex-fill" onclick="printData('printarea')">
+              <i class="fas fa-print"></i> Print
+            </button>
+            {% endif %}
+            <a href="{% url 'schooladmin:export_attendance' %}?fmt=excel{% if request.GET.from_date %}&from_date={{ request.GET.from_date }}{% endif %}{% if request.GET.to_date %}&to_date={{ request.GET.to_date }}{% endif %}" class="btn btn-success btn-sm flex-fill" style="height:50px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-weight:600;" title="Export Attendance Excel">
+              <i class="fas fa-file-excel me-1"></i>Excel
+            </a>
+            <a href="{% url 'schooladmin:export_attendance' %}?fmt=csv" class="btn btn-outline-success btn-sm flex-fill" style="height:50px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-weight:600;" title="Export CSV">
+              <i class="fas fa-file-csv me-1"></i>CSV
+            </a>
+          </div>
+        </div>
+
       </div>
-     
-      <div class="card-body px-0 pt-0 pb-2">
-        <div class="table-responsive p-0" id="printarea">
-          <tr>
-            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">{{first_date}} - {{last_date}} | {{org}} | {{thisone}}</th>           
-          </tr>
-          <table class="table align-items-center mb-0">
-            <thead>
-              <tr>
-                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Date</th>
-                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
-                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">In</th>
-                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Out</th>
-                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Total Hour</th>
-                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
-               
-              </tr>
-            </thead>
-            <tbody>
-              
-              {% for i in tm  %}
-                  <tr>
-                    <td>
-                      <p class="text-xs font-weight-bold mb-0">{{i.0}}</p>
-                      <small>{{i.0|date:'l'}}</small>
-                    </td>
-                      <td>
-                        <div class="d-flex px-2 py-1">
-                          <div class="d-flex flex-column justify-content-center">
-                            <p class="mb-0 text-sm text-center" data-bs-toggle="modal" data-bs-target="#exampleModal{{i.id}}" style="cursor:pointer;">{{i.1}}</p>
-                            
-                            {% if 'All' == thisone %}
-                            <p class="text-xs text-secondary mb-0">{{i.classification}}</p>
-                            
-                            {% endif %}
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <p class="text-xs font-weight-bold mb-0">{{i.2}}</p>
-                        
-                      </td>
-                      <td>
-                          <p class="text-xs font-weight-bold mb-0 text-center">{{i.3}}</p>
-                          
-                        </td>
-                      <td class="align-middle text-center text-sm ">
-                        <span class="badge badge-sm bg-gradient-secondary">{{i.4}}</span>
-                      </td>
-                      <td>
-                        
-                        {% if i.6 %}
-                          <p class="text-center">
-                            <span class="badge badge-sm bg-gradient-light text-dark text-center">{{i.6}}</span>
-                          </p>
-                          {%else%}
-                            {% if i.5 %}
-                              <p class="text-center">
-                                <span class="badge badge-sm bg-gradient-warning text-center">Holiday</span>
-                              </p>
-                            {%else%}
-                              {%if i.2%}
-                                  <p class="text-center">
-                                    <span class="badge badge-sm bg-gradient-success text-center">Present</span>
-                                  </p>
-                                {%else%}
-                                  <p class="text-center">
-                                    <span class="badge badge-sm bg-gradient-danger text-center">Absent</span>
-                                  </p>
-
-                              {%endif%}
-                            {% endif %}
-                          
-                        {% endif %}
-                          
-                        
-                        
-                          
-                        
-                      </td>
-                    
-                  </tr>
-              {% endfor %}
-
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>   
-  {% endif %}
-    
-
-   
+    </form>
   </div>
-  <script>
-    sum = document.getElementById("sub")
-    sum.disabled = true
-    first = document.getElementById("first").value
-    last = document.getElementById("last").value
-    console.log("i am")
-    console.log(first)
-    console.log(last)
-    if(first != "" && last != "") {
-      sum.disabled = false; //button remains disabled
-    } else {
-      sum.disabled = true; //button is enabled
-    }
-    function checkBtn(){
-        first = document.getElementById("first").value
-        last = document.getElementById("last").value
-        console.log("i am")
-        console.log(first)
-        console.log(last)
-        if(first != "" && last != "") {
-          sum.disabled = false; //button remains disabled
-        } else {
-          sum.disabled = true; //button is enabled
-        }
-    }
+</div>
 
-   
-    function printData(tId) {
-     var printContents = document.getElementById(tId).innerHTML;
-     var originalContents = document.body.innerHTML;
+{% if tm %}
+<div class="card filter-card">
+  <div class="card-header bg-white p-4 border-bottom" style="border-radius: 16px 16px 0 0;">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-1" style="font-weight: 700; color: #1e293b;">Gap Attendance Report</h5>
+        <span class="text-muted" style="font-weight: 500;">{{org}} &bull; {{thisone}}</span>
+      </div>
+      <div class="text-end">
+        <h6 class="mb-1">
+            {% if nepali_enabled %}
+                <span class="badge bg-danger px-3 py-2">BS: {{ first_date_np }} to {{ last_date_np }}</span>
+            {% endif %}
+            <span class="badge bg-dark px-3 py-2">AD: {{ first_date|date:'Y-m-d' }} to {{ last_date|date:'Y-m-d' }}</span>
+        </h6>
+      </div>
+    </div>
+  </div>
+ 
+  <div class="card-body px-0 pt-0 pb-2">
+    <div class="table-responsive" id="printarea">
+      <div class="d-none d-print-block text-center mb-4">
+          <h4>{{org}} - Gap Attendance Report</h4>
+          <p>Date: {% if nepali_enabled %}{{first_date_np}} to {{last_date_np}} (BS) / {% endif %}{{first_date|date:'Y-m-d'}} to {{last_date|date:'Y-m-d'}} (AD) | Dept: {{thisone}}</p>
+      </div>
 
-     document.body.innerHTML = printContents;
+      <table class="table table-premium table-hover align-items-center mb-0">
+        <thead>
+          <tr>
+            <th class="text-uppercase font-weight-bolder">Date</th>
+            <th class="text-uppercase font-weight-bolder">Member Name</th>
+            <th class="text-uppercase font-weight-bolder ps-2">Punch In</th>
+            <th class="text-center text-uppercase font-weight-bolder">Punch Out</th>
+            <th class="text-center text-uppercase font-weight-bolder">Total Hours</th>
+            <th class="text-center text-uppercase font-weight-bolder">Status</th>
+          </tr>
+        </thead>
+       <tbody>
+          {% for i in tm %}
+            <tr>
+                <td>
+                  {% if nepali_enabled %}
+                    <p class="text-sm font-weight-bold mb-0 px-3">{{i.7}}</p>
+                  {% else %}
+                    <p class="text-sm font-weight-bold mb-0 px-3">{{i.0|date:'Y-m-d'}}</p>
+                  {% endif %}
+                  
+                  <small class="px-3 text-muted" style="font-weight: bold;">{{i.0|date:'l'}}</small>
+                </td>
+                
+                <td>
+                  <div class="d-flex px-2 py-1">
+                    <div class="d-flex flex-column justify-content-center">
+                      <p class="mb-0 text-sm font-weight-bold" style="color: #2563eb;">{{i.1}}</p>
+                    </div>
+                  </div>
+                </td>
+                <td><p class="text-sm font-weight-bold mb-0">{{i.2|default:"-"}}</p></td>
+                <td><p class="text-sm font-weight-bold mb-0 text-center">{{i.3|default:"-"}}</p></td>
+                <td class="align-middle text-center text-sm">
+                  <span class="badge bg-light text-dark border">{{i.4|default:"0:00:00"}}</span>
+                </td>
+                <td class="text-center">
+                  {% if i.6 %}
+                    <span class="badge bg-gradient-info">{{i.6}}</span>
+                  {% elif i.5 %}
+                    <span class="badge bg-gradient-warning">Holiday</span>
+                  {% elif i.2 %}
+                    <span class="badge bg-gradient-success">Present</span>
+                  {% else %}
+                    <span class="badge bg-gradient-danger">Absent</span>
+                  {% endif %}
+                </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
 
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+  function printData(tId) {
      window.print();
+  }
 
-     document.body.innerHTML = originalContents;
-    }
-  
-    
-  </script>
+  // Disable button if dates are empty
+  function checkBtn(){
+      let btn = document.getElementById("filterBtn");
+      {% if nepali_enabled %}
+          let start = document.getElementById("first-np").value;
+          let end = document.getElementById("last-np").value;
+      {% else %}
+          let start = document.getElementById("first-ad").value;
+          let end = document.getElementById("last-ad").value;
+      {% endif %}
+      
+      if(start !== "" && end !== "") {
+          btn.disabled = false;
+      } else {
+          btn.disabled = true;
+      }
+  }
+
+  // Initialize UI components after page load
+  window.onload = function() {
+      checkBtn(); // Run on load
+      
+      // NepaliDate.init handles .nepali-cal globally via dashboard.html
+      {% if not nepali_enabled %}
+          document.querySelectorAll('.eng-cal').forEach(function(input) {
+              flatpickr(input, { dateFormat: "Y-m-d", maxDate: "today", disableMobile: "true" });
+          });
+      {% endif %}
+  };
+</script>
 {% endblock content %}
-    
-    

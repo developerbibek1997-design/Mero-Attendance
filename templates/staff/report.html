@@ -1,176 +1,181 @@
 {% extends 'dashboard.html' %}
 {% load static %}
-{% block title %}
-    Daily Attendance Report 
-{% endblock title %}
+{% block title %}Class Attendance Report{% endblock title %}
+
 {% block content %}
 <style>
-    @media print
-            {
-            table { page-break-after:auto }
-            tr    { page-break-inside:avoid; page-break-after:auto }
-            td    { page-break-inside:avoid; page-break-after:auto }
-            thead { display:table-header-group }
-            tfoot { display:table-footer-group }
-            }
-
-</style>
-<div class="row">
-  <form action="" method="post">
-    <div class="col-12 pb-2">
-      <Label for="date">Date</Label>
-      <input type="date" class="form-control" name="date" value="{{date}}">
-    </div>
-    <div class="input-group mb-3">
-     
-      <div class="input-group">
-        <select name="filter" class="form-select" id="inputGroupSelect04" aria-label="Example select with button addon" style="height: 42px;">
-          
-          <option {% if 'All' == thisone %} selected {%endif%} value="All">All</option>
-          
-          {% for c in clas %}
-            <option {% if thisone == c.name  %} selected {%endif%} value="{{c.id}}" >{{c.name}}</option>
-          {% endfor %}
-            
-        
-        </select>
-        <button class="btn btn-outline-warning" type="submit" onclick="showload()">Filter</button>
-      </div>
-
-      {% csrf_token %}
-     
-    </div>
+    /* Premium UI Styling */
+    .filter-card { border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .report-card { border-radius: 12px; border: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
+    .table-hover tbody tr:hover { background-color: #f8f9fe; transition: all 0.2s ease; }
     
-  
-  </form>
-  <button type="submit" class="btn btn-outline-primary m-2 " onclick="printData('printarea')">Print</button>
-    <div class="col-12" >
-      <div class="card mb-4">
-        <div class="card-header pb-0" style="padding-right:60px; display: flex; justify-content: space-between;">
-          <h6 >{{date}}</h6>
-          <small>{{date|date:'l'}}</small>
-          <h6 >{{org}}- {{thisone}}</h6>
-         
+    /* Print Specific Styling */
+    @media print {
+        body * { visibility: hidden; }
+        #printarea, #printarea * { visibility: visible; }
+        #printarea { position: absolute; left: 0; top: 0; width: 100%; }
+        
+        .badge { border: 1px solid #000; color: #000 !important; background: transparent !important; }
+        .bg-gradient-success, .bg-gradient-danger { background: none !important; -webkit-print-color-adjust: exact; }
+        
+        table { border-collapse: collapse !important; width: 100%; }
+        th, td { border: 1px solid #ddd !important; padding: 8px !important; text-align: left; }
+        th { background-color: #f5f5f5 !important; -webkit-print-color-adjust: exact; }
+        
+        /* Hide UI elements during print */
+        .modal, .btn, form, .navbar, .sidenav { display: none !important; }
+        @page { margin: 1cm; }
+    }
+</style>
+
+<div class="container-fluid py-4">
+    
+    <div class="card filter-card mb-4 p-3">
+        <form action="" method="post" class="m-0">
+            {% csrf_token %}
+            <div class="row align-items-end g-3">
+                
+                <div class="col-md-4">
+                    <label class="form-label text-xs font-weight-bolder text-uppercase mb-1"><i class="fas fa-calendar-alt me-1"></i> Select Date</label>
+                    <input type="date" class="form-control" name="date" value="{{ date }}" required>
+                </div>
+                
+                <div class="col-md-5">
+                    <label class="form-label text-xs font-weight-bolder text-uppercase mb-1"><i class="fas fa-users me-1"></i> Assigned Classification</label>
+                    <select name="filter" class="form-select">
+                        <option value="All" {% if 'All' in thisone %} selected {% endif %}>All Assigned Classes</option>
+                        {% for c in clas %}
+                            <option value="{{ c.id }}" {% if thisone == c.name %} selected {% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn bg-gradient-primary mb-0 flex-grow-1">
+                        <i class="fas fa-filter me-1"></i> Generate
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary mb-0 px-3" onclick="window.print()" title="Print Report">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </div>
+                
+            </div>
+        </form>
+    </div>
+
+    <div class="card report-card" id="printarea">
+        
+        <div class="card-header bg-light border-bottom p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0 text-dark">{{ org.name }}</h5>
+                    <p class="text-sm text-muted mb-0 font-weight-bold">Daily Attendance Log</p>
+                </div>
+                <div class="text-end">
+                    <h6 class="mb-0 text-primary">{{ date }}</h6>
+                    <span class="badge bg-secondary">{{ thisone }}</span>
+                </div>
+            </div>
         </div>
        
         <div class="card-body px-0 pt-0 pb-2">
-          <div class="table-responsive p-0" id="printarea">
-            <table class="table align-items-center mb-0" >
-              <thead>
-                <tr>
-               
-                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">{{date}} |{{org}} |{{thisone}}</th>
-                
-                 
-                </tr>
-                <tr>
-                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
-                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">In</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Out</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Total Hour</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
-                 
-                </tr>
-              </thead>
-              <tbody>
-                
-                {% for i in tm  %}
-       
-                  <tr>
-                      <td>
-                        <div class="d-flex px-2 py-1">
-                          <div class="d-flex flex-column justify-content-center">
-                            <p class="mb-0 text-sm text-center" data-bs-toggle="modal" data-bs-target="#exampleModal{{i.id}}" style="cursor:pointer;">{{i.name}}</p>
-                            
-                            {% if 'All' == thisone %}
-                            <p class="text-xs text-secondary mb-0">{{i.classification}}</p>
-                            
-                            {% endif %}
-                              
-                            
-                            
-                            <!-- Details -->
-                            <div class="modal fade" id="exampleModal{{i.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                              <div class="modal-dialog modal-dialog modal-dialog-centered">
-                                <div class="modal-content">
-                                  <div class="modal-header">
-                                    <h5 class="modal-title" id="exampleModalLabel" >{{i.name}} Today Details</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                  </div>
-                                  <div class="modal-body">
-                                      <div class="row" style="border: 1px solid black;">
-                                        <div class="col-6 text-center" style="border-right: 1px solid;" >
-                                            In
-                                        </div>
-                                        <div class="col-6 text-center" >
-                                            OUT
-                                        </div>
-                                      </div>
-                                      <div class="row">
-                                          {% for j in i.alldataofdaily.all  %}
-                                          <div class="col-6 text-center" style="border-bottom: 1px solid black;">
-                                              {{j.scanned_time.time}}
-                                          </div>
-                                          {% endfor %}
-                                      </div>
-                                     
-                                  </div>
-                                  <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                  </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-items-center mb-0">
+                    <thead>
+                        <tr>
+                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member Details</th>
+                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Time In</th>
+                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Time Out</th>
+                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Total Hours</th>
+                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in tm %}
+                        <tr>
+                            <td>
+                                <div class="d-flex px-3 py-1">
+                                    <div class="d-flex flex-column justify-content-center">
+                                        <h6 class="mb-0 text-sm text-primary" data-bs-toggle="modal" data-bs-target="#exampleModal{{ i.id }}" style="cursor:pointer;" title="Click for punch details">
+                                            {{ i.name }} <i class="fas fa-info-circle text-xs text-muted ms-1 d-print-none"></i>
+                                        </h6>
+                                        {% if 'All' in thisone %}
+                                        <p class="text-xs text-secondary mb-0">{{ i.classification.name }}</p>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <p class="text-xs font-weight-bold mb-0">{{i.first_daily_time}}</p>
-                        
-                      </td>
-                      <td>
-                          <p class="text-xs font-weight-bold mb-0 text-center">{{i.last_daily_time}}</p>
-                          
-                        </td>
-                      <td class="align-middle text-center text-sm ">
-                        <span class="badge badge-sm bg-gradient-secondary">{{i.hour_inside}}</span>
-                      </td>
-                      <td>
-                        {%if i.first_daily_time%}
-                        <p class="text-center">
-                          <span class="badge badge-sm bg-gradient-success text-center">Present</span>
-                        </p>
-                          {%else%}
-                          <p class="text-center">
-                            <span class="badge badge-sm bg-gradient-danger text-center">Absent</span>
-                          </p>
 
-                        {%endif%}
-                      </td>
-                    
-                  </tr>
-                {% endfor %}
+                                <div class="modal fade d-print-none" id="exampleModal{{ i.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered modal-sm">
+                                        <div class="modal-content border-0 shadow">
+                                            <div class="modal-header bg-light">
+                                                <h6 class="modal-title" id="exampleModalLabel"><i class="fas fa-list-ul me-2 text-primary"></i>{{ i.name }}'s Punches</h6>
+                                                <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body p-0">
+                                                <ul class="list-group list-group-flush">
+                                                    <li class="list-group-item d-flex justify-content-between font-weight-bold bg-gray-100">
+                                                        <span>Status</span><span>Scanned Time</span>
+                                                    </li>
+                                                    {% for j in i.alldataofdaily.all %}
+                                                    <li class="list-group-item d-flex justify-content-between">
+                                                        <span><i class="fas fa-check-circle text-success me-2"></i>Log {{ forloop.counter }}</span>
+                                                        <span class="text-dark">{{ j.scanned_time.time|time:"g:i A" }}</span>
+                                                    </li>
+                                                    {% empty %}
+                                                    <li class="list-group-item text-center text-muted py-3">No scans recorded on this date.</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                            <div class="modal-footer border-0 pt-0">
+                                                <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Close Window</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
 
-              </tbody>
-            </table>
-          </div>
+                            <td>
+                                <p class="text-sm font-weight-bold text-dark mb-0">{{ i.first_daily_time|time:"g:i A"|default:"--" }}</p>
+                            </td>
+
+                            <td>
+                                <p class="text-sm font-weight-bold text-dark mb-0">{{ i.last_daily_time|time:"g:i A"|default:"--" }}</p>
+                            </td>
+
+                            <td class="align-middle text-center text-sm">
+                                {% if i.hour_inside %}
+                                    <span class="text-sm font-weight-bolder text-dark">{{ i.hour_inside }}</span>
+                                {% else %}
+                                    <span class="text-xs text-muted">--</span>
+                                {% endif %}
+                            </td>
+
+                            <td class="align-middle text-center">
+                                {% if i.first_daily_time %}
+                                    <span class="badge bg-gradient-success px-3 py-2">PRESENT</span>
+                                {% else %}
+                                    <span class="badge bg-gradient-danger px-3 py-2">ABSENT</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-folder-open text-4xl mb-3 opacity-5"></i>
+                                    <h6>No data available</h6>
+                                    <p class="text-sm">There are no members assigned to this selection for the chosen date.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-      </div>
     </div>
-   
-  </div>
-  <script>
-    function printData(tId) {
-     var printContents = document.getElementById(tId).innerHTML;
-     var originalContents = document.body.innerHTML;
-
-     document.body.innerHTML = printContents;
-
-     window.print();
-
-     document.body.innerHTML = originalContents;
-  }
-  </script>
+</div>
 {% endblock content %}
-    
-    

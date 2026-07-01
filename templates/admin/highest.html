@@ -1,487 +1,944 @@
 {% extends 'dashboard.html' %}
 {% load static %}
-{% block title %}
-    Attendance Analytics | Attendance Management System 
-{% endblock title %}
+{% block title %}Full Analytics | {{ org.name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header pb-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5>Attendance Analytics Dashboard</h5>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-download me-1"></i> Export
-                            </button>
-                            <ul class="dropdown-menu" aria-labelledby="exportDropdown">
-                                <li><a class="dropdown-item" href="#" id="exportPDF">PDF</a></li>
-                                <li><a class="dropdown-item" href="#" id="exportExcel">Excel</a></li>
-                                <li><a class="dropdown-item" href="#" id="exportCSV">CSV</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <p class="text-sm mb-0">Analyze member attendance patterns and trends</p>
-                </div>
-                <div class="card-body">
-                    <!-- Filters -->
-                    <form method="get" class="row g-3">
-                        <div class="col-md-3">
-                            <label for="date_range" class="form-label">Date Range</label>
-                            <select class="form-select" id="date_range" name="date_range">
-                                <option value="7days" {% if selected_range == '7days' %}selected{% endif %}>Last 7 Days</option>
-                                <option value="30days" {% if selected_range == '30days' %}selected{% endif %}>Last 30 Days</option>
-                                <option value="month" {% if selected_range == 'month' %}selected{% endif %}>This Month</option>
-                                <option value="year" {% if selected_range == 'year' %}selected{% endif %}>This Year</option>
-                                <option value="custom" {% if selected_range == 'custom' %}selected{% endif %}>Custom Range</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-3 {% if selected_range != 'custom' %}d-none{% endif %}" id="custom_start_group">
-                            <label for="custom_start" class="form-label">Start Date</label>
-                            <input type="date" class="form-control" id="custom_start" name="custom_start" value="{{ custom_start }}">
-                        </div>
-                        
-                        <div class="col-md-3 {% if selected_range != 'custom' %}d-none{% endif %}" id="custom_end_group">
-                            <label for="custom_end" class="form-label">End Date</label>
-                            <input type="date" class="form-control" id="custom_end" name="custom_end" value="{{ custom_end }}">
-                        </div>
-                        
-                        <div class="col-md-3">
-                            <label for="classification" class="form-label">Classification</label>
-                            <select class="form-select" id="classification" name="classification">
-                                <option value="all">All Classifications</option>
-                                {% for classification in classifications %}
-                                    <option value="{{ classification.id }}" {% if selected_classification == classification.id|stringformat:"s" %}selected{% endif %}>
-                                        {{ classification.name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-12">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-filter me-1"></i> Apply Filters
-                            </button>
-                            <a href="?" class="btn btn-outline-secondary ms-2">
-                                <i class="fas fa-sync-alt me-1"></i> Reset
-                            </a>
-                        </div>
-                    </form>
-                    
-                    <hr>
-                    
-                    <!-- Summary Cards -->
-                    <div class="row">
-                        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
-                            <div class="card">
-                                <div class="card-body p-3">
-                                    <div class="row">
-                                        <div class="col-8">
-                                            <div class="numbers">
-                                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Period</p>
-                                                <h5 class="font-weight-bolder">
-                                                    {{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}
-                                                </h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-4 text-end">
-                                            <div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
-                                                <i class="fas fa-calendar-alt text-lg opacity-10" aria-hidden="true"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
-                            <div class="card">
-                                <div class="card-body p-3">
-                                    <div class="row">
-                                        <div class="col-8">
-                                            <div class="numbers">
-                                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Total Days</p>
-                                                <h5 class="font-weight-bolder">
-                                                    {{ total_days }}
-                                                </h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-4 text-end">
-                                            <div class="icon icon-shape bg-gradient-danger shadow-danger text-center rounded-circle">
-                                                <i class="fas fa-clock text-lg opacity-10" aria-hidden="true"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
-                            <div class="card">
-                                <div class="card-body p-3">
-                                    <div class="row">
-                                        <div class="col-8">
-                                            <div class="numbers">
-                                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Members</p>
-                                                <h5 class="font-weight-bolder">
-                                                    {{ member_stats|length }}
-                                                </h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-4 text-end">
-                                            <div class="icon icon-shape bg-gradient-success shadow-success text-center rounded-circle">
-                                                <i class="fas fa-users text-lg opacity-10" aria-hidden="true"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-sm-6">
-                            <div class="card">
-                                <div class="card-body p-3">
-                                    <div class="row">
-                                        <div class="col-8">
-                                            <div class="numbers">
-                                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Avg. Attendance</p>
-                                                <h5 class="font-weight-bolder">
-                                                    {% if member_stats %}
-                                                        {{ member_stats|length}} per day
-                                                    {% else %}
-                                                        0
-                                                    {% endif %}
-                                                </h5>
-                                            </div>
-                                        </div>
-                                        <div class="col-4 text-end">
-                                            <div class="icon icon-shape bg-gradient-warning shadow-warning text-center rounded-circle">
-                                                <i class="fas fa-chart-line text-lg opacity-10" aria-hidden="true"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Analytics Sections -->
-                    <div class="row mt-4">
-                        <!-- Most Present Members -->
-                        <div class="col-lg-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header pb-0">
-                                    <h6>Top Attendance</h6>
-                                    <p class="text-sm">Members with highest attendance rate ({{ total_days }} days)</p>
-                                </div>
-                                <div class="card-body p-3">
-                                    <div class="table-responsive">
-                                        <table class="table align-items-center mb-0">
-                                            <thead>
-                                                <tr>
-                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
-                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Days Present</th>
-                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Attendance %</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for stat in most_present %}
-                                                <tr>
-                                                    <td>
-                                                        <div class="d-flex px-2 py-1">
-                                                            <div class="d-flex flex-column justify-content-center">
-                                                                <h6 class="mb-0 text-sm">{{ stat.member.name }}</h6>
-                                                                <p class="text-xs text-secondary mb-0">{{ stat.member.classification }}</p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td class="align-middle text-center">
-                                                        <span class="text-secondary text-xs font-weight-bold">{{ stat.days_present }}</span>
-                                                    </td>
-                                                    <td class="align-middle text-center">
-                                                        <div class="progress-wrapper w-75 mx-auto">
-                                                            <div class="progress-info">
-                                                                <div class="progress-percentage">
-                                                                    <span class="text-xs font-weight-bold">{{ stat.days_present }}%</span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="progress">
-                                                                <div class="progress-bar bg-gradient-info" role="progressbar" 
-                                                                     aria-valuenow="{{ stat.days_present }}" 
-                                                                     aria-valuemin="0" aria-valuemax="100" 
-                                                                     style="width: {{ stat.days_present}}%;"></div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Least Present Members -->
-                        <div class="col-lg-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header pb-0">
-                                    <h6>Lowest Attendance</h6>
-                                    <p class="text-sm">Members with lowest attendance rate ({{ total_days }} days)</p>
-                                </div>
-                                <div class="card-body p-3">
-                                    <div class="table-responsive">
-                                        <table class="table align-items-center mb-0">
-                                            <thead>
-                                                <tr>
-                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
-                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Days Present</th>
-                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Attendance %</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for stat in least_present %}
-                                                <tr>
-                                                    <td>
-                                                        <div class="d-flex px-2 py-1">
-                                                            <div class="d-flex flex-column justify-content-center">
-                                                                <h6 class="mb-0 text-sm">{{ stat.member.name }}</h6>
-                                                                <p class="text-xs text-secondary mb-0">{{ stat.member.classification }}</p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td class="align-middle text-center">
-                                                        <span class="text-secondary text-xs font-weight-bold">{{ stat.days_present }}</span>
-                                                    </td>
-                                                    <td class="align-middle text-center">
-                                                        <div class="progress-wrapper w-75 mx-auto">
-                                                            <div class="progress-info">
-                                                                <div class="progress-percentage">
-                                                                    <span class="text-xs font-weight-bold">{{ stat.days_present}}%</span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="progress">
-                                                                <div class="progress-bar bg-gradient-danger" role="progressbar" 
-                                                                     aria-valuenow="{{ stat.days_present}}" 
-                                                                     aria-valuemin="0" aria-valuemax="100" 
-                                                                     style="width: {{ stat.days_present }}%;"></div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Most Time Spent -->
-                        <div class="col-lg-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header pb-0">
-                                    <h6>Top Time Spent</h6>
-                                    <p class="text-sm">Members who spent most time at work</p>
-                                </div>
-                                <div class="card-body p-3">
-                                    <div class="table-responsive">
-                                        <table class="table align-items-center mb-0">
-                                            <thead>
-                                                <tr>
-                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
-                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Total Time</th>
-                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Avg. Per Day</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for stat in most_time_spent %}
-                                                <tr>
-                                                    <td>
-                                                        <div class="d-flex px-2 py-1">
-                                                            <div class="d-flex flex-column justify-content-center">
-                                                                <h6 class="mb-0 text-sm">{{ stat.member.name }}</h6>
-                                                                <p class="text-xs text-secondary mb-0">{{ stat.member.classification }}</p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td class="align-middle text-center">
-                                                        <span class="text-secondary text-xs font-weight-bold">
-                                                            {{ stat.time_spent|time:"H:i" }} hours
-                                                        </span>
-                                                    </td>
-                                                    <td class="align-middle text-center">
-                                                        <span class="text-secondary text-xs font-weight-bold">
-                                                            {{ stat.avg_time_per_day|time:"H:i" }} hours
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Most Consistent -->
-                        <div class="col-lg-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header pb-0">
-                                    <h6>Most Consistent</h6>
-                                    <p class="text-sm">Members with most consistent daily hours</p>
-                                </div>
-                                <div class="card-body p-3">
-                                    <div class="table-responsive">
-                                        <table class="table align-items-center mb-0">
-                                            <thead>
-                                                <tr>
-                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
-                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Avg. Hours</th>
-                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Deviation</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for stat in most_consistent %}
-                                                <tr>
-                                                    <td>
-                                                        <div class="d-flex px-2 py-1">
-                                                            <div class="d-flex flex-column justify-content-center">
-                                                                <h6 class="mb-0 text-sm">{{ stat.member.name }}</h6>
-                                                                <p class="text-xs text-secondary mb-0">{{ stat.member.classification }}</p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td class="align-middle text-center">
-                                                        <span class="text-secondary text-xs font-weight-bold">
-                                                            {{ stat.avg_time_per_day|time:"H:i" }} hours
-                                                        </span>
-                                                    </td>
-                                                    <td class="align-middle text-center">
-                                                        <span class="badge badge-sm bg-gradient-success">Low</span>
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Attendance Trends Chart -->
-                    <div class="row mt-4">
-                    
-                            {% for classification, members in classifi.items %}
-                                <div class="col-xl-6 col-12 mb-4">
-                                <a href="{% url 'handle:memberReport' %}" class="text-decoration-none">
-                                    <div class="card attendance-card hover-shadow-lg border-0">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="card-title mb-0 text-primary font-weight-bold text-uppercase letter-spacing-1">
-                                            {{ classification }}
-                                        </h5>
-                                        
-                                        <span class="">
-                                            {{ members.values|length }} Members
-                                        </span>
-                                        </div>
-                                        
-                                        <div class="divider divider-dashed"></div>
-                                        
-                                        <ul class="list-unstyled mb-0">
-                                        {% for member_name, count in members.items %}
-                                            <li class="py-2 d-flex justify-content-between align-items-center member-item">
-                                            <div class="d-flex align-items-center">
-                                                <span class="avatar avatar-sm rounded-circle bg-primary-soft me-3">
-                                                <span class="avatar-initials text-primary">{{ member_name|first|upper }}</span>
-                                                </span>
-                                                <span class="font-weight-medium text-dark">{{ member_name }}</span>
-                                            </div>
-                                            <h4>
-                                                {{count}}
-                                            </h4>
-                                            
-                                            </li>
-                                            {% if not forloop.last %}
-                                            <div class="divider dotted"></div>
-                                            {% endif %}
-                                        {% endfor %}
-                                        </ul>
-                                        
-                                        <div class="mt-3 d-flex justify-content-between align-items-center">
-                                        <span class="bg-primary-soft text-primary px-2 py-1 rounded">
-                                            Highest Attendance of employees
-                                        </span>
-                                        <span class="text-sm text-muted">
-                                            <i class="fas fa-history mr-1"></i> Updated recently
-                                        </span>
-                                        </div>
-                                    </div>
-                                    </div>
-                                </a>
-                                </div>
-                            {% endfor %}
+<style>
+:root{
+  --ink:#0f172a;--slate:#334155;--muted:#64748b;
+  --border:#e2e8f0;--bg:#f8fafc;
+  --indigo:#6366f1;--indigo-dk:#4f46e5;--indigo-lt:#eef2ff;
+  --green:#16a34a;--green-lt:#dcfce7;
+  --rose:#e11d48;--rose-lt:#ffe4e6;
+  --amber:#d97706;--amber-lt:#fef3c7;
+  --teal:#0d9488;--teal-lt:#ccfbf1;
+}
 
-                    </div>
-                </div>
-            </div>
-        </div>
+/* ── shell ─────────────────────────────────── */
+.an-page{background:var(--bg);min-height:100vh;padding:0;}
+
+/* ── hero ──────────────────────────────────── */
+.an-hero{
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#312e81 100%);
+  padding:1.75rem 2rem 5.5rem;position:relative;overflow:hidden;
+}
+.an-hero::before{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.025'%3E%3Cpath d='M0 0h20v20H0zM20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E");
+}
+.an-hero-inner{position:relative;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;}
+.an-hero-title{color:#fff;font-size:1.45rem;font-weight:900;margin:0;letter-spacing:-.3px;}
+.an-hero-sub{color:#94a3b8;font-size:.83rem;margin:.3rem 0 0;}
+
+/* ── KPI strip (floats over hero) ──────────── */
+.kpi-strip{
+  margin:-3.5rem 2rem 0;position:relative;z-index:2;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem;
+}
+.kpi-card{
+  background:#fff;border-radius:16px;padding:1.1rem 1.25rem;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);border:1px solid rgba(255,255,255,.8);
+  display:flex;align-items:center;gap:.9rem;
+}
+.kpi-icon{
+  width:44px;height:44px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;
+}
+.kpi-label{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.kpi-val{font-size:1.35rem;font-weight:900;color:var(--ink);line-height:1.1;margin-top:.1rem;}
+.kpi-sub{font-size:.7rem;color:var(--muted);margin-top:.15rem;}
+
+/* ── tab nav ────────────────────────────────── */
+.tab-strip{
+  display:flex;gap:.25rem;padding:1.5rem 2rem .5rem;
+  overflow-x:auto;background:var(--bg);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:10;
+}
+.t-btn{
+  padding:.55rem 1.1rem;border:none;background:transparent;
+  border-radius:99px;font-size:.82rem;font-weight:700;color:var(--muted);
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+  display:flex;align-items:center;gap:.45rem;
+}
+.t-btn:hover{background:#fff;color:var(--indigo);}
+.t-btn.on{background:var(--indigo);color:#fff;box-shadow:0 4px 14px rgba(99,102,241,.3);}
+.t-btn i{font-size:.8rem;}
+
+.t-pane{display:none;padding:1.5rem 2rem 2.5rem;}
+.t-pane.on{display:block;}
+
+/* ── section card ───────────────────────────── */
+.sec{
+  background:#fff;border-radius:18px;border:1px solid var(--border);
+  box-shadow:0 2px 12px rgba(0,0,0,.04);margin-bottom:1.25rem;overflow:hidden;
+}
+.sec-hd{
+  padding:1.1rem 1.4rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;
+}
+.sec-hd-left{display:flex;align-items:center;gap:.75rem;}
+.sec-icon{
+  width:36px;height:36px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;
+}
+.sec-title{font-size:.9rem;font-weight:800;color:var(--ink);margin:0;}
+.sec-sub{font-size:.72rem;color:var(--muted);margin:.1rem 0 0;}
+.sec-body{padding:1.25rem 1.4rem;}
+
+/* ── table ──────────────────────────────────── */
+.at{width:100%;border-collapse:collapse;}
+.at th{font-size:.67rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:.7rem 1rem;background:#fafbff;border-bottom:1px solid var(--border);text-align:left;}
+.at td{padding:.8rem 1rem;border-bottom:1px solid #f1f5f9;font-size:.84rem;color:var(--ink);vertical-align:middle;}
+.at tr:last-child td{border-bottom:none;}
+.at tr:hover td{background:#fafbff;}
+
+/* ── rank badge ─────────────────────────────── */
+.rank-badge{
+  width:28px;height:28px;border-radius:8px;display:inline-flex;
+  align-items:center;justify-content:center;font-size:.75rem;font-weight:900;
+}
+
+/* ── progress bar ───────────────────────────── */
+.pbar-wrap{display:flex;align-items:center;gap:.65rem;}
+.pbar-track{flex:1;height:7px;background:#f1f5f9;border-radius:99px;overflow:hidden;}
+.pbar-fill{height:100%;border-radius:99px;transition:width .4s ease;}
+.pbar-label{font-size:.72rem;font-weight:700;color:var(--muted);min-width:38px;text-align:right;}
+
+/* ── avatar ─────────────────────────────────── */
+.av{
+  width:34px;height:34px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:.82rem;font-weight:800;text-transform:uppercase;flex-shrink:0;
+}
+.av-indigo{background:var(--indigo-lt);color:var(--indigo);}
+.av-rose{background:var(--rose-lt);color:var(--rose);}
+.av-amber{background:var(--amber-lt);color:var(--amber);}
+.av-teal{background:var(--teal-lt);color:var(--teal);}
+.av-green{background:var(--green-lt);color:var(--green);}
+
+/* ── badge pill ─────────────────────────────── */
+.pill{display:inline-block;padding:.18rem .6rem;border-radius:99px;font-size:.7rem;font-weight:700;}
+.pill-rose{background:var(--rose-lt);color:var(--rose);border:1px solid #fecdd3;}
+.pill-green{background:var(--green-lt);color:var(--green);border:1px solid #bbf7d0;}
+.pill-amber{background:var(--amber-lt);color:var(--amber);border:1px solid #fde68a;}
+.pill-indigo{background:var(--indigo-lt);color:var(--indigo);border:1px solid #c7d2fe;}
+.pill-muted{background:#f1f5f9;color:var(--slate);border:1px solid var(--border);}
+
+/* ── filter bar ─────────────────────────────── */
+.filter-bar{
+  background:#fff;border-bottom:1px solid var(--border);
+  padding:1rem 2rem;display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-end;
+}
+.filter-bar select,.filter-bar input{
+  border:1.5px solid var(--border);border-radius:10px;
+  padding:.55rem .9rem;font-size:.84rem;color:var(--ink);
+  background:#fff;outline:none;min-height:40px;transition:border-color .15s;
+}
+.filter-bar select:focus,.filter-bar input:focus{border-color:var(--indigo);}
+.btn-analyze{
+  background:linear-gradient(135deg,var(--indigo),var(--indigo-dk));
+  color:#fff;border:none;border-radius:10px;padding:.55rem 1.4rem;
+  font-size:.84rem;font-weight:700;cursor:pointer;min-height:40px;
+  display:inline-flex;align-items:center;gap:.45rem;
+}
+.btn-analyze:hover{opacity:.88;}
+.btn-outline-icon{
+  background:#fff;border:1.5px solid var(--border);border-radius:10px;
+  padding:.55rem .85rem;font-size:.84rem;color:var(--muted);cursor:pointer;
+  min-height:40px;transition:all .15s;
+}
+.btn-outline-icon:hover{border-color:var(--indigo);color:var(--indigo);}
+.btn-pdf{
+  background:linear-gradient(135deg,#e11d48,#be123c);
+  color:#fff;border:none;border-radius:10px;padding:.55rem 1.2rem;
+  font-size:.84rem;font-weight:700;cursor:pointer;min-height:40px;
+  display:inline-flex;align-items:center;gap:.45rem;
+}
+.btn-share{
+  background:#fff;border:1.5px solid var(--border);border-radius:10px;
+  padding:.55rem 1.2rem;font-size:.84rem;font-weight:700;color:var(--slate);
+  cursor:pointer;min-height:40px;display:inline-flex;align-items:center;gap:.45rem;
+  transition:all .15s;
+}
+.btn-share:hover{border-color:var(--indigo);color:var(--indigo);}
+
+/* ── fin stat row ───────────────────────────── */
+.fin-stat{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.9rem 1.4rem;border-bottom:1px solid #f1f5f9;
+}
+.fin-stat:last-child{border-bottom:none;}
+.fin-label{font-size:.84rem;font-weight:600;color:var(--slate);}
+.fin-val{font-size:.9rem;font-weight:800;}
+
+/* ── chart canvas ───────────────────────────── */
+.chart-wrap{padding:1.25rem 1.4rem;position:relative;}
+.chart-wrap canvas{max-height:280px;}
+
+/* ── print ──────────────────────────────────── */
+@media print{
+  .tab-strip,.filter-bar,.btn-pdf,.btn-share,.btn-analyze,.btn-outline-icon,
+  .no-print,.sidenav,#navbarBlur,.fixed-plugin{display:none!important;}
+  .main-content{margin-left:0!important;width:100%!important;padding:0!important;}
+  .t-pane{display:block!important;}
+  .an-hero{padding-bottom:1.5rem!important;}
+  .kpi-strip{margin-top:1rem!important;}
+  .sec{break-inside:avoid;box-shadow:none!important;border:1px solid #e2e8f0!important;}
+  body,html{background:#fff!important;}
+}
+</style>
+
+<div class="an-page" id="reportRoot">
+
+  <!-- Hero -->
+  <div class="an-hero">
+    <div class="an-hero-inner">
+      <div>
+        <div style="font-size:.68rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:.35rem;">{{ org.name }}</div>
+        <h4 class="an-hero-title"><i class="fas fa-chart-mixed me-2 opacity-75"></i>Full Analytics</h4>
+        <p class="an-hero-sub">{{ start_date|date:"M d, Y" }} → {{ end_date|date:"M d, Y" }} &nbsp;·&nbsp; {{ total_days }} days</p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap align-items-start">
+        <button class="btn-pdf no-print" onclick="exportPDF()"><i class="fas fa-file-pdf"></i>PDF</button>
+        <button class="btn-share no-print" onclick="shareReport()"><i class="fas fa-share-nodes"></i>Share</button>
+      </div>
     </div>
-</div>
-{% endblock %}
+  </div>
 
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- KPI Strip -->
+  <div class="kpi-strip">
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:var(--indigo-lt);color:var(--indigo);"><i class="fas fa-users"></i></div>
+      <div>
+        <div class="kpi-label">Total Members</div>
+        <div class="kpi-val">{{ most_present|length|add:most_absent|length }}</div>
+        <div class="kpi-sub">In scope</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:var(--rose-lt);color:var(--rose);"><i class="fas fa-user-xmark"></i></div>
+      <div>
+        <div class="kpi-label">Missed Check-outs</div>
+        <div class="kpi-val">{{ total_org_missed_punches }}</div>
+        <div class="kpi-sub">Incomplete logs</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:var(--amber-lt);color:var(--amber);"><i class="fas fa-triangle-exclamation"></i></div>
+      <div>
+        <div class="kpi-label">Study Gaps</div>
+        <div class="kpi-val">{{ total_gaps }}</div>
+        <div class="kpi-sub">Attendance gaps logged</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:var(--green-lt);color:var(--green);"><i class="fas fa-arrow-trend-up"></i></div>
+      <div>
+        <div class="kpi-label">Total Income</div>
+        <div class="kpi-val">Rs.{{ total_income|floatformat:0 }}</div>
+        <div class="kpi-sub">Period</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:var(--rose-lt);color:var(--rose);"><i class="fas fa-arrow-trend-down"></i></div>
+      <div>
+        <div class="kpi-label">Total Expense</div>
+        <div class="kpi-val">Rs.{{ total_expense|floatformat:0 }}</div>
+        <div class="kpi-sub">Period</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:{% if net_balance >= 0 %}var(--green-lt){% else %}var(--rose-lt){% endif %};color:{% if net_balance >= 0 %}var(--green){% else %}var(--rose){% endif %};"><i class="fas fa-scale-balanced"></i></div>
+      <div>
+        <div class="kpi-label">Net Balance</div>
+        <div class="kpi-val">Rs.{{ net_balance|floatformat:0 }}</div>
+        <div class="kpi-sub">{% if net_balance >= 0 %}Surplus{% else %}Deficit{% endif %}</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:var(--teal-lt);color:var(--teal);"><i class="fas fa-calendar-xmark"></i></div>
+      <div>
+        <div class="kpi-label">Leave Requests</div>
+        <div class="kpi-val">{{ total_leaves }}</div>
+        <div class="kpi-sub">{{ approved_leaves }} approved · {{ pending_leaves }} pending</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:var(--indigo-lt);color:var(--indigo);"><i class="fas fa-file-invoice-dollar"></i></div>
+      <div>
+        <div class="kpi-label">Salary Paid</div>
+        <div class="kpi-val">Rs.{{ total_salary_paid|floatformat:0 }}</div>
+        <div class="kpi-sub">{{ total_payslips }} payslips</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <form method="get" class="filter-bar no-print">
+    <div>
+      <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.35rem;">Time Period</div>
+      <select name="date_range" id="date_range">
+        <option value="7days" {% if selected_range == '7days' %}selected{% endif %}>Last 7 Days</option>
+        <option value="30days" {% if selected_range == '30days' %}selected{% endif %}>Last 30 Days</option>
+        <option value="month" {% if selected_range == 'month' %}selected{% endif %}>Current Month</option>
+        <option value="year" {% if selected_range == 'year' %}selected{% endif %}>Current Year</option>
+        <option value="custom" {% if selected_range == 'custom' %}selected{% endif %}>Custom Range</option>
+      </select>
+    </div>
+    <div id="custom_start_group" class="{% if selected_range != 'custom' %}d-none{% endif %}">
+      <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.35rem;">Start Date</div>
+      {% if nepali_enabled %}
+        <input type="text" class="nepali-cal" name="custom_start_np" value="{{ custom_start_np|default:'' }}" placeholder="YYYY-MM-DD" autocomplete="off">
+      {% else %}
+        <input type="text" class="eng-cal" name="custom_start" value="{{ custom_start|default:'' }}" placeholder="YYYY-MM-DD" autocomplete="off">
+      {% endif %}
+    </div>
+    <div id="custom_end_group" class="{% if selected_range != 'custom' %}d-none{% endif %}">
+      <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.35rem;">End Date</div>
+      {% if nepali_enabled %}
+        <input type="text" class="nepali-cal" name="custom_end_np" value="{{ custom_end_np|default:'' }}" placeholder="YYYY-MM-DD" autocomplete="off">
+      {% else %}
+        <input type="text" class="eng-cal" name="custom_end" value="{{ custom_end|default:'' }}" placeholder="YYYY-MM-DD" autocomplete="off">
+      {% endif %}
+    </div>
+    <div>
+      <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.35rem;">Department</div>
+      <select name="classification">
+        <option value="all">All Departments</option>
+        {% for c in classifications %}
+          <option value="{{ c.id }}" {% if selected_classification == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-analyze"><i class="fas fa-filter"></i>Analyze</button>
+    <a href="?" class="btn-outline-icon" title="Reset"><i class="fas fa-rotate-right"></i></a>
+  </form>
+
+  <!-- Tab Nav -->
+  <div class="tab-strip no-print">
+    <button class="t-btn on" onclick="goTab('attendance',this)"><i class="fas fa-fingerprint"></i>Attendance</button>
+    <button class="t-btn" onclick="goTab('absence',this)"><i class="fas fa-user-xmark"></i>Absences</button>
+    <button class="t-btn" onclick="goTab('gaps',this)"><i class="fas fa-triangle-exclamation"></i>Study Gaps</button>
+    <button class="t-btn" onclick="goTab('finance',this)"><i class="fas fa-chart-line"></i>Finance</button>
+    <button class="t-btn" onclick="goTab('leave',this)"><i class="fas fa-calendar-xmark"></i>Leave</button>
+    <button class="t-btn" onclick="goTab('departments',this)"><i class="fas fa-sitemap"></i>Departments</button>
+  </div>
+
+  <!-- ══ TAB: ATTENDANCE ══════════════════════════════ -->
+  <div class="t-pane on" id="tab-attendance">
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--green-lt);color:var(--green);"><i class="fas fa-trophy"></i></div>
+              <div>
+                <div class="sec-title">Highest Attendance</div>
+                <div class="sec-sub">Members closest to 100% presence</div>
+              </div>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="at">
+              <thead><tr><th>#</th><th>Member</th><th>Present</th><th style="min-width:140px;">Score</th></tr></thead>
+              <tbody>
+                {% for stat in most_present %}
+                <tr>
+                  <td><span class="rank-badge" style="background:{% if forloop.counter == 1 %}#fef3c7;color:#d97706{% elif forloop.counter == 2 %}#f1f5f9;color:#64748b{% elif forloop.counter == 3 %}#fff7ed;color:#c2410c{% else %}#f8fafc;color:#94a3b8{% endif %};">{{ forloop.counter }}</span></td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="av av-green">{{ stat.member.name|slice:":1" }}</div>
+                      <div>
+                        <div style="font-weight:700;">{{ stat.member.name }}</div>
+                        <div style="font-size:.72rem;color:var(--muted);">{{ stat.member.classification.name|default:"Unclassified" }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="pill pill-green">{{ stat.days_present }}/{{ total_days }}</span></td>
+                  <td>
+                    <div class="pbar-wrap">
+                      <div class="pbar-track"><div class="pbar-fill" style="width:{{ stat.percentage }}%;background:var(--green);"></div></div>
+                      <span class="pbar-label" style="color:var(--green);">{{ stat.percentage }}%</span>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--muted);">No data</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="sec h-100">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--rose-lt);color:var(--rose);"><i class="fas fa-fingerprint"></i></div>
+              <div>
+                <div class="sec-title">Missed Check-outs</div>
+                <div class="sec-sub">Punched in but never out</div>
+              </div>
+            </div>
+            <span class="pill pill-rose">{{ total_org_missed_punches }} total</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="at">
+              <thead><tr><th>Member</th><th>Missed</th><th>Status</th></tr></thead>
+              <tbody>
+                {% for stat in most_incomplete %}
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="av av-rose">{{ stat.member.name|slice:":1" }}</div>
+                      <div>
+                        <div style="font-weight:700;">{{ stat.member.name }}</div>
+                        <div style="font-size:.72rem;color:var(--muted);">{{ stat.member.classification.name|default:"—" }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="pill pill-rose">{{ stat.incomplete_logs }}</span></td>
+                  <td><span style="font-size:.72rem;font-weight:700;color:var(--rose);"><i class="fas fa-circle-exclamation me-1"></i>Fix needed</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--green);"><i class="fas fa-circle-check me-1"></i>All checked out!</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--teal-lt);color:var(--teal);"><i class="fas fa-stopwatch"></i></div>
+              <div><div class="sec-title">Most Hours Logged</div><div class="sec-sub">Total time inside org</div></div>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="at">
+              <thead><tr><th>Member</th><th>Total Hours</th><th>Avg/Day</th></tr></thead>
+              <tbody>
+                {% for stat in most_time_spent %}
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="av av-teal">{{ stat.member.name|slice:":1" }}</div>
+                      <div style="font-weight:700;">{{ stat.member.name }}</div>
+                    </div>
+                  </td>
+                  <td><span style="font-weight:800;color:var(--teal);">{{ stat.formatted_total }}</span></td>
+                  <td><span style="font-size:.8rem;color:var(--muted);">{{ stat.formatted_avg }}</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--muted);">No data</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--indigo-lt);color:var(--indigo);"><i class="fas fa-chart-bar"></i></div>
+              <div><div class="sec-title">Dept Absence Chart</div><div class="sec-sub">Total absent days by department</div></div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="deptAbsentChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB: ABSENCES ════════════════════════════════ -->
+  <div class="t-pane" id="tab-absence">
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--rose-lt);color:var(--rose);"><i class="fas fa-user-xmark"></i></div>
+              <div>
+                <div class="sec-title">Absence Leaderboard</div>
+                <div class="sec-sub">Top 20 most absent members — full breakdown</div>
+              </div>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="at">
+              <thead><tr><th>#</th><th>Member</th><th>Department</th><th>Days Absent</th><th>Days Present</th><th style="min-width:130px;">Absence Rate</th></tr></thead>
+              <tbody>
+                {% for stat in all_absent_sorted %}
+                <tr>
+                  <td style="color:var(--muted);font-weight:700;font-size:.8rem;">{{ forloop.counter }}</td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="av av-rose">{{ stat.member.name|slice:":1" }}</div>
+                      <div style="font-weight:700;">{{ stat.member.name }}</div>
+                    </div>
+                  </td>
+                  <td><span class="pill pill-muted">{{ stat.member.classification.name|default:"—" }}</span></td>
+                  <td><span class="pill pill-rose">{{ stat.days_absent }} days</span></td>
+                  <td><span class="pill pill-green">{{ stat.days_present }} days</span></td>
+                  <td>
+                    <div class="pbar-wrap">
+                      <div class="pbar-track"><div class="pbar-fill" style="width:{{ stat.absence_percentage }}%;background:{% if stat.absence_percentage > 40 %}var(--rose){% elif stat.absence_percentage > 20 %}var(--amber){% else %}#94a3b8{% endif %};"></div></div>
+                      <span class="pbar-label" style="color:{% if stat.absence_percentage > 40 %}var(--rose){% elif stat.absence_percentage > 20 %}var(--amber){% else %}var(--muted){% endif %};">{{ stat.absence_percentage }}%</span>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--green);">No absences in this period!</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--rose-lt);color:var(--rose);"><i class="fas fa-chart-bar"></i></div>
+              <div><div class="sec-title">Absence Chart</div><div class="sec-sub">Top 10 most absent</div></div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="absentChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB: STUDY GAPS ══════════════════════════════ -->
+  <div class="t-pane" id="tab-gaps">
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--amber-lt);color:var(--amber);"><i class="fas fa-triangle-exclamation"></i></div>
+              <div>
+                <div class="sec-title">Study / Attendance Gaps</div>
+                <div class="sec-sub">Members with the most logged attendance gaps</div>
+              </div>
+            </div>
+            <span class="pill pill-amber">{{ total_gaps }} total gaps</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="at">
+              <thead><tr><th>#</th><th>Member</th><th>Department</th><th>Total Gaps</th><th>Severity</th></tr></thead>
+              <tbody>
+                {% for g in top_gap_members %}
+                <tr>
+                  <td style="color:var(--muted);font-weight:700;font-size:.8rem;">{{ forloop.counter }}</td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="av av-amber">{{ g.member__name|slice:":1" }}</div>
+                      <div style="font-weight:700;">{{ g.member__name }}</div>
+                    </div>
+                  </td>
+                  <td><span class="pill pill-muted">{{ g.member__classification__name|default:"—" }}</span></td>
+                  <td><span class="pill pill-amber">{{ g.gap_count }} gaps</span></td>
+                  <td>
+                    <div class="pbar-wrap">
+                      <div class="pbar-track">
+                        <div class="pbar-fill" style="width:{% widthratio g.gap_count total_gaps|default:1 100 %}%;background:var(--amber);"></div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" style="text-align:center;padding:3rem;color:var(--green);">
+                    <i class="fas fa-circle-check fa-2x d-block mb-2"></i>
+                    No attendance gaps recorded in this period!
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--amber-lt);color:var(--amber);"><i class="fas fa-circle-info"></i></div>
+              <div><div class="sec-title">What is a Gap?</div></div>
+            </div>
+          </div>
+          <div class="sec-body">
+            <p style="font-size:.84rem;color:var(--slate);line-height:1.6;">An <strong>Attendance Gap</strong> is recorded when a member is expected to be present (e.g., for a class or shift) but has no attendance record for that day.</p>
+            <p style="font-size:.84rem;color:var(--slate);line-height:1.6;">Study gaps are particularly important for course-based attendance where each class session must be accounted for.</p>
+            <div style="background:var(--amber-lt);border:1px solid #fde68a;border-radius:12px;padding:1rem;margin-top:.75rem;">
+              <div style="font-size:.8rem;font-weight:700;color:var(--amber);">Gap Summary</div>
+              <div style="font-size:2rem;font-weight:900;color:var(--amber);margin:.25rem 0;">{{ total_gaps }}</div>
+              <div style="font-size:.75rem;color:#92400e;">total gap records in period</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB: FINANCE ═════════════════════════════════ -->
+  <div class="t-pane" id="tab-finance">
+    <div class="row g-4">
+
+      <!-- Summary cards -->
+      <div class="col-md-4">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--green-lt);color:var(--green);"><i class="fas fa-arrow-trend-up"></i></div>
+              <div><div class="sec-title">Income</div><div class="sec-sub">Period total</div></div>
+            </div>
+          </div>
+          <div class="sec-body text-center" style="padding:2rem;">
+            <div style="font-size:2rem;font-weight:900;color:var(--green);">Rs. {{ total_income|floatformat:0 }}</div>
+            <div style="font-size:.8rem;color:var(--muted);margin-top:.3rem;">{{ start_date|date:"M d" }} – {{ end_date|date:"M d, Y" }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--rose-lt);color:var(--rose);"><i class="fas fa-arrow-trend-down"></i></div>
+              <div><div class="sec-title">Expense</div><div class="sec-sub">Period total</div></div>
+            </div>
+          </div>
+          <div class="sec-body text-center" style="padding:2rem;">
+            <div style="font-size:2rem;font-weight:900;color:var(--rose);">Rs. {{ total_expense|floatformat:0 }}</div>
+            <div style="font-size:.8rem;color:var(--muted);margin-top:.3rem;">{{ start_date|date:"M d" }} – {{ end_date|date:"M d, Y" }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:{% if net_balance >= 0 %}var(--green-lt){% else %}var(--rose-lt){% endif %};color:{% if net_balance >= 0 %}var(--green){% else %}var(--rose){% endif %};"><i class="fas fa-scale-balanced"></i></div>
+              <div><div class="sec-title">Net Balance</div><div class="sec-sub">Income minus expense</div></div>
+            </div>
+          </div>
+          <div class="sec-body text-center" style="padding:2rem;">
+            <div style="font-size:2rem;font-weight:900;color:{% if net_balance >= 0 %}var(--green){% else %}var(--rose){% endif %};">Rs. {{ net_balance|floatformat:0 }}</div>
+            <div style="font-size:.8rem;color:var(--muted);margin-top:.3rem;">{% if net_balance >= 0 %}Surplus{% else %}Deficit{% endif %}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly chart -->
+      <div class="col-lg-8">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--indigo-lt);color:var(--indigo);"><i class="fas fa-chart-bar"></i></div>
+              <div><div class="sec-title">Monthly Income vs Expense</div><div class="sec-sub">Last 6 months trend</div></div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="padding:1.5rem;"><canvas id="financeChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Payroll summary -->
+      <div class="col-lg-4">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--indigo-lt);color:var(--indigo);"><i class="fas fa-file-invoice-dollar"></i></div>
+              <div><div class="sec-title">Payroll Summary</div><div class="sec-sub">Payslip overview</div></div>
+            </div>
+          </div>
+          <div>
+            <div class="fin-stat">
+              <span class="fin-label">Total Payslips</span>
+              <span class="fin-val" style="color:var(--indigo);">{{ total_payslips }}</span>
+            </div>
+            <div class="fin-stat">
+              <span class="fin-label">Total Net Paid</span>
+              <span class="fin-val" style="color:var(--green);">Rs. {{ total_salary_paid|floatformat:0 }}</span>
+            </div>
+            <div class="fin-stat">
+              <span class="fin-label">Period Income</span>
+              <span class="fin-val" style="color:var(--green);">Rs. {{ total_income|floatformat:0 }}</span>
+            </div>
+            <div class="fin-stat">
+              <span class="fin-label">Period Expense</span>
+              <span class="fin-val" style="color:var(--rose);">Rs. {{ total_expense|floatformat:0 }}</span>
+            </div>
+            <div class="fin-stat">
+              <span class="fin-label"><strong>Net Balance</strong></span>
+              <span class="fin-val" style="color:{% if net_balance >= 0 %}var(--green){% else %}var(--rose){% endif %};font-size:1.1rem;">Rs. {{ net_balance|floatformat:0 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB: LEAVE ════════════════════════════════════ -->
+  <div class="t-pane" id="tab-leave">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="sec">
+          <div class="sec-hd"><div class="sec-hd-left"><div class="sec-icon" style="background:var(--teal-lt);color:var(--teal);"><i class="fas fa-calendar-check"></i></div><div><div class="sec-title">Leave Overview</div></div></div></div>
+          <div>
+            <div class="fin-stat"><span class="fin-label">Total Applications</span><span class="fin-val" style="color:var(--indigo);">{{ total_leaves }}</span></div>
+            <div class="fin-stat"><span class="fin-label">Approved</span><span class="fin-val" style="color:var(--green);">{{ approved_leaves }}</span></div>
+            <div class="fin-stat"><span class="fin-label">Pending</span><span class="fin-val" style="color:var(--amber);">{{ pending_leaves }}</span></div>
+            <div class="fin-stat"><span class="fin-label">Rejected / Other</span><span class="fin-val" style="color:var(--rose);">{{ total_leaves|add:"-"|add:approved_leaves }}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-8">
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--teal-lt);color:var(--teal);"><i class="fas fa-ranking-star"></i></div>
+              <div><div class="sec-title">Top Leave Takers</div><div class="sec-sub">Most approved leave applications in period</div></div>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="at">
+              <thead><tr><th>#</th><th>Member</th><th>Department</th><th>Leaves Taken</th></tr></thead>
+              <tbody>
+                {% for l in top_leave_members %}
+                <tr>
+                  <td style="font-weight:700;color:var(--muted);font-size:.8rem;">{{ forloop.counter }}</td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="av av-teal">{{ l.member__name|slice:":1" }}</div>
+                      <span style="font-weight:700;">{{ l.member__name }}</span>
+                    </div>
+                  </td>
+                  <td><span class="pill pill-muted">{{ l.member__classification__name|default:"—" }}</span></td>
+                  <td><span class="pill pill-indigo">{{ l.leave_count }} leaves</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--muted);">No approved leaves in this period</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB: DEPARTMENTS ══════════════════════════════ -->
+  <div class="t-pane" id="tab-departments">
+    <div class="row g-3">
+      {% for classification, members in classifi.items %}
+      <div class="col-xl-4 col-md-6">
+        <div class="sec h-100">
+          <div class="sec-hd">
+            <div class="sec-hd-left">
+              <div class="sec-icon" style="background:var(--indigo-lt);color:var(--indigo);"><i class="fas fa-layer-group"></i></div>
+              <div><div class="sec-title">{{ classification }}</div></div>
+            </div>
+            <span class="pill pill-indigo">{{ members.values|length }} active</span>
+          </div>
+          <div>
+            {% for member_name, count in members.items %}
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1.4rem;border-bottom:1px solid #f1f5f9;">
+              <div class="d-flex align-items-center gap-2">
+                <div class="av av-indigo" style="width:30px;height:30px;font-size:.72rem;">{{ member_name|slice:":1" }}</div>
+                <span style="font-size:.84rem;font-weight:600;color:var(--ink);">{{ member_name }}</span>
+              </div>
+              <span style="font-size:.8rem;font-weight:700;color:var(--indigo);">{{ count }} days</span>
+            </div>
+            {% empty %}
+            <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.84rem;">No data</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12" style="text-align:center;padding:3rem;color:var(--muted);">No departmental data available for this period.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div><!-- /.an-page -->
+
+<!-- Toast for share -->
+<div id="shareToast" style="display:none;position:fixed;bottom:1.5rem;right:1.5rem;background:#0f172a;color:#fff;border-radius:12px;padding:.85rem 1.25rem;font-size:.85rem;font-weight:700;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,.2);">
+  <i class="fas fa-check-circle me-2" style="color:#4ade80;"></i>Link copied to clipboard!
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <script>
-    // Show/hide custom date inputs based on selection
-    document.getElementById('date_range').addEventListener('change', function() {
-        const isCustom = this.value === 'custom';
-        document.getElementById('custom_start_group').classList.toggle('d-none', !isCustom);
-        document.getElementById('custom_end_group').classList.toggle('d-none', !isCustom);
-    });
-    
-    // Initialize attendance trends chart
-    const ctx = document.getElementById('attendance-trends-chart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            datasets: [{
-                label: 'Average Attendance',
-                data: [65, 59, 80, 81, 56, 55, 40, 72, 68, 75, 82, 90],
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1,
-                fill: true,
-                backgroundColor: 'rgba(75, 192, 192, 0.1)'
-            }]
+// ── Tab switching ────────────────────────────
+function goTab(name, btn) {
+  document.querySelectorAll('.t-pane').forEach(function(p){ p.classList.remove('on'); });
+  document.querySelectorAll('.t-btn').forEach(function(b){ b.classList.remove('on'); });
+  document.getElementById('tab-' + name).classList.add('on');
+  btn.classList.add('on');
+}
+
+// ── Date range filter ─────────────────────────
+document.getElementById('date_range').addEventListener('change', function() {
+  var isCustom = this.value === 'custom';
+  document.getElementById('custom_start_group').classList.toggle('d-none', !isCustom);
+  document.getElementById('custom_end_group').classList.toggle('d-none', !isCustom);
+});
+
+{% if not nepali_enabled %}
+document.addEventListener('DOMContentLoaded', function() {
+  var engInputs = document.querySelectorAll('.eng-cal');
+  if (engInputs.length && typeof flatpickr !== 'undefined') {
+    flatpickr(engInputs, { dateFormat: "Y-m-d", maxDate: "today", disableMobile: true });
+  }
+});
+{% endif %}
+
+// ── PDF Export ────────────────────────────────
+function exportPDF() {
+  // Show all panes for print
+  document.querySelectorAll('.t-pane').forEach(function(p){ p.classList.add('on'); });
+  var el = document.getElementById('reportRoot');
+  var opt = {
+    margin: [10, 10],
+    filename: '{{ org.name|slugify }}-analytics-{{ start_date|date:"Ymd" }}.pdf',
+    image: { type: 'jpeg', quality: 0.92 },
+    html2canvas: { scale: 1.5, useCORS: true, scrollY: 0 },
+    jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+  html2pdf().set(opt).from(el).save().then(function() {
+    // Restore only active tab
+    document.querySelectorAll('.t-pane').forEach(function(p){ p.classList.remove('on'); });
+    document.querySelector('.t-pane#tab-attendance').classList.add('on');
+  });
+}
+
+// ── Share ─────────────────────────────────────
+function shareReport() {
+  navigator.clipboard.writeText(window.location.href).then(function() {
+    var t = document.getElementById('shareToast');
+    t.style.display = 'block';
+    setTimeout(function(){ t.style.display = 'none'; }, 2500);
+  });
+}
+
+// ── Charts ────────────────────────────────────
+var chartDefaults = {
+  font: { family: "'Inter', -apple-system, sans-serif" },
+  plugins: { legend: { labels: { font: { size: 12, weight: '600' }, padding: 16 } } }
+};
+Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+
+// Dept absent chart
+(function() {
+  var data = {{ dept_absent_json|safe }};
+  var ctx = document.getElementById('deptAbsentChart');
+  if (!ctx || !data.length) return;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(function(d){ return d.dept; }),
+      datasets: [{
+        label: 'Total Absent Days',
+        data: data.map(function(d){ return d.absent; }),
+        backgroundColor: 'rgba(225,29,72,.75)',
+        borderColor: '#e11d48',
+        borderWidth: 1.5,
+        borderRadius: 8,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+})();
+
+// Absent member chart
+(function() {
+  var data = {{ absent_chart_json|safe }};
+  var ctx = document.getElementById('absentChart');
+  if (!ctx || !data.length) return;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(function(d){ return d.name.split(' ')[0]; }),
+      datasets: [{
+        label: 'Absent Days',
+        data: data.map(function(d){ return d.absent; }),
+        backgroundColor: data.map(function(d){
+          return d.pct > 40 ? 'rgba(225,29,72,.8)' : d.pct > 20 ? 'rgba(215,119,6,.8)' : 'rgba(99,102,241,.75)';
+        }),
+        borderRadius: 8, borderWidth: 0,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+})();
+
+// Finance chart
+(function() {
+  var data = {{ monthly_finance_json|safe }};
+  var ctx = document.getElementById('financeChart');
+  if (!ctx || !data.length) return;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(function(d){ return d.month; }),
+      datasets: [
+        {
+          label: 'Income',
+          data: data.map(function(d){ return d.income; }),
+          backgroundColor: 'rgba(22,163,74,.75)',
+          borderColor: '#16a34a', borderWidth: 1.5, borderRadius: 8,
         },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': ' + context.raw + '%';
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    title: {
-                        display: true,
-                        text: 'Attendance Rate (%)'
-                    }
-                }
-            }
+        {
+          label: 'Expense',
+          data: data.map(function(d){ return d.expense; }),
+          backgroundColor: 'rgba(225,29,72,.65)',
+          borderColor: '#e11d48', borderWidth: 1.5, borderRadius: 8,
         }
-    });
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { font: { size: 12, weight: '600' }, padding: 16 } }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, callback: function(v){ return 'Rs.' + (v/1000).toFixed(0) + 'k'; } } },
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+})();
 </script>
 {% endblock %}

@@ -1,0 +1,64 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Master Leave Balance Report{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-0 font-weight-bolder text-dark">Master Leave Balance Report</h4>
+            <p class="text-sm text-muted mb-0">Annual allowance tracking across all personnel.</p>
+        </div>
+        <button onclick="window.print()" class="btn btn-outline-dark mb-0">
+            <i class="fas fa-print me-2"></i> Print Matrix
+        </button>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table align-items-center mb-0 table-hover">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Employee Name</th>
+                        {% for l_type in leave_types %}
+                            <th class="text-center text-uppercase text-secondary text-xs font-weight-bolder opacity-7">
+                                {{ l_type.name }}<br>
+                                <span class="text-xxs fw-normal">(Total: {{ l_type.annual_allocation }})</span>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in master_data %}
+                    <tr>
+                        <td>
+                            <div class="d-flex px-3 py-1 align-items-center">
+                                <div class="avatar avatar-sm bg-gradient-primary me-3 text-white fw-bold d-flex align-items-center justify-content-center">
+                                    {{ row.member.name|slice:":1" }}
+                                </div>
+                                <div class="d-flex flex-column justify-content-center">
+                                    <h6 class="mb-0 text-sm">{{ row.member.name }}</h6>
+                                    <p class="text-xs text-secondary mb-0">{{ row.member.classification.name }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        {% for balance in row.balances %}
+                        <td class="text-center">
+                            <h6 class="mb-0 text-sm 
+                                {% if balance.data.remaining == 0 %}text-danger
+                                {% elif balance.data.remaining <= 3 %}text-warning
+                                {% else %}text-success{% endif %}">
+                                {{ balance.data.remaining }} left
+                            </h6>
+                            <p class="text-xs text-secondary mb-0">Used: {{ balance.data.used }}</p>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}

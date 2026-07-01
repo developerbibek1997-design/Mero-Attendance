@@ -1,0 +1,143 @@
+{% extends 'dashboard.html' %}
+{% block title %}My Dashboard | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm" style="background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;overflow:hidden;">
+        <div class="card-body p-4 d-flex justify-content-between align-items-center">
+          <div>
+            <h4 class="text-white mb-1 font-weight-bolder">{{ memb.name|default:request.user.first_name }}</h4>
+            <p class="text-sm mb-0" style="color:rgba(255,255,255,.65);">{{ org.name }} &bull; Student Portal &bull; {% now "l, F j, Y" %}</p>
+          </div>
+          <div class="text-end">
+            <span class="badge bg-info text-dark px-3 py-2" style="font-size:13px;border-radius:20px;">{{ memb.get_member_type_display }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <!-- KPI Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <a href="{% url 'staff:student_bills' %}">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+          <div class="card-body p-3 text-center">
+            <div class="mb-2" style="font-size:28px;color:#ef4444;">Rs. {{ total_unpaid|floatformat:0 }}</div>
+            <p class="text-xs text-uppercase text-muted mb-0 font-weight-bold">Unpaid Bills</p>
+            <span class="badge bg-danger mt-1">{{ unpaid_count }} pending</span>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'staff:student_gaps' %}">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+          <div class="card-body p-3 text-center">
+            <div class="mb-2" style="font-size:28px;color:#f59e0b;">{{ gaps|length }}</div>
+            <p class="text-xs text-uppercase text-muted mb-0 font-weight-bold">Attendance Gaps</p>
+            <span class="badge bg-warning text-dark mt-1">This Period</span>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'staff:student_results' %}">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+          <div class="card-body p-3 text-center">
+            <div class="mb-2" style="font-size:28px;color:#10b981;">{{ published_exams|length }}</div>
+            <p class="text-xs text-uppercase text-muted mb-0 font-weight-bold">Results Available</p>
+            <span class="badge bg-success mt-1">Published</span>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'staff:apply_leave' %}">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+          <div class="card-body p-3 text-center">
+            <div class="mb-2" style="font-size:28px;color:#6366f1;">{{ pending_leaves }}</div>
+            <p class="text-xs text-uppercase text-muted mb-0 font-weight-bold">Leave Requests</p>
+            <span class="badge bg-primary mt-1">Pending</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Quick Actions -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-bolt text-warning me-2"></i>Quick Actions</h6>
+        </div>
+        <div class="card-body p-3 d-flex flex-column gap-2">
+          <a href="{% url 'staff:student_bills' %}" class="btn btn-outline-danger btn-sm text-start"><i class="fas fa-file-invoice-dollar me-2"></i>View My Bills</a>
+          <a href="{% url 'staff:student_results' %}" class="btn btn-outline-success btn-sm text-start"><i class="fas fa-graduation-cap me-2"></i>View My Results</a>
+          <a href="{% url 'staff:student_gaps' %}" class="btn btn-outline-warning btn-sm text-start"><i class="fas fa-user-times me-2"></i>My Absence Gaps</a>
+          <a href="{% url 'staff:apply_leave' %}" class="btn btn-outline-primary btn-sm text-start"><i class="fas fa-calendar-times me-2"></i>Apply for Leave</a>
+          <a href="{% url 'staff:student_complaint' %}" class="btn btn-outline-secondary btn-sm text-start"><i class="fas fa-exclamation-circle me-2"></i>File a Complaint</a>
+          <a href="{% url 'staff:my_attendance' %}" class="btn btn-outline-info btn-sm text-start"><i class="fas fa-calendar-check me-2"></i>My Attendance</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Bills -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-file-invoice-dollar text-danger me-2"></i>Recent Bills</h6>
+          <a href="{% url 'staff:student_bills' %}" class="text-xs text-primary">View All</a>
+        </div>
+        <div class="card-body p-0">
+          {% for bill in bills %}
+          <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+            <div>
+              <p class="text-sm font-weight-bold mb-0">{{ bill.invoice_number }}</p>
+              <p class="text-xs text-muted mb-0">Due: {{ bill.due_date }}</p>
+            </div>
+            <div class="text-end">
+              <p class="text-sm font-weight-bold mb-0">Rs. {{ bill.balance_due }}</p>
+              <span class="badge {% if bill.status == 'Paid' %}bg-success{% elif bill.status == 'Partial' %}bg-warning text-dark{% else %}bg-danger{% endif %} badge-sm">{{ bill.status }}</span>
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-center py-4 text-muted"><i class="fas fa-check-circle fa-2x text-success mb-2 d-block"></i><small>No outstanding bills</small></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Gaps -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-user-times text-warning me-2"></i>Absence Gaps</h6>
+          <a href="{% url 'staff:student_gaps' %}" class="text-xs text-primary">View All</a>
+        </div>
+        <div class="card-body p-0">
+          {% for gap in gaps %}
+          <div class="px-3 py-2 border-bottom">
+            <div class="d-flex justify-content-between">
+              <p class="text-sm font-weight-bold mb-0">{{ gap.course.name|default:"General" }}</p>
+              <span class="badge {% if gap.recovery_status == 'covered' %}bg-success{% elif gap.recovery_status == 'pending' %}bg-danger{% else %}bg-warning text-dark{% endif %} badge-sm">{{ gap.recovery_status|title }}</span>
+            </div>
+            <p class="text-xs text-muted mb-0">{{ gap.date }} &bull; {{ gap.topic_missed|truncatechars:40|default:"—" }}</p>
+          </div>
+          {% empty %}
+          <div class="text-center py-4 text-muted"><i class="fas fa-check-circle fa-2x text-success mb-2 d-block"></i><small>No gaps recorded</small></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "dashboard.html" %}
+{% block title %}Access Denied{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6 text-center">
+      <div style="font-size:5rem;line-height:1;color:#e11d48;margin-bottom:24px;">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <h1 style="font-size:2.5rem;font-weight:900;color:#0f172a;margin-bottom:8px;">Access Denied</h1>
+      <p style="font-size:1rem;color:#64748b;margin-bottom:32px;">
+        {% if reason %}{{ reason }}{% else %}You don't have permission to access this page.{% endif %}
+      </p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary">
+          <i class="fa-solid fa-arrow-left me-1"></i> Go Back
+        </a>
+        {% if user.user_type == '2' %}
+        <a href="{% url 'schooladmin:dashboard' %}" class="btn btn-primary">
+          <i class="fa-solid fa-gauge me-1"></i> Dashboard
+        </a>
+        {% elif user.user_type == '3' %}
+        <a href="{% url 'staff:dashboard' %}" class="btn btn-primary">
+          <i class="fa-solid fa-gauge me-1"></i> Dashboard
+        </a>
+        {% endif %}
+      </div>
+      <div style="margin-top:32px;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+        <p style="font-size:.85rem;color:#94a3b8;margin:0;">
+          If you believe this is an error, please contact your organization administrator to enable this feature
+          or grant you the required permissions.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

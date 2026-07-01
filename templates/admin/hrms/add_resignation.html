@@ -1,0 +1,31 @@
+{% extends 'dashboard.html' %}
+{% block title %}Add Resignation | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-door-open text-danger me-2"></i>Record Resignation</h6>
+          <a href="{% url 'schooladmin:resignation_list' %}" class="btn btn-outline-secondary btn-sm">Back</a>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Member *</label>
+                <select name="member_id" class="form-select" required><option value="">-- Select Member --</option>{% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Resignation Date *</label><input type="date" name="resignation_date" class="form-control" value="{{ today }}" required></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Notice Period (Days)</label><input type="number" name="notice_period_days" class="form-control" value="30"></div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Last Working Day</label><input type="date" name="last_working_day" class="form-control"><small class="text-muted">Auto-calculated if left blank (Resignation Date + Notice Period)</small></div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Reason *</label><textarea name="reason" class="form-control" rows="3" required></textarea></div>
+              <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-danger"><i class="fas fa-save me-1"></i>Save Record</button><a href="{% url 'schooladmin:resignation_list' %}" class="btn btn-outline-secondary">Cancel</a></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

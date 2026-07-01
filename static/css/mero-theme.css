@@ -1,0 +1,392 @@
+/* Mero Attendance app-wide theme overrides. */
+:root {
+    --mero-red: #dc2626;
+    --mero-red-dark: #991b1b;
+    --mero-red-soft: #fff5f5;
+    --mero-black: #111827;
+    --mero-charcoal: #1f2937;
+    --mero-muted: #6b7280;
+    --mero-gray: #f7f8fa;
+    --mero-border: #e5e7eb;
+    --mero-success: #16a34a;
+    --mero-warning: #f59e0b;
+    --mero-danger: #dc2626;
+    --mero-radius: 8px;
+    --mero-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+}
+
+body,
+.bg-gray-100 {
+    background: var(--mero-gray) !important;
+    color: var(--mero-black);
+}
+
+a,
+.text-primary,
+.text-info,
+.btn-link,
+.page-link {
+    color: var(--mero-red) !important;
+}
+
+a:hover,
+.btn-link:hover,
+.page-link:hover {
+    color: var(--mero-red-dark) !important;
+}
+
+.text-dark {
+    color: var(--mero-black) !important;
+}
+
+.text-secondary,
+.text-muted {
+    color: var(--mero-muted) !important;
+}
+
+.card,
+.dropdown-menu,
+.modal-content,
+.leave-card,
+.leave-item,
+.filter-card,
+.glass-card,
+.payslip-card,
+.payroll-card,
+.ops-card,
+.stat-card,
+.action-card,
+.staff-wrapper,
+.staff-table-card,
+.classification-page,
+.member-card,
+.reason-container,
+.action-panel,
+.infoBox,
+.serviceBox,
+.serviceBoxwhite,
+.auth-card,
+.form-design,
+.deactivated-container {
+    border-radius: var(--mero-radius) !important;
+    border: 1px solid var(--mero-border) !important;
+    box-shadow: var(--mero-shadow) !important;
+}
+
+.navbar,
+.ma-navbar,
+.sidenav {
+    background-color: #ffffff !important;
+}
+
+.ma-navbar {
+    border-bottom: 1px solid var(--mero-border) !important;
+}
+
+.ma-brand,
+.ma-nav-link {
+    color: var(--mero-black) !important;
+}
+
+.ma-nav-link:hover,
+.ma-nav-link.active {
+    color: var(--mero-red) !important;
+}
+
+.navbar-vertical .navbar-nav .nav-link.active {
+    background: var(--mero-red-soft) !important;
+    border-left: 3px solid var(--mero-red);
+    color: var(--mero-red) !important;
+}
+
+.navbar-vertical .navbar-nav .nav-link.active .icon,
+.navbar-vertical .navbar-nav .nav-link:hover .icon {
+    background: var(--mero-red) !important;
+    color: #ffffff !important;
+}
+
+.navbar-vertical .navbar-nav .nav-link.active .icon i,
+.navbar-vertical .navbar-nav .nav-link:hover .icon i {
+    color: #ffffff !important;
+}
+
+.icon-shape i,
+.text-info i,
+.text-primary i {
+    color: inherit !important;
+}
+
+.btn-primary,
+.btn.bg-gradient-primary,
+.btn-premium-primary,
+.btn-ops-primary,
+.btn-payroll,
+.ma-btn-primary,
+.about-btn-primary,
+.auth-btn.btn-primary {
+    background: var(--mero-red) !important;
+    border-color: var(--mero-red) !important;
+    color: #ffffff !important;
+    box-shadow: 0 8px 18px rgba(220, 38, 38, 0.18) !important;
+}
+
+.btn-primary:hover,
+.btn.bg-gradient-primary:hover,
+.btn-premium-primary:hover,
+.btn-ops-primary:hover,
+.btn-payroll:hover,
+.ma-btn-primary:hover,
+.about-btn-primary:hover,
+.auth-btn.btn-primary:hover {
+    background: var(--mero-red-dark) !important;
+    border-color: var(--mero-red-dark) !important;
+    color: #ffffff !important;
+}
+
+.btn-outline-primary {
+    border-color: var(--mero-red) !important;
+    color: var(--mero-red) !important;
+}
+
+.btn-outline-primary:hover {
+    background: var(--mero-red) !important;
+    color: #ffffff !important;
+}
+
+.btn-info,
+.btn.bg-gradient-info,
+.btn-dark,
+.btn.bg-gradient-dark,
+.btn-ops-dark {
+    background: var(--mero-black) !important;
+    border-color: var(--mero-black) !important;
+    color: #ffffff !important;
+}
+
+.btn-success,
+.btn.bg-gradient-success,
+.btn-premium-success {
+    background: var(--mero-success) !important;
+    border-color: var(--mero-success) !important;
+    color: #ffffff !important;
+}
+
+.btn-warning,
+.btn.bg-gradient-warning,
+.btn-premium-warning {
+    background: var(--mero-warning) !important;
+    border-color: var(--mero-warning) !important;
+    color: var(--mero-black) !important;
+}
+
+.bg-primary,
+.badge.bg-primary,
+.bg-gradient-primary,
+.badge.bg-gradient-primary,
+.progress-bar.bg-gradient-primary {
+    background: var(--mero-red) !important;
+    color: #ffffff !important;
+}
+
+.bg-info,
+.badge.bg-info,
+.bg-gradient-info,
+.badge.bg-gradient-info,
+.progress-bar.bg-gradient-info {
+    background: var(--mero-black) !important;
+    color: #ffffff !important;
+}
+
+.bg-dark,
+.badge.bg-dark,
+.bg-gradient-dark,
+.badge.bg-gradient-dark {
+    background: var(--mero-black) !important;
+    color: #ffffff !important;
+}
+
+.bg-danger,
+.badge.bg-danger,
+.bg-gradient-danger,
+.badge.bg-gradient-danger,
+.progress-bar.bg-gradient-danger {
+    background: var(--mero-danger) !important;
+    color: #ffffff !important;
+}
+
+.bg-success,
+.badge.bg-success,
+.bg-gradient-success,
+.badge.bg-gradient-success,
+.progress-bar.bg-gradient-success {
+    background: var(--mero-success) !important;
+    color: #ffffff !important;
+}
+
+.bg-warning,
+.badge.bg-warning,
+.bg-gradient-warning,
+.badge.bg-gradient-warning,
+.progress-bar.bg-gradient-warning {
+    background: var(--mero-warning) !important;
+    color: var(--mero-black) !important;
+}
+
+.avatar-icon,
+.avatar-circle,
+.avatar-initials,
+.policy-icon,
+.section-icon,
+.icon-box,
+.ma-brand-logo,
+.auth-icon,
+.bg-gradient-primary.icon,
+.bg-gradient-info.icon,
+.icon-shape.bg-gradient-primary,
+.icon-shape.bg-gradient-info,
+.icon-sm.bg-gradient-primary {
+    background: linear-gradient(135deg, var(--mero-black), var(--mero-red)) !important;
+    color: #ffffff !important;
+}
+
+.avatar-initials {
+    color: #ffffff !important;
+}
+
+.form-control,
+.form-select,
+.custom-input,
+.roster-search,
+.auth-card input {
+    border-color: var(--mero-border) !important;
+    border-radius: var(--mero-radius) !important;
+}
+
+.form-control:focus,
+.form-select:focus,
+.custom-input:focus,
+.roster-search:focus,
+.editable-cell:focus,
+.auth-card input:focus {
+    border-color: var(--mero-red) !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 38, 38, 0.12) !important;
+    outline: none !important;
+}
+
+.form-check-input:checked,
+.custom-switch-xl .form-check-input:checked {
+    background-color: var(--mero-red) !important;
+    border-color: var(--mero-red) !important;
+}
+
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link,
+.activeHome {
+    background: var(--mero-red) !important;
+    border-color: var(--mero-red) !important;
+    color: #ffffff !important;
+}
+
+.alert-primary,
+.alert-info,
+.callout-info {
+    background: var(--mero-red-soft) !important;
+    border-color: #fecaca !important;
+    color: var(--mero-black) !important;
+}
+
+.table thead th,
+.table-premium th,
+.table-ops th,
+.table-payroll th {
+    background: #f9fafb !important;
+    color: var(--mero-charcoal) !important;
+    letter-spacing: 0 !important;
+}
+
+.table thead,
+.card-header-premium,
+.modal-header-premium {
+    background: linear-gradient(135deg, var(--mero-black), var(--mero-red)) !important;
+    color: #ffffff !important;
+}
+
+.premium-staff-box.is-active,
+.selectable-card.active,
+.pricing-card.featured,
+.member-card.selected {
+    background: var(--mero-red-soft) !important;
+    border-color: var(--mero-red) !important;
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.12) !important;
+}
+
+.member-card:hover {
+    border-color: var(--mero-red) !important;
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.12) !important;
+}
+
+.stat-number {
+    color: var(--mero-red) !important;
+}
+
+.reason-container,
+.gap-alert-card {
+    border-left-color: var(--mero-red) !important;
+}
+
+.dashboard-header,
+.roster-header,
+.module-card,
+.ma-footer,
+.cta-section,
+.about-dark-band,
+.pricing-dark-band {
+    background: linear-gradient(135deg, var(--mero-black), #030712) !important;
+    color: #ffffff !important;
+}
+
+.hero-section::before,
+.ma-page,
+.about-page,
+.pricing-page,
+.contact-page,
+.auth-wrapper {
+    background-color: var(--mero-gray) !important;
+}
+
+.shadow-primary,
+.shadow-info,
+.shadow-success,
+.shadow-warning,
+.shadow-danger,
+.shadow-dark {
+    box-shadow: var(--mero-shadow) !important;
+}
+
+.spinner-grow.text-info,
+.spinner-border.text-info {
+    color: var(--mero-red) !important;
+}
+
+.date-block .month {
+    color: var(--mero-red) !important;
+}
+
+[style*="#2563eb"],
+[style*="#3b82f6"],
+[style*="#5e72e4"],
+[style*="#667eea"],
+[style*="#764ba2"],
+[style*="#4e4376"],
+[style*="#2b5876"] {
+    color: var(--mero-red) !important;
+    border-color: var(--mero-red) !important;
+}
+
+@media print {
+    .card,
+    .payslip-card,
+    .stat-card {
+        box-shadow: none !important;
+    }
+}

@@ -1,0 +1,101 @@
+{% extends 'dashboard.html' %}
+{% block title %}{{ mem.name }} Profile | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+.profile-wrap{padding:1rem 1.5rem 2rem;background:#f8fafc;min-height:100vh}
+.hero{background:#111827;color:#fff;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1rem}.hero h4{color:#fff;margin:0;font-weight:800}.hero p{color:#cbd5e1;margin:.25rem 0 0;font-size:.84rem}
+.tabs{display:flex;gap:.4rem;overflow-x:auto;margin-bottom:1rem}.tabs a{white-space:nowrap;background:#fff;border:1px solid #e2e8f0;color:#334155;border-radius:8px;padding:.55rem .8rem;font-size:.8rem;font-weight:800;text-decoration:none}.tabs a.active{background:#e11d48;color:#fff;border-color:#e11d48}
+.panel{background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:1rem}.panel-hd{padding:.9rem 1rem;border-bottom:1px solid #e2e8f0;font-weight:800;color:#111827}
+.stat{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;height:100%}.stat-label{font-size:.68rem;text-transform:uppercase;color:#64748b;font-weight:800;letter-spacing:.04em}.stat-value{font-size:1.35rem;font-weight:900;color:#111827}
+.tbl{width:100%;border-collapse:collapse}.tbl th{font-size:.66rem;text-transform:uppercase;color:#64748b;background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:.7rem .8rem;text-align:left}.tbl td{font-size:.82rem;border-bottom:1px solid #f1f5f9;padding:.75rem .8rem;vertical-align:middle}.tbl tr:last-child td{border-bottom:none}
+.info-row{display:flex;justify-content:space-between;gap:1rem;border-bottom:1px solid #f1f5f9;padding:.65rem 0}.info-row:last-child{border-bottom:none}.info-row span{color:#64748b;font-size:.82rem}.info-row strong{font-size:.84rem;text-align:right}
+@media(max-width:768px){.profile-wrap{padding:.75rem}.tbl{min-width:760px}}
+</style>
+
+<div class="profile-wrap">
+  <div class="hero d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+      <div class="text-uppercase" style="font-size:.68rem;letter-spacing:.08em;color:#fecdd3;font-weight:800;">{{ mem.classification.name|default:"Unclassified" }}{% if mem.section %} / {{ mem.section.name }}{% endif %}</div>
+      <h4>{{ mem.name }}</h4>
+      <p>Roll / ID: {{ mem.card|default:"-" }} | Guardian: {{ mem.guardian_name|default:"-" }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-light btn-sm" href="{% url 'schooladmin:student_edit' mem.id %}">Edit</a>
+      {% if mem.classification_id %}<a class="btn btn-outline-light btn-sm" href="{% url 'schooladmin:classification_detail' mem.classification_id %}?tab=students">Class Hub</a>{% endif %}
+      <a class="btn btn-outline-light btn-sm" href="{% url 'schooladmin:bulk_bill_send' %}?classification={{ mem.classification_id|default:'' }}">Send Bill</a>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <a class="{% if tab == 'overview' %}active{% endif %}" href="?tab=overview">Overview</a>
+    <a class="{% if tab == 'billing' %}active{% endif %}" href="?tab=billing">Billing</a>
+    <a class="{% if tab == 'results' %}active{% endif %}" href="?tab=results">Results</a>
+    <a class="{% if tab == 'attendance' %}active{% endif %}" href="?tab=attendance">Attendance</a>
+    <a class="{% if tab == 'documents' %}active{% endif %}" href="?tab=documents">Documents</a>
+  </nav>
+
+  {% if tab == 'overview' %}
+  <div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="stat"><div class="stat-label">Monthly Payable</div><div class="stat-value">Rs. {{ final_fee|floatformat:0 }}</div></div></div>
+    <div class="col-md-3"><div class="stat"><div class="stat-label">Total Billed</div><div class="stat-value">Rs. {{ total_billed|floatformat:0 }}</div></div></div>
+    <div class="col-md-3"><div class="stat"><div class="stat-label">Paid</div><div class="stat-value text-success">Rs. {{ total_paid|floatformat:0 }}</div></div></div>
+    <div class="col-md-3"><div class="stat"><div class="stat-label">Due</div><div class="stat-value text-danger">Rs. {{ total_due|floatformat:0 }}</div></div></div>
+  </div>
+  <div class="row g-3">
+    <div class="col-lg-5">
+      <div class="panel"><div class="panel-hd">Basic Details</div><div class="p-3">
+        <div class="info-row"><span>Status</span><strong>{{ mem.get_status_display }}</strong></div>
+        <div class="info-row"><span>Classification</span><strong>{{ mem.classification.name|default:"-" }}</strong></div>
+        <div class="info-row"><span>Section</span><strong>{{ mem.section.name|default:"-" }}</strong></div>
+        <div class="info-row"><span>Admission Date</span><strong>{{ mem.admission_date|default:"-" }}</strong></div>
+        <div class="info-row"><span>Phone</span><strong>{{ mem.phone|default:"-" }}</strong></div>
+        <div class="info-row"><span>Email</span><strong>{{ mem.email|default:"-" }}</strong></div>
+        <div class="info-row"><span>Address</span><strong>{{ mem.address|default:"-" }}</strong></div>
+      </div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="panel"><div class="panel-hd">Guardian</div><div class="p-3">
+        <div class="info-row"><span>Name</span><strong>{{ mem.guardian_name|default:"-" }}</strong></div>
+        <div class="info-row"><span>Phone</span><strong>{{ mem.guardian_phone|default:"-" }}</strong></div>
+        <div class="info-row"><span>Email</span><strong>{{ mem.guardian_email|default:"-" }}</strong></div>
+      </div></div>
+    </div>
+    <div class="col-lg-3">
+      <div class="panel"><div class="panel-hd">Attendance</div><div class="p-3">
+        <div class="stat border-0 p-0"><div class="stat-label">Present Days in Last 30</div><div class="stat-value">{{ att_count }}</div></div>
+      </div></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-hd">Courses / Subjects</div>
+    <div class="table-responsive"><table class="tbl"><thead><tr><th>Name</th><th>Code</th><th>Scope</th><th>Fee</th><th>Marks</th></tr></thead><tbody>{% for subject in subjects %}<tr><td><strong>{{ subject.name }}</strong></td><td>{{ subject.code|default:"-" }}</td><td>{{ subject.section.name|default:"Whole classification" }}</td><td>Rs. {{ subject.monthly_fee|floatformat:0 }}</td><td>{{ subject.pass_marks|floatformat:0 }} / {{ subject.full_marks|floatformat:0 }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No subjects assigned.</td></tr>{% endfor %}</tbody></table></div>
+  </div>
+  {% endif %}
+
+  {% if tab == 'billing' %}
+  <div class="panel">
+    <div class="panel-hd d-flex justify-content-between align-items-center flex-wrap gap-2">Monthly Bill History<a class="btn btn-sm btn-outline-primary" href="{% url 'schooladmin:bulk_bill_generate' %}?classification={{ mem.classification_id|default:'' }}&preview=1">Generate Bill</a></div>
+    <div class="table-responsive"><table class="tbl"><thead><tr><th>Invoice</th><th>Month</th><th>Type</th><th>Total</th><th>Paid</th><th>Due</th><th>Status</th><th>Sent</th><th>Action</th></tr></thead><tbody>
+      {% for bill in bills %}<tr><td><strong>{{ bill.invoice_number }}</strong></td><td>{{ bill.billing_month|default:"-" }}/{{ bill.billing_year|default:"-" }}</td><td>{{ bill.get_billing_type_display|default:"Manual" }}</td><td>Rs. {{ bill.total_amount }}</td><td>Rs. {{ bill.amount_paid }}</td><td class="{% if bill.balance_due > 0 %}text-danger{% endif %}">Rs. {{ bill.balance_due }}</td><td>{{ bill.status }}</td><td>{% if bill.is_sent %}Yes{% else %}No{% endif %}</td><td><a class="btn btn-xs btn-outline-primary" href="{% url 'schooladmin:bill_detail' bill.id %}">Open</a></td></tr>{% empty %}<tr><td colspan="9" class="text-center text-muted py-4">No bills yet.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+  {% endif %}
+
+  {% if tab == 'results' %}
+  <div class="panel">
+    <div class="panel-hd d-flex justify-content-between align-items-center flex-wrap gap-2">Result History<a class="btn btn-sm btn-outline-primary" href="{% url 'schooladmin:bulk_result_send' %}?classification={{ mem.classification_id|default:'' }}">Send Result</a></div>
+    <div class="table-responsive"><table class="tbl"><thead><tr><th>Exam</th><th>Subject</th><th>Marks</th><th>Grade</th><th>Status</th><th>Marksheet</th></tr></thead><tbody>
+      {% for result in results %}<tr><td>{{ result.exam.name }}</td><td>{{ result.subject.name }}</td><td>{{ result.obtained_marks }} / {{ result.subject.full_marks }}</td><td>{{ result.grade|default:"-" }}</td><td>{% if result.is_absent %}Absent{% elif result.is_passed %}Pass{% else %}Fail{% endif %}</td><td><a class="btn btn-xs btn-outline-primary" target="_blank" href="{% url 'schooladmin:marksheet' result.exam_id mem.id %}">Print</a></td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No result history yet.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+  {% endif %}
+
+  {% if tab == 'attendance' %}
+  <div class="panel"><div class="panel-hd">Attendance Gaps</div><div class="table-responsive"><table class="tbl"><thead><tr><th>Date</th><th>Course</th><th>Topic</th><th>Status</th></tr></thead><tbody>{% for gap in gaps %}<tr><td>{{ gap.date }}</td><td>{{ gap.course.name|default:"-" }}</td><td>{{ gap.topic_missed }}</td><td>{{ gap.status|title }}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted py-4">No recent attendance gaps.</td></tr>{% endfor %}</tbody></table></div></div>
+  {% endif %}
+
+  {% if tab == 'documents' %}
+  <div class="panel"><div class="panel-hd">Documents</div><div class="table-responsive"><table class="tbl"><thead><tr><th>Title</th><th>Type</th><th>Uploaded</th><th>File</th></tr></thead><tbody>{% for doc in docs %}<tr><td>{{ doc.title }}</td><td>{{ doc.document_type }}</td><td>{{ doc.uploaded_at }}</td><td>{% if doc.file %}<a class="btn btn-xs btn-outline-primary" href="{{ doc.file.url }}" target="_blank">Open</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted py-4">No documents uploaded.</td></tr>{% endfor %}</tbody></table></div></div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'dashboard.html' %}
+{% block title %}WiFi Check-in | Staff Portal{% endblock title %}
+
+{% block content %}
+<style>
+    /* Cool Radar Animation for the UI */
+    .radar-container {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        margin: 0 auto 30px auto;
+    }
+    .radar-core {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 60px;
+        height: 60px;
+        background: #fb6340;
+        border-radius: 50%;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(251, 99, 64, 0.4);
+    }
+    .radar-wave {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 60px;
+        height: 60px;
+        background: rgba(251, 99, 64, 0.3);
+        border-radius: 50%;
+        z-index: 1;
+        animation: pulse-wave 2s infinite cubic-bezier(0.36, 0.11, 0.89, 0.32);
+    }
+    .radar-wave:nth-child(2) { animation-delay: 0.5s; }
+    .radar-wave:nth-child(3) { animation-delay: 1s; }
+
+    @keyframes pulse-wave {
+        0% { width: 60px; height: 60px; opacity: 1; }
+        100% { width: 250px; height: 250px; opacity: 0; }
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 text-center">
+            
+            <div class="card shadow-sm border-0 p-5">
+                
+                <div class="radar-container">
+                    <div class="radar-wave"></div>
+                    <div class="radar-wave"></div>
+                    <div class="radar-wave"></div>
+                    <div class="radar-core">
+                        <i class="fas fa-wifi text-white text-3xl"></i>
+                    </div>
+                </div>
+
+                <h3 class="font-weight-bolder text-dark mb-3">Network Verification Required</h3>
+                
+                <div class="alert alert-light border text-start mb-4">
+                    <p class="text-sm mb-0 text-dark">
+                        <i class="fas fa-shield-alt text-warning me-2"></i> <strong>Browser Security Notice:</strong><br>
+                        Standard web browsers hide your WiFi network name for your privacy. To verify you are connected to the <strong>{{ org.name }}</strong> office network, you must use our mobile application.
+                    </p>
+                </div>
+
+                <div class="d-grid gap-3">
+                    <a href="meroattendance://wifi" class="btn bg-gradient-warning btn-lg mb-0">
+                        <i class="fas fa-mobile-alt me-2"></i> Open Mobile App to Check-in
+                    </a>
+                    
+                    <a href="{% url 'staff:dashboard' %}" class="btn btn-light mb-0">
+                        Cancel & Return to Dashboard
+                    </a>
+                </div>
+
+            </div>
+            
+            <p class="text-xs text-muted mt-4">Don't have the app? Download it from the App Store or Google Play.</p>
+            
+        </div>
+    </div>
+</div>
+{% endblock content %}

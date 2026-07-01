@@ -1,0 +1,49 @@
+{% extends 'dashboard.html' %}
+{% block title %}Events | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0">Events</h4>
+    <a href="{% url 'schooladmin:add_event' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i>Add Event</a>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3"><label class="text-xs font-weight-bold">Status</label>
+          <select name="status" class="form-select form-select-sm"><option value="">All</option>{% for val,label in status_choices %}<option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-3"><label class="text-xs font-weight-bold">Type</label>
+          <select name="event_type" class="form-select form-select-sm"><option value="">All</option>{% for val,label in event_types %}<option value="{{ val }}" {% if selected_type == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-3 d-flex gap-1 align-self-end"><button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-filter me-1"></i>Filter</button><a href="{% url 'schooladmin:event_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a></div>
+      </form>
+    </div>
+  </div>
+  <div class="row g-3">
+    {% for event in events %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <span class="badge bg-info text-xs mb-1">{{ event.get_event_type_display }}</span>
+              <h6 class="font-weight-bolder mb-0">{{ event.title }}</h6>
+            </div>
+            <span class="badge {% if event.status == 'upcoming' %}bg-primary{% elif event.status == 'ongoing' %}bg-success{% elif event.status == 'completed' %}bg-secondary{% else %}bg-danger{% endif %}">{{ event.get_status_display }}</span>
+          </div>
+          <div class="text-sm text-muted mb-2"><i class="fas fa-calendar me-1"></i>{{ event.start_date }} — {{ event.end_date }}</div>
+          {% if event.location %}<div class="text-sm text-muted mb-2"><i class="fas fa-map-marker-alt me-1"></i>{{ event.location }}</div>{% endif %}
+          {% if event.branch %}<div class="text-sm text-muted mb-2"><i class="fas fa-code-branch me-1"></i>{{ event.branch.name }}</div>{% endif %}
+          {% if event.description %}<p class="text-sm text-muted mb-3">{{ event.description|truncatechars:80 }}</p>{% endif %}
+          <div class="d-flex gap-2 mt-3">
+            <a href="{% url 'schooladmin:event_detail' event.pk %}" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-eye me-1"></i>View</a>
+            <form method="post" action="{% url 'schooladmin:delete_event' event.pk %}" class="d-inline" onsubmit="return confirm('Delete event?')">{% csrf_token %}<button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button></form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12"><div class="card border-0 shadow-sm"><div class="card-body text-center py-5"><i class="fas fa-calendar-times fa-3x text-muted mb-3 d-block"></i><h6 class="text-muted">No events found.</h6><a href="{% url 'schooladmin:add_event' %}" class="btn btn-primary btn-sm mt-2">Create First Event</a></div></div></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

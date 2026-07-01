@@ -1,201 +1,355 @@
 {% extends 'dashboard.html' %}
 {% load static %}
-{% block title %}
-    Edit Device |Attendance Management System
-{% endblock title %}
-
+{% block title %}Edit Organization | Attendance Management System{% endblock %}
 
 {% block content %}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    .form-control, .form-select { border: 1px solid #dee2e6; padding: 0.5rem 0.75rem; border-radius: 0.375rem; transition: all 0.2s ease; }
+    .form-control:focus, .form-select:focus { border-color: #5e72e4; box-shadow: 0 0 0 0.2rem rgba(94, 114, 228, 0.25); }
+    .settings-card { border: 1px solid #e9ecef; border-radius: 0.5rem; background: #f8f9fa; padding: 1.5rem; height: 100%; }
+    .form-switch .form-check-input { width: 2.5em; height: 1.25em; cursor: pointer; }
+    .form-switch .form-check-label { font-weight: 500; margin-left: 0.5rem; cursor: pointer; padding-top: 0.15rem; }
+    .profile-img-container { width: 100%; height: 200px; object-fit: cover; border-radius: 0.5rem; margin-bottom: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+</style>
 
-    <!-- Before closing body -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <h6>Edit Organization</h6>
-    <hr>
-    {% for i in messages  %}
-    <div class="alert alert-light alert-dismissible fade show" role="alert">
-        {{i}}
+<div class="container-fluid py-4">
+    {% for message in messages %}
+    <div class="alert alert-info alert-dismissible fade show text-white" role="alert">
+        {{ message }}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     {% endfor %}
+
     <div class="row">
-        <div class="col-12 col-md-4">
-            <div class="card p-5">
-                {% if org.image %}
-                <img src="{{org.image.url}}" alt="Mero Attendance" srcset="" style="height: auto;width:100%">
-                {%else%}
-                <img src="{%static 'res/click.png'%}" alt="Mero Attendance" srcset="" style="height: auto;width:100%">
-                {% endif %}
-                <div class="text-center">
-                    <h5>Name: {{org.name}}</h5>
-                    <p>Serial Key: {{org.serial_key}}</p>
-                    <p>Expire On: {{org.expire_on}}</p>
-                    <p>Member Limit: {{org.member_limit}}</p>
-                </div>
-                <div class="d-block">
+        <!-- Sidebar Summary -->
+        <div class="col-12 col-xl-3 col-lg-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    {% if org.image %}
+                        <img src="{{ org.image.url }}" alt="{{ org.name }}" class="profile-img-container">
+                    {% else %}
+                        <img src="{% static 'res/click.png' %}" alt="Placeholder" class="profile-img-container">
+                    {% endif %}
                     
-                    <button class="btn btn-danger btn-block" style="width: 100%;" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
-                        Delete
+                    <h5 class="mt-3 mb-1">{{ org.name }}</h5>
+                    <span class="badge bg-gradient-success mb-3">{{ org.get_category_display }}</span>
+                    
+                    <ul class="list-group list-group-flush text-start mt-3">
+                        <li class="list-group-item px-0 border-0 text-sm"><strong class="text-dark">Member Limit:</strong> {{ org.member_limit }}</li>
+                        <li class="list-group-item px-0 border-0 text-sm"><strong class="text-dark">Serial Key:</strong> {{ org.serial_key }}</li>
+                        <li class="list-group-item px-0 border-0 text-sm"><strong class="text-dark">Expires:</strong> {{ org.expire_on|date:"M d, Y" }}</li>
+                    </ul>
+                    
+                    <button type="button" class="btn btn-outline-danger w-100 mt-4" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="ni ni-fat-remove me-1"></i> Delete Organization
                     </button>
-            
-                    <!-- Modal -->
-                    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-                        <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                            <h5 class="modal-title" id="staticBackdropLabel">Delete {{org.name}}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                          
-                            </div>
-                            <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <a href="{%url 'superadmin:deleteOrg' org.id%}">
-                                <button type="button" class="btn btn-danger">Procced</button>
-                            </a>
-                            </div>
-                        </div>
-                        </div>
-                    </div>
                 </div>
-               
-                
             </div>
         </div>
-        <div class="col-12 col-md-8">
-            <div class="container-fluid py-4">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card my-4">
-                            <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
-                                <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3">
-                                    <h6 class="text-white text-capitalize ps-3">Add Organization</h6>
-                                </div>
-                            </div>
-                            <div class="card-body px-4 pb-2">
-                                {% for message in messages %}
-                                <div class="alert alert-light alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                                {% endfor %}
 
-                                <form method="post" class="pt-3">
-                                    {% csrf_token %}
+        <!-- Main Form Area -->
+        <div class="col-12 col-xl-9 col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3 d-flex justify-content-between align-items-center px-4">
+                        <h6 class="text-white text-capitalize mb-0"><i class="ni ni-settings me-2"></i>Edit Configuration</h6>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3">General Information</h6>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label font-weight-bold">Organization Name</label>
+                                {{ form.name }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label font-weight-bold">Category</label>
+                                {{ form.category }}
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label font-weight-bold">Address</label>
+                                {{ form.address }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label font-weight-bold">Member Limit</label>
+                                {{ form.member_limit }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label font-weight-bold">License Expiry Date</label>
+                                {{ form.expire_on }}
+                            </div>
+                        </div>
+
+                        <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3">License & Keys</h6>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label font-weight-bold text-primary">Serial Key</label>
+                                {{ form.serial_key }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label font-weight-bold text-success">New Serial Key</label>
+                                {{ form.new_serial_key }}
+                            </div>
+                        </div>
+
+                        <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3">Features & Attendance Methods</h6>
+                        <div class="row mt-2">
+                            <!-- Attendance Methods Group -->
+                            <div class="col-md-6 mb-4">
+                                <div class="settings-card shadow-none">
+                                    <h6 class="mb-3 text-info"><i class="ni ni-badge me-2"></i>Attendance Modes</h6>
                                     
-                                    <div class="row">
-                                        <!-- Regular Fields -->
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
-                                                {{ form.name }}
-                                                {% if form.name.help_text %}
-                                                <small class="form-text text-muted">{{ form.name.help_text }}</small>
-                                                {% endif %}
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label for="{{ form.expire_on.id_for_label }}" class="form-label">{{ form.expire_on.label }}</label>
-                                                {{ form.expire_on }}
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label }}</label>
-                                                {{ form.address }}
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="{{ form.member_limit.id_for_label }}" class="form-label">{{ form.member_limit.label }}</label>
-                                                {{ form.member_limit }}
-                                                {% if form.member_limit.help_text %}
-                                                <small class="form-text text-muted">{{ form.member_limit.help_text }}</small>
-                                                {% endif %}
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label for="{{ form.serial_key.id_for_label }}" class="form-label">{{ form.serial_key.label }}</label>
-                                                {{ form.serial_key }}
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label for="{{ form.new_serial_key.id_for_label }}" class="form-label">{{ form.new_serial_key.label }}</label>
-                                                {{ form.new_serial_key }}
-                                            </div>
-                                        </div>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.manual_attendance }}
+                                        <label class="form-check-label" for="{{ form.manual_attendance.id_for_label }}">Manual Attendance</label>
                                     </div>
-
-                                    <!-- Toggle Switches -->
-                                    <div class="row mt-4">
-                                        <div class="col-md-6">
-                                            <div class="form-check form-switch mb-3">
-                                                {{ form.mutifeature_enable }}
-                                                <label class="form-check-label" for="{{ form.mutifeature_enable.id_for_label }}">
-                                                    {{ form.mutifeature_enable.label }}
-                                                </label>
-                                                {% if form.mutifeature_enable.help_text %}
-                                                <small class="form-text text-muted d-block">{{ form.mutifeature_enable.help_text }}</small>
-                                                {% endif %}
-                                            </div>
-
-                                            <div class="form-check form-switch mb-3">
-                                                {{ form.location_based }}
-                                                <label class="form-check-label" for="{{ form.location_based.id_for_label }}">
-                                                    {{ form.location_based.label }}
-                                                </label>
-                                                {% if form.location_based.help_text %}
-                                                <small class="form-text text-muted d-block">{{ form.location_based.help_text }}</small>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6">
-                                            <div class="form-check form-switch mb-3">
-                                                {{ form.qr_based }}
-                                                <label class="form-check-label" for="{{ form.qr_based.id_for_label }}">
-                                                    {{ form.qr_based.label }}
-                                                </label>
-                                                {% if form.qr_based.help_text %}
-                                                <small class="form-text text-muted d-block">{{ form.qr_based.help_text }}</small>
-                                                {% endif %}
-                                            </div>
-
-                                            <div class="form-check form-switch mb-3">
-                                                {{ form.auto_checkin }}
-                                                <label class="form-check-label" for="{{ form.auto_checkin.id_for_label }}">
-                                                    {{ form.auto_checkin.label }}
-                                                </label>
-                                                {% if form.auto_checkin.help_text %}
-                                                <small class="form-text text-muted d-block">{{ form.auto_checkin.help_text }}</small>
-                                                {% endif %}
-                                            </div>
-
-                                            <div class="form-check form-switch mb-3">
-                                                {{ form.activate }}
-                                                <label class="form-check-label" for="{{ form.activate.id_for_label }}">
-                                                    {{ form.activate.label }}
-                                                </label>
-                                            </div>
-                                        </div>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.qr_based }}
+                                        <label class="form-check-label" for="{{ form.qr_based.id_for_label }}">QR Code Based</label>
                                     </div>
-
-                                    <div class="text-center mt-4">
-                                        <button type="submit" class="btn btn-lg btn-primary">Edit Organization</button>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.rfid_based }}
+                                        <label class="form-check-label" for="{{ form.rfid_based.id_for_label }}">RFID Based (Hardware)</label>
                                     </div>
-                                </form>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.location_based }}
+                                        <label class="form-check-label" for="{{ form.location_based.id_for_label }}">Location Based (GPS)</label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.auto_checkin }}
+                                        <label class="form-check-label" for="{{ form.auto_checkin.id_for_label }}">Auto Check-In</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Platform Settings Group -->
+                            <div class="col-md-6 mb-4">
+                                <div class="settings-card shadow-none">
+                                    <h6 class="mb-3 text-warning"><i class="ni ni-settings-gear-65 me-2"></i>Platform Settings</h6>
+                                    
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.activate }}
+                                        <label class="form-check-label text-success font-weight-bold" for="{{ form.activate.id_for_label }}">Account Active</label>
+                                    </div>
+                                    <hr class="horizontal dark my-3">
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.free_demo }}
+                                        <label class="form-check-label" for="{{ form.free_demo.id_for_label }}">Free Demo Account</label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.nepali_date }}
+                                        <label class="form-check-label" for="{{ form.nepali_date.id_for_label }}">Use Nepali Date (BS)</label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.course_based_attendance }}
+                                        <label class="form-check-label" for="{{ form.course_based_attendance.id_for_label }}">Course Based Logic</label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.mutifeature_enable }}
+                                        <label class="form-check-label" for="{{ form.mutifeature_enable.id_for_label }}">Enable Multi-Features</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+
+                        <hr class="horizontal dark my-4">
+                        <h6 class="text-uppercase text-body text-xs font-weight-bolder mb-3"><i class="fas fa-cubes me-2 text-success"></i>Module Features</h6>
+                        <p class="text-xs text-muted mb-3">Enable the modules this organization is subscribed to. Changes take effect immediately on the admin and staff dashboards.</p>
+                        <div class="row g-3 mb-4">
+
+                          {% with feature_flags=True %}
+                          {% for flag_field, icon_html, label, desc in feature_list|default:"" %}{% endfor %}
+
+                          <div class="col-md-4 col-6">
+                            <div class="feature-card p-3 rounded border h-100">
+                              <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="feature-icon" style="background:#dcfce7;"><i class="fas fa-chart-line text-success"></i></div>
+                                <span class="text-sm font-weight-bold">Finance</span>
+                              </div>
+                              <p class="text-xs text-muted mb-2">Income & Expense</p>
+                              <div class="form-check form-switch mb-0">{{ form.feature_finance }}<label class="form-check-label text-xs" for="{{ form.feature_finance.id_for_label }}">Enable</label></div>
+                            </div>
+                          </div>
+
+                          <div class="col-md-4 col-6">
+                            <div class="feature-card p-3 rounded border h-100">
+                              <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="feature-icon" style="background:#dbeafe;"><i class="fas fa-file-invoice text-primary"></i></div>
+                                <span class="text-sm font-weight-bold">Billing</span>
+                              </div>
+                              <p class="text-xs text-muted mb-2">Student invoices</p>
+                              <div class="form-check form-switch mb-0">{{ form.feature_billing }}<label class="form-check-label text-xs" for="{{ form.feature_billing.id_for_label }}">Enable</label></div>
+                            </div>
+                          </div>
+
+                          <div class="col-md-4 col-6">
+                            <div class="feature-card p-3 rounded border h-100">
+                              <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="feature-icon" style="background:#fef9c3;"><i class="fas fa-boxes text-warning"></i></div>
+                                <span class="text-sm font-weight-bold">Stock</span>
+                              </div>
+                              <p class="text-xs text-muted mb-2">Inventory management</p>
+                              <div class="form-check form-switch mb-0">{{ form.feature_stock }}<label class="form-check-label text-xs" for="{{ form.feature_stock.id_for_label }}">Enable</label></div>
+                            </div>
+                          </div>
+
+                          <div class="col-md-4 col-6">
+                            <div class="feature-card p-3 rounded border h-100">
+                              <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="feature-icon" style="background:#ede9fe;"><i class="fas fa-tasks" style="color:#8b5cf6;"></i></div>
+                                <span class="text-sm font-weight-bold">Tasks</span>
+                              </div>
+                              <p class="text-xs text-muted mb-2">Task assignment</p>
+                              <div class="form-check form-switch mb-0">{{ form.feature_tasks }}<label class="form-check-label text-xs" for="{{ form.feature_tasks.id_for_label }}">Enable</label></div>
+                            </div>
+                          </div>
+
+                          <div class="col-md-4 col-6">
+                            <div class="feature-card p-3 rounded border h-100">
+                              <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="feature-icon" style="background:#fee2e2;"><i class="fas fa-graduation-cap text-danger"></i></div>
+                                <span class="text-sm font-weight-bold">Results</span>
+                              </div>
+                              <p class="text-xs text-muted mb-2">Exams & results</p>
+                              <div class="form-check form-switch mb-0">{{ form.feature_results }}<label class="form-check-label text-xs" for="{{ form.feature_results.id_for_label }}">Enable</label></div>
+                            </div>
+                          </div>
+
+                          <div class="col-md-4 col-6">
+                            <div class="feature-card p-3 rounded border h-100">
+                              <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="feature-icon" style="background:#f0fdf4;"><i class="fas fa-user-tie text-success"></i></div>
+                                <span class="text-sm font-weight-bold">HR Module</span>
+                              </div>
+                              <p class="text-xs text-muted mb-2">Resignations / Docs</p>
+                              <div class="form-check form-switch mb-0">{{ form.feature_hrms }}<label class="form-check-label text-xs" for="{{ form.feature_hrms.id_for_label }}">Enable</label></div>
+                            </div>
+                          </div>
+
+                          <div class="col-md-4 col-6">
+                            <div class="feature-card p-3 rounded border h-100">
+                              <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="feature-icon" style="background:#ecfdf5;"><i class="fas fa-money-check-alt text-success"></i></div>
+                                <span class="text-sm font-weight-bold">Payroll</span>
+                              </div>
+                              <p class="text-xs text-muted mb-2">Payslips & salary</p>
+                              <div class="form-check form-switch mb-0">{{ form.feature_payroll }}<label class="form-check-label text-xs" for="{{ form.feature_payroll.id_for_label }}">Enable</label></div>
+                            </div>
+                          </div>
+
+                          <div class="col-md-4 col-6">
+                            <div class="feature-card p-3 rounded border h-100">
+                              <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="feature-icon" style="background:#fff7ed;"><i class="fas fa-exclamation-circle text-warning"></i></div>
+                                <span class="text-sm font-weight-bold">Complaints</span>
+                              </div>
+                              <p class="text-xs text-muted mb-2">Complaint handling</p>
+                              <div class="form-check form-switch mb-0">{{ form.feature_complaints }}<label class="form-check-label text-xs" for="{{ form.feature_complaints.id_for_label }}">Enable</label></div>
+                            </div>
+                          </div>
+
+                          <div class="col-md-4 col-6">
+                            <div class="feature-card p-3 rounded border h-100">
+                              <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="feature-icon" style="background:#fdf4ff;"><i class="fas fa-calendar-alt" style="color:#a855f7;"></i></div>
+                                <span class="text-sm font-weight-bold">Events</span>
+                              </div>
+                              <p class="text-xs text-muted mb-2">Organization events</p>
+                              <div class="form-check form-switch mb-0">{{ form.feature_events }}<label class="form-check-label text-xs" for="{{ form.feature_events.id_for_label }}">Enable</label></div>
+                            </div>
+                          </div>
+
+                          <div class="col-md-4 col-6">
+                            <div class="feature-card p-3 rounded border h-100">
+                              <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="feature-icon" style="background:#e0f2fe;"><i class="fas fa-code-branch text-info"></i></div>
+                                <span class="text-sm font-weight-bold">Branches</span>
+                              </div>
+                              <p class="text-xs text-muted mb-2">Branch management</p>
+                              <div class="form-check form-switch mb-0">{{ form.feature_branches }}<label class="form-check-label text-xs" for="{{ form.feature_branches.id_for_label }}">Enable</label></div>
+                            </div>
+                          </div>
+
+                          <div class="col-md-4 col-6">
+                            <div class="feature-card p-3 rounded border h-100">
+                              <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="feature-icon" style="background:#fce7f3;"><i class="fas fa-calendar-times" style="color:#ec4899;"></i></div>
+                                <span class="text-sm font-weight-bold">Leave</span>
+                              </div>
+                              <p class="text-xs text-muted mb-2">Leave requests</p>
+                              <div class="form-check form-switch mb-0">{{ form.feature_leave }}<label class="form-check-label text-xs" for="{{ form.feature_leave.id_for_label }}">Enable</label></div>
+                            </div>
+                          </div>
+
+                          <div class="col-md-4 col-6">
+                            <div class="feature-card p-3 rounded border h-100">
+                              <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="feature-icon" style="background:#f1f5f9;"><i class="fas fa-book text-secondary"></i></div>
+                                <span class="text-sm font-weight-bold">Courses</span>
+                              </div>
+                              <p class="text-xs text-muted mb-2">Course-based attendance</p>
+                              <div class="form-check form-switch mb-0">{{ form.course_based_attendance }}<label class="form-check-label text-xs" for="{{ form.course_based_attendance.id_for_label }}">Enable</label></div>
+                            </div>
+                          </div>
+
+                          {% endwith %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                          <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="enableAllModules()">Enable All Modules</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="disableAllModules()">Disable All</button>
+                          </div>
+                          <div>
+                            <a href="{% url 'superadmin:dashboard' %}" class="btn btn-light me-2">Cancel</a>
+                            <button type="submit" class="btn bg-gradient-primary px-5">Save Changes</button>
+                          </div>
+                        </div>
+                    </form>
+
+<style>
+.feature-card { transition: all 0.2s; }
+.feature-card:has(.form-check-input:checked) { border-color: #3b82f6 !important; background: #eff6ff; }
+.feature-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+</style>
+<script>
+const MODULE_IDS = [
+  'id_feature_finance','id_feature_billing','id_feature_stock','id_feature_tasks',
+  'id_feature_results','id_feature_hrms','id_feature_payroll','id_feature_complaints',
+  'id_feature_events','id_feature_branches','id_feature_leave'
+];
+function enableAllModules() {
+  MODULE_IDS.forEach(id => { const el = document.getElementById(id); if(el) el.checked = true; });
+}
+function disableAllModules() {
+  MODULE_IDS.forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
+}
+</script>
                 </div>
             </div>
         </div>
-        
     </div>
-    
-    
-   
-    
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">Delete {{ org.name }}</h5>
+                <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to permanently delete this organization? This action will remove all associated admins, members, and attendance records. <strong>This cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{% url 'superadmin:deleteOrg' org.id %}" class="btn btn-danger">Yes, Delete Organization</a>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock content %}
-    

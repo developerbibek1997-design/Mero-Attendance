@@ -1,198 +1,194 @@
 {% extends 'dashboard.html' %}
 {% load static %}
-{% block title %}
-   Profile
-{% endblock title %}
+{% block title %}Organization Profile{% endblock title %}
 
 {% block content %}
-<style>
-  @media print {
-    table { page-break-after:auto }
-    tr    { page-break-inside:avoid; page-break-after:auto }
-    td    { page-break-inside:avoid; page-break-after:auto }
-    thead { display:table-header-group }
-    tfoot { display:table-footer-group }
-  }
-</style>
-
-<hr>
-
-{% for message in messages %}
-<div class="alert alert-light alert-dismissible fade show" role="alert">
-    {{ message }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-{% endfor %}
-
-<div class="row">
-    <div class="col-12 col-md-4">
-        <div class="card p-5">
-            {% if org.image %}
-                <img src="{{ org.image.url }}" alt="Mero Attendance" style="height: auto; width: 100%">
-            {% else %}
-                <img src="{% static 'res/click.png' %}" alt="Mero Attendance" style="height: auto; width: 100%">
-            {% endif %}
-
-            <div class="text-center">
-                <h5>Name: {{ org.name }}</h5>
-                <p>Address: {{ org.address }}</p>
-                <p>Serial Key: {{ org.serial_key }}</p>
-                <p>Expire On: {{ org.expire_on }}</p>
-            </div>
-
-            <div class="mt-3">
-                <!-- 1st button: Manage Holiday -->
-                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#manageHolidayModal">
-                    <i class="bi bi-calendar-event"></i> Manage Holiday
-                </button>
-
-                <!-- 2nd button: Occasion Holiday -->
-                <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#occasionHolidayModal">
-                    <i class="bi bi-card-checklist"></i> Occasion Holiday
-                </button>
-
-                {% comment %} <!-- 3rd button: Choose Calendar -->
-                <button type="button" class="btn btn-info w-100" onclick="chooseCalendar()">
-                    <i class="bi bi-calendar3"></i> Choose Calendar
-                </button> {% endcomment %}
-            </div>
-        </div>
+<div class="container-fluid py-4">
+    <div class="mb-4">
+        <h3 class="font-weight-bolder text-dark">Organization Profile</h3>
+        <p class="text-muted">Manage your organization details, holidays, and system settings.</p>
     </div>
 
-    <div class="col-12 col-md-8">
-        <div class="card p-5">
-            <form action="" method="post" enctype="multipart/form-data">
-                <div class="row">
-                    {{ form }}
-                    {% csrf_token %}
-                    <div class="d-grid mt-2">
-                        <button type="submit" class="btn btn-warning">Edit Org</button>
+    {% for message in messages %}
+    <div class="alert alert-info alert-dismissible fade show text-white" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card h-100 shadow-sm border-0 p-4">
+                <div class="text-center mb-4">
+                    <div class="avatar avatar-xxl position-relative mb-3">
+                        {% if org.image %}
+                            <img src="{{ org.image.url }}" class="rounded-circle shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">
+                        {% else %}
+                            <div class="avatar avatar-xxl bg-gradient-primary text-white rounded-circle">
+                                <i class="fas fa-building text-3xl"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <h5 class="font-weight-bolder">{{ org.name }}</h5>
+                    <span class="badge bg-gradient-success">Active</span>
+                </div>
+
+                <div class="list-group list-group-flush border-top">
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-xs text-uppercase font-weight-bold">Address</span>
+                        <span class="text-sm">{{ org.address|default:"Not set" }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-xs text-uppercase font-weight-bold">Serial Key</span>
+                        <span class="text-sm font-monospace">{{ org.serial_key }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-xs text-uppercase font-weight-bold">Expiry</span>
+                        <span class="text-sm">{{ org.expire_on|date:"M d, Y" }}</span>
                     </div>
                 </div>
-            </form>
-        </div>
-    </div>
-</div>
 
-<!-- Modal for Manage Holiday -->
-<div class="modal fade" id="manageHolidayModal" tabindex="-1" aria-labelledby="manageHolidayModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="manageHolidayModalLabel">Manage Holiday</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                
-                {% if holiday %}
-                
-                        <p>To update select day among Sunday to Saturday for holiday:</p>
-                        <form action="{% url 'schooladmin:updateHoliday' %}" method="post">
-                            <div id="daySelection">
-                                <input type="checkbox" id="sunday" name="day" value="Sunday" {% if 'Sunday' in holiday %}checked{% endif %}>
-                                <label for="sunday">Sunday</label><br>
-                                <input type="checkbox" id="monday" name="day" value="Monday" {% if 'Monday' in holiday %}checked{% endif %}>
-                                <label for="monday">Monday</label><br>
-                                <input type="checkbox" id="tuesday" name="day" value="Tuesday" {% if 'Tuesday' in holiday %}checked{% endif %}>
-                                <label for="tuesday">Tuesday</label><br>
-                                <input type="checkbox" id="wednesday" name="day" value="Wednesday" {% if 'Wednesday' in holiday %}checked{% endif %}>
-                                <label for="wednesday">Wednesday</label><br>
-                                <input type="checkbox" id="thursday" name="day" value="Thursday" {% if 'Thursday' in holiday %}checked{% endif %}>
-                                <label for="thursday">Thursday</label><br>
-                                <input type="checkbox" id="friday" name="day" value="Friday" {% if 'Friday' in holiday %}checked{% endif %}>
-                                <label for="friday">Friday</label><br>
-                                <input type="checkbox" id="saturday" name="day" value="Saturday" {% if 'Saturday' in holiday %}checked{% endif %}>
-                                <label for="saturday">Saturday</label><br>
-                            </div>
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-primary">Save changes</button>
-                        </form>
-                    {%else%}
-                        <p>Select any day among Sunday to Saturday for holiday:</p>
-                        <form action="{%url 'schooladmin:addHoliday'%}" method="post">
-                            <div id="daySelection">
-                                <input  type="checkbox" id="sunday" name="day" value="Sunday">
-                                <label for="sunday">Sunday</label><br>
-                                <input type="checkbox" id="monday" name="day" value="Monday">
-                                <label for="monday">Monday</label><br>
-                                <input type="checkbox" id="tuesday" name="day" value="Tuesday">
-                                <label for="tuesday">Tuesday</label><br>
-                                <input type="checkbox" id="wednesday" name="day" value="Wednesday">
-                                <label for="wednesday">Wednesday</label><br>
-                                <input type="checkbox" id="thursday" name="day" value="Thursday">
-                                <label for="thursday">Thursday</label><br>
-                                <input type="checkbox" id="friday" name="day" value="Friday">
-                                <label for="friday">Friday</label><br>
-                                <input type="checkbox" id="saturday" name="day" value="Saturday">
-                                <label for="saturday">Saturday</label><br>
-                            </div>
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-primary">Save changes</button>
-                        </form>
-
-                {% endif %}
-                    
-                
-                
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                
+                <div class="mt-4 d-grid gap-2">
+                    <button class="btn btn-outline-primary btn-sm mb-0" data-bs-toggle="modal" data-bs-target="#manageHolidayModal"><i class="fas fa-calendar-alt me-2"></i>Manage Weekends</button>
+                    <button class="btn btn-outline-success btn-sm mb-0" data-bs-toggle="modal" data-bs-target="#occasionHolidayModal"><i class="fas fa-gifts me-2"></i>Occasion Holidays</button>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Modal for Occasion Holiday -->
-<div class="modal fade" id="occasionHolidayModal" tabindex="-1" aria-labelledby="occasionHolidayModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="occasionHolidayModalLabel">Occasion Holiday</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form action="{% url 'schooladmin:addOccasion' %}" method="POST">
-                    <div class="mb-3">
-                        <label for="occasionName" class="form-label">Occasion Name</label>
-                        <input type="text" class="form-control" id="occasionName" name="occasion">
-                    </div>
-                    <div class="mb-3">
-                        <label for="holidayType" class="form-label">Holiday Type</label>
-                        <select class="form-control" id="holidayType" name="holidayType" onchange="toggleEndDate()">
-                            <option value="1-day">1 Day</option>
-                            <option value="gap">Gap Holiday</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="occasionDate" class="form-label">Select Start Date</label>
-                        <input type="date" class="form-control" id="occasionDate" name="ocDate">
-                    </div>
-                    <div class="mb-3" id="endDateDiv" style="display: none;">
-                        <label for="occasionEndDate" class="form-label">Select End Date</label>
-                        <input type="date" class="form-control" id="occasionEndDate" name="ocEndDate">
-                    </div>
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 p-4">
+                <h6 class="text-uppercase text-xs font-weight-bolder text-muted mb-3">Organization Details</h6>
+                <form action="" method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary">Save changes</button>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-xs font-weight-bold text-uppercase text-muted">Organization Name</label>
+                            {{ form.name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-xs font-weight-bold text-uppercase text-muted">Organization Key</label>
+                            {{ form.serial_key }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-xs font-weight-bold text-uppercase text-muted">Address</label>
+                            {{ form.address }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-xs font-weight-bold text-uppercase text-muted">Logo / Image</label>
+                            {{ form.image }}
+                        </div>
+
+                        <div class="col-12 mt-2">
+                            <hr class="horizontal dark">
+                            <h6 class="text-xs text-uppercase font-weight-bold text-muted mb-3"><i class="fas fa-calendar-alt me-1"></i>Calendar Settings</h6>
+                            <div class="card border rounded p-3" style="background:#f8f9fa;">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <p class="mb-0 font-weight-bold text-sm">Calendar Mode</p>
+                                        <p class="mb-0 text-xs text-muted">Switch between English (AD) and Nepali (BS / Bikram Sambat) calendar throughout the system</p>
+                                    </div>
+                                    <div class="form-check form-switch mb-0 ms-3">
+                                        {{ form.nepali_date }}
+                                        <label class="form-check-label font-weight-bold text-sm" for="{{ form.nepali_date.id_for_label }}">
+                                            {% if org.nepali_date %}
+                                            <span class="text-warning">BS Mode ON</span>
+                                            {% else %}
+                                            <span class="text-muted">AD Mode</span>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-xs text-muted">
+                                    <i class="fas fa-info-circle me-1 text-primary"></i>
+                                    Currently: <strong>{% if org.nepali_date %}Nepali Calendar (BS / Bikram Sambat){% else %}English Calendar (AD){% endif %}</strong>
+                                    — affects date display on attendance reports, payslips, and calendar page.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                        <button type="submit" class="btn bg-gradient-warning px-5"><i class="fas fa-save me-2"></i>Update Profile</button>
+                    </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <hr>
-                
+        </div>
+    </div>
+</div>
+
+<style>
+    .modal-header { border-bottom: none; }
+    .day-checkbox { padding: 10px; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 5px; display: flex; align-items: center; }
+    .day-checkbox:hover { background: #f8f9fe; }
+</style>
+
+<div class="modal fade" id="manageHolidayModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header"><h5 class="modal-title font-weight-bolder">Weekly Holidays</h5></div>
+            <div class="modal-body">
+                <form action="{% if holiday %}{% url 'schooladmin:updateHoliday' %}{% else %}{% url 'schooladmin:addHoliday' %}{% endif %}" method="post">
+                    {% csrf_token %}
+                   <div class="row">
+                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Sunday" {% if 'Sunday' in holiday %}checked{% endif %} class="me-2"> Sunday</label></div>
+                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Monday" {% if 'Monday' in holiday %}checked{% endif %} class="me-2"> Monday</label></div>
+                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Tuesday" {% if 'Tuesday' in holiday %}checked{% endif %} class="me-2"> Tuesday</label></div>
+                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Wednesday" {% if 'Wednesday' in holiday %}checked{% endif %} class="me-2"> Wednesday</label></div>
+                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Thursday" {% if 'Thursday' in holiday %}checked{% endif %} class="me-2"> Thursday</label></div>
+                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Friday" {% if 'Friday' in holiday %}checked{% endif %} class="me-2"> Friday</label></div>
+                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Saturday" {% if 'Saturday' in holiday %}checked{% endif %} class="me-2"> Saturday</label></div>
+                    </div>
+                    <button type="submit" class="btn bg-gradient-primary w-100 mt-3">Save Weekly Holidays</button>
+                </form>
             </div>
-            <div class="p-3">
-                <h6>Occasion List</h6>
-                <hr>
-                {% for occasion in occasions %}
-                    <p class="d-flex justify-content-between mt-2">
-                        {{ occasion.date }}{% if occasion.end_date %} - {{ occasion.end_date }}{% endif %}
-                        <span class="badge bg-primary">
-                            {{ occasion.name }}
-                        </span>
-                    </p>
-                    <hr class="m-0">
-                {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="occasionHolidayModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header"><h5 class="modal-title">Occasion Holidays</h5></div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 border-end">
+                        <form action="{% url 'schooladmin:addOccasion' %}" method="POST">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label text-xs font-weight-bolder">Occasion Name</label>
+                                <input type="text" class="form-control" name="occasion" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <label class="form-label text-xs">Type</label>
+                                    <select class="form-select" id="holidayType" name="holidayType" onchange="toggleEndDate()">
+                                        <option value="1-day">Single Day</option>
+                                        <option value="gap">Gap Period</option>
+                                    </select>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label text-xs">Start Date</label>
+                                    <input type="date" class="form-control" name="ocDate" required>
+                                </div>
+                            </div>
+                            <div class="mb-3" id="endDateDiv" style="display: none;">
+                                <label class="form-label text-xs">End Date</label>
+                                <input type="date" class="form-control" name="ocEndDate">
+                            </div>
+                            <button type="submit" class="btn bg-gradient-success w-100">Add Occasion</button>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-xs text-uppercase font-weight-bolder mb-3">Upcoming Occasions</h6>
+                        <div class="overflow-auto" style="max-height: 250px;">
+                            {% for occasion in occasions %}
+                                <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                                    <small>{{ occasion.date|date:"M d" }}{% if occasion.end_date %} - {{ occasion.end_date|date:"M d" }}{% endif %}</small>
+                                    <span class="badge bg-primary">{{ occasion.name }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -200,22 +196,8 @@
 
 <script>
     function toggleEndDate() {
-        var holidayType = document.getElementById("holidayType").value;
-        var endDateDiv = document.getElementById("endDateDiv");
-        if (holidayType === "gap") {
-            endDateDiv.style.display = "block";
-        } else {
-            endDateDiv.style.display = "none";
-        }
+        document.getElementById("endDateDiv").style.display = 
+            (document.getElementById("holidayType").value === "gap") ? "block" : "none";
     }
 </script>
-
-
-<script>
-    function chooseCalendar() {
-        // Implement logic to choose between English or Nepali calendar
-        alert('Choose calendar functionality goes here.');
-    }
-</script>
-
 {% endblock content %}

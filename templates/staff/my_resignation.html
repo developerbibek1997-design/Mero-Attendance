@@ -1,0 +1,392 @@
+{% extends 'dashboard.html' %}
+{% block title %}My Resignation | {{ org.name }}{% endblock %}
+
+{% block content %}
+<style>
+:root{
+  --ink:#0f172a;--slate:#334155;--muted:#64748b;
+  --border:#e2e8f0;--bg:#f8fafc;
+  --indigo:#6366f1;--indigo-dk:#4f46e5;--indigo-lt:#eef2ff;
+  --rose:#e11d48;--rose-lt:#ffe4e6;
+  --green:#16a34a;--green-lt:#dcfce7;
+  --amber:#d97706;--amber-lt:#fef3c7;
+}
+.rs-page{background:var(--bg);min-height:100vh;padding:1.75rem 2rem;}
+
+/* hero */
+.rs-hero{
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#7f1d1d 100%);
+  border-radius:20px;padding:1.75rem 2rem;position:relative;overflow:hidden;margin-bottom:1.75rem;
+}
+.rs-hero::before{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.025'%3E%3Cpath d='M0 0h20v20H0zM20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E");
+}
+.rs-hero-inner{position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;}
+.rs-hero-title{color:#fff;font-size:1.3rem;font-weight:900;margin:0;}
+.rs-hero-sub{color:#fca5a5;font-size:.82rem;margin:.3rem 0 0;}
+
+/* card */
+.rc{
+  background:#fff;border-radius:18px;border:1px solid var(--border);
+  box-shadow:0 2px 12px rgba(0,0,0,.04);overflow:hidden;margin-bottom:1.25rem;
+}
+.rc-hd{
+  padding:1.1rem 1.4rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:.8rem;
+}
+.rc-icon{
+  width:38px;height:38px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;
+}
+.rc-title{font-size:.9rem;font-weight:800;color:var(--ink);margin:0;}
+.rc-sub{font-size:.72rem;color:var(--muted);margin:.1rem 0 0;}
+.rc-body{padding:1.4rem;}
+
+/* form */
+.f-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.35rem;display:block;}
+.f-input{
+  width:100%;border:1.5px solid var(--border);border-radius:10px;
+  padding:.65rem .95rem;font-size:.88rem;color:var(--ink);
+  background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;min-height:44px;
+}
+.f-input:focus{border-color:var(--rose);box-shadow:0 0 0 3px rgba(225,29,72,.08);}
+textarea.f-input{min-height:110px;resize:vertical;}
+
+/* steps */
+.step-row{display:flex;gap:0;margin-bottom:2rem;}
+.step{flex:1;text-align:center;position:relative;}
+.step::after{content:'';position:absolute;top:18px;left:50%;width:100%;height:2px;background:var(--border);}
+.step:last-child::after{display:none;}
+.step-dot{
+  width:36px;height:36px;border-radius:50%;display:inline-flex;
+  align-items:center;justify-content:center;font-size:.85rem;font-weight:800;
+  position:relative;z-index:1;margin-bottom:.5rem;
+}
+.step.done .step-dot{background:var(--green);color:#fff;}
+.step.active .step-dot{background:var(--rose);color:#fff;box-shadow:0 0 0 4px rgba(225,29,72,.15);}
+.step.wait .step-dot{background:#f1f5f9;color:var(--muted);border:1.5px solid var(--border);}
+.step.done::after{background:var(--green);}
+.step-lbl{font-size:.72rem;font-weight:700;color:var(--muted);}
+.step.active .step-lbl{color:var(--rose);}
+.step.done .step-lbl{color:var(--green);}
+
+/* status pills */
+.pill{display:inline-block;padding:.2rem .65rem;border-radius:99px;font-size:.72rem;font-weight:700;}
+.pill-pending{background:var(--amber-lt);color:var(--amber);border:1px solid #fde68a;}
+.pill-approved{background:var(--green-lt);color:var(--green);border:1px solid #bbf7d0;}
+.pill-rejected{background:#f1f5f9;color:var(--slate);border:1px solid var(--border);}
+.pill-completed{background:var(--indigo-lt);color:var(--indigo);border:1px solid #c7d2fe;}
+
+/* table */
+.at{width:100%;border-collapse:collapse;}
+.at th{font-size:.67rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:.7rem 1rem;background:#fafbff;border-bottom:1px solid var(--border);text-align:left;}
+.at td{padding:.85rem 1rem;border-bottom:1px solid #f1f5f9;font-size:.85rem;color:var(--ink);vertical-align:middle;}
+.at tr:last-child td{border-bottom:none;}
+
+/* submit button */
+.btn-submit{
+  background:linear-gradient(135deg,var(--rose),#be123c);
+  color:#fff;border:none;border-radius:10px;padding:.75rem 2rem;
+  font-size:.9rem;font-weight:700;cursor:pointer;
+  display:inline-flex;align-items:center;gap:.5rem;transition:opacity .15s;
+}
+.btn-submit:hover{opacity:.87;}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed;}
+
+/* warning box */
+.warn-box{
+  background:var(--amber-lt);border:1px solid #fde68a;
+  border-radius:14px;padding:1.1rem 1.3rem;margin-bottom:1.25rem;
+  display:flex;gap:.8rem;align-items:flex-start;
+}
+.info-box{
+  background:var(--rose-lt);border:1px solid #fecdd3;
+  border-radius:14px;padding:1.1rem 1.3rem;
+  display:flex;gap:.8rem;align-items:flex-start;
+}
+</style>
+
+<div class="rs-page">
+
+  <!-- messages -->
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show mb-4" role="alert">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <!-- Hero -->
+  <div class="rs-hero">
+    <div class="rs-hero-inner">
+      <div>
+        <div style="font-size:.68rem;color:#fca5a5;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:.3rem;">{{ org.name }}</div>
+        <h4 class="rs-hero-title"><i class="fas fa-person-walking-arrow-right me-2 opacity-75"></i>Resignation Application</h4>
+        <p class="rs-hero-sub">Submit and track your resignation request</p>
+      </div>
+      <a href="{% url 'staff:dashboard' %}" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:.5rem 1rem;font-size:.82rem;font-weight:700;text-decoration:none;">
+        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Left: Form or Status -->
+    <div class="col-lg-7">
+
+      {% if has_pending %}
+      <!-- Already applied -->
+      <div class="rc">
+        <div class="rc-hd">
+          <div class="rc-icon" style="background:var(--amber-lt);color:var(--amber);"><i class="fas fa-hourglass-half"></i></div>
+          <div>
+            <div class="rc-title">Application Under Review</div>
+            <div class="rc-sub">Your resignation is already submitted and being processed</div>
+          </div>
+        </div>
+        <div class="rc-body">
+          {% with latest=resignations.first %}
+          <!-- Progress Steps -->
+          <div class="step-row">
+            <div class="step done">
+              <div class="step-dot"><i class="fas fa-check"></i></div>
+              <div class="step-lbl">Submitted</div>
+            </div>
+            <div class="step {% if latest.status == 'approved' or latest.status == 'completed' %}done{% elif latest.status == 'pending' %}active{% else %}wait{% endif %}">
+              <div class="step-dot">{% if latest.status == 'approved' or latest.status == 'completed' %}<i class="fas fa-check"></i>{% else %}2{% endif %}</div>
+              <div class="step-lbl">Admin Review</div>
+            </div>
+            <div class="step {% if latest.status == 'approved' or latest.status == 'completed' %}active{% else %}wait{% endif %}">
+              <div class="step-dot">{% if latest.status == 'completed' %}<i class="fas fa-check"></i>{% else %}3{% endif %}</div>
+              <div class="step-lbl">Approved</div>
+            </div>
+            <div class="step {% if latest.status == 'completed' %}done{% else %}wait{% endif %}">
+              <div class="step-dot">{% if latest.status == 'completed' %}<i class="fas fa-check"></i>{% else %}4{% endif %}</div>
+              <div class="step-lbl">Completed</div>
+            </div>
+          </div>
+
+          <div style="background:var(--bg);border-radius:14px;padding:1.25rem;margin-top:.5rem;">
+            <div class="row g-3">
+              <div class="col-6">
+                <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem;">Status</div>
+                {% if latest.status == 'pending' %}<span class="pill pill-pending">Pending Review</span>
+                {% elif latest.status == 'approved' %}<span class="pill pill-approved">Approved</span>
+                {% elif latest.status == 'rejected' %}<span class="pill pill-rejected">Rejected</span>
+                {% else %}<span class="pill pill-completed">Completed</span>{% endif %}
+              </div>
+              <div class="col-6">
+                <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem;">Resignation Date</div>
+                <div style="font-weight:700;font-size:.88rem;">{{ latest.resignation_date|date:"M d, Y" }}</div>
+              </div>
+              <div class="col-6">
+                <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem;">Notice Period</div>
+                <div style="font-weight:700;font-size:.88rem;">{{ latest.notice_period_days }} days</div>
+              </div>
+              <div class="col-6">
+                <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem;">Last Working Day</div>
+                <div style="font-weight:700;font-size:.88rem;">{{ latest.last_working_day|date:"M d, Y"|default:"—" }}</div>
+              </div>
+              <div class="col-6">
+                <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem;">Clearance</div>
+                {% if latest.clearance_status %}<span class="pill pill-approved"><i class="fas fa-check me-1"></i>Done</span>
+                {% else %}<span class="pill pill-pending">Pending</span>{% endif %}
+              </div>
+              <div class="col-6">
+                <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem;">Final Settlement</div>
+                {% if latest.final_settlement_status %}<span class="pill pill-approved"><i class="fas fa-check me-1"></i>Done</span>
+                {% else %}<span class="pill pill-pending">Pending</span>{% endif %}
+              </div>
+              {% if latest.exit_interview_note %}
+              <div class="col-12">
+                <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem;">Admin Note</div>
+                <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;font-size:.85rem;color:var(--slate);">{{ latest.exit_interview_note }}</div>
+              </div>
+              {% endif %}
+              <div class="col-12">
+                <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem;">Your Reason</div>
+                <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;font-size:.85rem;color:var(--slate);">{{ latest.reason }}</div>
+              </div>
+            </div>
+          </div>
+          {% endwith %}
+        </div>
+      </div>
+
+      {% else %}
+      <!-- Apply form -->
+      <div class="rc">
+        <div class="rc-hd">
+          <div class="rc-icon" style="background:var(--rose-lt);color:var(--rose);"><i class="fas fa-file-signature"></i></div>
+          <div>
+            <div class="rc-title">Submit Resignation</div>
+            <div class="rc-sub">Fill in the details below. Admin will review your application.</div>
+          </div>
+        </div>
+        <div class="rc-body">
+          <div class="warn-box mb-4">
+            <i class="fas fa-triangle-exclamation" style="color:var(--amber);margin-top:.1rem;flex-shrink:0;"></i>
+            <div>
+              <div style="font-size:.82rem;font-weight:700;color:#92400e;">Please read before submitting</div>
+              <div style="font-size:.8rem;color:#78350f;margin-top:.2rem;line-height:1.5;">Your resignation will be reviewed by the admin. You cannot withdraw it after submission. Please ensure you understand the notice period policy before proceeding.</div>
+            </div>
+          </div>
+
+          <form method="post" id="resignForm">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="f-label">Resignation Date <span style="color:var(--rose);">*</span></label>
+                <input type="date" name="resignation_date" class="f-input" required min="{{ today|date:'Y-m-d' }}">
+                <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem;">Date you are officially resigning from.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="f-label">Notice Period (days) <span style="color:var(--rose);">*</span></label>
+                <select name="notice_period_days" class="f-input" id="noticeDays">
+                  <option value="15">15 days</option>
+                  <option value="30" selected>30 days (standard)</option>
+                  <option value="45">45 days</option>
+                  <option value="60">60 days</option>
+                  <option value="90">90 days</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="f-label">Reason for Resignation <span style="color:var(--rose);">*</span></label>
+                <textarea name="reason" class="f-input" rows="5" required placeholder="Please provide a brief and honest explanation for your resignation…" minlength="30"></textarea>
+                <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem;">Minimum 30 characters. This will be visible to your admin.</div>
+              </div>
+              <div class="col-12">
+                <div class="info-box">
+                  <i class="fas fa-circle-info" style="color:var(--rose);margin-top:.1rem;flex-shrink:0;"></i>
+                  <div style="font-size:.8rem;color:#9f1239;line-height:1.5;">Once submitted, your admin will be notified and will review your request. Your employment status will change to <strong>Resigned</strong> only after admin approval.</div>
+                </div>
+              </div>
+              <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                <a href="{% url 'staff:dashboard' %}" style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:.7rem 1.5rem;font-size:.88rem;font-weight:700;color:var(--slate);text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;">
+                  <i class="fas fa-times"></i>Cancel
+                </a>
+                <button type="button" class="btn-submit" onclick="confirmSubmit()">
+                  <i class="fas fa-paper-plane"></i>Submit Resignation
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- Right: History & Info -->
+    <div class="col-lg-5">
+
+      <!-- What happens next -->
+      <div class="rc mb-4">
+        <div class="rc-hd">
+          <div class="rc-icon" style="background:var(--indigo-lt);color:var(--indigo);"><i class="fas fa-list-check"></i></div>
+          <div><div class="rc-title">What Happens Next</div></div>
+        </div>
+        <div class="rc-body">
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            <div style="display:flex;gap:.75rem;align-items:flex-start;">
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--rose-lt);color:var(--rose);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;flex-shrink:0;">1</div>
+              <div>
+                <div style="font-size:.84rem;font-weight:700;color:var(--ink);">You Submit</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem;">Fill the form with your resignation date and reason.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:.75rem;align-items:flex-start;">
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--amber-lt);color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;flex-shrink:0;">2</div>
+              <div>
+                <div style="font-size:.84rem;font-weight:700;color:var(--ink);">Admin Reviews</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem;">Your manager is notified and will review within 2-3 working days.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:.75rem;align-items:flex-start;">
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--green-lt);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;flex-shrink:0;">3</div>
+              <div>
+                <div style="font-size:.84rem;font-weight:700;color:var(--ink);">Decision Made</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem;">You receive a notification with the admin's decision.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:.75rem;align-items:flex-start;">
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--indigo-lt);color:var(--indigo);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;flex-shrink:0;">4</div>
+              <div>
+                <div style="font-size:.84rem;font-weight:700;color:var(--ink);">Clearance & Settlement</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem;">Clearance process and final settlement are completed by HR.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History -->
+      {% if resignations %}
+      <div class="rc">
+        <div class="rc-hd">
+          <div class="rc-icon" style="background:#f1f5f9;color:var(--slate);"><i class="fas fa-clock-rotate-left"></i></div>
+          <div><div class="rc-title">Application History</div><div class="rc-sub">All your resignation records</div></div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="at">
+            <thead><tr><th>Date</th><th>Last Day</th><th>Status</th></tr></thead>
+            <tbody>
+              {% for r in resignations %}
+              <tr>
+                <td>{{ r.resignation_date|date:"M d, Y" }}</td>
+                <td>{{ r.last_working_day|date:"M d, Y"|default:"—" }}</td>
+                <td>
+                  {% if r.status == 'pending' %}<span class="pill pill-pending">Pending</span>
+                  {% elif r.status == 'approved' %}<span class="pill pill-approved">Approved</span>
+                  {% elif r.status == 'rejected' %}<span class="pill pill-rejected">Rejected</span>
+                  {% else %}<span class="pill pill-completed">Completed</span>{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0" style="border-radius:18px;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#7f1d1d,var(--rose));padding:1.5rem 1.5rem 1rem;text-align:center;">
+        <div style="width:60px;height:60px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .75rem;font-size:1.4rem;color:#fff;">
+          <i class="fas fa-person-walking-arrow-right"></i>
+        </div>
+        <h5 style="color:#fff;font-weight:900;margin:0;">Confirm Resignation</h5>
+        <p style="color:#fca5a5;font-size:.82rem;margin:.3rem 0 0;">This action cannot be undone</p>
+      </div>
+      <div style="padding:1.25rem 1.5rem;">
+        <p style="font-size:.9rem;color:var(--slate);text-align:center;line-height:1.6;">Are you sure you want to submit your resignation? Your admin will be notified immediately.</p>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+          <button class="btn btn-light" data-bs-dismiss="modal" style="border-radius:10px;font-weight:700;min-width:100px;">Cancel</button>
+          <button class="btn-submit" onclick="document.getElementById('resignForm').submit();" style="min-width:120px;justify-content:center;">
+            <i class="fas fa-paper-plane"></i>Yes, Submit
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmSubmit() {
+  var form = document.getElementById('resignForm');
+  if (!form) return;
+  if (!form.checkValidity()) { form.reportValidity(); return; }
+  var reason = form.querySelector('textarea[name=reason]').value.trim();
+  if (reason.length < 30) { alert('Please provide a more detailed reason (minimum 30 characters).'); return; }
+  var modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+  modal.show();
+}
+</script>
+{% endblock %}

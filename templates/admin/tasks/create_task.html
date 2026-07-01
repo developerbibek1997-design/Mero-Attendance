@@ -1,0 +1,225 @@
+{% extends 'dashboard.html' %}
+{% block title %}Create Task | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-plus-circle text-primary me-2"></i>Create New Task</h4>
+      <p class="text-xs text-muted mb-0">Assign tasks to staff members with priority and scheduling</p>
+    </div>
+    <a href="{% url 'schooladmin:task_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+    </a>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row g-3">
+
+      <!-- Left Column -->
+      <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white border-bottom py-3">
+            <h6 class="mb-0 font-weight-bolder">Task Details</h6>
+          </div>
+          <div class="card-body p-4">
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">Task Title <span class="text-danger">*</span></label>
+              <input type="text" name="title" class="form-control" placeholder="e.g. Prepare Monthly Attendance Report" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">Description</label>
+              <textarea name="description" class="form-control" rows="4" placeholder="Detailed task description, steps, or instructions..."></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">Additional Notes</label>
+              <textarea name="notes" class="form-control" rows="2" placeholder="Any extra notes for the assignee..."></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">Attachment (optional)</label>
+              <input type="file" name="attachment" class="form-control form-control-sm">
+              <p class="text-xs text-muted mt-1">PDF, images, or documents</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scheduling -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white border-bottom py-3">
+            <h6 class="mb-0 font-weight-bolder">Scheduling</h6>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label text-xs font-weight-bold">Task Type <span class="text-danger">*</span></label>
+                <select name="task_type" id="taskType" class="form-select" onchange="toggleDateRange()">
+                  {% for val, label in type_choices %}
+                  <option value="{{ val }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-xs font-weight-bold">Due Time (optional)</label>
+                <input type="time" name="due_time" class="form-control">
+              </div>
+              <div class="col-md-6" id="startDateWrap">
+                <label class="form-label text-xs font-weight-bold">Start Date <span class="text-danger">*</span></label>
+                <input type="date" name="start_date" id="startDate" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-xs font-weight-bold">Due Date / End Date <span class="text-danger">*</span></label>
+                <input type="date" name="due_date" id="dueDate" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
+              </div>
+            </div>
+            <div id="recurringNote" class="alert alert-info py-2 mt-3 d-none" style="font-size:12px;">
+              <i class="fas fa-info-circle me-1"></i>
+              <span id="recurringNoteText">For recurring tasks, individual task records will be created for each date in the range for each assigned staff member.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="col-lg-4">
+        <!-- Priority & Settings -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white border-bottom py-3">
+            <h6 class="mb-0 font-weight-bolder">Priority & Settings</h6>
+          </div>
+          <div class="card-body p-4">
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">Priority <span class="text-danger">*</span></label>
+              <div class="d-flex gap-2 flex-wrap">
+                {% for val, label in priority_choices %}
+                <div>
+                  <input type="radio" name="priority" value="{{ val }}" id="p_{{ val }}" class="btn-check" {% if val == 'medium' %}checked{% endif %}>
+                  <label class="btn btn-sm {% if val == 'low' %}btn-outline-success{% elif val == 'medium' %}btn-outline-primary{% elif val == 'high' %}btn-outline-warning{% else %}btn-outline-danger{% endif %}" for="p_{{ val }}">
+                    {{ label }}
+                  </label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">Branch (optional)</label>
+              <select name="branch" class="form-select form-select-sm">
+                <option value="">— All Branches —</option>
+                {% for b in branches %}
+                <option value="{{ b.id }}">{{ b.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-check mb-0">
+              <input type="checkbox" name="requires_approval" id="requiresApproval" class="form-check-input">
+              <label class="form-check-label text-sm" for="requiresApproval">
+                Require Admin Approval on Completion
+              </label>
+              <p class="text-xs text-muted mt-1 mb-0">Staff's 'Completed' status will wait for admin approval.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assign To -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 font-weight-bolder">Assign To <span class="text-danger">*</span></h6>
+            <div class="d-flex gap-1">
+              <button type="button" class="btn btn-xs btn-outline-primary" onclick="selectAll()">All</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="clearAll()">None</button>
+            </div>
+          </div>
+          <div class="card-body p-3">
+            <input type="text" id="memberSearch" class="form-control form-control-sm mb-3" placeholder="Search members...">
+            <div style="max-height:300px;overflow-y:auto;" id="memberList">
+              {% for m in members %}
+              <div class="member-item d-flex align-items-center gap-2 p-2 rounded mb-1 hover-bg" style="cursor:pointer;" onclick="toggleMember({{ m.id }})">
+                <input type="checkbox" name="assigned_to" value="{{ m.id }}" id="m_{{ m.id }}" class="member-cb form-check-input" style="pointer-events:none;">
+                <label for="m_{{ m.id }}" class="mb-0 flex-grow-1" style="cursor:pointer;pointer-events:none;">
+                  <p class="text-sm font-weight-bold mb-0">{{ m.name }}</p>
+                  <p class="text-xs text-muted mb-0">{{ m.get_member_type_display }}</p>
+                </label>
+              </div>
+              {% empty %}
+              <p class="text-xs text-muted text-center py-3">No active members found.</p>
+              {% endfor %}
+            </div>
+            <p class="text-xs text-muted mt-2 mb-0">Selected: <span id="selectedCount">0</span></p>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="fas fa-paper-plane me-2"></i>Create & Assign Task
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<style>
+.hover-bg:hover { background: #f8fafc; }
+</style>
+
+<script>
+function toggleDateRange() {
+  const type = document.getElementById('taskType').value;
+  const note = document.getElementById('recurringNote');
+  const noteText = document.getElementById('recurringNoteText');
+  const startWrap = document.getElementById('startDateWrap');
+
+  if (type === 'one_time') {
+    note.classList.add('d-none');
+    startWrap.classList.add('d-none');
+    document.getElementById('startDate').value = document.getElementById('dueDate').value;
+  } else {
+    note.classList.remove('d-none');
+    startWrap.classList.remove('d-none');
+    const msgs = {
+      daily: 'Daily: One task per day from start to end date for each assignee.',
+      weekly: 'Weekly: One task per week from start to end date.',
+      monthly: 'Monthly: One task per month.',
+      recurring: 'Recurring/Custom: One task per day in the date range.',
+    };
+    noteText.textContent = msgs[type] || '';
+  }
+}
+
+document.getElementById('dueDate').addEventListener('change', function() {
+  const type = document.getElementById('taskType').value;
+  if (type === 'one_time') {
+    document.getElementById('startDate').value = this.value;
+  }
+});
+
+function toggleMember(id) {
+  const cb = document.getElementById('m_' + id);
+  cb.checked = !cb.checked;
+  updateCount();
+}
+function selectAll() {
+  document.querySelectorAll('.member-cb').forEach(cb => cb.checked = true);
+  updateCount();
+}
+function clearAll() {
+  document.querySelectorAll('.member-cb').forEach(cb => cb.checked = false);
+  updateCount();
+}
+function updateCount() {
+  document.getElementById('selectedCount').textContent =
+    document.querySelectorAll('.member-cb:checked').length;
+}
+document.getElementById('memberSearch').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.member-item').forEach(item => {
+    const name = item.querySelector('p').textContent.toLowerCase();
+    item.style.display = name.includes(q) ? '' : 'none';
+  });
+});
+toggleDateRange();
+</script>
+{% endblock %}

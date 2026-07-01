@@ -1,0 +1,205 @@
+{% extends 'dashboard.html' %}
+{% block title %}Manage Global Holidays{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">Push Holidays to Organizations</h4>
+            <p class="text-muted">Select your target organizations and apply either weekly off-days or specific occasions.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Weekly Holiday Card -->
+        <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card shadow-sm h-100 border-radius-xl">
+                <div class="card-header pb-0 bg-transparent">
+                    <h5 class="mb-0 text-primary"><i class="bi bi-calendar-check me-2"></i>Weekly Off-Days</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{% url 'superadmin:globalHoliday' %}" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action_type" value="weekly">
+                        
+                        <!-- Target Orgs Selector -->
+                        <div class="mb-4">
+                            <label class="form-label font-weight-bold text-dark">Target Organizations</label>
+                            <select name="organizations" class="form-select form-control px-3 py-2 border" multiple required style="height: 120px;">
+                                <option value="all" class="fw-bold text-success">-- Select All Active Organizations --</option>
+                                {% for org in orgs %}
+                                    <option value="{{ org.id }}">{{ org.name }} ({{ org.serial_key }})</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Hold CTRL (or CMD on Mac) to select multiple.</small>
+                        </div>
+
+                        <!-- Days Selector (FIXED: No split filter) -->
+                        <label class="form-label font-weight-bold text-dark">Select Days Off</label>
+                        <div class="row px-2">
+                            <div class="col-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="day" value="Sunday" id="chk_Sunday">
+                                    <label class="form-check-label" for="chk_Sunday">Sunday</label>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="day" value="Monday" id="chk_Monday">
+                                    <label class="form-check-label" for="chk_Monday">Monday</label>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="day" value="Tuesday" id="chk_Tuesday">
+                                    <label class="form-check-label" for="chk_Tuesday">Tuesday</label>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="day" value="Wednesday" id="chk_Wednesday">
+                                    <label class="form-check-label" for="chk_Wednesday">Wednesday</label>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="day" value="Thursday" id="chk_Thursday">
+                                    <label class="form-check-label" for="chk_Thursday">Thursday</label>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="day" value="Friday" id="chk_Friday">
+                                    <label class="form-check-label" for="chk_Friday">Friday</label>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="day" value="Saturday" id="chk_Saturday">
+                                    <label class="form-check-label" for="chk_Saturday">Saturday</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn bg-gradient-primary w-100">Update Weekly Holidays</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Occasion Holiday Card -->
+        <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card shadow-sm h-100 border-radius-xl">
+                <div class="card-header pb-0 bg-transparent">
+                    <h5 class="mb-0 text-success"><i class="bi bi-calendar-event me-2"></i>Occasion / Gap Holiday</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{% url 'superadmin:globalHoliday' %}" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action_type" value="occasion">
+                        
+                        <!-- Target Orgs Selector -->
+                        <div class="mb-4">
+                            <label class="form-label font-weight-bold text-dark">Target Organizations</label>
+                            <select name="organizations" class="form-select form-control px-3 py-2 border" multiple required style="height: 120px;">
+                                <option value="all" class="fw-bold text-success">-- Select All Active Organizations --</option>
+                                {% for org in orgs %}
+                                    <option value="{{ org.id }}">{{ org.name }} ({{ org.serial_key }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label font-weight-bold">Occasion Name</label>
+                            <input type="text" class="form-control border px-3 py-2" name="occasion" placeholder="e.g., Dashain Festival" required>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label font-weight-bold">Holiday Type</label>
+                                <select class="form-select form-control border px-3 py-2" id="holidayType" name="holidayType" onchange="toggleEndDate()">
+                                    <option value="1-day">Single Day</option>
+                                    <option value="gap">Gap (Multiple Days)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label font-weight-bold">Start Date</label>
+                                <input type="date" class="form-control border px-3 py-2" id="occasionDate" name="ocDate" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="endDateDiv" style="display: none;">
+                            <label class="form-label font-weight-bold">End Date</label>
+                            <input type="date" class="form-control border px-3 py-2" id="occasionEndDate" name="ocEndDate">
+                        </div>
+
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn bg-gradient-success w-100">Add Occasion</button>
+                        </div>
+                    </form>
+
+                    <!-- Occasion List Section -->
+                    <hr class="my-4">
+                    <h6 class="text-dark mb-3"><i class="ni ni-bullet-list-67 me-2"></i>Recent Occasions Pushed</h6>
+                    
+                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                        <table class="table align-items-center mb-0 text-sm">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 px-2">Date</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 px-2">Occasion Name</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 px-2">Target Org</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for occasion in occasions %}
+                                <tr>
+                                    <td class="px-2">
+                                        <span class="font-weight-bold text-dark">{{ occasion.date|date:"M d, Y" }}</span>
+                                        {% if occasion.end_date %}
+                                            <br><span class="text-xs text-muted">to {{ occasion.end_date|date:"M d, Y" }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-2">
+                                        <span class="badge bg-gradient-success">{{ occasion.name }}</span>
+                                    </td>
+                                    <td class="px-2">
+                                        <span class="text-xs font-weight-bold">{{ occasion.org.name }}</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-4">
+                                        No occasion holidays have been added yet.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- END Occasion List -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleEndDate() {
+        var holidayType = document.getElementById("holidayType").value;
+        var endDateDiv = document.getElementById("endDateDiv");
+        var endDateInput = document.getElementById("occasionEndDate");
+        
+        if (holidayType === "gap") {
+            endDateDiv.style.display = "block";
+            endDateInput.required = true;
+        } else {
+            endDateDiv.style.display = "none";
+            endDateInput.required = false;
+        }
+    }
+</script>
+{% endblock %}

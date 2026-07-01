@@ -1,0 +1,849 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block title %}Operations Center | {{ org.name }}{% endblock title %}
+
+{% block content %}
+<style>
+/* ── Base ─────────────────────────────────────────────── */
+:root{--ops-red:#dc2626;--ops-red-dark:#b91c1c;--ops-ink:#0f172a;--ops-slate:#334155;--ops-muted:#64748b;--ops-border:#e2e8f0;--ops-bg:#f8fafc;}
+.ops-page{background:var(--ops-bg);min-height:100vh;}
+
+/* ── Hero ─────────────────────────────────────────────── */
+.ops-hero{background:linear-gradient(135deg,#0f172a 0%,#1e293b 60%,#7f1d1d 100%);padding:2rem 2rem 5rem;position:relative;overflow:hidden;}
+.ops-hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");}
+.ops-hero-title{color:#fff;font-size:1.75rem;font-weight:800;letter-spacing:-.5px;margin:0;}
+.ops-hero-sub{color:#94a3b8;font-size:.875rem;margin:.25rem 0 0;}
+
+/* ── KPI Cards (float over hero) ─────────────────────── */
+.ops-kpi-row{margin-top:-3.5rem;padding:0 2rem 1.5rem;}
+.ops-kpi{background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.10);padding:1.4rem 1.6rem;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.8);}
+.ops-kpi::after{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.08;}
+.ops-kpi.green::after{background:#16a34a;}
+.ops-kpi.red::after{background:#dc2626;}
+.ops-kpi.blue::after{background:#2563eb;}
+.ops-kpi.amber::after{background:#d97706;}
+.ops-kpi-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ops-muted);margin-bottom:.4rem;}
+.ops-kpi-value{font-size:1.6rem;font-weight:800;color:var(--ops-ink);line-height:1.1;}
+.ops-kpi-sub{font-size:.75rem;color:var(--ops-muted);margin-top:.35rem;}
+.ops-kpi-icon{position:absolute;top:1.2rem;right:1.4rem;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.ops-kpi.green .ops-kpi-icon{background:#dcfce7;color:#16a34a;}
+.ops-kpi.red .ops-kpi-icon{background:#fee2e2;color:#dc2626;}
+.ops-kpi.blue .ops-kpi-icon{background:#dbeafe;color:#2563eb;}
+.ops-kpi.amber .ops-kpi-icon{background:#fef3c7;color:#d97706;}
+
+/* ── Tab Navigation ───────────────────────────────────── */
+.ops-tabs{padding:0 2rem;border-bottom:2px solid var(--ops-border);background:#fff;display:flex;gap:0;}
+.ops-tab{padding:.85rem 1.4rem;font-size:.85rem;font-weight:700;color:var(--ops-muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .18s;user-select:none;display:flex;align-items:center;gap:.45rem;}
+.ops-tab:hover{color:var(--ops-ink);}
+.ops-tab.active{color:var(--ops-red);border-bottom-color:var(--ops-red);}
+.ops-tab-badge{background:#fee2e2;color:var(--ops-red);font-size:.65rem;font-weight:800;padding:2px 6px;border-radius:99px;}
+
+/* ── Tab Content ──────────────────────────────────────── */
+.ops-tab-pane{display:none;padding:2rem;}
+.ops-tab-pane.active{display:block;}
+
+/* ── Filter Bar ───────────────────────────────────────── */
+.ops-filter-bar{background:#fff;border:1px solid var(--ops-border);border-radius:12px;padding:1.1rem 1.4rem;margin-bottom:1.5rem;}
+
+/* ── Cards ────────────────────────────────────────────── */
+.ops-card{background:#fff;border:1px solid var(--ops-border);border-radius:14px;box-shadow:0 1px 8px rgba(0,0,0,.05);}
+.ops-card-hd{padding:1.1rem 1.4rem;border-bottom:1px solid var(--ops-border);display:flex;align-items:center;justify-content:space-between;}
+.ops-card-hd-title{font-size:.85rem;font-weight:800;color:var(--ops-ink);margin:0;display:flex;align-items:center;gap:.5rem;}
+.ops-card-bd{padding:1.4rem;}
+
+/* ── Tables ───────────────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ops-muted);padding:.6rem 1rem;background:#f8fafc;border-bottom:1px solid var(--ops-border);}
+.tbl td{padding:.75rem 1rem;font-size:.82rem;color:var(--ops-slate);border-bottom:1px solid #f1f5f9;vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:#fafafa;}
+
+/* ── Pills ────────────────────────────────────────────── */
+.pill{display:inline-flex;align-items:center;gap:.3rem;padding:3px 9px;border-radius:99px;font-size:.7rem;font-weight:700;}
+.pill-green{background:#dcfce7;color:#166534;}
+.pill-red{background:#fee2e2;color:#991b1b;}
+.pill-blue{background:#dbeafe;color:#1d4ed8;}
+.pill-amber{background:#fef3c7;color:#92400e;}
+.pill-slate{background:#f1f5f9;color:#475569;}
+
+/* ── Stock qty bar ────────────────────────────────────── */
+.qty-bar-wrap{background:#f1f5f9;border-radius:99px;height:6px;width:80px;overflow:hidden;display:inline-block;vertical-align:middle;}
+.qty-bar{height:100%;border-radius:99px;transition:width .3s;}
+
+/* ── Modals ───────────────────────────────────────────── */
+.ops-modal .modal-content{border:none;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.18);}
+.ops-modal .modal-header{background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:18px 18px 0 0;border:none;padding:1.2rem 1.6rem;}
+.ops-modal .modal-title{color:#fff;font-weight:800;font-size:1rem;}
+.ops-modal .btn-close{filter:invert(1) brightness(200%);}
+.ops-modal .modal-body{padding:1.6rem;}
+.ops-modal .modal-footer{border-top:1px solid var(--ops-border);padding:.9rem 1.4rem;}
+
+/* ── Finance split bar ────────────────────────────────── */
+.fin-bar-wrap{border-radius:99px;overflow:hidden;height:8px;background:#fee2e2;}
+.fin-bar-income{height:100%;background:linear-gradient(90deg,#16a34a,#22c55e);border-radius:99px;transition:width .5s;}
+
+/* ── Birthday avatar ──────────────────────────────────── */
+.bday-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#dc2626,#7f1d1d);color:#fff;font-size:.85rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.bday-today{background:linear-gradient(135deg,#16a34a,#15803d);}
+
+/* ── Action buttons ───────────────────────────────────── */
+.btn-ops-primary{background:var(--ops-red);color:#fff;border:none;border-radius:8px;padding:.5rem 1.2rem;font-size:.82rem;font-weight:700;transition:background .15s;}
+.btn-ops-primary:hover{background:var(--ops-red-dark);color:#fff;}
+.btn-ops-ghost{background:transparent;border:1.5px solid var(--ops-border);color:var(--ops-slate);border-radius:8px;padding:.45rem 1rem;font-size:.82rem;font-weight:600;transition:all .15s;}
+.btn-ops-ghost:hover{border-color:var(--ops-slate);color:var(--ops-ink);}
+.btn-ops-dark{background:var(--ops-ink);color:#fff;border:none;border-radius:8px;padding:.5rem 1.2rem;font-size:.82rem;font-weight:700;}
+.btn-ops-dark:hover{background:#1e293b;color:#fff;}
+</style>
+
+<div class="ops-page">
+
+  <!-- ── Hero ──────────────────────────────────────────── -->
+  <div class="ops-hero">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <div class="text-xs text-white opacity-50 mb-1 text-uppercase fw-bold tracking-wide">{{ org.name }}</div>
+        <h4 class="ops-hero-title"><i class="fas fa-layer-group me-2 opacity-75"></i>Operations Center</h4>
+        <p class="ops-hero-sub">Stock inventory · Financial ledger · Birthday tracker</p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="?export=stock{% if filters.branch %}&branch={{ filters.branch }}{% endif %}" class="btn-ops-ghost btn text-white border-white border-opacity-25">
+          <i class="fas fa-boxes me-1"></i>Export Stock
+        </a>
+        <a href="?export=transactions{% if filters.start_date %}&start_date={{ filters.start_date }}{% endif %}{% if filters.end_date %}&end_date={{ filters.end_date }}{% endif %}" class="btn-ops-ghost btn text-white border-white border-opacity-25">
+          <i class="fas fa-file-invoice-dollar me-1"></i>Export Finance
+        </a>
+        <a href="?export=birthdays" class="btn-ops-ghost btn text-white border-white border-opacity-25">
+          <i class="fas fa-birthday-cake me-1"></i>Export Birthdays
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── KPI row ────────────────────────────────────────── -->
+  <div class="ops-kpi-row">
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show mb-3" role="alert">
+      <i class="fas fa-{% if message.tags == 'error' %}exclamation-triangle{% else %}check-circle{% endif %} me-2"></i>{{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+
+    <div class="row g-3">
+      <div class="col-6 col-md-3">
+        <div class="ops-kpi green">
+          <div class="ops-kpi-label">Total Income</div>
+          <div class="ops-kpi-value">Rs. {{ income_total|floatformat:0 }}</div>
+          <div class="ops-kpi-sub">All time collected</div>
+          <div class="ops-kpi-icon"><i class="fas fa-arrow-trend-up"></i></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="ops-kpi red">
+          <div class="ops-kpi-label">Total Expenses</div>
+          <div class="ops-kpi-value">Rs. {{ expense_total|floatformat:0 }}</div>
+          <div class="ops-kpi-sub">All time spent</div>
+          <div class="ops-kpi-icon"><i class="fas fa-arrow-trend-down"></i></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="ops-kpi {% if net_total >= 0 %}blue{% else %}amber{% endif %}">
+          <div class="ops-kpi-label">Net Balance</div>
+          <div class="ops-kpi-value {% if net_total < 0 %}text-danger{% endif %}">Rs. {{ net_total|floatformat:0 }}</div>
+          <div class="ops-kpi-sub">Income minus expenses</div>
+          <div class="ops-kpi-icon"><i class="fas fa-scale-balanced"></i></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="ops-kpi {% if low_stock_items %}amber{% else %}green{% endif %}">
+          <div class="ops-kpi-label">Low Stock Items</div>
+          <div class="ops-kpi-value">{{ low_stock_items|length }} <span style="font-size:1rem;color:var(--ops-muted)">/ {{ stock_items|length }}</span></div>
+          <div class="ops-kpi-sub">Need restocking</div>
+          <div class="ops-kpi-icon"><i class="fas fa-boxes-stacked"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tabs ───────────────────────────────────────────── -->
+  <div class="ops-tabs">
+    <div class="ops-tab active" data-tab="overview"><i class="fas fa-chart-line"></i> Overview</div>
+    <div class="ops-tab" data-tab="stock"><i class="fas fa-boxes"></i> Stock
+      {% if low_stock_items %}<span class="ops-tab-badge">{{ low_stock_items|length }}</span>{% endif %}
+    </div>
+    <div class="ops-tab" data-tab="finance"><i class="fas fa-coins"></i> Finance</div>
+    <div class="ops-tab" data-tab="setup"><i class="fas fa-sliders"></i> Setup</div>
+    <div class="ops-tab" data-tab="birthdays"><i class="fas fa-birthday-cake"></i> Birthdays
+      {% if todays_birthdays %}<span class="ops-tab-badge">{{ todays_birthdays|length }}</span>{% endif %}
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: OVERVIEW
+  ══════════════════════════════════════════════════════ -->
+  <div class="ops-tab-pane active" id="tab-overview">
+
+    <!-- Filter bar -->
+    <div class="ops-filter-bar">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label text-xs fw-bold text-uppercase text-muted mb-1">Branch</label>
+          <select name="branch" class="form-select form-select-sm">
+            <option value="">All branches</option>
+            {% for b in branches %}<option value="{{ b.id }}" {% if filters.branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label text-xs fw-bold text-uppercase text-muted mb-1">Transaction</label>
+          <select name="transaction_type" class="form-select form-select-sm">
+            <option value="">All types</option>
+            <option value="income" {% if filters.transaction_type == "income" %}selected{% endif %}>Income</option>
+            <option value="expense" {% if filters.transaction_type == "expense" %}selected{% endif %}>Expense</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label text-xs fw-bold text-uppercase text-muted mb-1">From</label>
+          <input type="date" name="start_date" value="{{ filters.start_date }}" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label text-xs fw-bold text-uppercase text-muted mb-1">To</label>
+          <input type="date" name="end_date" value="{{ filters.end_date }}" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-4 d-flex gap-2 align-items-end">
+          <button class="btn btn-ops-dark btn-sm" type="submit"><i class="fas fa-filter me-1"></i>Apply</button>
+          <a href="{% url 'handle:operations' %}" class="btn btn-ops-ghost btn-sm">Reset</a>
+        </div>
+      </form>
+    </div>
+
+    <div class="row g-4">
+
+      <!-- Finance split card -->
+      <div class="col-xl-4">
+        <div class="ops-card h-100">
+          <div class="ops-card-hd">
+            <h6 class="ops-card-hd-title"><i class="fas fa-chart-pie text-primary"></i> Finance Split</h6>
+          </div>
+          <div class="ops-card-bd">
+            {% if income_total or expense_total %}
+            {% with total=income_total|add:expense_total %}
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="text-xs text-muted fw-bold">Income</span>
+              <span class="text-xs fw-bold text-success">Rs. {{ income_total|floatformat:0 }}</span>
+            </div>
+            <div class="fin-bar-wrap mb-3">
+              {% if total > 0 %}
+              <div class="fin-bar-income" style="width:{% widthratio income_total total 100 %}%"></div>
+              {% endif %}
+            </div>
+            {% endwith %}
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <div class="text-xs text-muted">Expenses</div>
+                <div class="fw-bold text-danger">Rs. {{ expense_total|floatformat:0 }}</div>
+              </div>
+              <div class="text-end">
+                <div class="text-xs text-muted">Net</div>
+                <div class="fw-bold {% if net_total >= 0 %}text-success{% else %}text-danger{% endif %}">Rs. {{ net_total|floatformat:0 }}</div>
+              </div>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted">
+              <i class="fas fa-chart-pie fa-2x mb-2 opacity-25 d-block"></i>No transactions yet.
+            </div>
+            {% endif %}
+
+            <hr class="my-3">
+            <p class="text-xs fw-bold text-uppercase text-muted mb-2">Categories</p>
+            {% for cat in transaction_categories %}
+            <div class="d-flex justify-content-between py-1 border-bottom" style="font-size:.8rem;">
+              <span>{{ cat.name }}</span>
+              <span class="pill {% if cat.transaction_type == 'income' %}pill-green{% else %}pill-red{% endif %}">{{ cat.get_transaction_type_display }}</span>
+            </div>
+            {% empty %}
+            <p class="text-muted text-xs">No categories yet.</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="col-xl-8">
+        <div class="ops-card">
+          <div class="ops-card-hd">
+            <h6 class="ops-card-hd-title"><i class="fas fa-receipt text-success"></i> Recent Transactions</h6>
+            <button class="btn btn-ops-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTransaction">
+              <i class="fas fa-plus me-1"></i>Add Transaction
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr><th>Date</th><th>Type</th><th>Title</th><th>Category</th><th class="text-end">Amount</th></tr></thead>
+              <tbody>
+                {% for t in transactions %}
+                <tr>
+                  <td class="text-muted" style="white-space:nowrap;">{{ t.transaction_date }}</td>
+                  <td><span class="pill {% if t.transaction_type == 'income' %}pill-green{% else %}pill-red{% endif %}">
+                    <i class="fas fa-{% if t.transaction_type == 'income' %}arrow-down{% else %}arrow-up{% endif %}"></i>
+                    {{ t.get_transaction_type_display }}
+                  </span></td>
+                  <td>{{ t.title|truncatechars:30 }}</td>
+                  <td>{% if t.category %}<span class="pill pill-slate">{{ t.category.name }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                  <td class="text-end fw-bold {% if t.transaction_type == 'income' %}text-success{% else %}text-danger{% endif %}">Rs. {{ t.amount|floatformat:0 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-4">No transactions yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Low stock alert -->
+    {% if low_stock_items %}
+    <div class="ops-card mt-4" style="border-left:4px solid #d97706;">
+      <div class="ops-card-hd">
+        <h6 class="ops-card-hd-title"><i class="fas fa-triangle-exclamation text-warning"></i> Low Stock Alert — {{ low_stock_items|length }} item{{ low_stock_items|length|pluralize }}</h6>
+        <span class="pill pill-amber">Action Required</span>
+      </div>
+      <div class="table-responsive">
+        <table class="tbl">
+          <thead><tr><th>Item</th><th>Branch</th><th>Current Qty</th><th>Threshold</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for item in low_stock_items %}
+            <tr>
+              <td class="fw-bold">{{ item.name }}</td>
+              <td>{{ item.branch|default:"—" }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  {{ item.quantity }} {{ item.unit }}
+                  <div class="qty-bar-wrap"><div class="qty-bar bg-danger" style="width:{% if item.low_stock_threshold %}{% widthratio item.quantity item.low_stock_threshold 100 %}{% else %}0{% endif %}%;"></div></div>
+                </div>
+              </td>
+              <td class="text-muted">{{ item.low_stock_threshold }} {{ item.unit }}</td>
+              <td><span class="pill pill-red"><i class="fas fa-exclamation-circle"></i> Low Stock</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: STOCK
+  ══════════════════════════════════════════════════════ -->
+  <div class="ops-tab-pane" id="tab-stock">
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <h6 class="fw-bold mb-0">Stock Inventory</h6>
+        <p class="text-muted text-xs mb-0">{{ stock_items|length }} items tracked</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-ops-ghost btn-sm" data-bs-toggle="modal" data-bs-target="#modalStockMovement">
+          <i class="fas fa-arrows-rotate me-1"></i>Record Movement
+        </button>
+        <button class="btn btn-ops-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalStockItem">
+          <i class="fas fa-plus me-1"></i>Add Item
+        </button>
+      </div>
+    </div>
+
+    <div class="ops-card mb-4">
+      <div class="table-responsive">
+        <table class="tbl">
+          <thead><tr><th>Item</th><th>SKU</th><th>Branch</th><th>Category</th><th>Quantity</th><th>Unit Cost</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for item in stock_items %}
+            <tr>
+              <td>
+                <div class="fw-bold" style="font-size:.85rem;">{{ item.name }}</div>
+                {% if item.supplier %}<div class="text-muted text-xs">Supplier: {{ item.supplier }}</div>{% endif %}
+              </td>
+              <td><span class="pill pill-slate font-monospace">{{ item.sku|default:"—" }}</span></td>
+              <td>{{ item.branch|default:"All" }}</td>
+              <td>{{ item.category|default:"Uncategorized" }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="fw-bold">{{ item.quantity }} <span class="text-muted fw-normal">{{ item.unit }}</span></span>
+                  {% if item.low_stock_threshold and item.low_stock_threshold > 0 %}
+                  <div class="qty-bar-wrap">
+                    <div class="qty-bar {% if item.is_low_stock %}bg-danger{% else %}bg-success{% endif %}" style="width:{% widthratio item.quantity item.low_stock_threshold 100 %}%;"></div>
+                  </div>
+                  {% endif %}
+                </div>
+              </td>
+              <td>{% if item.purchase_cost %}Rs. {{ item.purchase_cost|floatformat:0 }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+              <td>
+                {% if item.is_low_stock %}
+                <span class="pill pill-red"><i class="fas fa-exclamation-circle"></i> Low</span>
+                {% else %}
+                <span class="pill pill-green"><i class="fas fa-check-circle"></i> OK</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center py-5 text-muted">
+              <i class="fas fa-boxes fa-2x mb-2 d-block opacity-25"></i>No stock items yet.
+            </td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recent Movements -->
+    <div class="ops-card">
+      <div class="ops-card-hd">
+        <h6 class="ops-card-hd-title"><i class="fas fa-arrows-rotate text-blue"></i> Recent Stock Movements</h6>
+        <span class="text-muted text-xs">Last 25 records</span>
+      </div>
+      <div class="table-responsive">
+        <table class="tbl">
+          <thead><tr><th>Date</th><th>Item</th><th>Type</th><th>Qty</th><th>Unit Cost</th><th>Note</th></tr></thead>
+          <tbody>
+            {% for mv in stock_movements %}
+            <tr>
+              <td class="text-muted" style="white-space:nowrap;">{{ mv.movement_date }}</td>
+              <td class="fw-bold">{{ mv.item.name }}</td>
+              <td>
+                <span class="pill {% if mv.movement_type == 'in' %}pill-green{% elif mv.movement_type == 'out' %}pill-red{% else %}pill-blue{% endif %}">
+                  {{ mv.get_movement_type_display }}
+                </span>
+              </td>
+              <td>{{ mv.quantity }} {{ mv.item.unit }}</td>
+              <td>{% if mv.unit_cost %}Rs. {{ mv.unit_cost|floatformat:0 }}{% else %}—{% endif %}</td>
+              <td class="text-muted">{{ mv.note|default:"—"|truncatechars:30 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center py-4 text-muted">No stock movements recorded.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: FINANCE
+  ══════════════════════════════════════════════════════ -->
+  <div class="ops-tab-pane" id="tab-finance">
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <h6 class="fw-bold mb-0">Financial Ledger</h6>
+        <p class="text-muted text-xs mb-0">Income &amp; expense records for {{ org.name }}</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-ops-ghost btn-sm" data-bs-toggle="modal" data-bs-target="#modalTxCategory">
+          <i class="fas fa-tag me-1"></i>Add Category
+        </button>
+        <button class="btn btn-ops-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTransaction">
+          <i class="fas fa-plus me-1"></i>Add Transaction
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary row -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="ops-card ops-card-bd text-center" style="border-top:3px solid #16a34a;">
+          <div class="text-xs fw-bold text-uppercase text-muted mb-1">Total Income</div>
+          <div style="font-size:1.8rem;font-weight:800;color:#15803d;">Rs. {{ income_total|floatformat:0 }}</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="ops-card ops-card-bd text-center" style="border-top:3px solid #dc2626;">
+          <div class="text-xs fw-bold text-uppercase text-muted mb-1">Total Expenses</div>
+          <div style="font-size:1.8rem;font-weight:800;color:#dc2626;">Rs. {{ expense_total|floatformat:0 }}</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="ops-card ops-card-bd text-center" style="border-top:3px solid {% if net_total >= 0 %}#2563eb{% else %}#d97706{% endif %};">
+          <div class="text-xs fw-bold text-uppercase text-muted mb-1">Net Balance</div>
+          <div style="font-size:1.8rem;font-weight:800;" class="{% if net_total >= 0 %}text-primary{% else %}text-warning{% endif %}">Rs. {{ net_total|floatformat:0 }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ops-card">
+      <div class="table-responsive">
+        <table class="tbl">
+          <thead><tr><th>Date</th><th>Type</th><th>Title</th><th>Category</th><th>Branch</th><th>Payment</th><th class="text-end">Amount</th></tr></thead>
+          <tbody>
+            {% for t in transactions %}
+            <tr>
+              <td style="white-space:nowrap;">{{ t.transaction_date }}</td>
+              <td><span class="pill {% if t.transaction_type == 'income' %}pill-green{% else %}pill-red{% endif %}">
+                <i class="fas fa-{% if t.transaction_type == 'income' %}arrow-down{% else %}arrow-up{% endif %}"></i>
+                {{ t.get_transaction_type_display }}
+              </span></td>
+              <td>
+                <div class="fw-bold">{{ t.title|truncatechars:25 }}</div>
+                {% if t.reference_number %}<div class="text-muted text-xs">Ref: {{ t.reference_number }}</div>{% endif %}
+              </td>
+              <td>{% if t.category %}<span class="pill pill-slate">{{ t.category.name }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+              <td>{{ t.branch|default:"—" }}</td>
+              <td>{{ t.payment_method|default:"—"|title }}</td>
+              <td class="text-end fw-bold {% if t.transaction_type == 'income' %}text-success{% else %}text-danger{% endif %}">
+                {% if t.transaction_type == 'income' %}+{% else %}−{% endif %}Rs. {{ t.amount|floatformat:0 }}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center py-5 text-muted">
+              <i class="fas fa-receipt fa-2x mb-2 d-block opacity-25"></i>No transactions recorded.
+            </td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: SETUP
+  ══════════════════════════════════════════════════════ -->
+  <div class="ops-tab-pane" id="tab-setup">
+    <div class="row g-4">
+
+      <!-- Stock Category -->
+      <div class="col-lg-6">
+        <div class="ops-card">
+          <div class="ops-card-hd">
+            <h6 class="ops-card-hd-title"><i class="fas fa-tag text-primary"></i> Stock Categories</h6>
+          </div>
+          <div class="ops-card-bd">
+            <form method="post" class="mb-3">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="stock_category">
+              <div class="row g-2 align-items-end">
+                <div class="col-5">
+                  <label class="form-label text-xs fw-bold">Name</label>
+                  {{ stock_category_form.name }}
+                </div>
+                <div class="col-5">
+                  <label class="form-label text-xs fw-bold">Description</label>
+                  {{ stock_category_form.description }}
+                </div>
+                <div class="col-2">
+                  <button class="btn btn-ops-dark w-100 btn-sm" type="submit">Add</button>
+                </div>
+              </div>
+            </form>
+            <div class="d-flex flex-wrap gap-2">
+              {% for cat in stock_categories %}
+              <span class="pill pill-slate"><i class="fas fa-tag me-1"></i>{{ cat.name }}</span>
+              {% empty %}
+              <p class="text-muted text-xs">No stock categories yet.</p>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transaction Category -->
+      <div class="col-lg-6">
+        <div class="ops-card">
+          <div class="ops-card-hd">
+            <h6 class="ops-card-hd-title"><i class="fas fa-coins text-success"></i> Finance Categories</h6>
+          </div>
+          <div class="ops-card-bd">
+            <form method="post" class="mb-3">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="transaction_category">
+              <div class="row g-2 align-items-end">
+                <div class="col-5">
+                  <label class="form-label text-xs fw-bold">Name</label>
+                  {{ transaction_category_form.name }}
+                </div>
+                <div class="col-4">
+                  <label class="form-label text-xs fw-bold">Type</label>
+                  {{ transaction_category_form.transaction_type }}
+                </div>
+                <div class="col-3">
+                  <button class="btn btn-ops-dark w-100 btn-sm" type="submit">Add</button>
+                </div>
+              </div>
+            </form>
+            <div class="d-flex flex-wrap gap-2">
+              {% for cat in transaction_categories %}
+              <span class="pill {% if cat.transaction_type == 'income' %}pill-green{% else %}pill-red{% endif %}">
+                {{ cat.name }}
+              </span>
+              {% empty %}
+              <p class="text-muted text-xs">No finance categories yet.</p>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Stock Item inline form -->
+      <div class="col-12">
+        <div class="ops-card">
+          <div class="ops-card-hd">
+            <h6 class="ops-card-hd-title"><i class="fas fa-box text-warning"></i> Add Stock Item</h6>
+          </div>
+          <div class="ops-card-bd">
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="stock_item">
+              <div class="row g-3">
+                <div class="col-md-3"><label class="form-label text-xs fw-bold">Name</label>{{ stock_item_form.name }}</div>
+                <div class="col-md-2"><label class="form-label text-xs fw-bold">SKU</label>{{ stock_item_form.sku }}</div>
+                <div class="col-md-2"><label class="form-label text-xs fw-bold">Branch</label>{{ stock_item_form.branch }}</div>
+                <div class="col-md-2"><label class="form-label text-xs fw-bold">Category</label>{{ stock_item_form.category }}</div>
+                <div class="col-md-1"><label class="form-label text-xs fw-bold">Unit</label>{{ stock_item_form.unit }}</div>
+                <div class="col-md-2"><label class="form-label text-xs fw-bold">Opening Qty</label>{{ stock_item_form.quantity }}</div>
+                <div class="col-md-2"><label class="form-label text-xs fw-bold">Low Stock At</label>{{ stock_item_form.low_stock_threshold }}</div>
+                <div class="col-md-3"><label class="form-label text-xs fw-bold">Supplier</label>{{ stock_item_form.supplier }}</div>
+                <div class="col-md-2"><label class="form-label text-xs fw-bold">Purchase Cost</label>{{ stock_item_form.purchase_cost }}</div>
+                <div class="col-md-2"><label class="form-label text-xs fw-bold">Purchase Date</label>{{ stock_item_form.purchase_date }}</div>
+                <div class="col-md-2"><label class="form-label text-xs fw-bold">Status</label>{{ stock_item_form.status }}</div>
+                <div class="col-md-1 d-flex align-items-end">
+                  <button class="btn btn-ops-primary w-100" type="submit">Save</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: BIRTHDAYS
+  ══════════════════════════════════════════════════════ -->
+  <div class="ops-tab-pane" id="tab-birthdays">
+    <div class="row g-4">
+
+      <!-- Today -->
+      <div class="col-lg-4">
+        <div class="ops-card">
+          <div class="ops-card-hd" style="background:linear-gradient(135deg,#16a34a,#15803d);border-radius:13px 13px 0 0;">
+            <h6 class="ops-card-hd-title text-white"><i class="fas fa-cake-candles"></i> Today's Birthdays</h6>
+            {% if todays_birthdays %}<span class="pill" style="background:rgba(255,255,255,.25);color:#fff;">{{ todays_birthdays|length }}</span>{% endif %}
+          </div>
+          <div class="ops-card-bd">
+            {% for p in todays_birthdays %}
+            <div class="d-flex align-items-center gap-3 py-2 border-bottom">
+              <div class="bday-avatar bday-today">{{ p.name|first|upper }}</div>
+              <div class="flex-grow-1">
+                <div class="fw-bold" style="font-size:.88rem;">{{ p.name }}</div>
+                <div class="text-muted text-xs">{{ p.phone|default:"No phone" }}</div>
+              </div>
+              <span class="pill pill-green"><i class="fas fa-gift"></i> Today!</span>
+            </div>
+            {% empty %}
+            <div class="text-center py-4 text-muted">
+              <i class="fas fa-cake-candles fa-2x mb-2 d-block opacity-25"></i>
+              No birthdays today.
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming -->
+      <div class="col-lg-8">
+        <div class="ops-card">
+          <div class="ops-card-hd">
+            <h6 class="ops-card-hd-title"><i class="fas fa-calendar-days text-primary"></i> Upcoming Birthdays <span class="text-muted fw-normal">(next 30 days)</span></h6>
+            <a href="?export=birthdays" class="btn btn-ops-ghost btn-sm"><i class="fas fa-download me-1"></i>Export</a>
+          </div>
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr><th>Member</th><th>Branch</th><th>Date</th><th>Days Away</th></tr></thead>
+              <tbody>
+                {% for p in upcoming_birthdays %}
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="bday-avatar" style="width:32px;height:32px;font-size:.75rem;flex-shrink:0;">{{ p.name|first|upper }}</div>
+                      <div>
+                        <div class="fw-bold">{{ p.name }}</div>
+                        <div class="text-muted text-xs">{{ p.phone|default:"No phone" }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{{ p.branch|default:"—" }}</td>
+                  <td class="fw-bold">{{ p.date_of_birth|date:"M d" }}</td>
+                  <td>
+                    <span class="pill pill-blue"><i class="fas fa-hourglass-half"></i> Soon</span>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center py-5 text-muted">
+                  <i class="fas fa-calendar fa-2x mb-2 d-block opacity-25"></i>No upcoming birthdays in the next 30 days.
+                </td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /.ops-page -->
+
+
+<!-- ══════════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════════ -->
+
+<!-- Stock Item Modal -->
+<div class="modal fade ops-modal" id="modalStockItem" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-box me-2"></i>Add Stock Item</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="stock_item">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label fw-bold text-xs">Name</label>{{ stock_item_form.name }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold text-xs">SKU</label>{{ stock_item_form.sku }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold text-xs">Unit</label>{{ stock_item_form.unit }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold text-xs">Branch</label>{{ stock_item_form.branch }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold text-xs">Category</label>{{ stock_item_form.category }}</div>
+            <div class="col-md-2"><label class="form-label fw-bold text-xs">Opening Qty</label>{{ stock_item_form.quantity }}</div>
+            <div class="col-md-2"><label class="form-label fw-bold text-xs">Low Stock At</label>{{ stock_item_form.low_stock_threshold }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold text-xs">Supplier</label>{{ stock_item_form.supplier }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold text-xs">Purchase Cost</label>{{ stock_item_form.purchase_cost }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold text-xs">Purchase Date</label>{{ stock_item_form.purchase_date }}</div>
+            <div class="col-md-2"><label class="form-label fw-bold text-xs">Status</label>{{ stock_item_form.status }}</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ops-ghost" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-ops-primary">Save Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Stock Movement Modal -->
+<div class="modal fade ops-modal" id="modalStockMovement" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-arrows-rotate me-2"></i>Record Stock Movement</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="stock_movement">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label fw-bold text-xs">Item</label>{{ stock_movement_form.item }}</div>
+            <div class="col-md-6"><label class="form-label fw-bold text-xs">Movement Type</label>{{ stock_movement_form.movement_type }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold text-xs">Quantity</label>{{ stock_movement_form.quantity }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold text-xs">Unit Cost</label>{{ stock_movement_form.unit_cost }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold text-xs">Date</label>{{ stock_movement_form.movement_date }}</div>
+            <div class="col-md-6"><label class="form-label fw-bold text-xs">Branch</label>{{ stock_movement_form.branch }}</div>
+            <div class="col-md-6"><label class="form-label fw-bold text-xs">Note</label>{{ stock_movement_form.note }}</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ops-ghost" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-ops-primary">Record Movement</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Transaction Modal -->
+<div class="modal fade ops-modal" id="modalTransaction" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-receipt me-2"></i>Add Financial Transaction</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}<input type="hidden" name="action" value="financial_transaction">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label fw-bold text-xs">Title</label>{{ financial_transaction_form.title }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold text-xs">Type</label>{{ financial_transaction_form.transaction_type }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold text-xs">Amount (Rs.)</label>{{ financial_transaction_form.amount }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold text-xs">Category</label>{{ financial_transaction_form.category }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold text-xs">Branch</label>{{ financial_transaction_form.branch }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold text-xs">Date</label>{{ financial_transaction_form.transaction_date }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold text-xs">Payment Method</label>{{ financial_transaction_form.payment_method }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold text-xs">Reference No.</label>{{ financial_transaction_form.reference_number }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold text-xs">Attachment</label>{{ financial_transaction_form.attachment }}</div>
+            <div class="col-12"><label class="form-label fw-bold text-xs">Note</label>{{ financial_transaction_form.note }}</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ops-ghost" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-ops-primary">Save Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Finance Category Modal -->
+<div class="modal fade ops-modal" id="modalTxCategory" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-tag me-2"></i>Add Finance Category</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="transaction_category">
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label fw-bold text-xs">Category Name</label>{{ transaction_category_form.name }}</div>
+          <div class="mb-1"><label class="form-label fw-bold text-xs">Type</label>{{ transaction_category_form.transaction_type }}</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ops-ghost" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-ops-primary">Add Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ── Tab switching ──────────────────────────────────────
+document.querySelectorAll('.ops-tab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('.ops-tab').forEach(function(t){t.classList.remove('active');});
+    document.querySelectorAll('.ops-tab-pane').forEach(function(p){p.classList.remove('active');});
+    tab.classList.add('active');
+    var pane = document.getElementById('tab-' + tab.dataset.tab);
+    if(pane) pane.classList.add('active');
+    // Persist active tab in sessionStorage
+    sessionStorage.setItem('ops_tab', tab.dataset.tab);
+  });
+});
+
+// Restore active tab on page load (e.g. after form submit redirects back)
+(function(){
+  var saved = sessionStorage.getItem('ops_tab');
+  if(saved){
+    var found = document.querySelector('.ops-tab[data-tab="'+saved+'"]');
+    if(found) found.click();
+  }
+})();
+</script>
+{% endblock content %}

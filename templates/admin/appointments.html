@@ -1,0 +1,261 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Appointments — {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Page Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+      <h4 class="fw-bold mb-1" style="color:#0f172a;">Appointment Booking</h4>
+      <p class="text-muted mb-0 small">Manage appointment types and incoming bookings</p>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <div class="input-group input-group-sm" style="max-width:340px;">
+        <span class="input-group-text bg-light border-end-0">
+          <i class="fa fa-link text-danger"></i>
+        </span>
+        <input type="text" class="form-control border-start-0 bg-light" id="bookingLink"
+               value="{{ request.scheme }}://{{ request.get_host }}/book/{{ org.serial_key }}/" readonly>
+        <button class="btn btn-outline-danger btn-sm" onclick="copyLink()" type="button">
+          <i class="fa fa-copy"></i> Copy
+        </button>
+      </div>
+      <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#newTypeModal">
+        <i class="fa fa-plus"></i> New Type
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <!-- Appointment Types -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
+    <div class="card-header bg-white border-bottom d-flex align-items-center gap-2 py-3" style="border-radius:12px 12px 0 0;">
+      <i class="fa fa-tags text-danger"></i>
+      <h6 class="mb-0 fw-bold">Appointment Types</h6>
+    </div>
+    <div class="card-body p-0">
+      {% if types %}
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">Color</th>
+            <th>Name</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th class="text-end pe-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in types %}
+          <tr>
+            <td class="ps-4">
+              <span class="d-inline-block rounded-circle" style="width:20px;height:20px;background:{{ t.color }};"></span>
+            </td>
+            <td>
+              <div class="fw-semibold">{{ t.name }}</div>
+              {% if t.description %}<div class="text-muted small">{{ t.description }}</div>{% endif %}
+            </td>
+            <td><span class="badge bg-light text-dark border">{{ t.duration_minutes }} min</span></td>
+            <td>
+              {% if t.is_active %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary border">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="text-end pe-4">
+              <form method="POST" class="d-inline" onsubmit="return confirm('Delete this appointment type?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_type">
+                <input type="hidden" name="pk" value="{{ t.pk }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fa fa-tags fa-2x mb-3 d-block opacity-25"></i>
+        No appointment types yet. Create one to get started.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Bookings Table -->
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-3" style="border-radius:12px 12px 0 0;">
+      <div class="d-flex align-items-center gap-2">
+        <i class="fa fa-calendar-check text-danger"></i>
+        <h6 class="mb-0 fw-bold">Bookings</h6>
+        <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">{{ appts.count }}</span>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      {% if appts %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Type</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th class="text-end pe-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for appt in appts %}
+            <tr>
+              <td class="ps-4 fw-semibold">{{ appt.name }}</td>
+              <td class="text-muted small">{{ appt.email }}</td>
+              <td class="text-muted small">{{ appt.phone|default:"—" }}</td>
+              <td>
+                {% if appt.appointment_type %}
+                  <span class="badge bg-light text-dark border" style="border-left:3px solid {{ appt.appointment_type.color }} !important;">
+                    {{ appt.appointment_type.name }}
+                  </span>
+                {% else %}
+                  <span class="text-muted small">—</span>
+                {% endif %}
+              </td>
+              <td class="small">{{ appt.date }}</td>
+              <td class="small">{{ appt.time }}</td>
+              <td>
+                {% if appt.status == 'pending' %}
+                  <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Pending</span>
+                {% elif appt.status == 'confirmed' %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">Confirmed</span>
+                {% elif appt.status == 'cancelled' %}
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Cancelled</span>
+                {% elif appt.status == 'completed' %}
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Completed</span>
+                {% endif %}
+              </td>
+              <td class="text-end pe-4">
+                <button class="btn btn-sm btn-outline-secondary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#updateModal{{ appt.pk }}">
+                  <i class="fa fa-pen-to-square"></i> Update
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fa fa-calendar fa-2x mb-3 d-block opacity-25"></i>
+        No appointments yet. Share your booking link!
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- New Type Modal -->
+<div class="modal fade" id="newTypeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" class="modal-content" style="border-radius:12px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create_type">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold">New Appointment Type</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Name <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Initial Consultation" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Description</label>
+          <textarea name="description" class="form-control" rows="2" placeholder="Brief description..."></textarea>
+        </div>
+        <div class="row g-3">
+          <div class="col-7">
+            <label class="form-label fw-semibold small">Duration (minutes)</label>
+            <input type="number" name="duration_minutes" class="form-control" value="30" min="5" max="480">
+          </div>
+          <div class="col-5">
+            <label class="form-label fw-semibold small">Color</label>
+            <input type="color" name="color" class="form-control form-control-color w-100" value="#e11d48">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger">Create Type</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Update Modals -->
+{% for appt in appts %}
+<div class="modal fade" id="updateModal{{ appt.pk }}" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" class="modal-content" style="border-radius:12px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_status">
+      <input type="hidden" name="pk" value="{{ appt.pk }}">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold">Update: {{ appt.name }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3 p-3 bg-light rounded">
+          <div class="small text-muted">{{ appt.date }} at {{ appt.time }}</div>
+          <div class="fw-semibold">{{ appt.email }}</div>
+          {% if appt.message %}<div class="small mt-2 text-muted">{{ appt.message }}</div>{% endif %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Status</label>
+          <select name="status" class="form-select">
+            <option value="pending" {% if appt.status == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="confirmed" {% if appt.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+            <option value="cancelled" {% if appt.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            <option value="completed" {% if appt.status == 'completed' %}selected{% endif %}>Completed</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Admin Note</label>
+          <textarea name="admin_note" class="form-control" rows="2" placeholder="Optional note...">{{ appt.admin_note }}</textarea>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endfor %}
+
+<script>
+function copyLink() {
+  const input = document.getElementById('bookingLink');
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = input.nextElementSibling;
+    btn.innerHTML = '<i class="fa fa-check"></i> Copied!';
+    setTimeout(() => btn.innerHTML = '<i class="fa fa-copy"></i> Copy', 2000);
+  });
+}
+</script>
+{% endblock %}

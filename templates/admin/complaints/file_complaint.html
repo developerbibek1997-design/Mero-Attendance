@@ -1,0 +1,34 @@
+{% extends 'dashboard.html' %}
+{% block title %}File Complaint | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-exclamation-circle text-warning me-2"></i>File a Complaint</h6>
+          <a href="{% url 'schooladmin:complaint_list' %}" class="btn btn-outline-secondary btn-sm">Back</a>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Filed By (Member) *</label>
+                <select name="filed_by" class="form-select" required><option value="">-- Select Member --</option>{% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Branch</label>
+                <select name="branch" class="form-select"><option value="">-- All --</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Complaint Type</label><input type="text" name="complaint_type" class="form-control" placeholder="e.g. Harassment, Facilities"></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Priority</label>
+                <select name="priority" class="form-select">{% for val,label in priority_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}</select></div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Subject *</label><input type="text" name="subject" class="form-control" required></div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Description *</label><textarea name="description" class="form-control" rows="4" required></textarea></div>
+              <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-warning"><i class="fas fa-paper-plane me-1"></i>Submit Complaint</button><a href="{% url 'schooladmin:complaint_list' %}" class="btn btn-outline-secondary">Cancel</a></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

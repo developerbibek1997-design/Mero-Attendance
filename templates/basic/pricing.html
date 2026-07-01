@@ -1,53 +1,411 @@
 {% extends 'pillar.html' %}
 {% load static %}
+
+{% block title %}
+    Mero Attendance Pricing | Attendance, HRMS & Payroll Packages Nepal
+{% endblock title %}
+
 {% block content %}
-    <style>
-    .loader{
-      display: none;
+
+<style>
+    .pricing-page {
+        background:
+            radial-gradient(circle at top left, rgba(225, 29, 72, 0.10), transparent 30%),
+            radial-gradient(circle at top right, rgba(22, 163, 74, 0.08), transparent 28%),
+            linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        overflow: hidden;
     }
 
-  </style>
-    <div class="container-fluid pb-5" id="background">
-       
-        <div class="row pb-5">
-         
-            <div class="col-lg-12 col-12 col-md-12 mt-3">
-              <br><br>
-              <h5 class="text-center">Mero <b> <span style="color: red;">Attendance</span></b> </h5>
-              <hr>
-              <h5 class="text-center mt-3">Pricing<b> package</b> </h5>
-            
-            
-            </div>
-            {% for pricing in pricing_list %}
-            <div class="col-lg-3 col-12 mt-5 m-auto">
+    .loader {
+        display: none;
+    }
 
-              <div class="card p-3">
-                
-                {% if pricing.image %}
-                    <img src="{{pricing.image.url}}" alt="Mero Attendnace Pricing">
-                    {% else %}
-                    <img src="{%static 'res/time.png'%}" alt="Mero Attendnace Pricing">
-                {% endif %}
-               
-                  <h3>{{ pricing.name }}</h3>
-                  <b>
-                    <h4 class="text-success">Rs. {{ pricing.price }}</h4>
-                  </b>
-                 
-                  <span class="badge bg-danger p-2">
-                    Limit: {{pricing.limit}}
-                  </span>
-              
-                    
-                  
-              </div>
+    .pricing-hero {
+        position: relative;
+        padding: 90px 0 55px;
+        text-align: center;
+    }
+
+    .pricing-hero::before {
+        content: "";
+        position: absolute;
+        width: 520px;
+        height: 520px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(225, 29, 72, 0.14), rgba(22, 163, 74, 0.08));
+        top: -220px;
+        right: -150px;
+        filter: blur(8px);
+    }
+
+    .pricing-hero-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .pricing-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: rgba(225, 29, 72, 0.08);
+        color: #e11d48;
+        font-weight: 900;
+        font-size: 0.88rem;
+        margin-bottom: 18px;
+    }
+
+    .pricing-title {
+        color: #0f172a;
+        font-size: clamp(2.3rem, 5vw, 5rem);
+        font-weight: 950;
+        letter-spacing: -0.06em;
+        line-height: 1.05;
+        margin-bottom: 18px;
+    }
+
+    .pricing-title span {
+        color: #e11d48;
+    }
+
+    .pricing-subtitle {
+        max-width: 780px;
+        margin: 0 auto;
+        color: #64748b;
+        font-size: 1.08rem;
+        line-height: 1.75;
+    }
+
+    .pricing-section {
+        padding: 45px 0 95px;
+    }
+
+    .pricing-card {
+        height: 100%;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 30px;
+        padding: 28px;
+        box-shadow: 0 20px 55px rgba(15, 23, 42, 0.09);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.25s ease;
+    }
+
+    .pricing-card::before {
+        content: "";
+        position: absolute;
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: rgba(225, 29, 72, 0.07);
+        right: -65px;
+        top: -65px;
+        transition: all 0.25s ease;
+    }
+
+    .pricing-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 32px 80px rgba(15, 23, 42, 0.14);
+        border-color: rgba(225, 29, 72, 0.28);
+    }
+
+    .pricing-card:hover::before {
+        transform: scale(1.18);
+        background: rgba(225, 29, 72, 0.10);
+    }
+
+    .pricing-card-inner {
+        position: relative;
+        z-index: 2;
+    }
+
+    .pricing-image-wrap {
+        width: 86px;
+        height: 86px;
+        border-radius: 26px;
+        display: grid;
+        place-items: center;
+        background: #f8fafc;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        margin-bottom: 22px;
+        box-shadow: 0 14px 35px rgba(15, 23, 42, 0.07);
+    }
+
+    .pricing-image-wrap img {
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+    }
+
+    .pricing-package-name {
+        color: #0f172a;
+        font-size: 1.35rem;
+        font-weight: 950;
+        letter-spacing: -0.03em;
+        margin-bottom: 14px;
+    }
+
+    .pricing-price {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 18px;
+    }
+
+    .pricing-price .currency {
+        color: #16a34a;
+        font-size: 1.15rem;
+        font-weight: 900;
+    }
+
+    .pricing-price .amount {
+        color: #16a34a;
+        font-size: 2.35rem;
+        font-weight: 950;
+        letter-spacing: -0.05em;
+    }
+
+    .pricing-limit {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        border-radius: 999px;
+        background: rgba(225, 29, 72, 0.09);
+        color: #e11d48;
+        font-weight: 900;
+        font-size: 0.86rem;
+        margin-bottom: 22px;
+    }
+
+    .pricing-features {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 26px;
+    }
+
+    .pricing-features li {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        color: #475569;
+        font-weight: 650;
+        margin-bottom: 11px;
+        line-height: 1.45;
+        font-size: 0.95rem;
+    }
+
+    .pricing-features i {
+        color: #16a34a;
+        margin-top: 3px;
+    }
+
+    .pricing-btn {
+        width: 100%;
+        min-height: 52px;
+        border-radius: 16px;
+        border: 0;
+        background: linear-gradient(135deg, #e11d48, #be123c);
+        color: #ffffff;
+        font-weight: 950;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        text-decoration: none;
+        box-shadow: 0 18px 38px rgba(225, 29, 72, 0.26);
+        transition: all 0.25s ease;
+    }
+
+    .pricing-btn:hover {
+        transform: translateY(-2px);
+        color: #ffffff;
+        box-shadow: 0 24px 48px rgba(225, 29, 72, 0.34);
+    }
+
+    .pricing-note {
+        margin-top: 42px;
+        background:
+            radial-gradient(circle at top right, rgba(225, 29, 72, 0.22), transparent 30%),
+            linear-gradient(135deg, #0f172a, #1e293b);
+        border-radius: 34px;
+        padding: 42px;
+        color: #ffffff;
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.18);
+    }
+
+    .pricing-note h2 {
+        font-size: clamp(1.8rem, 3vw, 3.2rem);
+        font-weight: 950;
+        letter-spacing: -0.045em;
+        margin-bottom: 12px;
+    }
+
+    .pricing-note p {
+        color: rgba(255, 255, 255, 0.72);
+        line-height: 1.75;
+        margin-bottom: 0;
+    }
+
+    .pricing-empty {
+        background: #ffffff;
+        border: 1px dashed rgba(15, 23, 42, 0.18);
+        border-radius: 28px;
+        padding: 50px 24px;
+        text-align: center;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.07);
+    }
+
+    .pricing-empty i {
+        font-size: 2.5rem;
+        color: #e11d48;
+        margin-bottom: 15px;
+    }
+
+    .pricing-empty h4 {
+        font-weight: 950;
+        color: #0f172a;
+        margin-bottom: 8px;
+    }
+
+    .pricing-empty p {
+        color: #64748b;
+        margin: 0;
+    }
+
+    @media (max-width: 991px) {
+        .pricing-hero {
+            padding: 70px 0 35px;
+        }
+
+        .pricing-section {
+            padding: 35px 0 70px;
+        }
+
+        .pricing-note {
+            padding: 32px 24px;
+        }
+    }
+</style>
+
+<div class="pricing-page">
+
+    <!-- HERO -->
+    <section class="pricing-hero">
+        <div class="container">
+            <div class="pricing-hero-content">
+                <div class="pricing-badge">
+                    <i class="fa-solid fa-tags"></i>
+                    Flexible packages for every organization
+                </div>
+
+                <h1 class="pricing-title">
+                    Simple <span>Pricing</span><br>
+                    Powerful Features
+                </h1>
+
+                <p class="pricing-subtitle">
+                    Choose the best Mero Attendance package for your school, college, office, company or organization.
+                    Every package is designed to help you save time, reduce paperwork and manage attendance professionally.
+                </p>
             </div>
-            {% endfor %}
-            
-              
         </div>
-    </div>
+    </section>
+
+    <!-- PRICING CARDS -->
+    <section class="pricing-section">
+        <div class="container">
+
+            {% if pricing_list %}
+                <div class="row g-4 justify-content-center">
+                    {% for pricing in pricing_list %}
+                        <div class="col-xl-3 col-lg-4 col-md-6 col-12">
+                            <div class="pricing-card">
+                                <div class="pricing-card-inner">
+
+                                    <div class="pricing-image-wrap">
+                                        {% if pricing.image %}
+                                            <img src="{{ pricing.image.url }}" alt="{{ pricing.name }} Mero Attendance Pricing">
+                                        {% else %}
+                                            <img src="{% static 'res/time.png' %}" alt="Mero Attendance Pricing">
+                                        {% endif %}
+                                    </div>
+
+                                    <h3 class="pricing-package-name">
+                                        {{ pricing.name }}
+                                    </h3>
+
+                                    <div class="pricing-price">
+                                        <span class="currency">Rs.</span>
+                                        <span class="amount">{{ pricing.price }}</span>
+                                    </div>
+
+                                    <div class="pricing-limit">
+                                        <i class="fa-solid fa-users"></i>
+                                        Limit: {{ pricing.limit }}
+                                    </div>
+
+                                    <ul class="pricing-features">
+                                        <li>
+                                            <i class="fa-solid fa-check-circle"></i>
+                                            Attendance management dashboard
+                                        </li>
+                                        <li>
+                                            <i class="fa-solid fa-check-circle"></i>
+                                            Staff and member records
+                                        </li>
+                                        <li>
+                                            <i class="fa-solid fa-check-circle"></i>
+                                            Reports and salary support
+                                        </li>
+                                        <li>
+                                            <i class="fa-solid fa-check-circle"></i>
+                                            Cloud access with responsive design
+                                        </li>
+                                    </ul>
+
+                                    <a href="{% url 'management:contact' %}" class="pricing-btn">
+                                        Choose Package
+                                        <i class="fa-solid fa-arrow-right"></i>
+                                    </a>
+
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="pricing-empty">
+                    <i class="fa-solid fa-box-open"></i>
+                    <h4>No pricing packages available</h4>
+                    <p>Please add pricing packages from the admin dashboard.</p>
+                </div>
+            {% endif %}
+
+            <div class="pricing-note">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <h2>Need a custom package?</h2>
+                        <p>
+                            For large schools, colleges, companies, factories or government offices, we can provide
+                            a custom package based on number of members, devices, payroll needs and support requirements.
+                        </p>
+                    </div>
+
+                    <div class="col-lg-4 text-lg-end">
+                        <a href="{% url 'management:contact' %}" class="pricing-btn">
+                            Contact Sales
+                            <i class="fa-solid fa-phone"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+</div>
 
 {% endblock content %}
-    

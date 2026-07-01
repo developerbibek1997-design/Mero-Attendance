@@ -1,0 +1,68 @@
+{% extends 'dashboard.html' %}
+{% block title %}Complaint Detail | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0">Complaint Detail</h4>
+    <a href="{% url 'schooladmin:complaint_list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Back</a>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder">{{ complaint.subject }}</h6>
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6"><span class="text-xs text-uppercase text-muted font-weight-bold">Filed By</span><p class="mb-0 text-sm font-weight-bold">{{ complaint.filed_by.name }}</p></div>
+            <div class="col-md-6"><span class="text-xs text-uppercase text-muted font-weight-bold">Date Filed</span><p class="mb-0 text-sm">{{ complaint.created_at|date:"M d, Y" }}</p></div>
+            <div class="col-md-6"><span class="text-xs text-uppercase text-muted font-weight-bold">Type</span><p class="mb-0 text-sm">{{ complaint.complaint_type|default:"-" }}</p></div>
+            <div class="col-md-6"><span class="text-xs text-uppercase text-muted font-weight-bold">Branch</span><p class="mb-0 text-sm">{{ complaint.branch.name|default:"All Branches" }}</p></div>
+            <div class="col-md-6">
+              <span class="text-xs text-uppercase text-muted font-weight-bold">Priority</span><br>
+              {% if complaint.priority == 'high' %}<span class="badge bg-danger">High</span>
+              {% elif complaint.priority == 'medium' %}<span class="badge bg-warning text-dark">Medium</span>
+              {% else %}<span class="badge bg-secondary">Low</span>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <span class="text-xs text-uppercase text-muted font-weight-bold">Status</span><br>
+              {% if complaint.status == 'pending' %}<span class="badge bg-danger">Pending</span>
+              {% elif complaint.status == 'reviewing' %}<span class="badge bg-warning text-dark">Reviewing</span>
+              {% elif complaint.status == 'resolved' %}<span class="badge bg-success">Resolved</span>
+              {% else %}<span class="badge bg-secondary">Rejected</span>{% endif %}
+            </div>
+          </div>
+          <div class="mb-3">
+            <span class="text-xs text-uppercase text-muted font-weight-bold">Description</span>
+            <div class="border rounded p-3 mt-1 bg-light"><p class="text-sm mb-0">{{ complaint.description }}</p></div>
+          </div>
+          {% if complaint.admin_remarks %}
+          <div>
+            <span class="text-xs text-uppercase text-muted font-weight-bold">Admin Remarks</span>
+            <div class="border rounded p-3 mt-1 bg-light"><p class="text-sm mb-0">{{ complaint.admin_remarks }}</p></div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 font-weight-bolder">Update Status</h6></div>
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Status</label>
+              <select name="status" class="form-select">{% for val,label in status_choices %}<option value="{{ val }}" {% if complaint.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Admin Remarks</label>
+              <textarea name="admin_remarks" class="form-control" rows="3" placeholder="Add remarks...">{{ complaint.admin_remarks|default:'' }}</textarea></div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Resolution Date</label>
+              <input type="date" name="resolution_date" class="form-control" value="{{ complaint.resolution_date|date:'Y-m-d'|default:'' }}"></div>
+            <button type="submit" class="btn btn-primary w-100"><i class="fas fa-save me-1"></i>Update Complaint</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

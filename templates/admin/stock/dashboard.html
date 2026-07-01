@@ -1,0 +1,103 @@
+{% extends 'dashboard.html' %}
+{% block title %}Stock Dashboard | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h4 class="font-weight-bolder mb-0">Stock Dashboard</h4><p class="text-sm text-muted mb-0">Inventory Overview</p></div>
+    <div>
+      <a href="{% url 'schooladmin:add_stock_item' %}" class="btn btn-primary btn-sm me-1"><i class="fas fa-plus me-1"></i>Add Item</a>
+      <a href="{% url 'schooladmin:stock_in' %}" class="btn btn-success btn-sm me-1"><i class="fas fa-arrow-down me-1"></i>Stock In</a>
+      <a href="{% url 'schooladmin:stock_out' %}" class="btn btn-warning btn-sm"><i class="fas fa-arrow-up me-1"></i>Stock Out</a>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-primary mb-1">Total Items</p><h3 class="font-weight-bolder mb-0">{{ total_items }}</h3><span class="text-xs text-muted">Active stock items</span></div>
+          <div class="icon icon-shape bg-gradient-primary text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-boxes"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-danger mb-1">Low Stock</p><h3 class="font-weight-bolder mb-0">{{ low_stock_count }}</h3><span class="text-xs text-muted">Need restocking</span></div>
+          <div class="icon icon-shape bg-gradient-danger text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-exclamation-triangle"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-success mb-1">Stock Value</p><h3 class="font-weight-bolder mb-0">Rs. {{ total_value|floatformat:0 }}</h3><span class="text-xs text-muted">Estimated value</span></div>
+          <div class="icon icon-shape bg-gradient-success text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-coins"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-warning mb-1">Categories</p><h3 class="font-weight-bolder mb-0">{{ categories.count }}</h3><span class="text-xs text-muted">Stock categories</span></div>
+          <div class="icon icon-shape bg-gradient-warning text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-tags"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if low_stock %}
+  <div class="card border-0 shadow-sm mb-4" style="border-left: 4px solid #f43f5e !important;">
+    <div class="card-header bg-white py-3"><h6 class="mb-0 font-weight-bolder text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alerts</h6></div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th class="text-xs">Item</th><th class="text-xs">Category</th><th class="text-xs">Branch</th><th class="text-xs">Available</th><th class="text-xs">Threshold</th><th class="text-xs text-center">Action</th></tr></thead>
+        <tbody>
+          {% for item in low_stock %}
+          <tr>
+            <td class="text-sm font-weight-bold">{{ item.name }}</td>
+            <td class="text-sm">{{ item.category.name|default:"-" }}</td>
+            <td class="text-sm">{{ item.branch.name|default:"-" }}</td>
+            <td><span class="badge bg-danger">{{ item.quantity }} {{ item.unit }}</span></td>
+            <td class="text-sm">{{ item.low_stock_threshold }} {{ item.unit }}</td>
+            <td class="text-center"><a href="{% url 'schooladmin:stock_in' %}" class="btn btn-xs btn-success">Stock In</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between">
+      <h6 class="mb-0 font-weight-bolder"><i class="fas fa-history text-primary me-2"></i>Recent Movements</h6>
+      <a href="{% url 'schooladmin:stock_movements' %}" class="btn btn-xs btn-outline-primary">View All</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th class="text-xs">Date</th><th class="text-xs">Item</th><th class="text-xs">Type</th><th class="text-xs">Qty</th><th class="text-xs">Branch</th><th class="text-xs">Note</th></tr></thead>
+        <tbody>
+          {% for m in recent_movements %}
+          <tr>
+            <td class="text-sm">{{ m.movement_date }}</td>
+            <td class="text-sm font-weight-bold">{{ m.item.name }}</td>
+            <td>
+              {% if m.movement_type == 'in' %}<span class="badge bg-success">IN</span>
+              {% elif m.movement_type == 'out' %}<span class="badge bg-warning">OUT</span>
+              {% elif m.movement_type == 'damage' %}<span class="badge bg-danger">DAMAGE</span>
+              {% else %}<span class="badge bg-info">ADJ</span>{% endif %}
+            </td>
+            <td class="text-sm">{{ m.quantity }} {{ m.item.unit }}</td>
+            <td class="text-sm">{{ m.branch.name|default:"-" }}</td>
+            <td class="text-xs text-muted">{{ m.note|truncatechars:30 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No movements yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

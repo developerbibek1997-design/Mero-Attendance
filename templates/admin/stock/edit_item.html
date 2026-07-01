@@ -1,0 +1,39 @@
+{% extends 'dashboard.html' %}
+{% block title %}Edit Stock Item | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-edit text-primary me-2"></i>Edit: {{ item.name }}</h6>
+        </div>
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Item Name</label><input type="text" name="name" class="form-control" value="{{ item.name }}" required></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">SKU</label><input type="text" name="sku" class="form-control" value="{{ item.sku|default:'' }}"></div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Category</label>
+                <select name="category" class="form-select"><option value="">-- None --</option>{% for c in categories %}<option value="{{ c.id }}" {% if item.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Branch</label>
+                <select name="branch" class="form-select"><option value="">-- General --</option>{% for b in branches %}<option value="{{ b.id }}" {% if item.branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Unit</label>
+                <select name="unit" class="form-select"><option value="pcs" {% if item.unit == 'pcs' %}selected{% endif %}>pcs</option><option value="kg" {% if item.unit == 'kg' %}selected{% endif %}>kg</option><option value="ltr" {% if item.unit == 'ltr' %}selected{% endif %}>ltr</option><option value="box" {% if item.unit == 'box' %}selected{% endif %}>box</option><option value="set" {% if item.unit == 'set' %}selected{% endif %}>set</option></select></div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Low Stock Threshold</label><input type="number" step="0.01" name="low_stock_threshold" class="form-control" value="{{ item.low_stock_threshold }}"></div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Purchase Cost</label><input type="number" step="0.01" name="purchase_cost" class="form-control" value="{{ item.purchase_cost|default:0 }}"></div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Status</label>
+                <select name="status" class="form-select"><option value="active" {% if item.status == 'active' %}selected{% endif %}>Active</option><option value="inactive" {% if item.status == 'inactive' %}selected{% endif %}>Inactive</option><option value="archived" {% if item.status == 'archived' %}selected{% endif %}>Archived</option></select></div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Supplier</label><input type="text" name="supplier" class="form-control" value="{{ item.supplier|default:'' }}"></div>
+              <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Update</button>
+                <a href="{% url 'schooladmin:stock_items' %}" class="btn btn-outline-secondary">Cancel</a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marksheet — {{ member.name }}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;color:#0f172a;background:#fff;padding:1.5rem;}
+.page{max-width:750px;margin:0 auto;}
+/* Top bar */
+.school-header{text-align:center;padding-bottom:1rem;border-bottom:3px double #1e293b;margin-bottom:1.25rem;}
+.school-name{font-size:1.35rem;font-weight:900;color:#1e293b;letter-spacing:.02em;}
+.school-sub{font-size:.8rem;color:#475569;margin-top:.2rem;}
+.exam-title{font-size:1rem;font-weight:800;color:#6366f1;margin-top:.5rem;text-transform:uppercase;letter-spacing:.06em;}
+/* Student info */
+.student-info{display:flex;justify-content:space-between;align-items:flex-start;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;gap:1rem;}
+.si-block{flex:1;}
+.si-label{font-size:.65rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;}
+.si-val{font-size:.88rem;font-weight:700;color:#0f172a;margin-top:.15rem;}
+/* Marks table */
+.marks-table{width:100%;border-collapse:collapse;margin-bottom:1.25rem;}
+.marks-table th{font-size:.68rem;font-weight:700;text-transform:uppercase;color:#64748b;padding:.6rem .85rem;background:#f8fafc;border:1px solid #e2e8f0;text-align:left;}
+.marks-table th.ctr{text-align:center;}
+.marks-table td{padding:.6rem .85rem;border:1px solid #e2e8f0;font-size:.84rem;vertical-align:middle;}
+.marks-table td.ctr{text-align:center;}
+.pass{color:#16a34a;font-weight:700;}
+.fail{color:#e11d48;font-weight:700;}
+.absent{color:#d97706;font-weight:700;}
+.grade-cell{font-size:.9rem;font-weight:900;text-align:center;}
+/* Footer summary */
+.summary-row{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem;}
+.sum-card{flex:1;min-width:110px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.8rem;text-align:center;}
+.sum-num{font-size:1.3rem;font-weight:900;line-height:1;}
+.sum-lbl{font-size:.65rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-top:.3rem;}
+.result-banner{text-align:center;border-radius:12px;padding:.85rem 1.5rem;margin-bottom:1.25rem;font-size:1rem;font-weight:900;letter-spacing:.04em;}
+.result-pass{background:#dcfce7;color:#15803d;border:2px solid #86efac;}
+.result-fail{background:#ffe4e6;color:#be123c;border:2px solid #fca5a5;}
+/* Signatures */
+.sigs{display:flex;justify-content:space-between;margin-top:2rem;padding-top:1rem;border-top:1px solid #e2e8f0;}
+.sig-block{text-align:center;min-width:130px;}
+.sig-line{border-top:1.5px solid #64748b;padding-top:.4rem;margin-top:2rem;font-size:.7rem;color:#64748b;}
+/* Print */
+@media print{
+  body{padding:.5rem;}
+  .no-print{display:none!important;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- Header -->
+  <div class="school-header">
+    <div class="school-name">{{ org.name }}</div>
+    {% if org.address %}<div class="school-sub">{{ org.address }}</div>{% endif %}
+    <div class="exam-title">{{ exam.name }}</div>
+    {% if exam.academic_year %}<div style="font-size:.78rem;color:#94a3b8;margin-top:.2rem;">Academic Year: {{ exam.academic_year }}</div>{% endif %}
+  </div>
+
+  <!-- Student Info -->
+  <div class="student-info">
+    <div class="si-block">
+      <div class="si-label">Student Name</div>
+      <div class="si-val" style="font-size:1rem;">{{ member.name }}</div>
+    </div>
+    <div class="si-block">
+      <div class="si-label">Roll / ID</div>
+      <div class="si-val">{{ member.card|default:"—" }}</div>
+    </div>
+    <div class="si-block">
+      <div class="si-label">Classification</div>
+      <div class="si-val">{{ member.classification.name|default:"—" }}</div>
+    </div>
+    <div class="si-block">
+      <div class="si-label">Section</div>
+      <div class="si-val">{{ member.section.name|default:"—" }}</div>
+    </div>
+    {% if rank %}<div class="si-block">
+      <div class="si-label">Class Rank</div>
+      <div class="si-val" style="color:#6366f1;">{{ rank }}</div>
+    </div>{% endif %}
+  </div>
+
+  <!-- Marks Table -->
+  <table class="marks-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Subject</th>
+        <th class="ctr">Full Marks</th>
+        <th class="ctr">Pass Marks</th>
+        <th class="ctr">Obtained</th>
+        <th class="ctr">Grade</th>
+        <th class="ctr">Status</th>
+        <th>Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in result_rows %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td style="font-weight:700;">{{ row.subject.name }}</td>
+        <td class="ctr">{{ row.subject.full_marks|floatformat:0 }}</td>
+        <td class="ctr">{{ row.subject.pass_marks|floatformat:0 }}</td>
+        <td class="ctr">
+          {% if row.record %}
+            {% if row.record.is_absent %}<span class="absent">Absent</span>
+            {% else %}{{ row.record.obtained_marks|floatformat:1 }}{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td class="grade-cell">
+          {% if row.record and not row.record.is_absent %}{{ row.record.grade|default:"—" }}{% else %}—{% endif %}
+        </td>
+        <td class="ctr">
+          {% if row.record %}
+            {% if row.record.is_absent %}<span class="absent">Absent</span>
+            {% elif row.record.is_passed %}<span class="pass">Pass</span>
+            {% else %}<span class="fail">Fail</span>{% endif %}
+          {% else %}<span style="color:#94a3b8;">—</span>{% endif %}
+        </td>
+        <td style="font-size:.78rem;color:#64748b;">{{ row.record.remarks|default:"" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr style="background:#f1f5f9;">
+        <td colspan="4" style="font-weight:900;text-align:right;padding:.7rem .85rem;">Total</td>
+        <td class="ctr" style="font-weight:900;font-size:.95rem;">{{ total_obtained|floatformat:1 }} / {{ total_full|floatformat:0 }}</td>
+        <td class="ctr" style="font-weight:900;color:#6366f1;">{{ overall_grade }}</td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- Result Summary -->
+  <div class="summary-row">
+    <div class="sum-card">
+      <div class="sum-num" style="color:#6366f1;">{{ percentage }}%</div>
+      <div class="sum-lbl">Percentage</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-num" style="color:#6366f1;">{{ overall_grade }}</div>
+      <div class="sum-lbl">Grade</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-num" style="color:#16a34a;">{{ pass_count }}</div>
+      <div class="sum-lbl">Subjects Pass</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-num" style="color:#e11d48;">{{ fail_count }}</div>
+      <div class="sum-lbl">Subjects Fail</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-num" style="color:#d97706;">{{ absent_count }}</div>
+      <div class="sum-lbl">Absent</div>
+    </div>
+    {% if rank %}<div class="sum-card">
+      <div class="sum-num" style="color:#0284c7;">{{ rank }}</div>
+      <div class="sum-lbl">Class Rank</div>
+    </div>{% endif %}
+  </div>
+
+  <!-- Result Banner -->
+  <div class="result-banner {% if overall_pass %}result-pass{% else %}result-fail{% endif %}">
+    {% if overall_pass %}PASSED{% else %}FAILED{% endif %}
+  </div>
+
+  <!-- Signatures -->
+  <div class="sigs">
+    <div class="sig-block"><div class="sig-line">Class Teacher</div></div>
+    <div class="sig-block"><div class="sig-line">Principal / HOD</div></div>
+    <div class="sig-block"><div class="sig-line">Parent / Guardian</div></div>
+  </div>
+
+  <div style="text-align:center;margin-top:1.5rem;font-size:.68rem;color:#94a3b8;">
+    Issued by {{ org.name }} &nbsp;·&nbsp; {{ exam.name }} &nbsp;·&nbsp; Printed on {% now "F j, Y" %}
+  </div>
+</div>
+
+<!-- Print / Back buttons -->
+<div style="position:fixed;top:1rem;right:1rem;display:flex;gap:.5rem;" class="no-print">
+  <button onclick="window.print()" style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:.55rem 1.1rem;font-size:.82rem;font-weight:700;cursor:pointer;"><i class="fas fa-print me-1"></i>Print</button>
+  <button onclick="history.back()" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:8px;padding:.55rem 1.1rem;font-size:.82rem;font-weight:700;cursor:pointer;"><i class="fas fa-arrow-left me-1"></i>Back</button>
+</div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</body>
+</html>

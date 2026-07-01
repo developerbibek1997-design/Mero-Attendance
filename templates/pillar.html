@@ -1,176 +1,668 @@
 <!DOCTYPE html>
 {% load static %}
-{% load pwa %}
 <html lang="en">
 <head>
-    {% progressive_web_app_meta %}
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Mero Attendance is a cloud-based attendance management, HRMS, leave, payroll and payslip system for schools, colleges, companies and organizations in Nepal.">
+  <meta name="keywords" content="attendance management system Nepal, school attendance system, college attendance system, payroll system Nepal, HRMS Nepal, biometric attendance, salary sheet, payslip system">
+  <meta name="author" content="Wake and Tech Nepal Pvt. Ltd.">
+  <meta property="og:title" content="Mero Attendance | Attendance, HRMS & Payroll System Nepal">
+  <meta property="og:description" content="Manage attendance, leave, payroll, salary sheet, payslip, GPS, QR and biometric attendance from one cloud platform.">
+  <meta property="og:type" content="website">
 
-    <title>
-        
-        {% block title %}
-            School College Attendance Management System Online | Best Attendance Management System With salary sheet
-        {% endblock title %}
-            
-    </title>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TS47V03PY9"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-    
-      gtag('config', 'G-TS47V03PY9');
-    </script>
-        
-    <link rel="stylesheet" href="{%static 'bootstrap/bootstrap.min.css'%}">
-    <link rel="stylesheet" href="{%static 'css/style.css'%}">
+  <title>{% block title %}Mero Attendance | School, College, HRMS, Payroll & Attendance Management System Nepal{% endblock title %}</title>
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-TS47V03PY9"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-TS47V03PY9');
+  </script>
+
+  <link rel="stylesheet" href="{% static 'bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/mero-theme.css' %}">
+  <link rel="stylesheet" href="https://unpkg.com/nepali-date-picker@2.0.1/dist/nepaliDatePicker.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="{% static 'assets/css/nepali-date.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <style>
+    /* ── Design tokens ──────────────────────────────────── */
+    :root {
+      --ma-red:        #e11d48;
+      --ma-red-dk:     #be123c;
+      --ma-red-lt:     #fff1f2;
+      --ma-ink:        #0f172a;
+      --ma-slate:      #334155;
+      --ma-muted:      #64748b;
+      --ma-line:       rgba(15,23,42,.09);
+      --ma-soft:       #f8fafc;
+      --ma-white:      #ffffff;
+      --ma-green:      #16a34a;
+      --ma-blue:       #2563eb;
+      --ma-violet:     #7c3aed;
+      --ma-amber:      #d97706;
+      --ma-teal:       #0d9488;
+      /* legacy compat */
+      --ma-primary:    #e11d48;
+      --ma-primary-dark: #be123c;
+      --ma-dark:       #0f172a;
+      --ma-soft-dark:  #1e293b;
+      --ma-border:     rgba(15,23,42,.09);
+      --ma-success:    #16a34a;
+      --ma-radius:     22px;
+      --ma-shadow:     0 22px 60px rgba(15,23,42,.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--ma-soft);
+      color: var(--ma-ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { text-decoration: none; }
+
+    .ma-site-wrapper {
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NAVBAR ─────────────────────────────────────────── */
+    /* Use high-specificity selectors to beat mero-theme.css !important overrides */
+    nav.ma-navbar,
+    .ma-navbar {
+      background: rgba(15,23,42,.93) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      border-bottom: 1px solid rgba(255,255,255,.07) !important;
+      padding: 10px 0;
+      z-index: 9999;
+      transition: background .25s;
+    }
+
+    .ma-navbar .container { max-width: 1280px; }
+
+    .ma-brand,
+    .ma-navbar .ma-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      color: #fff !important;
+      font-weight: 900;
+      letter-spacing: -.03em;
+      font-size: 1.05rem;
+    }
+
+    .ma-brand-logo {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: grid; place-items: center;
+      background: linear-gradient(135deg, var(--ma-red), var(--ma-red-dk));
+      color: #fff;
+      font-size: .95rem;
+      box-shadow: 0 10px 24px rgba(225,29,72,.32);
+      flex-shrink: 0;
+    }
+
+    .ma-brand-text { line-height: 1.15; }
+    .ma-brand-text small {
+      display: block;
+      color: rgba(255,255,255,.5);
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .01em;
+    }
+
+    .navbar-toggler {
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 12px;
+      padding: 8px 11px;
+      box-shadow: none !important;
+    }
+    .navbar-toggler-icon { filter: invert(1); }
+
+    .ma-nav-link {
+      color: rgba(255,255,255,.75) !important;
+      font-weight: 700;
+      margin: 2px 1px;
+      padding: 9px 13px !important;
+      border-radius: 99px;
+      font-size: .9rem;
+      transition: all .2s;
+    }
+    .ma-nav-link:hover, .ma-nav-link.active {
+      color: #fff !important;
+      background: rgba(255,255,255,.1);
+    }
+
+    /* Features dropdown */
+    .ma-dropdown { position: relative; }
+    .ma-dropdown-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 620px;
+      background: #fff;
+      border-radius: 18px;
+      border: 1px solid var(--ma-line);
+      box-shadow: 0 28px 70px rgba(15,23,42,.14);
+      padding: 20px;
+      z-index: 10000;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .ma-dropdown:hover .ma-dropdown-menu { display: grid; }
+    .ma-dd-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 11px 13px;
+      border-radius: 10px;
+      transition: background .15s;
+      color: var(--ma-ink) !important;
+    }
+    .ma-dd-item:hover { background: var(--ma-soft); }
+    .ma-dd-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      display: grid; place-items: center;
+      background: var(--ma-red-lt); color: var(--ma-red);
+      font-size: .85rem; flex-shrink: 0;
+    }
+    .ma-dd-item b { display: block; font-size: .82rem; font-weight: 800; color: var(--ma-ink); }
+    .ma-dd-item span { font-size: .74rem; color: var(--ma-muted); line-height: 1.4; }
+
+    .ma-nav-login {
+      color: rgba(255,255,255,.85) !important;
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 99px;
+      padding: 8px 16px !important;
+      font-weight: 700;
+      font-size: .88rem;
+      transition: all .2s;
+      margin-left: 4px;
+    }
+    .ma-nav-login:hover { background: rgba(255,255,255,.1); color: #fff !important; }
+
+    .ma-nav-cta {
+      color: #fff !important;
+      background: linear-gradient(135deg, var(--ma-red), var(--ma-red-dk));
+      border-radius: 99px;
+      padding: 9px 18px !important;
+      font-weight: 900;
+      font-size: .88rem;
+      margin-left: 6px;
+      box-shadow: 0 12px 28px rgba(225,29,72,.28);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .ma-nav-cta:hover { transform: translateY(-2px); color: #fff !important; box-shadow: 0 18px 36px rgba(225,29,72,.36); }
+
+    .ma-navbar-spacer { height: 68px; }
+
+    /* ── FOOTER ─────────────────────────────────────────── */
+    .ma-footer {
+      background: #0a1124;
+      color: rgba(255,255,255,.68);
+    }
+
+    .ma-footer-top {
+      padding: 72px 0 48px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+
+    .ma-footer-brand h3 {
+      color: #fff; font-weight: 900; font-size: 1.25rem;
+      letter-spacing: -.03em; margin: 0 0 10px;
+    }
+    .ma-footer-brand p {
+      font-size: .85rem; line-height: 1.8; margin: 0 0 18px;
+      max-width: 280px;
+    }
+    .ma-footer-socials {
+      display: flex; gap: 8px;
+    }
+    .ma-footer-social-btn {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: grid; place-items: center;
+      background: rgba(255,255,255,.07);
+      color: rgba(255,255,255,.7);
+      font-size: .9rem;
+      transition: all .2s;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .ma-footer-social-btn:hover {
+      background: var(--ma-red); color: #fff;
+      transform: translateY(-3px);
+    }
+
+    .ma-footer-col h4 {
+      color: #fff; font-size: .82rem; font-weight: 900;
+      text-transform: uppercase; letter-spacing: .07em;
+      margin: 0 0 18px;
+    }
+    .ma-footer-col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+    .ma-footer-col ul li a {
+      color: rgba(255,255,255,.62); font-size: .86rem;
+      transition: color .18s;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .ma-footer-col ul li a:hover { color: #fff; }
+    .ma-footer-col ul li a i { color: rgba(255,255,255,.3); font-size: .75rem; }
+
+    .ma-footer-contact-item {
+      display: flex; gap: 11px; align-items: flex-start;
+      margin-bottom: 14px; font-size: .85rem;
+    }
+    .ma-footer-contact-item i {
+      color: var(--ma-red); margin-top: 2px; flex-shrink: 0;
+    }
+    .ma-footer-demo-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, var(--ma-red), var(--ma-red-dk));
+      color: #fff; font-weight: 800; font-size: .86rem;
+      padding: 11px 20px; border-radius: 10px;
+      transition: transform .2s, box-shadow .2s;
+      margin-top: 6px;
+    }
+    .ma-footer-demo-btn:hover {
+      color: #fff; transform: translateY(-2px);
+      box-shadow: 0 14px 32px rgba(225,29,72,.3);
+    }
+
+    .ma-footer-bottom {
+      padding: 22px 0;
+      font-size: .8rem;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px;
+    }
+    .ma-footer-bottom-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .ma-footer-bottom-links a { color: rgba(255,255,255,.45); transition: color .15s; font-size: .8rem; }
+    .ma-footer-bottom-links a:hover { color: rgba(255,255,255,.8); }
+
+    /* ── Responsive ─────────────────────────────────────── */
+    @media (max-width: 991px) {
+      .ma-navbar { background: rgba(15,23,42,.97); }
+      .navbar-collapse {
+        margin-top: 12px; padding: 16px;
+        background: rgba(255,255,255,.05);
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,.08);
+      }
+      .ma-nav-cta, .ma-nav-login { margin-left: 0; text-align: center; }
+      .ma-dropdown-menu { position: static; width: 100%; transform: none; grid-template-columns: 1fr 1fr; box-shadow: none; border: 1px solid rgba(255,255,255,.07); background: rgba(255,255,255,.04); margin-top: 6px; }
+      .ma-dd-item { color: rgba(255,255,255,.8) !important; }
+      .ma-dd-item:hover { background: rgba(255,255,255,.06); }
+      .ma-dd-item b { color: rgba(255,255,255,.9); }
+      .ma-dd-item span { color: rgba(255,255,255,.5); }
+      .ma-dropdown:hover .ma-dropdown-menu { display: grid; }
+    }
+
+    @media (max-width: 767px) {
+      .ma-footer-top { padding: 52px 0 36px; }
+      .ma-footer-brand p { max-width: 100%; }
+      .ma-footer-bottom { flex-direction: column; text-align: center; }
+      .ma-footer-bottom-links { justify-content: center; }
+    }
+
+    @media (max-width: 575px) {
+      .ma-navbar-spacer { height: 62px; }
+      .ma-brand-text small { display: none; }
+    }
+
+    /* ── RTL support ─────────────────────────────────────── */
+    body.ma-rtl { direction: rtl; text-align: right; }
+    body.ma-rtl .navbar-nav { flex-direction: row-reverse; }
+    body.ma-rtl .ms-auto { margin-right: auto !important; margin-left: 0 !important; }
+    body.ma-rtl .ma-dropdown-menu { left: auto; right: 50%; transform: translateX(50%); }
+    body.ma-rtl .ma-footer-col ul li a { flex-direction: row-reverse; }
+    body.ma-rtl .ma-footer-contact-item { flex-direction: row-reverse; }
+    body.ma-rtl .ma-footer-brand p { max-width: 100%; }
+
+    /* ── Language switcher ──────────────────────────────── */
+    .ma-lang-wrap { position: relative; }
+    .ma-lang-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 99px;
+      color: rgba(255,255,255,.85);
+      font-size: .82rem; font-weight: 700;
+      padding: 7px 12px;
+      cursor: pointer; transition: all .2s;
+      white-space: nowrap;
+    }
+    .ma-lang-btn:hover { background: rgba(255,255,255,.16); color: #fff; }
+    .ma-lang-menu {
+      display: none;
+      position: absolute; top: calc(100% + 8px); right: 0;
+      background: #fff; border-radius: 14px;
+      border: 1px solid var(--ma-line);
+      box-shadow: 0 20px 50px rgba(15,23,42,.14);
+      padding: 8px; min-width: 200px; z-index: 10001;
+      flex-direction: column; gap: 2px;
+    }
+    .ma-lang-menu.ma-lang-open { display: flex; }
+    .ma-lang-menu button {
+      background: none; border: none; text-align: left; width: 100%;
+      padding: 9px 13px; border-radius: 8px;
+      font-size: .84rem; font-weight: 600; color: var(--ma-ink);
+      cursor: pointer; display: flex; align-items: center; gap: 8px;
+      transition: background .15s;
+    }
+    .ma-lang-menu button:hover { background: var(--ma-soft); }
+    .ma-lang-menu button.ma-lang-active { background: var(--ma-red-lt); color: var(--ma-red); }
+    @media (max-width: 991px) {
+      .ma-lang-menu { right: auto; left: 0; }
+      .ma-lang-btn { margin-top: 6px; }
+    }
+  </style>
+
+  {% block extra_css %}{% endblock extra_css %}
+
+  <!-- i18n static base (must be before i18n.js) -->
+  <script>window.MA_STATIC = "{% static '' %}";</script>
+
+  <!-- HTMX + NProgress -->
+  <script src="https://unpkg.com/htmx.org@1.9.12" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.css">
+  <script src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.js"></script>
+  <style>
+    #nprogress .bar { background: #e11d48 !important; height: 3px !important; }
+    #nprogress .peg { box-shadow: 0 0 10px #e11d48, 0 0 5px #e11d48 !important; }
+    #site-main { min-height: 60vh; }
+  </style>
 </head>
-<body>
-    <div class="container-fluid p-0 m-0">
-        <nav class="navbar navbar-expand-lg fixed-top">
-          <div class="container-fluid">
-            <a class="navbar-brand text-white" href="#" onclick="showload()">Mero Attendance</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-              <span class="navbar-toggler-icon"></span>
+
+<body hx-boost="true">
+<div class="ma-site-wrapper">
+
+  {% url 'management:homepage' as home_url %}
+  {% url 'management:about'    as about_url %}
+  {% url 'management:contact'  as contact_url %}
+  {% url 'management:pricing'  as pricing_url %}
+  {% url 'management:pullar'   as pullar_url %}
+  {% url 'management:document' as document_url %}
+  {% url 'management:privacy'  as privacy_url %}
+  {% url 'management:terms'    as terms_url %}
+  {% url 'management:blog'     as blog_url %}
+
+  <!-- ══ NAVBAR ══════════════════════════════════════════ -->
+  <nav class="navbar navbar-expand-lg fixed-top ma-navbar">
+    <div class="container">
+      <a class="navbar-brand ma-brand" href="{% url 'management:homepage' %}">
+        <span class="ma-brand-logo"><i class="fa-solid fa-user-check"></i></span>
+        <span class="ma-brand-text">
+          Mero Attendance
+          <small data-i18n="nav.tagline">Attendance · HRMS · Payroll</small>
+        </span>
+      </a>
+
+      <button class="navbar-toggler" type="button"
+              data-bs-toggle="collapse" data-bs-target="#maNavbar"
+              aria-controls="maNavbar" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="maNavbar">
+        <div class="navbar-nav ms-auto align-items-lg-center">
+
+          <a class="nav-link ma-nav-link {% if request.path == home_url or request.path == '/' %}active{% endif %}"
+             href="{% url 'management:homepage' %}" data-i18n="nav.home">Home</a>
+
+          <!-- Features dropdown -->
+          <div class="ma-dropdown">
+            <a class="nav-link ma-nav-link" href="{% url 'management:homepage' %}#features">
+              <span data-i18n="nav.features">Features</span> <i class="fa-solid fa-chevron-down" style="font-size:.65rem;margin-left:2px;opacity:.6;"></i>
+            </a>
+            <div class="ma-dropdown-menu">
+              <a class="ma-dd-item" href="{% url 'management:homepage' %}#features">
+                <div class="ma-dd-icon"><i class="fa-solid fa-user-check"></i></div>
+                <div><b data-i18n="nav.dd.attendance">Attendance</b><span data-i18n="nav.dd.attendance_sub">QR, GPS, WiFi, Biometric</span></div>
+              </a>
+              <a class="ma-dd-item" href="{% url 'management:homepage' %}#features">
+                <div class="ma-dd-icon" style="background:#eff6ff;color:#2563eb;"><i class="fa-solid fa-people-roof"></i></div>
+                <div><b data-i18n="nav.dd.hrms">HRMS</b><span data-i18n="nav.dd.hrms_sub">Staff, leave, documents</span></div>
+              </a>
+              <a class="ma-dd-item" href="{% url 'management:homepage' %}#features">
+                <div class="ma-dd-icon" style="background:#f0fdf4;color:#16a34a;"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <div><b data-i18n="nav.dd.payroll">Payroll</b><span data-i18n="nav.dd.payroll_sub">Salary, PF, SSF, payslip</span></div>
+              </a>
+              <a class="ma-dd-item" href="{% url 'management:homepage' %}#features">
+                <div class="ma-dd-icon" style="background:#f5f3ff;color:#7c3aed;"><i class="fa-solid fa-school"></i></div>
+                <div><b data-i18n="nav.dd.school">School ERP</b><span data-i18n="nav.dd.school_sub">Students, billing, results</span></div>
+              </a>
+              <a class="ma-dd-item" href="{% url 'management:homepage' %}#features">
+                <div class="ma-dd-icon" style="background:#fdf4ff;color:#a21caf;"><i class="fa-solid fa-chart-line"></i></div>
+                <div><b data-i18n="nav.dd.finance">Finance</b><span data-i18n="nav.dd.finance_sub">Income, expense, stock</span></div>
+              </a>
+              <a class="ma-dd-item" href="{% url 'management:homepage' %}#features">
+                <div class="ma-dd-icon" style="background:#f0fdfa;color:#0d9488;"><i class="fa-solid fa-file-export"></i></div>
+                <div><b data-i18n="nav.dd.reports">Reports</b><span data-i18n="nav.dd.reports_sub">Export, analytics, logs</span></div>
+              </a>
+            </div>
+          </div>
+
+          <a class="nav-link ma-nav-link {% if request.path == pricing_url %}active{% endif %}"
+             href="{% url 'management:pricing' %}" data-i18n="nav.pricing">Pricing</a>
+
+          <a class="nav-link ma-nav-link {% if request.path == about_url %}active{% endif %}"
+             href="{% url 'management:about' %}" data-i18n="nav.about">About</a>
+
+          <a class="nav-link ma-nav-link {% if request.path == blog_url %}active{% endif %}"
+             href="{% url 'management:blog' %}" data-i18n="nav.blog">Blog</a>
+
+          <a class="nav-link ma-nav-link {% if request.path == contact_url %}active{% endif %}"
+             href="{% url 'management:contact' %}" data-i18n="nav.contact">Contact</a>
+
+          <a class="nav-link ma-nav-link {% if request.path == pullar_url %}active{% endif %}"
+             href="{% url 'management:pullar' %}"><i class="fa-solid fa-download" style="font-size:.8rem;"></i> <span data-i18n="nav.download">Download</span></a>
+
+          <a class="nav-link ma-nav-login" href="{% url 'management:homepage' %}#login-form">
+            <i class="fa-solid fa-right-to-bracket" style="font-size:.8rem;"></i> <span data-i18n="nav.login">Login</span>
+          </a>
+
+          <a class="nav-link ma-nav-cta" href="{% url 'management:contact' %}">
+            <i class="fa-solid fa-calendar-check"></i> <span data-i18n="nav.get_started">Get Started</span>
+          </a>
+
+          <!-- Language switcher -->
+          <div class="ma-lang-wrap ms-2">
+            <button class="ma-lang-btn" type="button"
+                    onclick="this.closest('.ma-lang-wrap').querySelector('.ma-lang-menu').classList.toggle('ma-lang-open')">
+              <i class="fa-solid fa-globe" style="font-size:.8rem;"></i>
+              <span class="ma-lang-current">EN</span>
+              <i class="fa-solid fa-chevron-down" style="font-size:.6rem;"></i>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-              <div class="navbar-nav ms-auto ">
-                <a class="nav-link active text-white" aria-current="page" href="/">Home</a>
-                <a class="nav-link text-white" href="{%url 'management:about'%}" onclick="showload()">About Us</a>
-                <a class="nav-link text-white" href="{%url 'management:contact'%}" onclick="showload()">Contact Us</a>
-                <a class="nav-link text-white" href="{%url 'management:pricing'%}" onclick="showload()">Pricing</a>
-                <a class="nav-link text-white" href="{%url 'management:pullar'%}" onclick="showload()">Download Pullar</a>
+            <div class="ma-lang-menu">
+              <button data-lang="en"  onclick="MA_I18N.setLanguage('en');  this.closest('.ma-lang-menu').classList.remove('ma-lang-open')" type="button">🇺🇸 English</button>
+              <button data-lang="ne"  onclick="MA_I18N.setLanguage('ne');  this.closest('.ma-lang-menu').classList.remove('ma-lang-open')" type="button">🇳🇵 नेपाली</button>
+              <button data-lang="hi"  onclick="MA_I18N.setLanguage('hi');  this.closest('.ma-lang-menu').classList.remove('ma-lang-open')" type="button">🇮🇳 हिन्दी</button>
+              <button data-lang="ar"  onclick="MA_I18N.setLanguage('ar');  this.closest('.ma-lang-menu').classList.remove('ma-lang-open')" type="button">🇸🇦 العربية</button>
+              <button data-lang="es"  onclick="MA_I18N.setLanguage('es');  this.closest('.ma-lang-menu').classList.remove('ma-lang-open')" type="button">🇪🇸 Español</button>
+              <button data-lang="fr"  onclick="MA_I18N.setLanguage('fr');  this.closest('.ma-lang-menu').classList.remove('ma-lang-open')" type="button">🇫🇷 Français</button>
+              <button data-lang="pt"  onclick="MA_I18N.setLanguage('pt');  this.closest('.ma-lang-menu').classList.remove('ma-lang-open')" type="button">🇧🇷 Português</button>
+              <button data-lang="zh"  onclick="MA_I18N.setLanguage('zh');  this.closest('.ma-lang-menu').classList.remove('ma-lang-open')" type="button">🇨🇳 中文</button>
+              <button data-lang="ja"  onclick="MA_I18N.setLanguage('ja');  this.closest('.ma-lang-menu').classList.remove('ma-lang-open')" type="button">🇯🇵 日本語</button>
+              <button data-lang="ko"  onclick="MA_I18N.setLanguage('ko');  this.closest('.ma-lang-menu').classList.remove('ma-lang-open')" type="button">🇰🇷 한국어</button>
+              <button data-lang="id"  onclick="MA_I18N.setLanguage('id');  this.closest('.ma-lang-menu').classList.remove('ma-lang-open')" type="button">🇮🇩 Bahasa Indonesia</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="ma-navbar-spacer"></div>
+
+  <!-- ══ PAGE CONTENT ═════════════════════════════════════ -->
+  <main id="site-main">
+    {% block content %}{% endblock content %}
+  </main>
+
+  <!-- ══ FOOTER ═══════════════════════════════════════════ -->
+  <footer class="ma-footer">
+    <div class="ma-footer-top">
+      <div class="container">
+        <div class="row g-5">
+
+          <!-- Brand column -->
+          <div class="col-lg-3 col-md-6">
+            <div class="ma-footer-brand">
+              <h3><i class="fa-solid fa-user-check" style="color:var(--ma-red);margin-right:8px;"></i>Mero Attendance</h3>
+              <p data-i18n="footer.desc">Nepal's complete cloud platform for attendance, HRMS, payroll, school management, billing and reporting — all in one dashboard.</p>
+              <div class="ma-footer-socials">
+                <a href="https://www.facebook.com/wakeandtech" class="ma-footer-social-btn" aria-label="Facebook">
+                  <i class="fa-brands fa-facebook-f"></i>
+                </a>
+                <a href="https://www.instagram.com/wakeandtech" class="ma-footer-social-btn" aria-label="Instagram">
+                  <i class="fa-brands fa-instagram"></i>
+                </a>
+                <a href="https://www.wakeandtech.com.np" class="ma-footer-social-btn" aria-label="Website">
+                  <i class="fa-solid fa-globe"></i>
+                </a>
               </div>
             </div>
           </div>
-      </nav>
-      <div class="maintain">
-      
-      </div>
-      </div>
-    
-    {% block content %}
-        
-    {% endblock content %}
 
-    <div class="container-fluid m-0 p-5" id="background">
-        <h5 class="text-center">Mero <b> <span style="color: red;">Attendance</span></b></h5>
-        <br>
-        <div class="row p-0 m-0">
-          <div class="col-12 col-lg-3 mt-3">
-            <a href="{%url 'management:homepage'%}">
-                <div class="serviceBoxwhite">
-                    <img src="{%static 'res/home.png'%}" alt="Attendance mero attendance">
-                    <h6 class="text-success mt-2">
-                      HOME
-                    </h6>
-                  </div>
-                </a>
-             </div>
-        
-      
-       
-            
-          <div class="col-12 col-lg-3 mt-3">
-            <a href="{%url 'management:about'%}">
-              {%url 'management:about' as abo%}
-                <div class="serviceBoxwhite {%if request.path == abo%}activeHome{%endif%}">
-                    <img src="{%static 'res/about.png'%}" alt="Attendance mero attendance">
-                    <h6 class="text-success mt-2">
-                      ABOUT US
-                    </h6>
-                  </div>
-            </a>
-           
-          </div>
-  
-          <div class="col-12 col-lg-3 mt-3">
-            {%url 'management:contact' as con%}
-            <a href="{%url 'management:contact'%}">
-                <div class="serviceBoxwhite {%if request.path == con%}activeHome{%endif%}">
-                    <img src="{%static 'res/contact.png'%}" alt="Attendance mero attendance">
-                    <h6 class="text-contact mt-2">
-                      CONTACT US
-                    </h6>
-                  </div>
-            </a>
-           
-          </div>
-  
-          <div class="col-12 col-lg-3 mt-3">
-            {%url 'management:pricing' as price%}
-            <a href="{%url 'management:pricing'%}">
-                <div class="serviceBoxwhite {%if request.path == price%}activeHome{%endif%}">
-                    <img src="{%static 'res/pricing.png'%}" alt="Attendance mero attendance">
-                    <h6 class="text-contact mt-2">
-                      PRICING
-                    </h6>
-                  </div>
-            </a>
-           
-          </div>
-  
-          <div class="col-12 col-lg-3 mt-3">
-
-            <a href="{%url 'management:document'%}">
-              {%url 'management:document' as doc%}
-                <div class="serviceBoxwhite {%if request.path == doc%}activeHome{%endif%}">
-                    <img src="{%static 'res/doc.jpeg'%}" alt="Attendance mero attendance">
-                    <h6 class="text-contact mt-2">
-                      DOCUMENTATION
-                    </h6>
-                  </div>
-            </a>
-            
-          </div>
-  
-          <div class="col-12 col-lg-3 mt-3">
-
-            <a href="{%url 'management:privacy'%}">
-            {%url 'management:privacy' as privacy%}
-            <div class="serviceBoxwhite {%if request.path == privacy%}activeHome{%endif%}" >
-              <img src="{%static 'res/privacy.png'%}" alt="Attendance mero attendance">
-              <h6 class="text-contact mt-2">
-               PRIVACY POLICY
-              </h6>
+          <!-- Product column -->
+          <div class="col-lg-2 col-md-3 col-6">
+            <div class="ma-footer-col">
+              <h4 data-i18n="footer.col.product">Product</h4>
+              <ul>
+                <li><a href="{% url 'management:homepage' %}#features"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.attendance">Attendance</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#features"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.hrms">HRMS</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#features"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.payroll">Payroll</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#features"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.leave">Leave Management</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#features"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.school">School ERP</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#features"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.billing">Billing & Fees</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#features"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.reports">Reports & Export</span></a></li>
+              </ul>
             </div>
-            </a>
           </div>
 
-          <div class="col-12 col-lg-3 mt-3">
-            <a href="{%url 'management:terms'%}">
-              {%url 'management:terms' as term%}
-                <div class="serviceBoxwhite {%if request.path == term%}activeHome{%endif%}">
-                    <img src="{%static 'res/terms.png'%}" alt="Attendance mero attendance">
-                    <h6 class="text-contact mt-2">
-                    Terms and condition
-                    </h6>
-                </div>
-            </a>
-            
+          <!-- Solutions column -->
+          <div class="col-lg-2 col-md-3 col-6">
+            <div class="ma-footer-col">
+              <h4 data-i18n="footer.col.solutions">Solutions</h4>
+              <ul>
+                <li><a href="{% url 'management:homepage' %}#who"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.schools">Schools</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#who"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.colleges">Colleges</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#who"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.offices">Offices</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#who"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.institutes">Institutes</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#who"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.factories">Factories</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#who"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.ngos">NGOs</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#who"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.multi">Multi-Branch Orgs</span></a></li>
+              </ul>
+            </div>
           </div>
 
-          <div class="col-12 col-lg-3 mt-3">
-            <a href="{%url 'management:pullar'%}">
-              {%url 'management:pullar' as down%}
-                <div class="serviceBoxwhite {%if request.path == down%}activeHome{%endif%}">
-                    <img src="{%static 'res/download.png'%}" alt="Attendance mero attendance">
-                    <h6 class="text-contact mt-2">
-                     Download
-                    </h6>
-                  </div>
-            </a>
-           
+          <!-- Resources column -->
+          <div class="col-lg-2 col-md-4 col-6">
+            <div class="ma-footer-col">
+              <h4 data-i18n="footer.col.resources">Resources</h4>
+              <ul>
+                <li><a href="{% url 'management:about' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.about">About Us</span></a></li>
+                <li><a href="{% url 'management:pricing' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.pricing">Pricing</span></a></li>
+                <li><a href="{% url 'management:blog' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.blog">Blog</span></a></li>
+                <li><a href="{% url 'management:document' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.docs">Documentation</span></a></li>
+                <li><a href="{% url 'management:pullar' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.download">Download Puller</span></a></li>
+                <li><a href="{% url 'management:privacy' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.privacy">Privacy Policy</span></a></li>
+                <li><a href="{% url 'management:terms' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.terms">Terms & Conditions</span></a></li>
+              </ul>
+            </div>
           </div>
-  
 
-        <br><br>
+          <!-- Contact column -->
+          <div class="col-lg-3 col-md-8">
+            <div class="ma-footer-col">
+              <h4 data-i18n="footer.col.contact">Contact</h4>
+              <div class="ma-footer-contact-item">
+                <i class="fa-solid fa-building"></i>
+                <span>Wake & Tech Nepal Pvt. Ltd.</span>
+              </div>
+              <div class="ma-footer-contact-item">
+                <i class="fa-solid fa-location-dot"></i>
+                <span data-i18n="footer.location">Kathmandu, Nepal</span>
+              </div>
+              <div class="ma-footer-contact-item">
+                <i class="fa-solid fa-envelope"></i>
+                <span>info@wakeandtech.com.np</span>
+              </div>
+              <div class="ma-footer-contact-item">
+                <i class="fa-brands fa-whatsapp"></i>
+                <span>+977-9800000000</span>
+              </div>
+              <a href="{% url 'management:contact' %}" class="ma-footer-demo-btn">
+                <i class="fa-solid fa-calendar-check"></i> <span data-i18n="footer.request_demo">Request Demo</span>
+              </a>
+            </div>
+          </div>
+
+        </div>
       </div>
-        
-    <script src="{%static 'bootstrap/bootstrap.min.js'%}"></script>
-    <script src="{%static 'bootstrap/bootstrap.bundle.min.js'%}"></script>
+    </div>
+
+    <!-- Footer bottom bar -->
+    <div class="container">
+      <div class="ma-footer-bottom">
+        <div>
+          <strong style="color:rgba(255,255,255,.7);">© {% now "Y" %} Mero Attendance</strong>
+          — <span data-i18n="footer.powered_by">Powered by Wake &amp; Tech Nepal Pvt. Ltd.</span>
+          <span data-i18n="footer.copyright">All rights reserved.</span>
+        </div>
+        <div class="ma-footer-bottom-links">
+          <a href="{% url 'management:privacy' %}" data-i18n="footer.bottom.privacy">Privacy Policy</a>
+          <a href="{% url 'management:terms' %}" data-i18n="footer.bottom.terms">Terms of Use</a>
+          <a href="{% url 'management:contact' %}" data-i18n="footer.bottom.support">Support</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</div><!-- /.ma-site-wrapper -->
+
+<script>
+  window.ORG_DATE_TYPE = "{% if org and org.nepali_date %}nepali{% else %}english{% endif %}";
+</script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="{% static 'bootstrap/bootstrap.bundle.min.js' %}"></script>
+<script src="https://unpkg.com/nepali-date-picker@2.0.1/dist/jquery.nepaliDatePicker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{% static 'assets/js/global-date-picker.js' %}"></script>
+
+<script>
+NProgress.configure({ showSpinner: false, speed: 250 });
+document.body.addEventListener('htmx:beforeRequest', () => NProgress.start());
+document.body.addEventListener('htmx:afterRequest',  () => NProgress.done());
+document.body.addEventListener('htmx:responseError', () => NProgress.done());
+document.body.addEventListener('htmx:sendError',     () => NProgress.done());
+document.body.addEventListener('htmx:afterBoostSwap', function() {
+  var path = window.location.pathname;
+  document.querySelectorAll('.ma-nav-link').forEach(el => {
+    var href = el.getAttribute('href') || '';
+    el.classList.toggle('active', href === path);
+  });
+  if (window.initGlobalDatePickers) initGlobalDatePickers(document);
+});
+
+// Close dropdown on mobile tap-outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.ma-dropdown')) {
+    document.querySelectorAll('.ma-dropdown-menu').forEach(m => m.style.display = '');
+  }
+});
+</script>
+
+{% block extra_js %}{% endblock extra_js %}
+
+<script src="{% static 'js/i18n.js' %}"></script>
 </body>
 </html>

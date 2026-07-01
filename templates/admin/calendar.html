@@ -1,0 +1,317 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Calendar | {{ org.name }}{% endblock %}
+
+{% block content %}
+<!-- FullCalendar CDN -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
+<style>
+.fc .fc-toolbar-title { font-size: 1.1rem; font-weight: 700; }
+.fc .fc-button-primary { background: #3b82f6 !important; border-color: #2563eb !important; font-size:.8rem; }
+.fc .fc-button-primary:hover { background: #2563eb !important; }
+.fc .fc-button-active { background: #1d4ed8 !important; }
+.fc-event { cursor: pointer; border-radius: 4px !important; font-size:.78rem; }
+.fc-daygrid-day:hover { background: #eff6ff; cursor: pointer; }
+.legend-dot { width:12px; height:12px; border-radius:50%; display:inline-block; }
+.np-date-badge { font-size:.65rem; color:#6b7280; line-height:1; }
+.fc-daygrid-day-number { font-size:.85rem; }
+/* Nepali date overlay */
+.np-overlay { font-size:.65rem; color:#9ca3af; text-align:center; }
+</style>
+
+<div class="container-fluid py-3">
+
+  <!-- Header -->
+  <div class="card border-0 mb-3 text-white" style="background:linear-gradient(135deg,#1e3a5f 0%,#4e4376 100%);">
+    <div class="card-body py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h5 class="text-white font-weight-bolder mb-1"><i class="fas fa-calendar-alt me-2"></i>Organization Calendar</h5>
+        <p class="text-white opacity-8 mb-0 text-xs">{{ org.name }} &bull; View holidays, events &amp; occasions</p>
+      </div>
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        {% if nepali_enabled %}
+        <span class="badge bg-warning text-dark"><i class="fas fa-calendar me-1"></i>BS Mode</span>
+        {% endif %}
+        <button class="btn btn-sm btn-light" id="addHolidayBtn"><i class="fas fa-umbrella-beach me-1"></i>Add Holiday</button>
+        <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" id="addOccasionBtn"><i class="fas fa-star me-1"></i>Add Occasion</button>
+        <button class="btn btn-sm" style="background:#3b82f6;color:#fff;" id="addEventBtn"><i class="fas fa-plus me-1"></i>Add Event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="d-flex gap-3 mb-3 flex-wrap align-items-center">
+    <span class="text-xs text-muted font-weight-bold">Legend:</span>
+    <span class="d-flex align-items-center gap-1 text-xs"><span class="legend-dot" style="background:#ef4444;"></span>Holiday</span>
+    <span class="d-flex align-items-center gap-1 text-xs"><span class="legend-dot" style="background:#f59e0b;"></span>Occasion / Gap</span>
+    <span class="d-flex align-items-center gap-1 text-xs"><span class="legend-dot" style="background:#3b82f6;"></span>Sports</span>
+    <span class="d-flex align-items-center gap-1 text-xs"><span class="legend-dot" style="background:#8b5cf6;"></span>Seminar</span>
+    <span class="d-flex align-items-center gap-1 text-xs"><span class="legend-dot" style="background:#06b6d4;"></span>Meeting</span>
+    <span class="d-flex align-items-center gap-1 text-xs"><span class="legend-dot" style="background:#22c55e;"></span>Program</span>
+    <span class="d-flex align-items-center gap-1 text-xs"><span class="legend-dot" style="background:#6b7280;"></span>Other Event</span>
+  </div>
+
+  <!-- Calendar -->
+  <div class="card shadow-sm">
+    <div class="card-body p-3">
+      <div id="calendar"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ ADD MODAL ══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addModalTitle">Add Entry</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Title <span class="text-danger">*</span></label>
+          <input type="text" id="addTitle" class="form-control" placeholder="Enter name…">
+        </div>
+        <div id="dateFields" class="row g-2">
+          <div class="col-6">
+            <label class="form-label text-xs">Start Date</label>
+            <input type="date" id="addStart" class="form-control form-control-sm">
+            {% if nepali_enabled %}
+            <input type="text" id="addStartNp" class="form-control form-control-sm mt-1" placeholder="BS Date (YYYY-MM-DD)">
+            <small class="text-muted">Enter BS date to auto-fill AD</small>
+            {% endif %}
+          </div>
+          <div class="col-6" id="endDateWrap">
+            <label class="form-label text-xs">End Date</label>
+            <input type="date" id="addEnd" class="form-control form-control-sm">
+            {% if nepali_enabled %}
+            <input type="text" id="addEndNp" class="form-control form-control-sm mt-1" placeholder="BS Date (YYYY-MM-DD)">
+            {% endif %}
+          </div>
+        </div>
+        <div id="eventTypeWrap" class="mt-3 d-none">
+          <label class="form-label text-xs">Event Type</label>
+          <select id="eventType" class="form-select form-select-sm">
+            <option value="sports">Sports Week</option>
+            <option value="seminar">Seminar</option>
+            <option value="meeting">Meeting</option>
+            <option value="exam">Exam Event</option>
+            <option value="program">Program</option>
+            <option value="holiday">Holiday Event</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="addSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VIEW/DELETE MODAL ═════════════════════════════════════════════ -->
+<div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="viewModalTitle">Event Detail</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p id="viewModalBody" class="text-sm mb-0"></p>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <button type="button" class="btn btn-danger btn-sm" id="deleteEventBtn">
+          <i class="fas fa-trash me-1"></i>Delete
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const NEPALI_ENABLED = {{ nepali_enabled|yesno:"true,false" }};
+const EVENTS_URL    = "{% url 'schooladmin:api_calendar_events' %}";
+const ADD_URL       = "{% url 'schooladmin:api_calendar_add' %}";
+const DELETE_BASE   = "/schooladmin/calendar/api/delete/";
+const CSRF          = "{{ csrf_token }}";
+
+let currentAddType = 'event';
+let currentDeleteType = null;
+let currentDeletePk   = null;
+
+// ── Nepali Date Conversion (BS→AD) via lookup table ──────────────────
+// Uses fetch to a simple proxy (Python side handles it) OR inline JS approximation.
+// For simplicity, we ship a client-side BS→AD converter based on known month lengths.
+
+const BS_MONTH_DATA = {
+  // [year]: [days in each month Baisakh–Chaitra]
+  2079:[31,32,31,32,31,30,30,30,29,30,29,31],
+  2080:[31,32,31,32,31,30,30,30,29,30,29,31],
+  2081:[31,31,32,32,31,30,30,30,29,30,29,31],
+  2082:[31,32,31,32,31,30,30,30,29,30,29,31],
+  2083:[31,31,32,31,31,31,30,29,30,29,30,30],
+};
+const BS_START_AD = new Date(2022, 3, 14); // 2079 Baisakh 1 = 2022 Apr 14
+
+function bsToAd(bsY, bsM, bsD) {
+  // Count total BS days from 2079/01/01
+  let days = 0;
+  for (let y = 2079; y < bsY; y++) {
+    const md = BS_MONTH_DATA[y] || [31,31,32,32,31,31,30,30,29,30,29,31];
+    days += md.reduce((a,b)=>a+b,0);
+  }
+  const months = BS_MONTH_DATA[bsY] || [31,31,32,32,31,31,30,30,29,30,29,31];
+  for (let m = 1; m < bsM; m++) days += months[m-1];
+  days += bsD - 1;
+  const ad = new Date(BS_START_AD);
+  ad.setDate(ad.getDate() + days);
+  return ad;
+}
+
+function adToIso(d) {
+  return d.toISOString().split('T')[0];
+}
+
+function npInputToAd(npStr) {
+  const parts = npStr.replace(/\//g,'-').split('-').map(Number);
+  if (parts.length === 3 && parts[0] > 2000) {
+    try { return adToIso(bsToAd(parts[0],parts[1],parts[2])); } catch(e){}
+  }
+  return null;
+}
+
+// Wire up BS start input
+{% if nepali_enabled %}
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('addStartNp').addEventListener('blur', function() {
+    const ad = npInputToAd(this.value);
+    if (ad) document.getElementById('addStart').value = ad;
+  });
+  document.getElementById('addEndNp').addEventListener('blur', function() {
+    const ad = npInputToAd(this.value);
+    if (ad) document.getElementById('addEnd').value = ad;
+  });
+});
+{% endif %}
+
+// ── FullCalendar ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+  const calEl = document.getElementById('calendar');
+  const calendar = new FullCalendar.Calendar(calEl, {
+    initialView: 'dayGridMonth',
+    height: 'auto',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,dayGridWeek,listMonth'
+    },
+    buttonText: { today:'Today', month:'Month', week:'Week', list:'List' },
+    events: EVENTS_URL,
+    eventClick: function(info) {
+      const ep = info.event.extendedProps;
+      currentDeleteType = ep.type;
+      currentDeletePk   = ep.pk;
+      document.getElementById('viewModalTitle').textContent = info.event.title;
+      let body = `<strong>Type:</strong> ${ep.type}`;
+      if (info.event.startStr) body += `<br><strong>Start:</strong> ${info.event.startStr}`;
+      if (info.event.endStr)   body += `<br><strong>End:</strong> ${info.event.endStr}`;
+      if (ep.event_type) body += `<br><strong>Category:</strong> ${ep.event_type}`;
+      if (ep.status)     body += `<br><strong>Status:</strong> ${ep.status}`;
+      document.getElementById('viewModalBody').innerHTML = body;
+      new bootstrap.Modal(document.getElementById('viewModal')).show();
+    },
+    dateClick: function(info) {
+      openAddModal('event', info.dateStr);
+    },
+    {% if nepali_enabled %}
+    dayCellContent: function(arg) {
+      // Add BS date below AD date
+      const adDate = arg.date;
+      try {
+        // rough approximation: count days from 2022-04-14
+        const base = new Date(2022, 3, 14);
+        const diff = Math.round((adDate - base) / 86400000);
+        // We'll show placeholder — server will actually render this
+        return { html: `<div class="fc-daygrid-day-number">${arg.dayNumberText}</div>` };
+      } catch(e) {
+        return { html: `<div class="fc-daygrid-day-number">${arg.dayNumberText}</div>` };
+      }
+    },
+    {% endif %}
+  });
+  calendar.render();
+  window._calendar = calendar;
+});
+
+// ── Add Modal helpers ─────────────────────────────────────────────────
+function openAddModal(type, dateStr) {
+  currentAddType = type;
+  document.getElementById('addTitle').value = '';
+  document.getElementById('addStart').value = dateStr || '';
+  document.getElementById('addEnd').value   = dateStr || '';
+  {% if nepali_enabled %}
+  document.getElementById('addStartNp').value = '';
+  document.getElementById('addEndNp').value   = '';
+  {% endif %}
+
+  const titleMap = { holiday:'Add Holiday', occasion:'Add Occasion / Gap', event:'Add Event' };
+  document.getElementById('addModalTitle').textContent = titleMap[type] || 'Add Entry';
+  document.getElementById('eventTypeWrap').classList.toggle('d-none', type !== 'event');
+  document.getElementById('endDateWrap').classList.toggle('d-none', type === 'holiday');
+
+  new bootstrap.Modal(document.getElementById('addModal')).show();
+}
+
+document.getElementById('addHolidayBtn').addEventListener('click', () => openAddModal('holiday',''));
+document.getElementById('addOccasionBtn').addEventListener('click', () => openAddModal('occasion',''));
+document.getElementById('addEventBtn').addEventListener('click', () => openAddModal('event',''));
+
+document.getElementById('addSaveBtn').addEventListener('click', function() {
+  const title = document.getElementById('addTitle').value.trim();
+  const start = document.getElementById('addStart').value;
+  const end   = document.getElementById('addEnd').value || start;
+  const event_type = document.getElementById('eventType').value;
+
+  if (!title) { alert('Please enter a title.'); return; }
+  if (currentAddType !== 'holiday' && !start) { alert('Please enter a date.'); return; }
+
+  fetch(ADD_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify({ type: currentAddType, title, start, end, event_type })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
+      window._calendar.refetchEvents();
+    } else {
+      alert(data.error || 'Error saving.');
+    }
+  });
+});
+
+// ── Delete ────────────────────────────────────────────────────────────
+document.getElementById('deleteEventBtn').addEventListener('click', function() {
+  if (!currentDeleteType || !currentDeletePk) return;
+  if (!confirm('Delete this entry?')) return;
+  fetch(`${DELETE_BASE}${currentDeleteType}/${currentDeletePk}/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      bootstrap.Modal.getInstance(document.getElementById('viewModal')).hide();
+      window._calendar.refetchEvents();
+    }
+  });
+});
+</script>
+{% endblock %}

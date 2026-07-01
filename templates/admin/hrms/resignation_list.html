@@ -1,0 +1,255 @@
+{% extends 'dashboard.html' %}
+{% block title %}Resignations | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+.self-tag{
+  display:inline-flex;align-items:center;gap:.3rem;
+  background:#ede9fe;color:#7c3aed;border:1px solid #c4b5fd;
+  border-radius:99px;padding:.15rem .55rem;font-size:.67rem;font-weight:700;
+}
+.rs-alert{
+  background:linear-gradient(135deg,#fff1f2,#ffe4e6);
+  border:1px solid #fecdd3;border-radius:14px;padding:1rem 1.25rem;
+  display:flex;align-items:center;gap:.9rem;margin-bottom:1.25rem;
+}
+</style>
+
+<div class="container-fluid py-3">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h4 class="font-weight-bolder mb-0">Resignation Management</h4>
+      <p class="text-sm text-muted mb-0">Review and process resignation applications</p>
+    </div>
+    <a href="{% url 'schooladmin:add_resignation' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus me-1"></i>Add Manually
+    </a>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <!-- Staff-submitted alert -->
+  {% if self_applied_pending %}
+  <div class="rs-alert">
+    <div style="width:40px;height:40px;background:#fecdd3;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <i class="fas fa-person-walking-arrow-right" style="color:#e11d48;"></i>
+    </div>
+    <div>
+      <div style="font-size:.88rem;font-weight:800;color:#9f1239;">
+        {{ self_applied_pending }} staff-submitted resignation{{ self_applied_pending|pluralize }} awaiting your review
+      </div>
+      <div style="font-size:.78rem;color:#be123c;margin-top:.15rem;">
+        Staff members applied directly from their portal. Review and respond below.
+      </div>
+    </div>
+    <a href="?self_applied=1&status=pending" class="btn btn-sm ms-auto" style="background:#e11d48;color:#fff;border-radius:8px;white-space:nowrap;">
+      View These <i class="fas fa-arrow-right ms-1"></i>
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Summary stats -->
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div style="font-size:1.6rem;font-weight:900;color:#e11d48;">{{ pending_count }}</div>
+        <div class="text-xs text-muted">Pending</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div style="font-size:1.6rem;font-weight:900;color:#16a34a;">{{ approved_count }}</div>
+        <div class="text-xs text-muted">Approved</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div style="font-size:1.6rem;font-weight:900;color:#6366f1;">{{ completed_count }}</div>
+        <div class="text-xs text-muted">Completed</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div style="font-size:1.6rem;font-weight:900;color:#64748b;">{{ self_applied_count }}</div>
+        <div class="text-xs text-muted">Staff-Submitted</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="text-xs font-weight-bold">Status</label>
+          <select name="status" class="form-select form-select-sm">
+            <option value="">All Statuses</option>
+            {% for val,label in status_choices %}
+            <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="text-xs font-weight-bold">Source</label>
+          <select name="self_applied" class="form-select form-select-sm">
+            <option value="">All</option>
+            <option value="1" {% if request.GET.self_applied == '1' %}selected{% endif %}>Staff Portal</option>
+            <option value="0" {% if request.GET.self_applied == '0' %}selected{% endif %}>Admin-Added</option>
+          </select>
+        </div>
+        <div class="col-md-3 d-flex gap-1 align-self-end">
+          <button type="submit" class="btn btn-primary btn-sm flex-fill">Filter</button>
+          <a href="{% url 'schooladmin:resignation_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="text-xs">#</th>
+            <th class="text-xs">Member</th>
+            <th class="text-xs">Source</th>
+            <th class="text-xs">Resignation Date</th>
+            <th class="text-xs">Last Working Day</th>
+            <th class="text-xs">Notice</th>
+            <th class="text-xs">Clearance</th>
+            <th class="text-xs">Status</th>
+            <th class="text-xs text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in resignations %}
+          <tr {% if r.self_applied and r.status == 'pending' %}style="background:#fff8f8;"{% endif %}>
+            <td class="text-xs text-muted">{{ forloop.counter }}</td>
+            <td>
+              <p class="text-sm font-weight-bold mb-0">{{ r.member.name }}</p>
+              <p class="text-xs text-muted mb-0">{{ r.reason|truncatechars:45 }}</p>
+            </td>
+            <td>
+              {% if r.self_applied %}
+              <span class="self-tag"><i class="fas fa-user"></i>Self-Applied</span>
+              {% else %}
+              <span class="text-xs text-muted">Admin</span>
+              {% endif %}
+            </td>
+            <td class="text-sm">{{ r.resignation_date|date:"M d, Y" }}</td>
+            <td class="text-sm">{{ r.last_working_day|date:"M d, Y"|default:"—" }}</td>
+            <td class="text-sm">{{ r.notice_period_days }}d</td>
+            <td>
+              {% if r.clearance_status %}
+              <span class="badge bg-success"><i class="fas fa-check me-1"></i>Done</span>
+              {% else %}
+              <span class="badge bg-warning text-dark">Pending</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.status == 'pending' %}<span class="badge bg-danger">Pending</span>
+              {% elif r.status == 'approved' %}<span class="badge bg-success">Approved</span>
+              {% elif r.status == 'rejected' %}<span class="badge bg-secondary">Rejected</span>
+              {% else %}<span class="badge bg-info">Completed</span>{% endif %}
+            </td>
+            <td class="text-center">
+              <button class="btn btn-xs btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateModal{{ r.pk }}">
+                <i class="fas fa-pen me-1"></i>Review
+              </button>
+
+              <!-- Update Modal -->
+              <div class="modal fade" id="updateModal{{ r.pk }}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content border-0" style="border-radius:16px;overflow:hidden;">
+                    <div class="modal-header" style="background:{% if r.self_applied %}linear-gradient(135deg,#7f1d1d,#e11d48){% else %}#f8fafc{% endif %};border:none;padding:1.25rem 1.5rem;">
+                      <div>
+                        <h6 class="modal-title mb-0" style="{% if r.self_applied %}color:#fff;{% endif %}font-weight:800;">
+                          {% if r.self_applied %}<i class="fas fa-user me-2 opacity-75"></i>{% endif %}
+                          {{ r.member.name }}
+                        </h6>
+                        <div style="font-size:.75rem;{% if r.self_applied %}color:#fca5a5;{% else %}color:#64748b;{% endif %}margin-top:.15rem;">
+                          {% if r.self_applied %}Staff-submitted · {% endif %}Applied {{ r.created_at|date:"M d, Y" }}
+                        </div>
+                      </div>
+                      <button type="button" class="btn-close {% if r.self_applied %}btn-close-white{% endif %} ms-auto" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body p-4">
+                      <!-- Staff reason block -->
+                      {% if r.self_applied %}
+                      <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:10px;padding:.9rem 1rem;margin-bottom:1rem;">
+                        <div style="font-size:.68rem;font-weight:700;color:#be123c;text-transform:uppercase;margin-bottom:.3rem;">Staff's Reason</div>
+                        <div style="font-size:.85rem;color:#0f172a;line-height:1.5;">{{ r.reason }}</div>
+                      </div>
+                      {% endif %}
+
+                      <div class="row g-3 mb-3">
+                        <div class="col-6">
+                          <div class="text-xs text-muted mb-1">Resignation Date</div>
+                          <div class="text-sm font-weight-bold">{{ r.resignation_date|date:"M d, Y" }}</div>
+                        </div>
+                        <div class="col-6">
+                          <div class="text-xs text-muted mb-1">Last Working Day</div>
+                          <div class="text-sm font-weight-bold">{{ r.last_working_day|date:"M d, Y"|default:"—" }}</div>
+                        </div>
+                      </div>
+
+                      <form method="post" action="{% url 'schooladmin:update_resignation_email' r.pk %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                          <label class="form-label text-xs font-weight-bold">Decision / Status</label>
+                          <select name="status" class="form-select form-select-sm">
+                            {% for val,label in status_choices %}
+                            <option value="{{ val }}" {% if r.status == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label text-xs font-weight-bold">Note to Staff (Exit Interview)</label>
+                          <textarea name="exit_interview_note" class="form-control form-control-sm" rows="3" placeholder="Optional note visible to the staff member…">{{ r.exit_interview_note|default:'' }}</textarea>
+                        </div>
+                        <div class="d-flex gap-3 mb-2">
+                          <div class="form-check">
+                            <input type="checkbox" name="clearance_status" class="form-check-input" id="cl{{ r.pk }}" {% if r.clearance_status %}checked{% endif %}>
+                            <label class="form-check-label text-xs" for="cl{{ r.pk }}">Clearance Done</label>
+                          </div>
+                          <div class="form-check">
+                            <input type="checkbox" name="final_settlement_status" class="form-check-input" id="fs{{ r.pk }}" {% if r.final_settlement_status %}checked{% endif %}>
+                            <label class="form-check-label text-xs" for="fs{{ r.pk }}">Final Settlement Done</label>
+                          </div>
+                        </div>
+                        <div class="modal-footer border-0 px-0 pb-0 pt-2 gap-2">
+                          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="fas fa-save me-1"></i>Save &amp; Notify Staff
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center text-muted py-5">
+              <i class="fas fa-door-open fa-2x mb-2 d-block opacity-30"></i>
+              No resignation records found.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

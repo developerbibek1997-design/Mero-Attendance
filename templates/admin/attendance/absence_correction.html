@@ -1,0 +1,129 @@
+{% extends 'dashboard.html' %}
+{% block title %}Absence Correction | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-user-slash text-danger me-2"></i>Absence Correction</h4>
+      <p class="text-xs text-muted mb-0">Mark a member absent if they were mistakenly recorded as present</p>
+    </div>
+    <a href="{% url 'schooladmin:manual_attendance' %}" class="btn btn-outline-secondary btn-sm">Manual Attendance</a>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+  <div class="row g-4">
+    <!-- Date & Search Controls -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-filter text-primary me-2"></i>Filter</h6>
+        </div>
+        <div class="card-body p-3">
+          <form method="get">
+            <div class="mb-3">
+              <label class="text-xs font-weight-bold">Date</label>
+              <input type="date" name="date" class="form-control form-control-sm" value="{{ date_str }}">
+            </div>
+            <div class="mb-3">
+              <label class="text-xs font-weight-bold">Search Member</label>
+              <input type="text" name="q" class="form-control form-control-sm" value="{{ q }}" placeholder="Name...">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm w-100">Apply</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Recent Corrections -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder text-danger"><i class="fas fa-history me-2"></i>Recent Corrections</h6>
+        </div>
+        <div class="card-body p-0">
+          {% for c in corrections %}
+          <div class="px-3 py-2 border-bottom">
+            <p class="text-sm font-weight-bold mb-0">{{ c.member.name }}</p>
+            <p class="text-xs text-muted mb-0">{{ c.date }} — {{ c.reason|truncatechars:50 }}</p>
+            <p class="text-xs text-muted mb-0">By: {{ c.corrected_by.first_name|default:"Admin" }}</p>
+          </div>
+          {% empty %}
+          <div class="text-center py-3 text-muted"><small>No corrections yet.</small></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Member List -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder">Members on <span class="text-primary">{{ selected_date }}</span></h6>
+          <p class="text-xs text-muted mb-0">Green = Present today. Click "Mark Absent" to remove their attendance record and log a reason.</p>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light"><tr>
+                <th class="text-xs">#</th><th class="text-xs">Member</th>
+                <th class="text-xs text-center">Status</th><th class="text-xs text-center">Action</th>
+              </tr></thead>
+              <tbody>
+                {% for m in members %}
+                <tr class="{% if m.id in present_ids %}table-success{% endif %}">
+                  <td class="text-xs text-muted">{{ forloop.counter }}</td>
+                  <td>
+                    <p class="text-sm font-weight-bold mb-0">{{ m.name }}</p>
+                    <p class="text-xs text-muted mb-0">{{ m.get_member_type_display }} &bull; {{ m.classification.name|default:"—" }}</p>
+                  </td>
+                  <td class="text-center">
+                    {% if m.id in present_ids %}
+                      <span class="badge bg-success"><i class="fas fa-check me-1"></i>Present</span>
+                    {% else %}
+                      <span class="badge bg-light text-dark">Absent</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    {% if m.id in present_ids %}
+                    <button class="btn btn-xs btn-danger" data-bs-toggle="modal" data-bs-target="#absentModal{{ m.id }}">
+                      <i class="fas fa-user-slash me-1"></i>Mark Absent
+                    </button>
+                    <!-- Confirm Modal -->
+                    <div class="modal fade" id="absentModal{{ m.id }}" tabindex="-1">
+                      <div class="modal-dialog modal-sm">
+                        <div class="modal-content">
+                          <div class="modal-header bg-danger text-white py-3">
+                            <h6 class="modal-title mb-0">Confirm Absence</h6>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                          </div>
+                          <form method="post">{% csrf_token %}
+                            <div class="modal-body">
+                              <p class="text-sm mb-2">Mark <strong>{{ m.name }}</strong> absent on <strong>{{ selected_date }}</strong>?</p>
+                              <p class="text-xs text-muted mb-2">This will delete their attendance record for this date.</p>
+                              <input type="hidden" name="member_id" value="{{ m.id }}">
+                              <input type="hidden" name="date" value="{{ date_str }}">
+                              <label class="text-xs font-weight-bold">Reason *</label>
+                              <input type="text" name="reason" class="form-control form-control-sm" placeholder="e.g. Mistaken scan, left early" required>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="submit" class="btn btn-danger btn-sm">Confirm</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                    {% else %}
+                    <span class="text-xs text-muted">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center text-muted py-5">No members found.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

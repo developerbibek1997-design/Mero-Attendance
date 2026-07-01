@@ -19,10 +19,12 @@ urlpatterns = [
 
     path('addOrganization', views.addOrg.as_view(), name="addOrg"),
     path('deleteOrg/<int:id>', views.deleteOrg, name="deleteOrg"),
+
     path('editOrg/<int:id>', views.editOrg, name="editOrg"),
     path('addUser', views.addUser.as_view(), name="addUser"),
     path('deleteUser/<int:id>', views.deleteUser, name="deleteUser"),
     path('editUser/<int:id>', views.editUser, name="editUser"),
-
-
+    path('global-holiday/', views.GlobalHolidayView.as_view(), name="globalHoliday"),
+    path('broadcast-email/', views.BroadcastNotificationView.as_view(), name="broadcastEmail"),
+    path('attendance-report/', views.SuperAttendanceReportView.as_view(), name="attendance_report"),
 ]

@@ -1,154 +1,614 @@
 {% extends 'pillar.html' %}
 {% load static %}
 
+{% block title %}
+    Contact Mero Attendance | Book Demo for Attendance, HRMS & Payroll System Nepal
+{% endblock title %}
+
 {% block content %}
-<div class="container-fluid mt-5">
-    
-    <div class="row p-2">
-       
-        {% for i in messages  %}
-        <div class="alert alert-secondary alert-light alert-dismissible fade show" role="alert">
-            {{i}}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-       
-        {% endfor %}
-    </div>
-</div> 
 
-<div class="container-fluid mt-5">
-    <h2 class="text-center mt-5" data-aos="flip-right" data-aos-duration="2000" data-aos-once="true" data-aos-offset="200">
-        Get to  
-        <span class="text-primary">
-            know more about us
-        </span>
-      
-    </h2>
-    <br>
-    <div class="row mt-3"> 
-        <div class="card col-12 col-lg-8 p-2 m-auto pb-4" data-aos="flip-up" data-aos-duration="2000" data-aos-once="true" data-aos-offset="200">
-            <div class="row p-0 m-0">
-                <div class="col-12 col-lg-6" style="border-right: 1px solid rgb(188, 188, 188);">
-                    <h3 class="mt-3">
-                        <span class="text-danger">
-                            Contact 
-                        </span>
-                        Info
-                       
-                    </h3>
-                  
-                    <div class="mt-5 text-center contact-ico">
-                        <img src="{%static 'res/phonec.png'%}" class="conIcon" alt="">
-                        <p class="mt-1 ps-3 text-primary my-auto">
-                            <a href="tel:+9779851104626">+977 9861397178</a>
-                        </p>
-                    </div>
-                    <div class="mt-3 text-center contact-ico">
-                        <img src="{%static 'res/mapc.png'%}" class="conIcon" alt="">
-                        <p class="mt-1 ps-3 text-primary my-auto">
-                            Jorpati Kathmandu
-                        </p>
-                    </div>
-                    <div class="mt-3 text-center contact-ico">
-                        <img src="{%static 'res/emailc.png'%}" class="conIcon" alt="">
-                        <p class="mt-1 ps-3 text-primary my-auto">
-                            <a href="mailto:info@afterschoolnepal.com">info@meroattendance.com</a>
-                        </p>
-                    </div>
-                    <div class="mt-3 text-center contact-ico">
-                        <img src="{%static 'res/webc.png'%}" class="conIcon" alt="">
-                        <p class="mt-1 ps-3 text-primary my-auto">
-                            <a href="http://www.afterschoolnepal.com" target="_blank">www.meroattendance.com</a>
-                        </p>
-                    </div>
-                    
-                    <br>
-                    <h5 class="mt-2 text-center  ffo ">
-                        <u>
-                            Follow Us
-                        </u>
-                       
-                    </h5>
-                    <div class="d-flex justify-content-center mt-4">
-                        <a href="https://www.facebook.com/people/After-School/61557029572455/" target="_blank">
-                            <img class="p-2 m-2 follow1" src="{%static 'res/facebook.png'%}" alt="">
-                        </a>
+<style>
+    .contact-page {
+        background:
+            radial-gradient(circle at top left, rgba(225, 29, 72, 0.10), transparent 30%),
+            radial-gradient(circle at top right, rgba(22, 163, 74, 0.08), transparent 28%),
+            linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        overflow: hidden;
+    }
 
+    .contact-hero {
+        position: relative;
+        padding: 90px 0 55px;
+        text-align: center;
+    }
 
-                        <a href="https://www.linkedin.com/company/afterschoolnp/" target="_blank">
-                            <img class="p-2 m-2 follow1" src="{%static 'res/linkedin.png'%}" alt="">
-                        </a>
-                      
-                        
-                    </div>
+    .contact-hero::before {
+        content: "";
+        position: absolute;
+        width: 520px;
+        height: 520px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(225, 29, 72, 0.14), rgba(22, 163, 74, 0.08));
+        top: -220px;
+        right: -150px;
+        filter: blur(8px);
+    }
+
+    .contact-hero-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .contact-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: rgba(225, 29, 72, 0.08);
+        color: #e11d48;
+        font-weight: 900;
+        font-size: 0.88rem;
+        margin-bottom: 18px;
+    }
+
+    .contact-title {
+        color: #0f172a;
+        font-size: clamp(2.3rem, 5vw, 5rem);
+        font-weight: 950;
+        letter-spacing: -0.06em;
+        line-height: 1.05;
+        margin-bottom: 18px;
+    }
+
+    .contact-title span {
+        color: #e11d48;
+    }
+
+    .contact-subtitle {
+        max-width: 780px;
+        margin: 0 auto;
+        color: #64748b;
+        font-size: 1.08rem;
+        line-height: 1.75;
+    }
+
+    .contact-section {
+        padding: 35px 0 95px;
+    }
+
+    .contact-alert-wrap {
+        max-width: 1050px;
+        margin: 0 auto 24px;
+    }
+
+    .contact-alert {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 18px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+        background: #ffffff;
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    .contact-shell {
+        max-width: 1120px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.86);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 36px;
+        padding: 18px;
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.14);
+        backdrop-filter: blur(22px);
+    }
+
+    .contact-info-panel {
+        height: 100%;
+        background:
+            radial-gradient(circle at top right, rgba(225, 29, 72, 0.28), transparent 30%),
+            linear-gradient(135deg, #0f172a, #1e293b);
+        border-radius: 28px;
+        padding: 34px;
+        color: #ffffff;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .contact-info-panel::before {
+        content: "";
+        position: absolute;
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        right: -90px;
+        top: -90px;
+        background: rgba(225, 29, 72, 0.30);
+    }
+
+    .contact-info-inner {
+        position: relative;
+        z-index: 2;
+    }
+
+    .contact-info-panel h3,
+    .contact-form-panel h3 {
+        font-weight: 950;
+        letter-spacing: -0.04em;
+        margin-bottom: 12px;
+    }
+
+    .contact-info-panel p {
+        color: rgba(255, 255, 255, 0.68);
+        line-height: 1.7;
+    }
+
+    .contact-info-list {
+        margin-top: 28px;
+        display: grid;
+        gap: 14px;
+    }
+
+    .contact-info-item {
+        display: grid;
+        grid-template-columns: 48px 1fr;
+        gap: 14px;
+        align-items: center;
+        padding: 16px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        transition: all 0.25s ease;
+    }
+
+    .contact-info-item:hover {
+        transform: translateY(-4px);
+        background: rgba(255, 255, 255, 0.12);
+    }
+
+    .contact-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 255, 255, 0.10);
+    }
+
+    .contact-icon img {
+        width: 26px;
+        height: 26px;
+        object-fit: contain;
+    }
+
+    .contact-info-item small {
+        display: block;
+        color: rgba(255, 255, 255, 0.52);
+        font-weight: 800;
+        margin-bottom: 2px;
+    }
+
+    .contact-info-item a,
+    .contact-info-item span {
+        color: #ffffff;
+        font-weight: 850;
+        text-decoration: none;
+        word-break: break-word;
+    }
+
+    .follow-title {
+        margin-top: 32px;
+        color: #ffffff;
+        font-weight: 900;
+    }
+
+    .follow-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 14px;
+    }
+
+    .follow-row a {
+        width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 255, 255, 0.10);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        transition: all 0.25s ease;
+    }
+
+    .follow-row a:hover {
+        transform: translateY(-4px);
+        background: #e11d48;
+    }
+
+    .follow-row img {
+        width: 26px;
+        height: 26px;
+        object-fit: contain;
+    }
+
+    .contact-form-panel {
+        height: 100%;
+        background: #ffffff;
+        border-radius: 28px;
+        padding: 34px;
+    }
+
+    .contact-form-panel h3 {
+        color: #0f172a;
+    }
+
+    .contact-form-panel h3 span {
+        color: #e11d48;
+    }
+
+    .contact-form-panel .form-text-small {
+        color: #64748b;
+        line-height: 1.7;
+        margin-bottom: 26px;
+    }
+
+    .contact-field {
+        margin-bottom: 18px;
+    }
+
+    .contact-field label,
+    .contact-field span {
+        display: block;
+        color: #0f172a;
+        font-weight: 850;
+        margin-bottom: 8px;
+        font-size: 0.92rem;
+    }
+
+    .contact-input-wrap {
+        position: relative;
+    }
+
+    .contact-input-wrap i {
+        position: absolute;
+        top: 50%;
+        left: 16px;
+        transform: translateY(-50%);
+        color: #e11d48;
+        z-index: 2;
+    }
+
+    .contact-input-wrap.textarea-wrap i {
+        top: 23px;
+        transform: none;
+    }
+
+    .contact-input-wrap input,
+    .contact-input-wrap textarea,
+    .contact-input-wrap select {
+        width: 100%;
+        min-height: 54px;
+        border-radius: 16px !important;
+        border: 1px solid #e2e8f0 !important;
+        background: #f8fafc !important;
+        padding: 13px 16px 13px 46px !important;
+        outline: none !important;
+        color: #0f172a !important;
+        transition: all 0.22s ease;
+    }
+
+    .contact-input-wrap textarea {
+        min-height: 135px;
+        resize: vertical;
+        padding-top: 15px !important;
+    }
+
+    .contact-input-wrap input:focus,
+    .contact-input-wrap textarea:focus,
+    .contact-input-wrap select:focus {
+        border-color: rgba(225, 29, 72, 0.55) !important;
+        background: #ffffff !important;
+        box-shadow: 0 0 0 5px rgba(225, 29, 72, 0.10) !important;
+    }
+
+    .contact-submit-btn {
+        width: 100%;
+        min-height: 56px;
+        border-radius: 16px;
+        border: 0;
+        background: linear-gradient(135deg, #e11d48, #be123c);
+        color: #ffffff;
+        font-weight: 950;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        box-shadow: 0 18px 38px rgba(225, 29, 72, 0.26);
+        transition: all 0.25s ease;
+    }
+
+    .contact-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 24px 48px rgba(225, 29, 72, 0.34);
+    }
+
+    .contact-trust-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 32px;
+    }
+
+    .contact-trust-card {
+        background: #ffffff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 22px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    }
+
+    .contact-trust-card i {
+        color: #e11d48;
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+    }
+
+    .contact-trust-card h5 {
+        color: #0f172a;
+        font-weight: 950;
+        margin-bottom: 5px;
+    }
+
+    .contact-trust-card p {
+        color: #64748b;
+        margin: 0;
+        font-size: 0.9rem;
+        line-height: 1.55;
+    }
+
+    @media (max-width: 991px) {
+        .contact-hero {
+            padding: 70px 0 35px;
+        }
+
+        .contact-section {
+            padding: 35px 0 70px;
+        }
+
+        .contact-info-panel,
+        .contact-form-panel {
+            padding: 26px;
+        }
+
+        .contact-trust-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .contact-shell {
+            padding: 10px;
+            border-radius: 26px;
+        }
+
+        .contact-info-panel,
+        .contact-form-panel {
+            border-radius: 22px;
+            padding: 22px;
+        }
+
+        .contact-info-item {
+            grid-template-columns: 42px 1fr;
+            padding: 14px;
+        }
+
+        .contact-icon {
+            width: 42px;
+            height: 42px;
+        }
+    }
+</style>
+
+<div class="contact-page">
+
+    <!-- HERO -->
+    <section class="contact-hero">
+        <div class="container">
+            <div class="contact-hero-content">
+                <div class="contact-badge">
+                    <i class="fa-solid fa-headset"></i>
+                    Talk with Mero Attendance team
                 </div>
 
-                <div class="col-12 col-lg-6">
-                    <h3 class="mt-3">
-                        <span class="text-danger">
-                            Contact 
-                        </span>
-                        Us
-                       
-                    </h3>
-                    <hr>
-                    <form method = "POST" class="mt-2">
-         
-                        <div class="row m-0 p-0 justify-content-between">
+                <h1 class="contact-title">
+                    Contact <span>Us</span><br>
+                    Book Your Demo
+                </h1>
 
-                            <div class="col-6 m-0 p-0">
-                                <span class="mt-3">Full Name*</span>
-                                <div class="d-flex mt-2 me-2 login-input position-relative">
-                                    <i class="fa fa-user-check my-auto icon"></i>
-                                    {{form.fullname}}
-                                    <!-- <input type="text" name="name" class=" form-control create-icon" placeholder="Name.."> -->
+                <p class="contact-subtitle">
+                    Want to digitize attendance, leave, payroll, salary sheet and payslip management?
+                    Send us a message and our team will help you choose the right solution for your organization.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTACT BODY -->
+    <section class="contact-section">
+        <div class="container">
+
+            {% if messages %}
+                <div class="contact-alert-wrap">
+                    {% for i in messages %}
+                        <div class="alert contact-alert alert-dismissible fade show" role="alert">
+                            <i class="fa-solid fa-circle-info me-2 text-danger"></i>
+                            {{ i }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="contact-shell">
+                <div class="row g-0">
+
+                    <!-- CONTACT INFO -->
+                    <div class="col-lg-5">
+                        <div class="contact-info-panel">
+                            <div class="contact-info-inner">
+                                <h3>Contact Info</h3>
+                                <p>
+                                    Reach us for demo, pricing, setup support, biometric integration,
+                                    school attendance or payroll management.
+                                </p>
+
+                                <div class="contact-info-list">
+
+                                    <div class="contact-info-item">
+                                        <div class="contact-icon">
+                                            <img src="{% static 'res/phonec.png' %}" alt="Phone">
+                                        </div>
+                                        <div>
+                                            <small>Phone</small>
+                                            <a href="tel:+9779861397178">+977 9861397178</a>
+                                        </div>
+                                    </div>
+
+                                    <div class="contact-info-item">
+                                        <div class="contact-icon">
+                                            <img src="{% static 'res/mapc.png' %}" alt="Location">
+                                        </div>
+                                        <div>
+                                            <small>Location</small>
+                                            <span>Jorpati, Kathmandu</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="contact-info-item">
+                                        <div class="contact-icon">
+                                            <img src="{% static 'res/emailc.png' %}" alt="Email">
+                                        </div>
+                                        <div>
+                                            <small>Email</small>
+                                            <a href="mailto:info@meroattendance.com">info@meroattendance.com</a>
+                                        </div>
+                                    </div>
+
+                                    <div class="contact-info-item">
+                                        <div class="contact-icon">
+                                            <img src="{% static 'res/webc.png' %}" alt="Website">
+                                        </div>
+                                        <div>
+                                            <small>Website</small>
+                                            <a href="https://www.meroattendance.com" target="_blank">
+                                                www.meroattendance.com
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <h5 class="follow-title">Follow Us</h5>
+
+                                <div class="follow-row">
+                                    <a href="https://www.facebook.com/wakeandtech" target="_blank" aria-label="Facebook">
+                                        <img src="{% static 'res/facebook.png' %}" alt="Facebook">
+                                    </a>
+
+                                    <a href="https://www.instagram.com/wakeandtech/" target="_blank" aria-label="LinkedIn">
+                                        <img src="{% static 'res/linkedin.png' %}" alt="LinkedIn">
+                                    </a>
                                 </div>
                             </div>
-                            <br>
-                            <div class="col-6 m-0 p-0">
-                                <span class="mt-3">Email*</span>
-                                <div class="d-flex mt-2 ms-2 login-input position-relative">
-                                    <i class="fa fa-mail-bulk my-auto icon"></i>
-                                    {{form.email}}
-                                    <!-- <input type="text" name="email_user" class=" form-control create-icon" placeholder="Your Email.."> -->
+                        </div>
+                    </div>
+
+                    <!-- FORM -->
+                    <div class="col-lg-7">
+                        <div class="contact-form-panel">
+                            <h3>
+                                Send <span>Message</span>
+                            </h3>
+
+                            <p class="form-text-small">
+                                Fill out the form below. We will contact you for demo, setup, pricing or technical discussion.
+                            </p>
+
+                            <form method="POST">
+                                {% csrf_token %}
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="contact-field">
+                                            <span>Full Name*</span>
+                                            <div class="contact-input-wrap">
+                                                <i class="fa fa-user-check"></i>
+                                                {{ form.fullname }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="contact-field">
+                                            <span>Email*</span>
+                                            <div class="contact-input-wrap">
+                                                <i class="fa fa-envelope"></i>
+                                                {{ form.email }}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                           
+
+                                <div class="contact-field">
+                                    <span>Number</span>
+                                    <div class="contact-input-wrap">
+                                        <i class="fa fa-phone"></i>
+                                        {{ form.number }}
+                                    </div>
+                                </div>
+
+                                <div class="contact-field">
+                                    <span>Your Feedback*</span>
+                                    <div class="contact-input-wrap textarea-wrap">
+                                        <i class="fa fa-message"></i>
+                                        {{ form.message }}
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="contact-submit-btn">
+                                    Send Message
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </form>
                         </div>
-                      
-                        <br>
-                        <span class="mt-3">Number</span>
-                        <div class="d-flex mt-2 login-input position-relative">
-                            <i class="fa fa-phone  my-auto icon"></i>
-                            {{form.number}}
-                            <!-- <input type="text" name="number" class=" form-control create-icon" placeholder="Number"> -->
-                        </div>
-                        <br>
-                        <span class="mt-3">Your Feedback*</span>
-                        <div class="d-flex mt-2 login-input position-relative">
-                            <i class="fa fa-passport my-auto icon"></i> 
-                            {{form.message}}
-                            <!-- <textarea type="text" name = "remarks" class="form-control create-icon" placeholder="Remarks.." style="height: 100px;"></textarea> -->
-                
-                        </div>
-                       
-                        {% csrf_token %}
-                        <div class="mt-3">
-                            <button class="btn btn-primary mt-2 w-100">
-                               Send Message
-                            </button>
-                        </div>
-                       
-                       
-                    </form>
+                    </div>
+
                 </div>
             </div>
-            <br><br>
+
+            <!-- TRUST CARDS -->
+            <div class="contact-trust-row">
+                <div class="contact-trust-card">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <h5>Book Demo</h5>
+                    <p>Get a practical walkthrough of attendance, HRMS and payroll features.</p>
+                </div>
+
+                <div class="contact-trust-card">
+                    <i class="fa-solid fa-fingerprint"></i>
+                    <h5>Device Support</h5>
+                    <p>Discuss ZKTeco biometric device integration and setup requirements.</p>
+                </div>
+
+                <div class="contact-trust-card">
+                    <i class="fa-solid fa-building"></i>
+                    <h5>Custom Setup</h5>
+                    <p>Choose the best package for schools, colleges, offices or organizations.</p>
+                </div>
+            </div>
+
         </div>
+    </section>
 
-        
-    </div>
 </div>
-{% endblock content %}
-    
 
+{% endblock content %}

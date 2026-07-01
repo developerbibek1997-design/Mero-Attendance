@@ -1,0 +1,87 @@
+{% extends 'dashboard.html' %}
+{% block title %}Course Attendance | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <h4 class="font-weight-bolder mb-4">Course Attendance</h4>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-4"><label class="text-xs font-weight-bold">Select Course</label>
+          <select name="course" class="form-select" onchange="this.form.submit()">
+            <option value="">-- Choose Course --</option>
+            {% for c in courses %}<option value="{{ c.id }}" {% if selected_course and selected_course.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+          </select></div>
+        <div class="col-md-3"><label class="text-xs font-weight-bold">Date</label><input type="date" name="date" class="form-control" value="{{ selected_date }}" onchange="this.form.submit()"></div>
+        <div class="col-md-2"><button type="submit" class="btn btn-primary btn-sm w-100 mt-3"><i class="fas fa-search me-1"></i>Load</button></div>
+      </form>
+    </div>
+  </div>
+
+  {% if selected_course %}
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 font-weight-bolder"><i class="fas fa-clipboard-check text-success me-2"></i>{{ selected_course.name }} — {{ selected_date }}</h6>
+      <span class="badge bg-primary">{{ members_list.count }} Members</span>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="course_id" value="{{ selected_course.id }}">
+      <input type="hidden" name="attendance_date" value="{{ selected_date }}">
+      <div class="card-body p-4">
+        <div class="row g-3 mb-3">
+          <div class="col-md-6"><label class="text-xs font-weight-bold">Topic Taught Today</label><input type="text" name="topic_taught" class="form-control" placeholder="e.g. Chapter 3 - Algebra"></div>
+          <div class="col-md-6"><label class="text-xs font-weight-bold">Gap Note</label><input type="text" name="gap_note" class="form-control" placeholder="Note for absent students"></div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="text-sm font-weight-bold mb-0">Mark Attendance</h6>
+          <button type="button" class="btn btn-xs btn-outline-success" onclick="markAll(true)">Mark All Present</button>
+        </div>
+        <div class="row g-2">
+          {% for mem in members_list %}
+          <div class="col-md-6 col-lg-4">
+            <div class="border rounded p-3 d-flex justify-content-between align-items-center">
+              <div>
+                <p class="text-sm font-weight-bold mb-0">{{ mem.name }}</p>
+                <p class="text-xs text-muted mb-0">{{ mem.classification.name|default:"" }}</p>
+              </div>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input attendance-toggle" type="checkbox" name="present_members" value="{{ mem.id }}" id="mem_{{ mem.id }}" checked>
+                <label class="form-check-label text-xs" for="mem_{{ mem.id }}"><span class="present-label text-success">Present</span></label>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="col-12 text-center text-muted py-4"><i class="fas fa-users fa-2x mb-2 d-block"></i>No members enrolled in this course.</div>
+          {% endfor %}
+        </div>
+      </div>
+      {% if members_list %}
+      <div class="card-footer bg-white border-top py-3">
+        <button type="submit" class="btn btn-success"><i class="fas fa-save me-1"></i>Save Attendance</button>
+      </div>
+      {% endif %}
+    </form>
+  </div>
+  {% else %}
+  <div class="card border-0 shadow-sm"><div class="card-body text-center py-5"><i class="fas fa-clipboard-list fa-3x text-muted mb-3 d-block"></i><h6 class="text-muted">Select a course to take attendance.</h6></div></div>
+  {% endif %}
+</div>
+<script>
+function markAll(present) {
+  document.querySelectorAll('.attendance-toggle').forEach(cb => {
+    cb.checked = present;
+    cb.closest('.border').querySelector('.present-label').textContent = present ? 'Present' : 'Absent';
+    cb.closest('.border').querySelector('.present-label').className = present ? 'present-label text-success' : 'present-label text-danger';
+  });
+}
+document.querySelectorAll('.attendance-toggle').forEach(cb => {
+  cb.addEventListener('change', function() {
+    const label = this.closest('.border').querySelector('.present-label');
+    label.textContent = this.checked ? 'Present' : 'Absent';
+    label.className = this.checked ? 'present-label text-success' : 'present-label text-danger';
+  });
+});
+</script>
+{% endblock %}

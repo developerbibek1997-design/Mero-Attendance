@@ -124,22 +124,24 @@ class AutoCheckinForm(forms.ModelForm):
 class OrgFormSchool(ModelForm):
     class Meta:
         model = Organization
-        fields = ('name', 'address','serial_key', 'image')
+        fields = ('name', 'address', 'serial_key', 'image', 'nepali_date')
 
         labels = {
-            'name':"Name",
-            'expire_on':"Date of Expire",
-            'serial_key':"Organization Key ",
+            'name': "Name",
+            'expire_on': "Date of Expire",
+            'serial_key': "Organization Key",
             'new_serial_key': 'Activation Number',
-            'activate':'Activated'
+            'activate': 'Activated',
+            'nepali_date': 'Use Nepali Calendar (BS)',
         }
-        widgets ={
-            'image':forms.FileInput(attrs= {'class':'form-control col-6 mb-3 mt-3', 'placeholder':' Name'}),
-            'name':forms.TextInput(attrs= {'class':'form-control col-6 mb-3 mt-3', 'placeholder':' Name'}),
-            'address':forms.TextInput(attrs= {'class':'form-control col-6 mb-3 mt-3', 'placeholder':' Full Address'}),
-            'serial_key':forms.TextInput(attrs= {'class':'form-control col-6 mb-3 mt-3', 'placeholder':'Puller key'}),
-            'expire_on':forms.DateInput(attrs= {'class':'date-picker col-6 form-control mb-3 mt-3', 'type':'date'}),
-            'new_serial_key':forms.TextInput(attrs= {'class':'form-control col-6 mb-3 mt-3', 'placeholder':'Activation Key'}),
-            'activate':forms.CheckboxInput()
+        widgets = {
+            'image': forms.FileInput(attrs={'class': 'form-control col-6 mb-3 mt-3'}),
+            'name': forms.TextInput(attrs={'class': 'form-control col-6 mb-3 mt-3', 'placeholder': 'Name'}),
+            'address': forms.TextInput(attrs={'class': 'form-control col-6 mb-3 mt-3', 'placeholder': 'Full Address'}),
+            'serial_key': forms.TextInput(attrs={'class': 'form-control col-6 mb-3 mt-3', 'placeholder': 'Puller key'}),
+            'expire_on': forms.DateInput(attrs={'class': 'date-picker col-6 form-control mb-3 mt-3', 'type': 'date'}),
+            'new_serial_key': forms.TextInput(attrs={'class': 'form-control col-6 mb-3 mt-3', 'placeholder': 'Activation Key'}),
+            'activate': forms.CheckboxInput(),
+            'nepali_date': forms.CheckboxInput(attrs={'class': 'form-check-input', 'role': 'switch'}),
         }
 

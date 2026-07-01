@@ -1,177 +1,326 @@
 {% extends 'dashboard.html' %}
-
-{% block title %}
-    Edit Classification | Attendance Management System
-{% endblock title %}
+{% block title %}Edit Classification — {{ clas.name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header pb-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5>Edit Classification</h5>
-                      
-                    </div>
-                    <p class="text-sm mb-0">Update classification details and view associated members</p>
-                </div>
-                
-                <div class="card-body">
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                    {% endfor %}
-                    
-                    <form method="post" class="needs-validation" novalidate>
-                        {% csrf_token %}
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div class="form-group">
-                                    <label for="id_name" class="form-label">Classification Name</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-tag"></i></span>
-                                        {{ form.name }}
-                                    </div>
-                                    <div class="invalid-feedback">
-                                        Please provide a valid classification name.
-                                    </div>
-                                    {% if form.name.errors %}
-                                        <div class="text-danger small">{{ form.name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-4 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fas fa-save me-1"></i> Update Classification
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header pb-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5>Members in {{ clas.name }}</h5>
-                        <span class="badge bg-gradient-primary">{{ clas.member_type.all.count }} members</span>
-                    </div>
-                </div>
-                <div class="card-body px-0 pt-0 pb-2">
-                    {% if clas.member_type.all %}
-                    <div class="row">
-                        {% for member in clas.member_type.all %}
-                        <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
-                            <div class="card member-card h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar avatar-xl me-3">
-                                            <span class="avatar-initial bg-gradient-primary rounded-circle">
-                                                {{ member.name|first|upper }}
-                                            </span>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <h6 class="mb-0 text-sm text-capitalize">{{ member.name }}</h6>
-                                            <p class="text-xs text-secondary mb-0">
-                                                <i class="fas fa-tag me-1"></i> {{ member.classification }}
-                                            </p>
-                                            <p class="text-xs text-secondary mb-0">
-                                                <i class="fas fa-phone me-1"></i> {{ member.phone }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <hr class="my-2">
-                                    <div class="d-flex justify-content-between">
-                                        <a href="{% url 'handle:memberEdit' member.id %}" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-edit me-1"></i> Edit
-                                        </a>
-                                       
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-center p-4">
-                        <img src="https://cdn-icons-png.flaticon.com/512/4076/4076478.png" height="100" alt="No members">
-                        <h5 class="mt-3">No Members Found</h5>
-                        <p class="text-muted">There are currently no members assigned to this classification</p>
-                        <a href="{% url 'handle:addMember' %}" class="btn btn-sm btn-primary mt-2">
-                            <i class="fas fa-plus me-1"></i> Add Member
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <style>
-    .card {
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        transition: transform 0.2s ease-in-out;
-    }
-    .card:hover {
-        transform: translateY(-2px);
-    }
-    .card-header {
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    }
-    .member-card {
-        cursor: pointer;
-    }
-    .avatar {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .avatar-initial {
-        color: white;
-        font-weight: 600;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .badge {
-        font-size: 0.75rem;
-        padding: 0.35em 0.65em;
-    }
-    .form-control, .input-group-text {
-        height: 42px;
-    }
-    .input-group-text {
-        background-color: #f8f9fa;
-    }
+:root {
+  --ink:#0f172a; --slate:#334155; --muted:#64748b;
+  --border:#e2e8f0; --bg:#f8fafc;
+  --indigo:#6366f1; --indigo-dk:#4f46e5; --indigo-lt:#eef2ff;
+  --green:#16a34a; --amber:#d97706; --rose:#e11d48;
+}
+.pg { background:var(--bg); min-height:100vh; padding:2rem; }
+
+/* ── Page header ────────────────────────────── */
+.pg-header {
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 60%,#312e81 100%);
+  border-radius:20px; padding:1.75rem 2rem 2rem; position:relative; overflow:hidden;
+  margin-bottom:1.5rem;
+}
+.pg-header::before {
+  content:''; position:absolute; inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M0 0h20v20H0zM20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E");
+}
+.pg-header-inner { position:relative; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; }
+.pg-header-title { color:#fff; font-size:1.25rem; font-weight:800; margin:0; }
+.pg-header-sub { color:#94a3b8; font-size:.82rem; margin:.25rem 0 0; }
+.stat-pill {
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2);
+  border-radius:14px; padding:.75rem 1.25rem; text-align:center; min-width:90px;
+}
+.stat-num { color:#fff; font-size:1.5rem; font-weight:900; line-height:1; }
+.stat-lbl { color:#94a3b8; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-top:.2rem; }
+
+/* ── Cards ───────────────────────────────────── */
+.card-clean {
+  background:#fff; border-radius:18px; border:1px solid var(--border);
+  box-shadow:0 2px 16px rgba(0,0,0,.05); overflow:hidden;
+}
+.card-hd {
+  padding:1.25rem 1.5rem; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:.8rem;
+}
+.card-icon {
+  width:38px; height:38px; border-radius:11px;
+  display:flex; align-items:center; justify-content:center; font-size:.85rem; flex-shrink:0;
+}
+.card-icon.indigo { background:var(--indigo-lt); color:var(--indigo); }
+.card-icon.amber  { background:#fef3c7; color:var(--amber); }
+.card-title { font-size:.88rem; font-weight:800; color:var(--ink); margin:0; }
+.card-sub   { font-size:.73rem; color:var(--muted); margin:.1rem 0 0; }
+.card-body-p { padding:1.5rem; }
+
+/* ── Form controls ───────────────────────────── */
+.f-label {
+  font-size:.7rem; font-weight:700; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.05em; margin-bottom:.35rem; display:block;
+}
+.pg input[type=text],.pg input[type=email],.pg select,.pg textarea {
+  width:100%; border:1.5px solid var(--border); border-radius:10px;
+  padding:.65rem .95rem; font-size:.88rem; color:var(--ink);
+  background:#fff; outline:none; transition:border-color .15s,box-shadow .15s; min-height:44px;
+}
+.pg input:focus,.pg select:focus { border-color:var(--indigo); box-shadow:0 0 0 3px rgba(99,102,241,.1); }
+.btn-save {
+  background:linear-gradient(135deg,var(--indigo),var(--indigo-dk));
+  color:#fff; border:none; border-radius:10px;
+  padding:.7rem 1.8rem; font-size:.88rem; font-weight:700; cursor:pointer;
+  transition:opacity .15s; display:inline-flex; align-items:center; gap:.5rem; min-height:44px;
+}
+.btn-save:hover { opacity:.88; }
+.btn-transfer {
+  background:linear-gradient(135deg,#d97706,#b45309);
+  color:#fff; border:none; border-radius:10px;
+  padding:.7rem 1.8rem; font-size:.88rem; font-weight:700; cursor:pointer;
+  transition:opacity .15s; display:inline-flex; align-items:center; gap:.5rem; min-height:44px;
+}
+.btn-transfer:hover { opacity:.88; }
+
+/* ── Transfer action bar ─────────────────────── */
+.transfer-bar {
+  background:linear-gradient(135deg,#fffbeb,#fef9c3);
+  border:1px solid #fde68a; border-radius:14px; padding:1.25rem 1.5rem;
+  margin-bottom:1.25rem;
+}
+
+/* ── Search box ─────────────────────────────── */
+.search-wrap { position:relative; }
+.search-wrap input {
+  padding-left:2.5rem!important; border:1.5px solid var(--border);
+  border-radius:10px; min-height:44px;
+}
+.search-wrap input:focus { border-color:var(--indigo); box-shadow:0 0 0 3px rgba(99,102,241,.1); }
+.search-icon { position:absolute; left:.9rem; top:50%; transform:translateY(-50%); color:var(--muted); font-size:.85rem; pointer-events:none; }
+
+/* ── Select all / count row ─────────────────── */
+.member-ctrl {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:.5rem 0; flex-wrap:wrap; gap:.5rem;
+}
+.selected-badge {
+  background:var(--indigo-lt); color:var(--indigo); border:1px solid #c7d2fe;
+  border-radius:99px; padding:.2rem .8rem; font-size:.78rem; font-weight:700;
+}
+.clear-btn {
+  background:transparent; border:1px solid var(--border); border-radius:8px;
+  padding:.28rem .75rem; font-size:.75rem; font-weight:700; color:var(--muted); cursor:pointer;
+  transition:all .15s;
+}
+.clear-btn:hover { border-color:var(--rose); color:var(--rose); background:#fff9f9; }
+
+/* ── Member grid cards ──────────────────────── */
+.member-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:.75rem; }
+.m-card {
+  border:1.5px solid var(--border); border-radius:14px; padding:1rem;
+  background:#fff; cursor:pointer; transition:all .2s;
+  display:flex; align-items:center; gap:.75rem;
+}
+.m-card:hover { border-color:var(--indigo); box-shadow:0 4px 16px rgba(99,102,241,.12); transform:translateY(-1px); }
+.m-card.selected { background:var(--indigo-lt); border-color:var(--indigo); }
+.m-card input[type=checkbox] { display:none; }
+.m-avatar {
+  width:40px; height:40px; border-radius:50%; flex-shrink:0;
+  background:linear-gradient(135deg,#818cf8,#6366f1);
+  color:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:.9rem; font-weight:800; text-transform:uppercase;
+}
+.m-name { font-size:.83rem; font-weight:700; color:var(--ink); margin:0; }
+.m-phone { font-size:.72rem; color:var(--muted); margin:.1rem 0 0; }
+
+.empty-state { text-align:center; padding:3rem 1rem; color:var(--muted); }
+.empty-state i { font-size:2.2rem; margin-bottom:.6rem; opacity:.3; }
 </style>
 
+<div class="pg">
+
+  <!-- Header -->
+  <div class="pg-header">
+    <div class="pg-header-inner">
+      <div>
+        <div style="font-size:.68rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:.3rem;">Classification</div>
+        <h4 class="pg-header-title"><i class="fas fa-layer-group me-2 opacity-75"></i>{{ clas.name }}</h4>
+        <p class="pg-header-sub">Rename this classification or bulk-transfer its members</p>
+      </div>
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <div class="stat-pill">
+          <div class="stat-num">{{ clas.member_type.all|length }}</div>
+          <div class="stat-lbl">Members</div>
+        </div>
+        <a href="{% url 'handle:addClassification' %}" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:.4rem .9rem;font-size:.8rem;font-weight:600;text-decoration:none;">
+          <i class="fas fa-arrow-left me-1"></i>Back
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit name card -->
+  <div class="card-clean mb-4">
+    <div class="card-hd">
+      <div class="card-icon indigo"><i class="fas fa-pen"></i></div>
+      <div>
+        <div class="card-title">Edit Classification</div>
+        <div class="card-sub">Rename, change branch or update status</div>
+      </div>
+    </div>
+    <div class="card-body-p">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3 align-items-end">
+          <div class="col-md-5">
+            <label class="f-label">Classification Name</label>
+            {{ form.name }}
+          </div>
+          <div class="col-md-4">
+            <label class="f-label">Branch</label>
+            {{ form.branch }}
+          </div>
+          <div class="col-md-2">
+            <label class="f-label">Status</label>
+            {{ form.status }}
+          </div>
+          <div class="col-md-1 d-flex align-items-end">
+            <button type="submit" name="update_name" class="btn-save w-100" style="justify-content:center;">
+              <i class="fas fa-check"></i>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bulk transfer card -->
+  <div class="card-clean">
+    <div class="card-hd">
+      <div class="card-icon amber"><i class="fas fa-right-left"></i></div>
+      <div>
+        <div class="card-title">Bulk Transfer Members</div>
+        <div class="card-sub">Select members below and move them to another classification</div>
+      </div>
+      <div class="ms-auto">
+        <span class="selected-badge">Selected: <span id="selectedCount">0</span></span>
+      </div>
+    </div>
+
+    <div class="card-body-p">
+      <form method="post" id="transferForm">
+        {% csrf_token %}
+
+        <!-- Action bar -->
+        <div class="transfer-bar">
+          <div class="row g-3 align-items-center">
+            <div class="col-md-5">
+              <label class="f-label">Search Members</label>
+              <div class="search-wrap">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="memberSearch" placeholder="Name or phone…">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="f-label">Move to Classification</label>
+              <select name="target_classification" required>
+                <option value="">Select destination…</option>
+                {% for c in all_classifications %}
+                  {% if c.id != clas.id %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <button type="submit" name="transfer_members" class="btn-transfer w-100">
+                <i class="fas fa-right-left"></i>Transfer
+              </button>
+            </div>
+          </div>
+
+          <div class="member-ctrl mt-3">
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="checkbox" id="selectAll">
+              <label class="form-check-label fw-bold" for="selectAll" style="font-size:.82rem;color:var(--slate);">Select all visible</label>
+            </div>
+            <button type="button" class="clear-btn" id="clearBtn"><i class="fas fa-times me-1"></i>Clear</button>
+          </div>
+        </div>
+
+        <!-- Member grid -->
+        <div class="member-grid" id="memberGrid">
+          {% for member in clas.member_type.all %}
+          <label class="m-card member-item"
+                 data-name="{{ member.name|lower }}"
+                 data-phone="{{ member.phone }}">
+            <input type="checkbox" name="member_select" value="{{ member.id }}" class="member-cb">
+            <div class="m-avatar">{{ member.name|slice:":1" }}</div>
+            <div>
+              <div class="m-name">{{ member.name }}</div>
+              <div class="m-phone">{{ member.phone|default:"—" }}</div>
+            </div>
+          </label>
+          {% empty %}
+          <div style="grid-column:1/-1;">
+            <div class="empty-state">
+              <i class="fas fa-users d-block"></i>
+              No members in this classification yet.
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+
 <script>
-    // Form validation
-    (function () {
-        'use strict'
-        var forms = document.querySelectorAll('.needs-validation')
-        Array.prototype.slice.call(forms)
-            .forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    if (!form.checkValidity()) {
-                        event.preventDefault()
-                        event.stopPropagation()
-                    }
-                    form.classList.add('was-validated')
-                }, false)
-            })
-    })()
+var checkboxes   = document.querySelectorAll('.member-cb');
+var countEl      = document.getElementById('selectedCount');
+var selectAllCb  = document.getElementById('selectAll');
+var clearBtn     = document.getElementById('clearBtn');
+var searchInput  = document.getElementById('memberSearch');
+var memberItems  = document.querySelectorAll('.member-item');
+
+function updateCount() {
+  var n = 0;
+  checkboxes.forEach(function(cb) {
+    var card = cb.closest('.m-card');
+    if (cb.checked) { n++; card.classList.add('selected'); }
+    else { card.classList.remove('selected'); }
+  });
+  countEl.textContent = n;
+}
+
+checkboxes.forEach(function(cb) { cb.addEventListener('change', updateCount); });
+
+selectAllCb.addEventListener('change', function() {
+  memberItems.forEach(function(item) {
+    if (item.style.display !== 'none') {
+      var cb = item.querySelector('.member-cb');
+      if (cb) cb.checked = selectAllCb.checked;
+    }
+  });
+  updateCount();
+});
+
+clearBtn.addEventListener('click', function() {
+  checkboxes.forEach(function(cb) { cb.checked = false; });
+  selectAllCb.checked = false;
+  updateCount();
+});
+
+searchInput.addEventListener('input', function() {
+  var q = this.value.toLowerCase();
+  memberItems.forEach(function(item) {
+    var match = (item.dataset.name || '').includes(q) || (item.dataset.phone || '').includes(q);
+    item.style.display = match ? '' : 'none';
+  });
+});
+
+document.getElementById('transferForm').addEventListener('submit', function(e) {
+  var checked = document.querySelectorAll('.member-cb:checked');
+  if (checked.length === 0) {
+    e.preventDefault();
+    alert('Please select at least one member to transfer.');
+  }
+});
 </script>
 {% endblock content %}

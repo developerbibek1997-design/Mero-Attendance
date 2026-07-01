@@ -1,87 +1,327 @@
 {% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Attendance — {{ clas.name }} | {{ org.name }}{% endblock %}
 
 {% block content %}
-<div id="table-view" class="col-12">
-    <div class="card mb-4">
-        <div class="card-header pb-0" style="padding-right:60px; display: flex; justify-content: space-between;">
-            <h6>{{ date }}</h6>
-            <small>{{ date|date:'l' }}</small>
-            <h6>{{ clas.name }}</h6>
-        </div>
-        <div class="card-body px-0 pt-0 pb-2">
-            <div class="table-responsive p-0" id="printarea">
-                <table class="table align-items-center mb-0">
-                    <thead>
-                        <tr>
-                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">{{ date }} |{{ org }} |{{ clas.name }}</th>
-                        </tr>
-                        <tr>
-                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member Name</th>
-                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for i in mem %}
-                            <tr>
-                                <td>
-                                    <div class="d-flex px-2 py-1">
-                                        <div class="d-flex flex-column justify-content-center">
-                                            {{ i.name }}
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <p class="text-center my-auto">
-                                        {% if i.id in attended_members %}
-                                            <button class="btn btn-success p-2" disabled>Presented</button>
-                                        {% else %}
-                                            <button class="btn btn-primary p-2 mark-present" data-member-id="{{ i.id }}" data-organization-id="{{ org.id }}">Present</button>
-                                        {% endif %}
-                                    </p>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+<style>
+:root{--a-ink:#0f172a;--a-slate:#334155;--a-muted:#64748b;--a-border:#e2e8f0;--a-bg:#f8fafc;--a-green:#16a34a;--a-red:#dc2626;--a-blue:#2563eb;}
+.att-page{background:var(--a-bg);min-height:100vh;padding-bottom:4rem;}
+
+/* hero */
+.att-hero{background:linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#0c4a6e 100%);padding:1.6rem 1.8rem 4.2rem;position:relative;overflow:hidden;}
+.att-hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Crect x='0' y='0' width='20' height='20'/%3E%3Crect x='20' y='20' width='20' height='20'/%3E%3C/g%3E%3C/svg%3E");}
+.att-hero-title{color:#fff;font-size:1.3rem;font-weight:800;margin:0;position:relative;z-index:1;}
+.att-hero-sub{color:#94a3b8;font-size:.82rem;margin:.25rem 0 0;position:relative;z-index:1;}
+
+/* stat cards */
+.att-stats{margin:-2.8rem 1.5rem 0;display:flex;gap:.75rem;flex-wrap:wrap;position:relative;z-index:2;}
+.att-stat{flex:1;min-width:120px;background:#fff;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.1);border:1px solid rgba(255,255,255,.8);padding:1rem 1.1rem;}
+.att-stat-label{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--a-muted);margin-bottom:.2rem;}
+.att-stat-val{font-size:1.55rem;font-weight:800;color:var(--a-ink);line-height:1;}
+
+/* main content */
+.att-body{padding:1.5rem;}
+
+/* member card */
+.member-list{display:flex;flex-direction:column;gap:.55rem;}
+.mem-row{
+  background:#fff;border:1.5px solid var(--a-border);border-radius:12px;
+  padding:.8rem 1rem;display:flex;align-items:center;gap:.85rem;
+  transition:all .2s;
+}
+.mem-row.is-present{border-color:#bbf7d0;background:#f0fdf4;}
+.mem-avatar{
+  width:38px;height:38px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;font-weight:800;color:#fff;
+  background:linear-gradient(135deg,#475569,#1e293b);
+}
+.mem-row.is-present .mem-avatar{background:linear-gradient(135deg,#16a34a,#15803d);}
+.mem-name{font-size:.88rem;font-weight:700;color:var(--a-ink);}
+.mem-sub{font-size:.72rem;color:var(--a-muted);}
+.btn-toggle{
+  margin-left:auto;flex-shrink:0;
+  padding:.4rem .9rem;border-radius:99px;font-size:.75rem;font-weight:800;
+  border:1.5px solid var(--a-border);color:var(--a-muted);background:#fff;
+  cursor:pointer;transition:all .2s;
+}
+.btn-toggle.is-present{background:var(--a-green);border-color:var(--a-green);color:#fff;}
+
+/* section header */
+.sec-hd{display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem;}
+.sec-hd-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.82rem;flex-shrink:0;}
+.sec-hd-title{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--a-ink);}
+
+/* teaching log section */
+.tlog-card{
+  background:#fff;border:1.5px solid var(--a-border);border-radius:14px;
+  margin-bottom:.9rem;overflow:hidden;
+}
+.tlog-card-hd{
+  padding:.85rem 1.1rem;border-bottom:1px solid var(--a-border);
+  display:flex;align-items:center;justify-content:space-between;gap:.5rem;
+  cursor:pointer;
+}
+.tlog-card-body{padding:1.1rem;display:none;}
+.tlog-card.is-open .tlog-card-body{display:block;}
+.tlog-card.is-logged{border-color:#bbf7d0;}
+.tlog-card.is-logged .tlog-card-hd{background:#f0fdf4;}
+.tlog-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--a-muted);margin-bottom:.35rem;display:block;}
+.tlog-input{
+  width:100%;padding:.55rem .8rem;border:1.5px solid var(--a-border);
+  border-radius:9px;font-size:.83rem;color:var(--a-ink);outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+.tlog-input:focus{border-color:var(--a-blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+.absent-pill input[type=checkbox]{display:none;}
+.absent-pill label{
+  display:inline-flex;align-items:center;gap:.3rem;
+  padding:.3rem .65rem;border-radius:99px;font-size:.72rem;font-weight:700;
+  border:1.5px solid var(--a-border);color:var(--a-muted);cursor:pointer;
+  transition:all .15s;
+}
+.absent-pill input:checked+label{background:var(--a-red);border-color:var(--a-red);color:#fff;}
+.btn-save-log{
+  background:var(--a-blue);color:#fff;border:none;border-radius:9px;
+  padding:.5rem 1.3rem;font-size:.82rem;font-weight:700;cursor:pointer;
+  margin-top:.9rem;width:100%;transition:background .15s;
+}
+.btn-save-log:hover{background:#1d4ed8;}
+.pill-done{
+  padding:.28rem .7rem;border-radius:99px;font-size:.68rem;font-weight:800;
+  background:#dcfce7;color:#15803d;display:inline-flex;align-items:center;gap:.3rem;
+}
+.pill-pending{
+  padding:.28rem .7rem;border-radius:99px;font-size:.68rem;font-weight:800;
+  background:#f1f5f9;color:#64748b;display:inline-flex;align-items:center;gap:.3rem;
+}
+</style>
+
+<div class="att-page">
+
+  <!-- Hero -->
+  <div class="att-hero">
+    <div class="d-flex justify-content-between align-items-start gap-2" style="position:relative;z-index:1;">
+      <div>
+        <div class="text-xs text-white opacity-50 mb-1 fw-bold text-uppercase">{{ org.name }}</div>
+        <h5 class="att-hero-title"><i class="fas fa-chalkboard-user me-2 opacity-75"></i>{{ clas.name }}</h5>
+        <p class="att-hero-sub"><i class="fas fa-calendar-day me-1"></i>{{ date|date:"l, d M Y" }}</p>
+      </div>
+      <a href="javascript:history.back()" class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;position:relative;z-index:1;">
+        <i class="fas fa-arrow-left me-1"></i>Back
+      </a>
     </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="att-stats">
+    <div class="att-stat">
+      <div class="att-stat-label">Total</div>
+      <div class="att-stat-val" id="statTotal">{{ mem|length }}</div>
+    </div>
+    <div class="att-stat" style="border-top:3px solid var(--a-green);">
+      <div class="att-stat-label">Present</div>
+      <div class="att-stat-val" id="statPresent" style="color:var(--a-green);">{{ attended_members|length }}</div>
+    </div>
+    <div class="att-stat" style="border-top:3px solid var(--a-red);">
+      <div class="att-stat-label">Absent</div>
+      <div class="att-stat-val" id="statAbsent" style="color:var(--a-red);">{{ mem|length|add:"-0" }}</div>
+    </div>
+    <div class="att-stat" style="border-top:3px solid var(--a-blue);">
+      <div class="att-stat-label">Courses</div>
+      <div class="att-stat-val" style="color:var(--a-blue);">{{ courses|length }}</div>
+    </div>
+  </div>
+
+  <div class="att-body" style="margin-top:1.5rem;">
+
+    {% for msg in messages %}
+    <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show mb-3">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+
+    <div class="row g-3">
+
+      <!-- LEFT: Member attendance -->
+      <div class="col-lg-6">
+        <div class="sec-hd">
+          <div class="sec-hd-icon" style="background:#dbeafe;color:#2563eb;"><i class="fas fa-users"></i></div>
+          <div class="sec-hd-title">Mark Attendance</div>
+          <span class="ms-auto text-xs text-muted fw-bold" id="presentLabel">{{ attended_members|length }}/{{ mem|length }} present</span>
+        </div>
+        <div class="member-list" id="memberList">
+          {% for i in mem %}
+          <div class="mem-row {% if i.id in attended_members %}is-present{% endif %}" id="row-{{ i.id }}">
+            <div class="mem-avatar">{{ i.name|first|upper }}</div>
+            <div class="flex-grow-1 min-width-0">
+              <div class="mem-name">{{ i.name }}</div>
+              {% if i.phone %}<div class="mem-sub"><i class="fas fa-phone me-1"></i>{{ i.phone }}</div>{% endif %}
+            </div>
+            <button class="btn-toggle {% if i.id in attended_members %}is-present{% endif %}"
+                    data-member-id="{{ i.id }}"
+                    data-org="{{ org.id }}">
+              {% if i.id in attended_members %}<i class="fas fa-check me-1"></i>Present{% else %}Mark{% endif %}
+            </button>
+          </div>
+          {% empty %}
+          <div class="text-center py-4 text-muted">
+            <i class="fas fa-user-slash fa-2x mb-2 d-block opacity-25"></i>No members in this class.
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- RIGHT: Course teaching log -->
+      <div class="col-lg-6">
+        <div class="sec-hd">
+          <div class="sec-hd-icon" style="background:#dcfce7;color:#16a34a;"><i class="fas fa-book-open"></i></div>
+          <div class="sec-hd-title">Teaching Log</div>
+          <span class="ms-auto text-xs text-muted fw-bold">{{ todays_logs|length }}/{{ courses|length }} logged</span>
+        </div>
+
+        {% for course in courses %}
+        {% with is_logged=course.id in logged_course_ids %}
+        <div class="tlog-card {% if is_logged %}is-logged{% endif %}" id="tlog-{{ course.id }}">
+          <div class="tlog-card-hd" onclick="toggleLog({{ course.id }})">
+            <div class="d-flex align-items-center gap-2 flex-grow-1 min-width-0">
+              <div style="width:30px;height:30px;border-radius:8px;background:{% if is_logged %}#dcfce7{% else %}#f1f5f9{% endif %};color:{% if is_logged %}#16a34a{% else %}#64748b{% endif %};display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;">
+                <i class="fas fa-{% if is_logged %}check{% else %}book{% endif %}"></i>
+              </div>
+              <div class="min-width-0">
+                <div style="font-size:.85rem;font-weight:800;color:var(--a-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ course.name }}</div>
+                {% if course.code %}<div style="font-size:.7rem;color:var(--a-muted);">{{ course.code }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+              {% if is_logged %}
+              <span class="pill-done"><i class="fas fa-check-circle"></i>Logged</span>
+              {% else %}
+              <span class="pill-pending"><i class="fas fa-clock"></i>Pending</span>
+              {% endif %}
+              <i class="fas fa-chevron-down" style="font-size:.7rem;color:var(--a-muted);" id="chevron-{{ course.id }}"></i>
+            </div>
+          </div>
+
+          <div class="tlog-card-body">
+            {% if is_logged %}
+              {% for log in todays_logs %}
+              {% if log.course.id == course.id %}
+              <div class="p-3 rounded-3 mb-3" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+                <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;color:#16a34a;margin-bottom:.3rem;">Already logged today</div>
+                <div style="font-size:.85rem;font-weight:700;color:var(--a-ink);">{{ log.topic_taught }}</div>
+                {% if log.gap_note %}<div style="font-size:.78rem;color:var(--a-muted);margin-top:.25rem;">Note: {{ log.gap_note }}</div>{% endif %}
+              </div>
+              {% endif %}
+              {% endfor %}
+              <p class="text-xs text-muted mb-0"><i class="fas fa-info-circle me-1"></i>Re-submit below to update today's log.</p>
+            {% endif %}
+
+            <form method="POST" style="margin-top:.8rem;">
+              {% csrf_token %}
+              <input type="hidden" name="course_id" value="{{ course.id }}">
+              <div class="mb-2">
+                <label class="tlog-label">Topic Taught Today <span class="text-danger">*</span></label>
+                <input type="text" name="topic_taught" class="tlog-input" placeholder="e.g. Chapter 4: Integration" required
+                  {% for log in todays_logs %}{% if log.course.id == course.id %}value="{{ log.topic_taught }}"{% endif %}{% endfor %}>
+              </div>
+              <div class="mb-2">
+                <label class="tlog-label">Gap / Follow-up Note</label>
+                <textarea name="gap_note" class="tlog-input" rows="2" placeholder="Any topic that needs revision or follow-up?">{% for log in todays_logs %}{% if log.course.id == course.id %}{{ log.gap_note }}{% endif %}{% endfor %}</textarea>
+              </div>
+              <div>
+                <label class="tlog-label">Mark Absent <span class="text-muted fw-normal">(click to select)</span></label>
+                <div class="d-flex flex-wrap gap-2">
+                  {% for m in mem %}
+                  <div class="absent-pill">
+                    <input type="checkbox" name="absent_member_ids" value="{{ m.id }}" id="abs-{{ course.id }}-{{ m.id }}">
+                    <label for="abs-{{ course.id }}-{{ m.id }}">{{ m.name }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <button type="submit" class="btn-save-log">
+                <i class="fas fa-{% if is_logged %}sync{% else %}save{% endif %} me-1"></i>
+                {% if is_logged %}Update Log{% else %}Save Teaching Log{% endif %}
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endwith %}
+        {% empty %}
+        <div class="text-center py-5" style="background:#fff;border:1.5px solid var(--a-border);border-radius:14px;">
+          <i class="fas fa-book-open fa-2x mb-2 d-block opacity-20"></i>
+          <p class="text-muted mb-1 fw-bold">No courses linked to this class.</p>
+          <p class="text-xs text-muted mb-0">Ask admin to assign courses to {{ clas.name }}.</p>
+        </div>
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    $(document).ready(function() {
-        $(".mark-present").click(function() {
-            var button = $(this);
-            
-            // Prevent further clicks if already marked as "Presented"
-            if (button.hasClass("btn-success")) {
-                return;
-            }
-            
-            var memberId = button.data("member-id");
-            var organizationId = button.data("organization-id");
-            
-            $.ajax({
-                url: "{% url 'staff:mark_present' %}",
-                type: "POST",
-                data: {
-                    member_id: memberId,
-                    organization_id: organizationId,
-                    csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function(response) {
-                    if(response.status == "success") {
-                        button.removeClass("btn-primary").addClass("btn-success").text("Presented").prop('disabled', true);
-                    } else {
-                        alert("Failed to record attendance.");
-                    }
-                },
-                error: function() {
-                    alert("An error occurred.");
-                }
-            });
-        });
+// ── Toggle attendance ──────────────────────────────────
+var totalMembers = {{ mem|length }};
+var presentCount = {{ attended_members|length }};
+
+document.querySelectorAll('.btn-toggle').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var memberId = btn.dataset.memberId;
+    var orgId = btn.dataset.org;
+    fetch("{% url 'staff:mark_present' %}", {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded','X-CSRFToken':'{{ csrf_token }}'},
+      body: 'member_id='+memberId+'&organization_id='+orgId
+    }).then(function(r){return r.json();}).then(function(data){
+      var row = document.getElementById('row-'+memberId);
+      if(data.status === 'created'){
+        btn.classList.add('is-present');
+        btn.innerHTML = '<i class="fas fa-check me-1"></i>Present';
+        row.classList.add('is-present');
+        row.querySelector('.mem-avatar').style.background = 'linear-gradient(135deg,#16a34a,#15803d)';
+        presentCount++;
+      } else if(data.status === 'deleted'){
+        btn.classList.remove('is-present');
+        btn.innerHTML = 'Mark';
+        row.classList.remove('is-present');
+        row.querySelector('.mem-avatar').style.background = '';
+        presentCount--;
+      }
+      document.getElementById('statPresent').textContent = presentCount;
+      document.getElementById('statAbsent').textContent = (totalMembers - presentCount);
+      document.getElementById('presentLabel').textContent = presentCount+'/'+totalMembers+' present';
     });
+  });
+});
+
+// ── Toggle teaching log cards ──────────────────────────
+function toggleLog(courseId){
+  var card = document.getElementById('tlog-'+courseId);
+  var chev = document.getElementById('chevron-'+courseId);
+  var wasOpen = card.classList.contains('is-open');
+  // Close all first
+  document.querySelectorAll('.tlog-card').forEach(function(c){
+    c.classList.remove('is-open');
+    var ch = c.querySelector('[id^="chevron-"]');
+    if(ch) ch.style.transform='';
+  });
+  if(!wasOpen){
+    card.classList.add('is-open');
+    if(chev) chev.style.transform='rotate(180deg)';
+  }
+}
+
+// Auto-open the first unlogged course
+document.addEventListener('DOMContentLoaded', function(){
+  var first = document.querySelector('.tlog-card:not(.is-logged)');
+  if(first){
+    var id = first.id.replace('tlog-','');
+    toggleLog(parseInt(id));
+  }
+  // Nepali pickers
+  if(window.NepaliDate) NepaliDate.init(document);
+});
 </script>
-{% endblock content %}
+{% endblock %}

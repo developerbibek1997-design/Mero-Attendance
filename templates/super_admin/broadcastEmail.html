@@ -1,0 +1,58 @@
+{% extends 'dashboard.html' %}
+{% block title %}Broadcast Email Notification{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow-sm border-radius-xl">
+                <div class="card-header pb-0 border-bottom">
+                    <div class="d-flex align-items-center">
+                        <div class="icon icon-shape bg-gradient-info shadow text-center border-radius-md me-3">
+                            <i class="ni ni-email-83 text-white text-lg opacity-10" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Broadcast Notification</h5>
+                            <p class="text-sm mb-0 text-muted">Send official emails directly to Organization Admins.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form action="{% url 'superadmin:broadcastEmail' %}" method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="form-group mb-4">
+                            <label class="form-label font-weight-bold text-dark">Send To (Select Organizations)</label>
+                            <select name="organizations" class="form-select form-control px-3 py-2 border shadow-none" multiple required style="height: 140px;">
+                                <option value="all" class="fw-bold text-info mb-2">-- 📢 Broadcast to ALL Organizations --</option>
+                                {% for org in orgs %}
+                                    <option value="{{ org.id }}">{{ org.name }} - {{ org.address|default:"No Address" }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-xs text-muted mt-1"><i class="ni ni-bulb-61 me-1"></i>Hold CTRL/CMD to select multiple specific organizations.</small>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="form-label font-weight-bold text-dark">Subject Line</label>
+                            <input type="text" name="subject" class="form-control px-3 py-2 border" placeholder="e.g., Important Platform Update" required>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="form-label font-weight-bold text-dark">Message Body</label>
+                            <textarea name="message" class="form-control px-3 py-2 border" rows="8" placeholder="Type your formal notification here..." required></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end align-items-center mt-4">
+                            <a href="{% url 'superadmin:dashboard' %}" class="btn btn-light me-3">Cancel</a>
+                            <button type="submit" class="btn bg-gradient-info px-5">
+                                <i class="ni ni-send me-2"></i> Send Broadcast
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

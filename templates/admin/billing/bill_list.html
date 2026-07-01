@@ -1,0 +1,72 @@
+{% extends 'dashboard.html' %}
+{% block title %}Billing | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0"><i class="fas fa-file-invoice-dollar text-primary me-2"></i>Billing Management</h4>
+    <a href="{% url 'schooladmin:create_bill' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i>Create Bill</a>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="card border-0 shadow-sm"><div class="card-body p-3 d-flex align-items-center gap-3">
+      <div class="icon icon-shape bg-gradient-primary shadow-primary text-white border-radius-md d-flex align-items-center justify-content-center" style="width:48px;height:48px;"><i class="fas fa-money-bill-wave"></i></div>
+      <div><p class="text-xs text-muted mb-0">Total Billed</p><h5 class="font-weight-bolder mb-0">Rs. {{ total_billed|floatformat:0 }}</h5></div>
+    </div></div></div>
+    <div class="col-md-4"><div class="card border-0 shadow-sm"><div class="card-body p-3 d-flex align-items-center gap-3">
+      <div class="icon icon-shape bg-gradient-success shadow-success text-white border-radius-md d-flex align-items-center justify-content-center" style="width:48px;height:48px;"><i class="fas fa-check-circle"></i></div>
+      <div><p class="text-xs text-muted mb-0">Total Collected</p><h5 class="font-weight-bolder mb-0">Rs. {{ total_paid|floatformat:0 }}</h5></div>
+    </div></div></div>
+    <div class="col-md-4"><div class="card border-0 shadow-sm"><div class="card-body p-3 d-flex align-items-center gap-3">
+      <div class="icon icon-shape bg-gradient-danger shadow-danger text-white border-radius-md d-flex align-items-center justify-content-center" style="width:48px;height:48px;"><i class="fas fa-exclamation-circle"></i></div>
+      <div><p class="text-xs text-muted mb-0">Outstanding Due</p><h5 class="font-weight-bolder mb-0 text-danger">Rs. {{ total_due|floatformat:0 }}</h5></div>
+    </div></div></div>
+  </div>
+
+  <!-- Filter -->
+  <div class="card border-0 shadow-sm mb-3"><div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3"><label class="text-xs font-weight-bold">Member</label>
+        <select name="member" class="form-select form-select-sm"><option value="">All Members</option>{% for m in members %}<option value="{{ m.id }}" {% if selected_member == m.id|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>{% endfor %}</select></div>
+      <div class="col-md-3"><label class="text-xs font-weight-bold">Status</label>
+        <select name="status" class="form-select form-select-sm"><option value="">All</option>{% for val,label in status_choices %}<option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-md-3 d-flex gap-1 align-self-end">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill">Filter</button>
+        <a href="{% url 'schooladmin:bill_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+      </div>
+    </form>
+  </div></div>
+
+  <!-- Table -->
+  <div class="card border-0 shadow-sm"><div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light"><tr>
+        <th class="text-xs">#</th><th class="text-xs">Invoice</th><th class="text-xs">Member</th>
+        <th class="text-xs">Total</th><th class="text-xs">Paid</th><th class="text-xs">Balance</th>
+        <th class="text-xs">Due Date</th><th class="text-xs text-center">Status</th><th class="text-xs text-center">Actions</th>
+      </tr></thead>
+      <tbody>
+        {% for bill in bills %}
+        <tr>
+          <td class="text-xs text-muted">{{ forloop.counter }}</td>
+          <td class="text-sm font-weight-bold text-primary"><a href="{% url 'schooladmin:bill_detail' bill.pk %}">{{ bill.invoice_number }}</a></td>
+          <td><p class="text-sm font-weight-bold mb-0">{{ bill.member.name }}</p><p class="text-xs text-muted mb-0">{{ bill.member.email|default:"—" }}</p></td>
+          <td class="text-sm">Rs. {{ bill.total_amount }}</td>
+          <td class="text-sm text-success">Rs. {{ bill.amount_paid }}</td>
+          <td class="text-sm font-weight-bold {% if bill.balance_due > 0 %}text-danger{% else %}text-success{% endif %}">Rs. {{ bill.balance_due }}</td>
+          <td class="text-sm {% if bill.status != 'Paid' %}text-danger{% endif %}">{{ bill.due_date }}</td>
+          <td class="text-center"><span class="badge {% if bill.status == 'Paid' %}bg-success{% elif bill.status == 'Partial' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ bill.status }}</span></td>
+          <td class="text-center">
+            <a href="{% url 'schooladmin:bill_detail' bill.pk %}" class="btn btn-xs btn-outline-primary me-1"><i class="fas fa-eye"></i></a>
+            <form method="post" action="{% url 'schooladmin:delete_bill' bill.pk %}" class="d-inline" onsubmit="return confirm('Delete this bill?')">{% csrf_token %}<button class="btn btn-xs btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" class="text-center text-muted py-5"><i class="fas fa-file-invoice fa-2x mb-2 d-block"></i>No bills found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div></div>
+</div>
+{% endblock %}

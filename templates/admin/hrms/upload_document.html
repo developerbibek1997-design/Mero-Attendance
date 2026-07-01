@@ -1,0 +1,30 @@
+{% extends 'dashboard.html' %}
+{% block title %}Upload Document | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-upload text-primary me-2"></i>Upload Staff Document</h6>
+          <a href="{% url 'schooladmin:document_list' %}" class="btn btn-outline-secondary btn-sm">Back</a>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Member *</label>
+              <select name="member_id" class="form-select" required><option value="">-- Select Member --</option>{% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Document Type</label>
+              <select name="document_type" class="form-select">{% for val,label in doc_types %}<option value="{{ val }}">{{ label }}</option>{% endfor %}</select></div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Title *</label><input type="text" name="title" class="form-control" placeholder="e.g. National ID Card" required></div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">File *</label><input type="file" name="file" class="form-control" required></div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Expiry Date (optional)</label><input type="date" name="expiry_date" class="form-control"></div>
+            <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><i class="fas fa-upload me-1"></i>Upload</button><a href="{% url 'schooladmin:document_list' %}" class="btn btn-outline-secondary">Cancel</a></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends 'dashboard.html' %}
+{% block title %}GPS Check-in | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom p-4 text-center">
+                    <div class="icon icon-shape bg-gradient-info shadow text-center border-radius-md mx-auto mb-3" style="width: 60px; height: 60px;">
+                        <i class="fas fa-map-marker-alt text-white text-2xl" style="line-height: 60px;"></i>
+                    </div>
+                    <h4 class="mb-0">Location Check-in</h4>
+                    <p class="text-sm text-muted">We need to verify you are at the office.</p>
+                </div>
+                
+                <div class="card-body p-4 text-center">
+                    
+                    <div id="statusBox" class="p-3 mb-4 rounded bg-light border">
+                        <i class="fas fa-satellite-dish text-secondary mb-2 text-lg" id="statusIcon"></i>
+                        <h6 class="mb-0" id="statusText">Ready to scan location...</h6>
+                        <small id="statusDetail" class="text-muted">Click the button below to start.</small>
+                    </div>
+
+                    <form method="post" id="checkinForm" class="d-none">
+                        {% csrf_token %}
+                        <input type="hidden" name="latitude" id="latInput">
+                        <input type="hidden" name="longitude" id="lngInput">
+                        <button type="submit" class="btn bg-gradient-success btn-lg w-100 mb-0">
+                            <i class="fas fa-check-circle me-2"></i> Confirm Attendance
+                        </button>
+                    </form>
+
+                    <button type="button" id="scanBtn" class="btn bg-gradient-info btn-lg w-100" onclick="getLocation()">
+                        <i class="fas fa-crosshairs me-2"></i> Get My Location
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ locations|json_script:"allowed-locations" }}
+
+<script>
+    // Haversine formula in JS
+    function getDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3; // metres
+        const p1 = lat1 * Math.PI/180;
+        const p2 = lat2 * Math.PI/180;
+        const dp = (lat2-lat1) * Math.PI/180;
+        const dl = (lon2-lon1) * Math.PI/180;
+
+        const a = Math.sin(dp/2) * Math.sin(dp/2) +
+                  Math.cos(p1) * Math.cos(p2) *
+                  Math.sin(dl/2) * Math.sin(dl/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c; // Distance in meters
+    }
+
+    function getLocation() {
+        const statusBox = document.getElementById("statusBox");
+        const statusText = document.getElementById("statusText");
+        const statusDetail = document.getElementById("statusDetail");
+        const scanBtn = document.getElementById("scanBtn");
+        
+        statusBox.className = "p-3 mb-4 rounded bg-info text-white";
+        statusText.innerText = "Locating GPS...";
+        statusDetail.innerText = "Please wait, acquiring high-accuracy signal.";
+        statusDetail.className = "text-white opacity-8";
+        scanBtn.disabled = true;
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(verifyLocation, showError, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            });
+        } else {
+            showError({message: "Geolocation is not supported by this browser."});
+        }
+    }
+
+    function verifyLocation(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+        
+        // Parse Django data
+        const allowedZones = JSON.parse(document.getElementById('allowed-locations').textContent);
+        
+        let inZone = false;
+        let matchedZone = "";
+        let closestDistance = 999999;
+
+        // Check against all zones
+        for(let i = 0; i < allowedZones.length; i++) {
+            let zone = allowedZones[i];
+            let dist = getDistance(userLat, userLng, zone.lat, zone.lng);
+            
+            if(dist < closestDistance) closestDistance = dist;
+
+            if(dist <= zone.radius) {
+                inZone = true;
+                matchedZone = zone.name;
+                break;
+            }
+        }
+
+        const statusBox = document.getElementById("statusBox");
+        const statusText = document.getElementById("statusText");
+        const statusDetail = document.getElementById("statusDetail");
+
+        if (inZone) {
+            // Success! Reveal the submit button
+            statusBox.className = "p-3 mb-4 rounded bg-success text-white shadow-sm";
+            statusText.innerText = "Location Verified!";
+            statusDetail.innerText = `You are inside '${matchedZone}'. Accuracy: ${Math.round(accuracy)}m`;
+            
+            document.getElementById("latInput").value = userLat;
+            document.getElementById("lngInput").value = userLng;
+            
+            document.getElementById("scanBtn").classList.add("d-none");
+            document.getElementById("checkinForm").classList.remove("d-none");
+        } else {
+            // Failure! Too far away
+            statusBox.className = "p-3 mb-4 rounded bg-danger text-white shadow-sm";
+            statusText.innerText = "Out of Range";
+            statusDetail.innerText = `You are ${Math.round(closestDistance)} meters away from the nearest authorized zone.`;
+            document.getElementById("scanBtn").disabled = false;
+            document.getElementById("scanBtn").innerText = "Try Again";
+        }
+    }
+
+    function showError(error) {
+        const statusBox = document.getElementById("statusBox");
+        const statusText = document.getElementById("statusText");
+        statusBox.className = "p-3 mb-4 rounded bg-warning text-white shadow-sm";
+        statusText.innerText = "GPS Error";
+        document.getElementById("statusDetail").innerText = error.message || "Ensure location permissions are granted in your browser.";
+        document.getElementById("scanBtn").disabled = false;
+        document.getElementById("scanBtn").innerText = "Retry";
+    }
+</script>
+{% endblock content %}

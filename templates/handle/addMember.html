@@ -1,208 +1,677 @@
 {% extends 'dashboard.html' %}
-
-{% block title %}
-    Add Member | Attendance Management System
-{% endblock title %}
+{% load static %}
+{% block title %}Onboard Member | {{ org.name }}{% endblock %}
 
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0">Add New Member</h4>
-        {% comment %} <a href="{% url 'members' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-1"></i> Back to Members
-        </a> {% endcomment %}
+<style>
+/* ── Root ───────────────────────────────────────────── */
+:root{
+  --wiz-ink:#0f172a; --wiz-slate:#334155; --wiz-muted:#64748b;
+  --wiz-border:#e2e8f0; --wiz-bg:#f8fafc;
+  --wiz-blue:#2563eb; --wiz-green:#16a34a;
+  --accent:#6366f1; --accent-dark:#4f46e5;
+}
+
+/* ── Page shell ─────────────────────────────────────── */
+.wiz-page{background:var(--wiz-bg);min-height:100vh;padding-bottom:3rem;}
+
+/* ── Hero strip ─────────────────────────────────────── */
+.wiz-hero{
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#7f1d1d 100%);
+  padding:2rem 2rem 4.5rem;position:relative;overflow:hidden;
+}
+.wiz-hero::before{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M0 0h20v20H0zM20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E");
+}
+.wiz-hero-title{color:#fff;font-size:1.55rem;font-weight:800;margin:0;letter-spacing:-.4px;}
+.wiz-hero-sub{color:#94a3b8;font-size:.85rem;margin:.3rem 0 0;}
+
+/* ── Progress card (floats over hero) ──────────────── */
+.wiz-progress-card{
+  margin:-3rem 2rem 0;background:#fff;
+  border-radius:18px;box-shadow:0 8px 32px rgba(0,0,0,.12);
+  border:1px solid rgba(255,255,255,.9);
+  padding:1.6rem 2rem;
+}
+
+/* ── Step indicators ────────────────────────────────── */
+.wiz-steps{display:flex;align-items:flex-start;gap:0;position:relative;}
+.wiz-steps::before{
+  content:'';position:absolute;top:18px;left:18px;
+  right:18px;height:2px;background:var(--wiz-border);z-index:0;
+}
+.wiz-step{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  position:relative;z-index:1;cursor:pointer;gap:.5rem;
+}
+.wiz-step-dot{
+  width:36px;height:36px;border-radius:50%;
+  border:2px solid var(--wiz-border);background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;font-weight:800;color:var(--wiz-muted);
+  transition:all .25s;
+}
+.wiz-step.done .wiz-step-dot{background:var(--wiz-green);border-color:var(--wiz-green);color:#fff;}
+.wiz-step.active .wiz-step-dot{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 4px rgba(220,38,38,.15);}
+.wiz-step-label{font-size:.7rem;font-weight:700;color:var(--wiz-muted);text-align:center;line-height:1.3;}
+.wiz-step.active .wiz-step-label{color:var(--accent);}
+.wiz-step.done .wiz-step-label{color:var(--wiz-green);}
+
+/* ── Form wrapper ───────────────────────────────────── */
+.wiz-body{padding:0 2rem;margin-top:1.5rem;}
+
+/* ── Step pane ──────────────────────────────────────── */
+.wiz-pane{display:none;}
+.wiz-pane.active{display:block;}
+
+/* ── Section card ───────────────────────────────────── */
+.sec-card{
+  background:#fff;border:1px solid var(--wiz-border);
+  border-radius:16px;margin-bottom:1.25rem;overflow:hidden;
+}
+.sec-card-hd{
+  padding:1rem 1.4rem;border-bottom:1px solid var(--wiz-border);
+  display:flex;align-items:center;gap:.75rem;
+}
+.sec-card-hd-icon{
+  width:36px;height:36px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;
+}
+.sec-card-hd-title{font-size:.82rem;font-weight:800;color:var(--wiz-ink);margin:0;text-transform:uppercase;letter-spacing:.04em;}
+.sec-card-bd{padding:1.4rem;}
+
+/* ── Labels & inputs ────────────────────────────────── */
+.wiz-label{font-size:.72rem;font-weight:700;color:var(--wiz-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;display:block;}
+.wiz-page input[type=text],.wiz-page input[type=email],.wiz-page input[type=tel],
+.wiz-page input[type=date],.wiz-page input[type=time],.wiz-page input[type=number],
+.wiz-page select,.wiz-page textarea{
+  width:100%;border:1.5px solid var(--wiz-border);border-radius:10px;
+  padding:.75rem 1rem;font-size:.9rem;color:var(--wiz-ink);
+  background:#fff;transition:border-color .15s,box-shadow .15s;outline:none;
+  min-height:46px;
+}
+.wiz-page input:focus,.wiz-page select:focus,.wiz-page textarea:focus{
+  border-color:var(--accent);box-shadow:0 0 0 3px rgba(220,38,38,.1);
+}
+.wiz-page .input-icon-wrap{position:relative;}
+.wiz-page .input-icon-wrap .ii{
+  position:absolute;left:.95rem;top:50%;transform:translateY(-50%);
+  color:var(--wiz-muted);font-size:.85rem;pointer-events:none;
+}
+.wiz-page .input-icon-wrap input,.wiz-page .input-icon-wrap select{padding-left:2.5rem;}
+.wiz-prefix{
+  display:flex;align-items:stretch;border:1.5px solid var(--wiz-border);border-radius:10px;overflow:hidden;
+}
+.wiz-prefix span{
+  padding:.75rem .9rem;background:#f8fafc;font-size:.85rem;
+  font-weight:700;color:var(--wiz-muted);border-right:1.5px solid var(--wiz-border);
+  display:flex;align-items:center;white-space:nowrap;
+}
+.wiz-prefix input{border:none!important;border-radius:0!important;box-shadow:none!important;flex:1;min-height:46px;}
+.wiz-suffix{
+  display:flex;align-items:stretch;border:1.5px solid var(--wiz-border);border-radius:10px;overflow:hidden;
+}
+.wiz-suffix input{border:none!important;border-radius:0!important;box-shadow:none!important;flex:1;min-height:46px;}
+.wiz-suffix span{
+  padding:.75rem .9rem;background:#f8fafc;font-size:.85rem;
+  font-weight:700;color:var(--wiz-muted);border-left:1.5px solid var(--wiz-border);
+  display:flex;align-items:center;
+}
+
+/* ── Toggle pills (PF / SSF) ───────────────────────── */
+.toggle-pills{display:flex;gap:.6rem;flex-wrap:wrap;}
+.toggle-pill input[type=checkbox]{display:none;}
+.toggle-pill label{
+  padding:.42rem 1rem;border-radius:99px;border:2px solid var(--wiz-border);
+  font-size:.78rem;font-weight:700;color:var(--wiz-muted);cursor:pointer;
+  transition:all .18s;user-select:none;
+}
+.toggle-pill input:checked+label{
+  background:var(--accent);border-color:var(--accent);color:#fff;
+}
+
+/* ── Make Staff toggle card ─────────────────────────── */
+.staff-toggle-card{
+  border:2px solid var(--wiz-border);border-radius:16px;padding:1.4rem;
+  transition:all .25s;background:#fff;
+}
+.staff-toggle-card.is-on{
+  border-color:var(--wiz-green);background:#f0fdf4;
+  box-shadow:0 6px 24px rgba(22,163,74,.12);
+}
+.staff-toggle-icon{
+  width:48px;height:48px;border-radius:14px;
+  background:#f1f5f9;display:flex;align-items:center;
+  justify-content:center;font-size:1.2rem;transition:all .25s;flex-shrink:0;
+}
+.staff-toggle-card.is-on .staff-toggle-icon{background:#dcfce7;color:var(--wiz-green)!important;}
+.big-switch .form-check-input{
+  width:3.2em;height:1.7em;cursor:pointer;
+}
+.big-switch .form-check-input:checked{background-color:var(--wiz-green);border-color:var(--wiz-green);}
+
+/* ── Nav buttons ────────────────────────────────────── */
+.wiz-nav{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:1.25rem 2rem;background:#fff;
+  border-top:1px solid var(--wiz-border);
+  position:sticky;bottom:0;z-index:10;
+  margin-top:1.5rem;border-radius:0 0 12px 12px;
+}
+.btn-wiz-back{
+  background:transparent;border:1.5px solid var(--wiz-border);
+  color:var(--wiz-slate);border-radius:10px;padding:.55rem 1.4rem;
+  font-size:.85rem;font-weight:700;cursor:pointer;transition:all .15s;
+}
+.btn-wiz-back:hover{border-color:var(--wiz-slate);}
+.btn-wiz-next{
+  background:var(--accent);color:#fff;border:none;
+  border-radius:10px;padding:.55rem 1.8rem;
+  font-size:.85rem;font-weight:700;cursor:pointer;transition:background .15s;
+}
+.btn-wiz-next:hover{background:var(--accent-dark);}
+.btn-wiz-submit{
+  background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;
+  border-radius:10px;padding:.55rem 2rem;
+  font-size:.85rem;font-weight:700;cursor:pointer;
+}
+.wiz-counter{font-size:.78rem;color:var(--wiz-muted);font-weight:600;}
+</style>
+
+<div class="wiz-page">
+
+  <!-- Hero -->
+  <div class="wiz-hero">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <div class="text-xs text-white opacity-50 mb-1 fw-bold text-uppercase">{{ org.name }}</div>
+        <h4 class="wiz-hero-title"><i class="fas fa-user-plus me-2 opacity-75"></i>Onboard New Member</h4>
+        <p class="wiz-hero-sub">Fill in the details step-by-step — credentials are emailed automatically when portal access is enabled.</p>
+      </div>
+      <a href="javascript:history.back()" class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;">
+        <i class="fas fa-arrow-left me-1"></i>Back
+      </a>
     </div>
-    
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        <i class="fas fa-info-circle me-2"></i>{{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+
+  <!-- Step progress card -->
+  <div class="wiz-progress-card">
+    <div class="wiz-steps" id="wizSteps">
+      <div class="wiz-step active" data-step="1">
+        <div class="wiz-step-dot"><i class="fas fa-user"></i></div>
+        <div class="wiz-step-label">Identity</div>
+      </div>
+      <div class="wiz-step" data-step="2">
+        <div class="wiz-step-dot"><i class="fas fa-building"></i></div>
+        <div class="wiz-step-label">Organization</div>
+      </div>
+      <div class="wiz-step" data-step="3">
+        <div class="wiz-step-dot"><i class="fas fa-coins"></i></div>
+        <div class="wiz-step-label">Payroll</div>
+      </div>
+      <div class="wiz-step" data-step="4">
+        <div class="wiz-step-dot"><i class="fas fa-shield-halved"></i></div>
+        <div class="wiz-step-label">Access</div>
+      </div>
     </div>
-    {% endfor %}
-    
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="card-title mb-0">
-                <i class="fas fa-user-plus me-2"></i>Member Information
-            </h5>
+  </div>
+
+  {% for message in messages %}
+  <div class="mx-4 mt-3 alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">
+    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  {% if total_member < org.member_limit %}
+  <form method="post" id="wizForm" class="needs-validation" novalidate>
+    {% csrf_token %}
+
+    <!-- ══ STEP 1: IDENTITY ══════════════════════════════ -->
+    <div class="wiz-body wiz-pane active" id="pane-1">
+
+      <div class="sec-card">
+        <div class="sec-card-hd">
+          <div class="sec-card-hd-icon" style="background:#fee2e2;color:#dc2626;"><i class="fas fa-id-card"></i></div>
+          <div>
+            <div class="sec-card-hd-title">Personal Details</div>
+            <div style="font-size:.75rem;color:var(--wiz-muted);">Name, gender, date of birth</div>
+          </div>
         </div>
-        <div class="card-body">
-            {% if total_member < org.member_limit %}
-                <form method="post" class="needs-validation" novalidate>
-                    {% csrf_token %}
-                    
-                    <div class="row g-3">
-                        <!-- Personal Information Section -->
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="id_name" class="form-label">Full Name</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                    {{ form.name }}
-                                </div>
-                                <div class="invalid-feedback">
-                                    Please provide a valid name.
-                                </div>
-                                {% if form.name.errors %}
-                                    <div class="text-danger small">{{ form.name.errors }}</div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="id_card" class="form-label">Card ID</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                                    {{ form.card }}
-                                </div>
-                                <div class="invalid-feedback">
-                                    Please provide a unique card ID.
-                                </div>
-                                {% if form.card.errors %}
-                                    <div class="text-danger small">{{ form.card.errors }}</div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="id_gender" class="form-label">Gender</label>
-                                {{ form.gender }}
-                                {% if form.gender.errors %}
-                                    <div class="text-danger small">{{ form.gender.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <!-- Contact Information Section -->
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="id_email" class="form-label">Email</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                    {{ form.email }}
-                                </div>
-                                <div class="invalid-feedback">
-                                    Please provide a valid email address.
-                                </div>
-                                {% if form.email.errors %}
-                                    <div class="text-danger small">{{ form.email.errors }}</div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="id_phone" class="form-label">Phone Number</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
-                                    {{ form.phone }}
-                                </div>
-                                {% if form.phone.errors %}
-                                    <div class="text-danger small">{{ form.phone.errors }}</div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="id_salary_per_hour" class="form-label">Salary Per Hour</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-money-bill-wave"></i></span>
-                                    {{ form.salary_per_hour }}
-                                </div>
-                                {% if form.salary_per_hour.errors %}
-                                    <div class="text-danger small">{{ form.salary_per_hour.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <!-- Address Section -->
-                        <div class="col-12">
-                            <div class="mb-3">
-                                <label for="id_address" class="form-label">Address</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
-                                    {{ form.address }}
-                                </div>
-                                {% if form.address.errors %}
-                                    <div class="text-danger small">{{ form.address.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <!-- Classification Section -->
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="id_classification" class="form-label">Classification</label>
-                                <select name="classification" id="id_classification" class="form-select">
-                                    {% for class in classi %}
-                                        <option value="{{ class.id }}">{{ class.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <button type="reset" class="btn btn-outline-secondary me-md-2">
-                            <i class="fas fa-undo me-1"></i> Reset
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i> Save Member
-                        </button>
-                    </div>
-                </form>
-            {% else %}
-                <div class="alert alert-danger">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
-                        <div>
-                            <h4 class="alert-heading">Member Limit Exceeded</h4>
-                            <p>
-                                Your organization has reached the maximum member limit of <strong>{{ org.member_limit }}</strong>. 
-                                Current member count: <strong>{{ total_member }}</strong>.
-                            </p>
-                            <hr>
-                            <p class="mb-0">
-                                Please contact your service provider to upgrade your plan if you need to add more members.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+        <div class="sec-card-bd">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="wiz-label">Full Name <span class="text-danger">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-user ii"></i>
+                {{ form.name }}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="wiz-label">Card / Device ID <span class="text-muted fw-normal">(optional)</span></label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-credit-card ii"></i>
+                {{ form.card }}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="wiz-label">Gender</label>
+              {{ form.gender }}
+            </div>
+            <div class="col-md-4">
+              <label class="wiz-label">Member Type</label>
+              {{ form.member_type }}
+            </div>
+            <div class="col-md-4">
+              <label class="wiz-label">Date of Birth</label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-cake-candles ii"></i>
+                {{ form.date_of_birth }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-card">
+        <div class="sec-card-hd">
+          <div class="sec-card-hd-icon" style="background:#dbeafe;color:#2563eb;"><i class="fas fa-address-book"></i></div>
+          <div>
+            <div class="sec-card-hd-title">Contact Information</div>
+            <div style="font-size:.75rem;color:var(--wiz-muted);">Email, phone and address</div>
+          </div>
+        </div>
+        <div class="sec-card-bd">
+          <div class="row g-3">
+            <div class="col-md-5">
+              <label class="wiz-label">Email Address</label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-envelope ii"></i>
+                {{ form.email }}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="wiz-label">Phone Number</label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-phone ii"></i>
+                {{ form.phone }}
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="wiz-label">Status</label>
+              {{ form.status }}
+            </div>
+            <div class="col-12">
+              <label class="wiz-label">Home Address</label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-map-marker-alt ii"></i>
+                {{ form.address }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-1 -->
+
+    <!-- ══ STEP 2: ORGANIZATION ══════════════════════════ -->
+    <div class="wiz-body wiz-pane" id="pane-2">
+
+      <div class="sec-card">
+        <div class="sec-card-hd">
+          <div class="sec-card-hd-icon" style="background:#fef9c3;color:#a16207;"><i class="fas fa-sitemap"></i></div>
+          <div>
+            <div class="sec-card-hd-title">Department & Branch</div>
+            <div style="font-size:.75rem;color:var(--wiz-muted);">Where this member belongs in the organisation</div>
+          </div>
+        </div>
+        <div class="sec-card-bd">
+          <div class="row g-3">
+            {% if features.branches %}
+            <div class="col-md-6">
+              <label class="wiz-label">Branch</label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-code-branch ii"></i>
+                {{ form.branch }}
+              </div>
+            </div>
             {% endif %}
+            <div class="col-md-6">
+              <label class="wiz-label">Classification / Department</label>
+              {{ form.classification }}
+            </div>
+            <div class="col-md-6">
+              <label class="wiz-label">Section</label>
+              {{ form.section }}
+            </div>
+            <div class="col-md-6">
+              <label class="wiz-label">Staff Type</label>
+              {{ form.staff_type }}
+            </div>
+            <div class="col-12">
+              <label class="wiz-label">Courses / Subjects</label>
+              {{ form.courses }}
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div class="sec-card">
+        <div class="sec-card-hd">
+          <div class="sec-card-hd-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-clock"></i></div>
+          <div>
+            <div class="sec-card-hd-title">Work Schedule</div>
+            <div style="font-size:.75rem;color:var(--wiz-muted);">Expected check-in and check-out times</div>
+          </div>
+        </div>
+        <div class="sec-card-bd">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="wiz-label">Shift Start <span class="text-muted fw-normal">(Expected In)</span></label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-hourglass-start ii" style="color:#16a34a;"></i>
+                {{ form.shift_start_time }}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="wiz-label">Shift End <span class="text-muted fw-normal">(Expected Out)</span></label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-hourglass-end ii" style="color:#dc2626;"></i>
+                {{ form.shift_end_time }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-2 -->
+
+    <!-- ══ STEP 3: PAYROLL ══════════════════════════════ -->
+    <div class="wiz-body wiz-pane" id="pane-3">
+
+      <div class="sec-card">
+        <div class="sec-card-hd">
+          <div class="sec-card-hd-icon" style="background:#dcfce7;color:#16a34a;"><i class="fas fa-wallet"></i></div>
+          <div>
+            <div class="sec-card-hd-title">Salary Configuration</div>
+            <div style="font-size:.75rem;color:var(--wiz-muted);">Base pay, tax and statutory deductions</div>
+          </div>
+        </div>
+        <div class="sec-card-bd">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="wiz-label">Salary Basis</label>
+              {{ form.salary_type }}
+            </div>
+            <div class="col-md-4">
+              <label class="wiz-label">Amount</label>
+              <div class="wiz-prefix">
+                <span>Rs.</span>
+                {{ form.salary_amount }}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="wiz-label">Tax Rate</label>
+              <div class="wiz-suffix">
+                {{ form.tax_percentage }}
+                <span>%</span>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="wiz-label">Statutory Benefits</label>
+              <div class="toggle-pills">
+                <div class="toggle-pill">
+                  {{ form.pf_enabled }}
+                  <label for="{{ form.pf_enabled.id_for_label }}"><i class="fas fa-piggy-bank me-1"></i>Provident Fund (PF)</label>
+                </div>
+                <div class="toggle-pill">
+                  {{ form.ssf_enabled }}
+                  <label for="{{ form.ssf_enabled.id_for_label }}"><i class="fas fa-shield me-1"></i>Social Security Fund (SSF)</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-card">
+        <div class="sec-card-hd">
+          <div class="sec-card-hd-icon" style="background:#fff7ed;color:#ea580c;"><i class="fas fa-user-clock"></i></div>
+          <div>
+            <div class="sec-card-hd-title">Probation Period</div>
+            <div style="font-size:.75rem;color:var(--wiz-muted);">Leave blank to skip probation configuration</div>
+          </div>
+        </div>
+        <div class="sec-card-bd">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="wiz-label">Probation Start</label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-calendar-day ii"></i>
+                {{ form.probation_start_date }}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="wiz-label">Probation End</label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-calendar-check ii"></i>
+                {{ form.probation_end_date }}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="wiz-label">Salary During Probation</label>
+              <div class="wiz-suffix">
+                {{ form.probation_salary_percentage }}
+                <span>%</span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="wiz-label">Probation Review Status</label>
+              {{ form.probation_review_status }}
+            </div>
+            <div class="col-md-6 d-flex align-items-end pb-1">
+              <div class="form-check">
+                {{ form.probation_leave_cut_enabled }}
+                <label class="form-check-label" for="{{ form.probation_leave_cut_enabled.id_for_label }}" style="font-size:.82rem;font-weight:600;color:var(--wiz-slate);">
+                  Apply probation leave-cut rules
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-3 -->
+
+    <!-- ══ STEP 4: ACCESS ═══════════════════════════════ -->
+    <div class="wiz-body wiz-pane" id="pane-4">
+
+      <!-- Review summary -->
+      <div class="sec-card mb-3">
+        <div class="sec-card-hd">
+          <div class="sec-card-hd-icon" style="background:#f1f5f9;color:#475569;"><i class="fas fa-list-check"></i></div>
+          <div>
+            <div class="sec-card-hd-title">Quick Review</div>
+            <div style="font-size:.75rem;color:var(--wiz-muted);">Confirm the key details before saving</div>
+          </div>
+        </div>
+        <div class="sec-card-bd">
+          <div class="row g-2" id="reviewGrid" style="font-size:.83rem;">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Staff access card -->
+      <div class="staff-toggle-card" id="staffToggleCard">
+        <div class="d-flex align-items-start gap-3">
+          <div class="staff-toggle-icon" id="staffToggleIcon">
+            <i class="fas fa-user-shield" style="color:var(--wiz-muted);font-size:1.3rem;" id="staffToggleIconEl"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+              <div>
+                <h6 class="mb-0 fw-bold" style="color:var(--wiz-ink);">Staff Portal Access</h6>
+                <p class="text-muted mb-0" style="font-size:.82rem;margin-top:.25rem;">
+                  Enabling this creates a login account for the member. Login credentials are emailed automatically.
+                </p>
+                <span class="d-none mt-2" id="staffOnBadge" style="font-size:.75rem;font-weight:700;color:var(--wiz-green);">
+                  <i class="fas fa-circle-check me-1"></i>Portal access will be activated on save
+                </span>
+              </div>
+              <div class="form-check form-switch big-switch mt-1">
+                {{ form.make_staff }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3 p-3 rounded-3" style="background:#fef9c3;border:1px solid #fde68a;font-size:.8rem;color:#92400e;">
+        <i class="fas fa-triangle-exclamation me-2"></i>
+        <strong>Member limit:</strong> {{ total_member }} used of {{ org.member_limit }} — {{ org.member_limit|add:"-1"|add:"-0" }} remaining after this record.
+      </div>
+
+    </div><!-- /pane-4 -->
+
+    <!-- Sticky nav bar -->
+    <div class="wiz-nav" id="wizNav">
+      <button type="button" class="btn-wiz-back" id="btnBack" style="visibility:hidden;">
+        <i class="fas fa-arrow-left me-1"></i>Back
+      </button>
+      <span class="wiz-counter" id="wizCounter">Step 1 of 4</span>
+      <div>
+        <button type="button" class="btn-wiz-next" id="btnNext">
+          Next <i class="fas fa-arrow-right ms-1"></i>
+        </button>
+        <button type="submit" class="btn-wiz-submit d-none" id="btnSubmit">
+          <i class="fas fa-check me-1"></i>Save Member
+        </button>
+      </div>
     </div>
 
-    <style>
-        .form-label {
-            font-weight: 500;
-        }
-        .input-group-text {
-            min-width: 40px;
-            justify-content: center;
-        }
-        .card {
-            border-radius: 10px;
-        }
-        .card-header {
-            border-radius: 10px 10px 0 0 !important;
-        }
-    </style>
+  </form>
 
-    <script>
-        // Example starter JavaScript for disabling form submissions if there are invalid fields
-        (function () {
-            'use strict'
-            
-            // Fetch all the forms we want to apply custom Bootstrap validation styles to
-            var forms = document.querySelectorAll('.needs-validation')
-            
-            // Loop over them and prevent submission
-            Array.prototype.slice.call(forms)
-                .forEach(function (form) {
-                    form.addEventListener('submit', function (event) {
-                        if (!form.checkValidity()) {
-                            event.preventDefault()
-                            event.stopPropagation()
-                        }
-                        
-                        form.classList.add('was-validated')
-                    }, false)
-                })
-            )
-        })()
-    </script>
-{% endblock content %}
+  {% else %}
+  <div class="wiz-body mt-4">
+    <div class="sec-card text-center py-5">
+      <div style="width:72px;height:72px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.8rem;color:#dc2626;">
+        <i class="fas fa-lock"></i>
+      </div>
+      <h5 class="fw-bold">Member Limit Reached</h5>
+      <p class="text-muted">Your organisation has reached its member limit of {{ org.member_limit }}. Please upgrade your plan to add more members.</p>
+    </div>
+  </div>
+  {% endif %}
+
+</div><!-- /.wiz-page -->
+
+<script>
+(function(){
+  var currentStep = 1;
+  var totalSteps  = 4;
+  var dots   = document.querySelectorAll('.wiz-step');
+  var panes  = document.querySelectorAll('.wiz-pane');
+  var btnBack    = document.getElementById('btnBack');
+  var btnNext    = document.getElementById('btnNext');
+  var btnSubmit  = document.getElementById('btnSubmit');
+  var counter    = document.getElementById('wizCounter');
+
+  function goTo(step){
+    if(step < 1 || step > totalSteps) return;
+    // panes
+    panes.forEach(function(p,i){p.classList.toggle('active', i+1===step);});
+    // dots
+    dots.forEach(function(d,i){
+      d.classList.remove('active','done');
+      if(i+1 < step) d.classList.add('done');
+      if(i+1 === step) d.classList.add('active');
+    });
+    currentStep = step;
+    counter.textContent = 'Step '+step+' of '+totalSteps;
+    btnBack.style.visibility = step===1 ? 'hidden' : 'visible';
+    btnNext.classList.toggle('d-none', step===totalSteps);
+    btnSubmit.classList.toggle('d-none', step!==totalSteps);
+    if(step===totalSteps) buildReview();
+    // Re-initialise Nepali date pickers for newly visible inputs
+    if(window.NepaliDate){
+      var activePane = document.getElementById('pane-'+step);
+      if(activePane) NepaliDate.init(activePane);
+    }
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  btnNext.addEventListener('click', function(){goTo(currentStep+1);});
+  btnBack.addEventListener('click', function(){goTo(currentStep-1);});
+
+  // Click step dots to navigate back
+  dots.forEach(function(d){
+    d.addEventListener('click', function(){
+      var s = parseInt(d.dataset.step);
+      if(s < currentStep) goTo(s);
+    });
+  });
+
+  // Build review grid on step 4
+  function buildReview(){
+    var fields = [
+      {label:'Full Name',   id:'id_name'},
+      {label:'Email',       id:'id_email'},
+      {label:'Phone',       id:'id_phone'},
+      {label:'Branch',      id:'id_branch',      select:true},
+      {label:'Department',  id:'id_classification', select:true},
+      {label:'Salary Basis',id:'id_salary_type',  select:true},
+      {label:'Amount',      id:'id_salary_amount', prefix:'Rs. '},
+    ];
+    var grid = document.getElementById('reviewGrid');
+    grid.innerHTML = '';
+    fields.forEach(function(f){
+      var el = document.getElementById(f.id);
+      if(!el) return;
+      var val = f.select ? el.options[el.selectedIndex]?.text : el.value;
+      if(!val || val==='Select' || val==='---------') return;
+      grid.innerHTML += '<div class="col-md-4 col-6"><div style="background:#f8fafc;border-radius:8px;padding:.6rem .9rem;"><div style="font-size:.65rem;font-weight:700;text-transform:uppercase;color:var(--wiz-muted);margin-bottom:.15rem;">'+f.label+'</div><div style="font-weight:700;color:var(--wiz-ink);">'+(f.prefix||'')+val+'</div></div></div>';
+    });
+  }
+
+  // Staff toggle
+  var staffCb   = document.getElementById('{{ form.make_staff.id_for_label }}') || document.getElementById('id_make_staff');
+  var staffCard  = document.getElementById('staffToggleCard');
+  var staffBadge = document.getElementById('staffOnBadge');
+  var staffIcon  = document.getElementById('staffToggleIcon');
+  function updateStaff(){
+    if(!staffCb) return;
+    var on = staffCb.checked;
+    staffCard.classList.toggle('is-on', on);
+    if(staffBadge) staffBadge.classList.toggle('d-none', !on);
+  }
+  if(staffCb){
+    staffCb.classList.add('form-check-input');
+    staffCb.addEventListener('change', updateStaff);
+    updateStaff();
+  }
+
+  // Dynamic sections based on classification
+  var branchSel = document.getElementById('id_branch');
+  var classSel  = document.getElementById('id_classification');
+  var sectionSel= document.getElementById('id_section');
+  var secUrl    = "{% url 'handle:sectionsByClassification' %}";
+  function loadSections(){
+    if(!classSel || !sectionSel || !classSel.value) return;
+    var p = new URLSearchParams({classification_id:classSel.value});
+    if(branchSel && branchSel.value) p.append('branch_id', branchSel.value);
+    fetch(secUrl+'?'+p.toString()).then(function(r){return r.json();}).then(function(data){
+      sectionSel.innerHTML='<option value="">Select section</option>';
+      data.sections.forEach(function(s){
+        var o=document.createElement('option');
+        o.value=s.id; o.textContent=s.name;
+        sectionSel.appendChild(o);
+      });
+    });
+  }
+  if(classSel) classSel.addEventListener('change', loadSections);
+  if(branchSel) branchSel.addEventListener('change', loadSections);
+
+})();
+</script>
+{% endblock %}

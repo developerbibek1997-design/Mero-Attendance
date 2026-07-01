@@ -1,166 +1,217 @@
 {% extends 'dashboard.html' %}
 {% load static %}
-{% block title %}
-    Member Salary Report 
-{% endblock title %}
+{% block title %} Member Salary Report {% endblock title %}
+
 {% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+
 <style>
-
-</style>
-<div class="row">
-  <form action="" method="post">
-    <div class="row">
-        <div class="col-6">
-            <Label for="first_date">From</Label>
-            <input type="date" id="first" class="form-control" name="first_date" value="{{first_date}}" onchange="checkBtn()" required>
-        </div>
-        <div class="col-6">
-            <Label for="last_date">To</Label>
-            <input type="date"  id= "last" class="form-control" name="last_date" value="{{last_date}}" onchange="checkBtn()" required>
-            
-        </div>
-        <div class="col-12">
-            <Label for="classification">Member</Label>
-            <select name="member" id="" class="form-select">
-            
-          {% for c in allMember %}
-            <option {% if thisone == c.name  %} selected {%endif%} value="{{c.id}}" >{{c.name}}</option>
-          {% endfor %}
-            </select>
-  
-            
-        </div>
-      
-    </div>
-    {% csrf_token %}
-    <button type="submit" id ="sub" class="btn btn-outline-secondary m-2" onclick="showload()"> Filter </button>
-    <br>
-   
+    @media print {
+        .no-print { display: none !important; }
+        .card { border: none !important; box-shadow: none !important; }
+        table { page-break-after:auto }
+        tr, td { page-break-inside:avoid; page-break-after:auto }
+        thead { display:table-header-group }
+    }
+    .hidden-date-input { display: none !important; }
     
-  </form>
-  <button class="btn btn-outline-primary m-2 " onclick="printData('printarea')">Print</button>
+    /* 🎨 BEAUTIFUL UI CUSTOMIZATIONS */
+    .filter-card { border-radius: 16px; background: #ffffff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); margin-bottom: 25px; border: none; }
+    .custom-input { border-radius: 10px; border: 1.5px solid #e2e8f0; padding: 12px 18px; font-weight: 500; background-color: #f8fafc; height: 50px; }
+    .custom-input:focus { border-color: #f5a623; box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.1); background-color: #ffffff; outline:none; }
+    .btn-premium { border-radius: 10px; height: 50px; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; }
+    
+    .btn-premium-warning { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: white; border: none; }
+    .btn-premium-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+    .btn-premium-success:hover { transform: translateY(-2px); color: white; box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); }
 
-  <div class="col-12" >
-      <div class="card mb-4">
-        <div class="card-header pb-0" style="padding-right:60px; display: flex; justify-content: space-between;">
-          <h6 >{{first_date}} to {{last_date}} </h6>
-          <h6 >{{org}}- {{thisone}}</h6>
-          <!-- <h6>{{date}}</h6> -->
-        </div>
-       
-        <div class="card-body px-0 pt-0 pb-2">
-          <div class="table-responsive p-0" id="printarea">
-            <table class="table align-items-center mb-0">
-                <thead >
-                  <b>
-                    <span class="ps-3">-- Total Hour - {{total_hour}} Hours -- </span>
-                    <span class="ps-3">-- Total Salary - Rs. {{total_cost}} -- </span>
-                  </b>
-                   
-                </thead>
-              <thead>
-                <tr>
-                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">{{first_date}} - {{last_date}} | {{org}} | {{thisone}} </th>
-               
-                </tr>
-                <tr>
-                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Date</th>
-                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member</th>
-                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">In</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Out</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Total Hour</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Total Salary</th>
-                 
-                </tr>
-              </thead>
-              <tbody>
-                
-                {% for i in tm  %}
-                    <tr>
-                      <td>
-                        <p class="text-xs font-weight-bold mb-0">{{i.0}}</p>
-                        <small>{{i.0|date:'l'}}</small>
-                        
-                      </td>
-                        <td>
-                          <div class="d-flex px-2 py-1">
-                            <div class="d-flex flex-column justify-content-center">
-                              <p class="mb-0 text-sm text-center" data-bs-toggle="modal" data-bs-target="#exampleModal{{i.id}}" style="cursor:pointer;">{{i.1}}</p>
-                              
-                              {% if 'All' == thisone %}
-                              <p class="text-xs text-secondary mb-0">{{i.group}}</p>
+    .summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .table-premium th { background-color: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 15px; border-bottom: 2px solid #e2e8f0; }
+</style>
 
-                              
-                              {% endif %}
-                           
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <p class="text-xs font-weight-bold mb-0">{{i.2}}</p>
-                         
-                          
-                        </td>
-                        <td>
-                            <p class="text-xs font-weight-bold mb-0 text-center">{{i.3}}</p>
-                            
-                          </td>
-                        <td class="align-middle text-center text-sm ">
-                          <span class="badge badge-sm bg-gradient-secondary">{{i.4}}</span>
-                        </td>
-                        <td>
-                            <p>
-                                <b>  RS. {{i.5}}</b>
-                            </p>
-                               
-                        </td>
-                      
-                    </tr>
+<div class="container-fluid py-4">
+
+    <div class="card filter-card no-print">
+      <div class="card-body p-4">
+        <form action="" method="post" id="reportFilterForm">
+          {% csrf_token %}
+          <div class="row g-3">
+            
+            <div class="col-md-3">
+              <label class="form-label font-weight-bold text-secondary"><i class="fas fa-calendar-alt text-success me-1"></i> From</label>
+              {% if nepali_enabled %}
+                <input type="text" class="form-control custom-input w-100 nepali-cal" name="first_date_np" id="first-np" value="{{ first_date_np }}" placeholder="YYYY-MM-DD (BS)" autocomplete="off" onchange="checkBtn()" required>
+                <input type="date" class="hidden-date-input" name="first_date" value="{{ first_date|default:'' }}">
+              {% else %}
+                <input type="text" class="form-control custom-input w-100 eng-cal" name="first_date" id="first-ad" value="{{ first_date|default:'' }}" placeholder="Select Date (AD)" autocomplete="off" onchange="checkBtn()" required>
+              {% endif %}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label font-weight-bold text-secondary"><i class="fas fa-calendar-check text-danger me-1"></i> To</label>
+              {% if nepali_enabled %}
+                <input type="text" class="form-control custom-input w-100 nepali-cal" name="last_date_np" id="last-np" value="{{ last_date_np }}" placeholder="YYYY-MM-DD (BS)" autocomplete="off" onchange="checkBtn()" required>
+                <input type="date" class="hidden-date-input" name="last_date" value="{{ last_date|default:'' }}">
+              {% else %}
+                <input type="text" class="form-control custom-input w-100 eng-cal" name="last_date" id="last-ad" value="{{ last_date|default:'' }}" placeholder="Select Date (AD)" autocomplete="off" onchange="checkBtn()" required>
+              {% endif %}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label font-weight-bold text-secondary"><i class="fas fa-user-tie text-info me-1"></i> Member</label>
+              <select name="member" class="form-select custom-input w-100">
+                {% for c in allMember %}
+                  <option {% if thisone == c.name %} selected {%endif%} value="{{c.id}}">{{c.name}}</option>
                 {% endfor %}
+              </select>
+            </div>
 
-              </tbody>
-            </table>
+            <div class="col-md-3">
+              <label class="form-label d-none d-md-block" style="visibility: hidden;">&nbsp;</label>
+              <div class="d-flex gap-2 flex-wrap">
+                <button type="submit" id="sub" class="btn btn-premium btn-premium-warning flex-fill">
+                  <i class="fas fa-filter me-1"></i> Filter
+                </button>
+                <button type="button" class="btn btn-premium btn-outline-dark flex-fill" onclick="printData('printarea')">
+                  <i class="fas fa-print me-1"></i> Print
+                </button>
+                <a href="{% url 'schooladmin:export_payslips' %}?fmt=excel" class="btn btn-success btn-sm flex-fill" style="height:50px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-weight:600;">
+                  <i class="fas fa-file-excel me-1"></i>Excel
+                </a>
+                <a href="{% url 'schooladmin:export_payslips' %}?fmt=csv" class="btn btn-outline-success btn-sm flex-fill" style="height:50px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-weight:600;">
+                  <i class="fas fa-file-csv me-1"></i>CSV
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {% if tm %}
+    <div class="row mb-4 align-items-center no-print">
+        <div class="col-md-8">
+            <div class="summary-card">
+                <div>
+                    <h6 class="text-secondary mb-0">Total Worked Hours</h6>
+                    <h3 class="text-info mb-0">{{total_hour}} <span class="text-sm">hrs</span></h3>
+                </div>
+                <div class="text-end">
+                    <h6 class="text-secondary mb-0">Total Calculated Salary</h6>
+                    <h3 class="text-success mb-0">Rs. {{total_cost}}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mt-3 mt-md-0">
+            <a href="{% url 'schooladmin:play-slip-detail' mem_id %}" class="btn btn-premium btn-premium-success w-100">
+                <i class="fas fa-file-invoice-dollar me-2" style="font-size: 1.2rem;"></i> Generate Formal Payslip
+            </a>
+        </div>
+    </div>
+
+    <div class="card filter-card">
+      <div class="card-header bg-white p-4 border-bottom" style="border-radius: 16px 16px 0 0;">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="mb-1" style="font-weight: 700; color: #1e293b;">Salary Report Log</h5>
+            <span class="text-muted" style="font-weight: 500;">{{org}} &bull; <span class="text-primary">{{thisone}}</span></span>
+          </div>
+          <div class="text-end">
+            <h6 class="mb-0">
+                {% if nepali_enabled %}
+                    <span class="badge bg-danger px-3 py-2">BS: {{ first_date_np }} to {{ last_date_np }}</span>
+                {% endif %}
+                <span class="badge bg-dark px-3 py-2">AD: {{ first_date }} to {{ last_date }}</span>
+            </h6>
           </div>
         </div>
       </div>
+     
+      <div class="card-body px-0 pt-0 pb-2">
+        <div class="table-responsive" id="printarea">
+          
+          <div class="d-none d-print-block text-center mb-4">
+              <h4>{{org}} - Salary Report</h4>
+              <p>Member: {{thisone}} | Date: {% if nepali_enabled %}{{first_date_np}} to {{last_date_np}} (BS){% else %}{{first_date}} to {{last_date}} (AD){% endif %}</p>
+              <h5>Total Hours: {{total_hour}} | Total Salary: Rs. {{total_cost}}</h5>
+          </div>
+
+          <table class="table table-premium table-hover align-items-center mb-0">
+            <thead>
+              <tr>
+                <th class="text-uppercase font-weight-bolder">Date</th>
+                <th class="text-uppercase font-weight-bolder">Member Name</th>
+                <th class="text-uppercase font-weight-bolder ps-2">Punch In</th>
+                <th class="text-center text-uppercase font-weight-bolder">Punch Out</th>
+                <th class="text-center text-uppercase font-weight-bolder">Daily Hours</th>
+                <th class="text-end text-uppercase font-weight-bolder pe-4">Daily Salary</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in tm %}
+                <tr>
+                    <td>
+                      {% if nepali_enabled %}
+                        <p class="text-sm font-weight-bold mb-0 px-3">{{i.6}}</p>
+                      {% else %}
+                        <p class="text-sm font-weight-bold mb-0 px-3">{{i.0|date:'Y-m-d'}}</p>
+                      {% endif %}
+                      <small class="px-3 text-muted" style="font-weight: bold;">{{i.0|date:'l'}}</small>
+                    </td>
+                    <td>
+                      <div class="d-flex px-2 py-1">
+                        <div class="d-flex flex-column justify-content-center">
+                          <p class="mb-0 text-sm font-weight-bold" style="color: #2563eb;">{{i.1}}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td><p class="text-sm font-weight-bold mb-0">{{i.2|default:"-"}}</p></td>
+                    <td><p class="text-sm font-weight-bold mb-0 text-center">{{i.3|default:"-"}}</p></td>
+                    <td class="align-middle text-center text-sm">
+                      <span class="badge bg-light text-dark border">{{i.4|default:"0:00:00"}}</span>
+                    </td>
+                    <td class="text-end pe-4">
+                        <p class="text-sm font-weight-bold mb-0 text-success">Rs. {{i.5}}</p>
+                    </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-   
-  </div>
-  <script>
-    sum = document.getElementById("sub")
-    sum.disabled = true
-    first = document.getElementById("first").value
-    last = document.getElementById("last").value
-    console.log("i am")
-    console.log(first)
-    console.log(last)
-    if(first != "" && last != "") {
-      sum.disabled = false; //button remains disabled
-    } else {
-      sum.disabled = true; //button is enabled
-    }
-    function checkBtn(){
-        first = document.getElementById("first").value
-        last = document.getElementById("last").value
-        console.log("i am")
-        console.log(first)
-        console.log(last)
-        if(first != "" && last != "") {
-          sum.disabled = false; //button remains disabled
-        } else {
-          sum.disabled = true; //button is enabled
-        }
+    {% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+    function printData(tId) { window.print(); }
+
+    function checkBtn() {
+        var btn = document.getElementById("sub");
+        {% if nepali_enabled %}
+            var start = document.getElementById("first-np") ? document.getElementById("first-np").value : "";
+            var end = document.getElementById("last-np") ? document.getElementById("last-np").value : "";
+        {% else %}
+            var start = document.getElementById("first-ad") ? document.getElementById("first-ad").value : "";
+            var end = document.getElementById("last-ad") ? document.getElementById("last-ad").value : "";
+        {% endif %}
+        
+        if(btn) btn.disabled = !(start && end);
     }
 
-    function printData(tId) {
-      var printContents = document.getElementById(tId).innerHTML;
-      var originalContents = document.body.innerHTML;
-      document.body.innerHTML = printContents;
-      window.print();
-      document.body.innerHTML = originalContents;
-    }
-    
-  </script>
+    // NepaliDate.init handles .nepali-cal globally via dashboard.html
+    window.onload = function() {
+        checkBtn();
+        {% if not nepali_enabled %}
+            document.querySelectorAll('.eng-cal').forEach(function(input) {
+                flatpickr(input, { dateFormat: "Y-m-d", maxDate: "today", disableMobile: "true" });
+            });
+        {% endif %}
+    };
+</script>
 {% endblock content %}
-    
-    
