@@ -33,16 +33,18 @@ _FEATURE_URL_MAP = {
 }
 
 # Staff-portal URL prefixes → feature keys
+# These match the actual staff/ URL patterns defined in staff/urls.py
 _STAFF_FEATURE_URL_MAP = {
-    'staff/payslip':     'payroll',
-    'staff/billing':     'billing',
-    'staff/results':     'results',
-    'staff/leave':       'leave',
-    'staff/complaints':  'complaints',
-    'staff/tasks':       'tasks',
-    'staff/events':      'events',
-    'staff/finance':     'finance',
-    'staff/stock':       'stock',
+    'staff/my-payslips':      'payroll',
+    'staff/my-bills':         'billing',
+    'staff/my-results':       'results',
+    'staff/apply-leave':      'leave',
+    'staff/my-complaint':     'complaints',
+    'staff/tasks':            'tasks',
+    'staff/teaching-log':     'study_gap',
+    'staff/my-resignation':   'hrms',
+    'staff/location-checkin': 'gps',
+    'staff/wifi-checkin':     'wifi',
 }
 
 
@@ -126,21 +128,23 @@ def _get_org(user):
 
 
 _FEATURE_FIELD_MAP = {
-    'finance':    'feature_finance',
-    'billing':    'feature_billing',
-    'stock':      'feature_stock',
-    'tasks':      'feature_tasks',
-    'results':    'feature_results',
-    'hrms':       'feature_hrms',
-    'payroll':    'feature_payroll',
-    'complaints': 'feature_complaints',
-    'events':     'feature_events',
-    'branches':   'feature_branches',
-    'leave':      'feature_leave',
-    'study_gap':  'feature_study_gap',
-    'bulk_export':'feature_bulk_export',
-    'courses':    'feature_courses',
-    'student_mgmt':'feature_student_mgmt',
+    'finance':      'feature_finance',
+    'billing':      'feature_billing',
+    'stock':        'feature_stock',
+    'tasks':        'feature_tasks',
+    'results':      'feature_results',
+    'hrms':         'feature_hrms',
+    'payroll':      'feature_payroll',
+    'complaints':   'feature_complaints',
+    'events':       'feature_events',
+    'branches':     'feature_branches',
+    'leave':        'feature_leave',
+    'study_gap':    'feature_study_gap',
+    'bulk_export':  'feature_bulk_export',
+    'courses':      'feature_courses',
+    'student_mgmt': 'feature_student_mgmt',
+    'gps':          'location_based',
+    'wifi':         'mutifeature_enable',
 }
 
 

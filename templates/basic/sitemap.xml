@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Core public pages -->
+  <url><loc>https://meroattendance.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://meroattendance.com/pricing</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://meroattendance.com/about-mero-attendance-attendance-system-nepal</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://meroattendance.com/contact-us-attendance-system</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://meroattendance.com/privacy-and-policy-mero-attendance</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://meroattendance.com/terms-and-conditions-mero-attendance</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://meroattendance.com/blog/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+
+  <!-- SEO landing pages -->
+  {% for slug in seo_slugs %}
+  <url>
+    <loc>https://meroattendance.com/{{ slug }}/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  {% endfor %}
+
+  <!-- Blog posts -->
+  {% for slug in posts %}
+  <url>
+    <loc>https://meroattendance.com/blog/{{ slug }}/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  {% endfor %}
+
+</urlset>

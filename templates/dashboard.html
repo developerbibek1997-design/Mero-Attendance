@@ -251,6 +251,7 @@
                     </a>
                 </li>
 
+                {% if not org or org.feature_student_mgmt %}
                 <li class="nav-item">
                     <a class="nav-link {% if 'students' in request.path %}active{% endif %}" href="{% url 'schooladmin:student_list' %}">
                         <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -259,6 +260,7 @@
                         <span class="nav-link-text ms-1">Student Management</span>
                     </a>
                 </li>
+                {% endif %}
 
                 <li class="nav-item">
                     {% url 'handle:addClassification' as sa %}
@@ -368,6 +370,7 @@
                 </li>
                 {% endif %}
 
+                {% if not org or org.mutifeature_enable or org.location_based or org.qr_based %}
                 <li class="nav-item">
                     {% url 'schooladmin:admin_wifi_manage' as wifi_link %}
                     <a class="nav-link {% if request.path == wifi_link %} active {% endif %}" href="{{ wifi_link }}">
@@ -377,6 +380,7 @@
                         <span class="nav-link-text ms-1">Manage Office WiFi</span>
                     </a>
                 </li>
+                {% endif %}
 
                 <li class="nav-item mt-3">
                     <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">
@@ -535,9 +539,7 @@
 
                 {% if not org or org.feature_events %}
                 <li class="nav-item mt-3">
-                    <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">
-                        Events & Courses
-                    </h6>
+                    <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Events</h6>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if 'events' in request.path %}active{% endif %}" href="{% url 'schooladmin:event_list' %}">
@@ -547,6 +549,12 @@
                         <span class="nav-link-text ms-1">Events</span>
                     </a>
                 </li>
+                {% endif %}
+
+                {% if not org or org.feature_courses %}
+                <li class="nav-item mt-3">
+                    <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Academic</h6>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link {% if 'courses' in request.path %}active{% endif %}" href="{% url 'schooladmin:course_list' %}">
                         <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -555,6 +563,9 @@
                         <span class="nav-link-text ms-1">Courses</span>
                     </a>
                 </li>
+                {% endif %}
+
+                {% if not org or org.feature_study_gap %}
                 <li class="nav-item">
                     <a class="nav-link {% if 'study-gap' in request.path %}active{% endif %}" href="{% url 'schooladmin:study_gap_list' %}">
                         <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -937,6 +948,7 @@
                 {# ── STUDENT PORTAL ── #}
                 <li class="nav-item mt-3"><h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Student Portal</h6></li>
                 {% if not staff_org or staff_org.feature_billing %}
+                {% if staff_perms.can_view_billing %}
                 <li class="nav-item">
                     <a class="nav-link {% if 'my-bills' in request.path %}active{% endif %}" href="{% url 'staff:student_bills' %}">
                         <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fas fa-file-invoice-dollar text-danger"></i></div>
@@ -944,13 +956,16 @@
                     </a>
                 </li>
                 {% endif %}
+                {% endif %}
                 {% if not staff_org or staff_org.feature_results %}
+                {% if staff_perms.can_view_courses %}
                 <li class="nav-item">
                     <a class="nav-link {% if 'my-results' in request.path %}active{% endif %}" href="{% url 'staff:student_results' %}">
                         <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fas fa-graduation-cap text-success"></i></div>
                         <span class="nav-link-text ms-1">My Results</span>
                     </a>
                 </li>
+                {% endif %}
                 {% endif %}
                 <li class="nav-item">
                     <a class="nav-link {% if 'my-gaps' in request.path %}active{% endif %}" href="{% url 'staff:student_gaps' %}">
@@ -965,6 +980,7 @@
                     </a>
                 </li>
                 {% if not staff_org or staff_org.feature_leave %}
+                {% if staff_perms.can_request_leave %}
                 <li class="nav-item">
                     <a class="nav-link {% if 'apply-leave' in request.path %}active{% endif %}" href="{% url 'staff:apply_leave' %}">
                         <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fas fa-calendar-times text-info"></i></div>
@@ -972,7 +988,9 @@
                     </a>
                 </li>
                 {% endif %}
+                {% endif %}
                 {% if not staff_org or staff_org.feature_complaints %}
+                {% if staff_perms.can_view_complaints %}
                 <li class="nav-item">
                     <a class="nav-link {% if 'my-complaint' in request.path %}active{% endif %}" href="{% url 'staff:student_complaint' %}">
                         <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fas fa-exclamation-circle text-warning"></i></div>
@@ -980,9 +998,12 @@
                     </a>
                 </li>
                 {% endif %}
+                {% endif %}
 
                 {% else %}
                 {# ── STAFF / TEACHER PORTAL ── #}
+                {% if not staff_org or staff_org.feature_study_gap %}
+                {% if staff_perms.can_view_attendance %}
                 <li class="nav-item mt-3"><h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Teaching</h6></li>
                 <li class="nav-item">
                     <a class="nav-link {% if 'teaching-log' in request.path %}active{% endif %}" href="{% url 'staff:teaching_log' %}">
@@ -990,6 +1011,9 @@
                         <span class="nav-link-text ms-1">Teaching Log</span>
                     </a>
                 </li>
+                {% endif %}
+                {% endif %}
+                {% if staff_perms.can_view_attendance %}
                 <li class="nav-item">
                     {% url 'staff:report' as class_rep %}
                     <a class="nav-link {% if request.path == class_rep %}active{% endif %}" href="{{ class_rep }}">
@@ -997,15 +1021,17 @@
                         <span class="nav-link-text ms-1">Class Reports</span>
                     </a>
                 </li>
+                {% endif %}
                 <li class="nav-item mt-3"><h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">My Records</h6></li>
                 <li class="nav-item">
                     {% url 'staff:my_attendance' as my_att %}
                     <a class="nav-link {% if request.path == my_att %}active{% endif %}" href="{{ my_att }}">
                         <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fas fa-calendar-check text-success"></i></div>
-                        <span class="nav-link-text ms-1">My Attendance & Leave</span>
+                        <span class="nav-link-text ms-1">My Attendance</span>
                     </a>
                 </li>
                 {% if not staff_org or staff_org.feature_payroll %}
+                {% if staff_perms.can_view_own_payslip %}
                 <li class="nav-item">
                     {% url 'staff:my_payslips' as my_pay %}
                     <a class="nav-link {% if request.path == my_pay %}active{% endif %}" href="{{ my_pay }}">
@@ -1014,7 +1040,9 @@
                     </a>
                 </li>
                 {% endif %}
+                {% endif %}
                 {% if not staff_org or staff_org.feature_leave %}
+                {% if staff_perms.can_request_leave %}
                 <li class="nav-item">
                     <a class="nav-link {% if 'apply-leave' in request.path %}active{% endif %}" href="{% url 'staff:apply_leave' %}">
                         <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fas fa-calendar-times text-danger"></i></div>
@@ -1022,7 +1050,9 @@
                     </a>
                 </li>
                 {% endif %}
+                {% endif %}
                 {% if not staff_org or staff_org.feature_complaints %}
+                {% if staff_perms.can_view_complaints %}
                 <li class="nav-item">
                     <a class="nav-link {% if 'my-complaint' in request.path %}active{% endif %}" href="{% url 'staff:student_complaint' %}">
                         <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fas fa-exclamation-circle text-warning"></i></div>
@@ -1031,9 +1061,19 @@
                 </li>
                 {% endif %}
                 {% endif %}
+                {% if not staff_org or staff_org.feature_hrms %}
+                <li class="nav-item">
+                    <a class="nav-link {% if 'my-resignation' in request.path %}active{% endif %}" href="{% url 'staff:my_resignation' %}">
+                        <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fas fa-door-open text-secondary"></i></div>
+                        <span class="nav-link-text ms-1">My Resignation</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% endif %}
 
                 <!-- Tasks -->
                 {% if not staff_org or staff_org.feature_tasks %}
+                {% if staff_perms.can_view_tasks %}
                 <li class="nav-item mt-3"><h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Tasks</h6></li>
                 <li class="nav-item">
                     <a class="nav-link {% if 'tasks' in request.path %}active{% endif %}" href="{% url 'staff:my_tasks' %}">
@@ -1041,6 +1081,7 @@
                         <span class="nav-link-text ms-1">My Tasks</span>
                     </a>
                 </li>
+                {% endif %}
                 {% endif %}
 
                 <li class="nav-item mt-3"><h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Account</h6></li>

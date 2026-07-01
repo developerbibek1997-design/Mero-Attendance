@@ -30,4 +30,9 @@ urlpatterns = [
     path('forms/<str:form_uuid>/', views.public_form, name='public_form'),
     path('blog/', views.BlogListView.as_view(), name='blog'),
     path('blog/<slug:slug>/', views.BlogDetailView.as_view(), name='blog_detail'),
+    # Sitemap & robots
+    path('sitemap.xml', views.SitemapView.as_view(), name='sitemap'),
+    path('robots.txt', views.robots_txt, name='robots_txt'),
+    # SEO landing pages — one view, many slugs
+    path('<slug:slug>/', views.SeoLandingView.as_view(), name='seo_landing'),
 ]
