@@ -1,5 +1,6 @@
 {% extends 'dashboard.html' %}
 {% load static %}
+{% load schooladmin_extras %}
 {% block title %}Attendance — {{ clas.name }} | {{ org.name }}{% endblock %}
 
 {% block content %}
@@ -153,7 +154,7 @@
         <div class="member-list" id="memberList">
           {% for i in mem %}
           <div class="mem-row {% if i.id in attended_members %}is-present{% endif %}" id="row-{{ i.id }}">
-            <div class="mem-avatar">{{ i.name|first|upper }}</div>
+            <div class="mem-avatar">{{ i|member_avatar:36 }}</div>
             <div class="flex-grow-1 min-width-0">
               <div class="mem-name">{{ i.name }}</div>
               {% if i.phone %}<div class="mem-sub"><i class="fas fa-phone me-1"></i>{{ i.phone }}</div>{% endif %}
@@ -181,7 +182,7 @@
         </div>
 
         {% for course in courses %}
-        {% with is_logged=course.id in logged_course_ids %}
+        {% with is_logged=course.id|in_list:logged_course_ids %}
         <div class="tlog-card {% if is_logged %}is-logged{% endif %}" id="tlog-{{ course.id }}">
           <div class="tlog-card-hd" onclick="toggleLog({{ course.id }})">
             <div class="d-flex align-items-center gap-2 flex-grow-1 min-width-0">

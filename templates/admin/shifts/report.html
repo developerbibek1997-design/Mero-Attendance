@@ -1,0 +1,220 @@
+{% extends 'dashboard.html' %}
+{% block title %}Shift Report | {{ org.name }}{% endblock %}
+{% block content %}
+{% include 'components/report_workspace_styles.html' %}
+<style>
+  .shift-status { display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:.66rem;font-weight:800; }
+  .shift-complete { background:#dcfce7;color:#166534; }
+  .shift-incomplete { background:#fef3c7;color:#92400e; }
+  .shift-absent { background:#fee2e2;color:#991b1b; }
+  .shift-window { display:inline-flex;padding:5px 9px;border-radius:8px;background:#e0f2fe;color:#0369a1;font-weight:800; }
+  .shift-metric-positive { color:#047857;font-weight:800; }
+  .shift-metric-warning { color:#b45309;font-weight:800; }
+  .shift-metric-danger { color:#dc2626;font-weight:800; }
+  .shift-progress { height:7px;border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden;min-width:150px; }
+  .shift-progress > span { display:block;height:100%;border-radius:inherit;background:#fff; }
+</style>
+
+<div class="container-fluid py-4 report-workspace">
+  <section class="report-hero mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <span class="report-eyebrow"><i class="fas fa-user-clock"></i> Workforce Intelligence</span>
+        <h3 class="font-weight-bolder mt-3 mb-1">Shift Performance Report</h3>
+        <p class="mb-0 opacity-8 text-sm">Scheduled windows, attendance completion, punctuality and overtime in one audit-ready view.</p>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <a href="{% url 'schooladmin:shift_list' %}" class="btn btn-sm btn-outline-light mb-0">
+          <i class="fas fa-arrow-left me-1"></i>Shifts
+        </a>
+        {% if selected and days %}
+        <a href="?member={{ selected.id }}&from_date={{ filters.from_date }}&to_date={{ filters.to_date }}&export=csv"
+           class="btn btn-sm btn-light mb-0"><i class="fas fa-file-csv me-1 text-success"></i>Export CSV</a>
+        <button type="button" onclick="window.print()" class="btn btn-sm btn-light mb-0">
+          <i class="fas fa-print me-1"></i>Print
+        </button>
+        {% endif %}
+      </div>
+    </div>
+    {% if selected %}
+    <div class="d-flex align-items-center gap-3 flex-wrap mt-4">
+      <div>
+        <div class="text-xs opacity-7">Attendance completion</div>
+        <div class="font-weight-bolder">{{ summary.attendance_rate }}%</div>
+      </div>
+      <div class="shift-progress"><span style="width:{{ summary.attendance_rate }}%;"></span></div>
+      <span class="report-chip bg-white text-dark">{{ period_label }}</span>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="report-toolbar mb-4 no-print">
+    <form method="get">
+      <div class="d-flex gap-2 flex-wrap mb-3">
+        <a href="?member={{ filters.member }}&preset=today" class="btn btn-sm {% if active_preset == 'today' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-0">Today</a>
+        <a href="?member={{ filters.member }}&preset=this_week" class="btn btn-sm {% if active_preset == 'this_week' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-0">This Week</a>
+        <a href="?member={{ filters.member }}&preset=this_month" class="btn btn-sm {% if active_preset == 'this_month' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-0">This Month</a>
+        <a href="?member={{ filters.member }}&preset=last_month" class="btn btn-sm {% if active_preset == 'last_month' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-0">Last Month</a>
+      </div>
+      <div class="row g-3 align-items-end">
+        <div class="col-xl-5 col-md-6">
+          <label class="report-filter-label">Shift-assigned member</label>
+          <select name="member" class="form-select" required>
+            <option value="">Select a member</option>
+            {% for m in shift_members %}
+            <option value="{{ m.id }}" {% if filters.member == m.id|stringformat:'s' %}selected{% endif %}>{{ m.name }} · {{ m.weekly_shifts_display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-xl-2 col-6">
+          <label class="report-filter-label">From date</label>
+          {% if nepali_enabled %}
+          <input type="text" name="from_date_np_display" class="form-control nepali-cal" value="" placeholder="YYYY-MM-DD BS" data-global-date-picker>
+          <input type="hidden" name="from_date" value="{{ filters.from_date }}" class="hidden-date-input">
+          {% else %}
+          <input type="date" name="from_date" class="form-control" value="{{ filters.from_date }}" data-global-date-picker>
+          {% endif %}
+        </div>
+        <div class="col-xl-2 col-6">
+          <label class="report-filter-label">To date</label>
+          {% if nepali_enabled %}
+          <input type="text" name="to_date_np_display" class="form-control nepali-cal" value="" placeholder="YYYY-MM-DD BS" data-global-date-picker>
+          <input type="hidden" name="to_date" value="{{ filters.to_date }}" class="hidden-date-input">
+          {% else %}
+          <input type="date" name="to_date" class="form-control" value="{{ filters.to_date }}" data-global-date-picker>
+          {% endif %}
+        </div>
+        <div class="col-xl-3">
+          <button type="submit" class="btn btn-primary w-100 mb-0 py-2"><i class="fas fa-chart-line me-1"></i>Generate Report</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  {% if range_error %}
+  <div class="alert alert-danger border-0 shadow-sm"><i class="fas fa-circle-exclamation me-2"></i>{{ range_error }}</div>
+  {% endif %}
+
+  {% if selected %}
+  <div class="report-panel p-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="report-stat-icon"><i class="fas fa-user"></i></div>
+        <div>
+          <h6 class="font-weight-bolder mb-1"><a class="text-dark" href="{% url 'schooladmin:member_profile' selected.id %}">{{ selected.name }}</a></h6>
+          <div class="text-xs text-muted">{{ selected.weekly_shifts_display }}</div>
+        </div>
+      </div>
+      <span class="report-chip"><i class="fas fa-calendar-days"></i>{{ summary.scheduled_days }} scheduled days</span>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl-2"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-calendar-check"></i></span><p class="report-stat-label">Present Days</p><p class="report-stat-value text-success">{{ summary.present_days }}</p></div></div>
+    <div class="col-6 col-xl-2"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-calendar-xmark"></i></span><p class="report-stat-label">Absent Days</p><p class="report-stat-value text-danger">{{ summary.absent_days }}</p></div></div>
+    <div class="col-6 col-xl-2"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-clock"></i></span><p class="report-stat-label">Late Minutes</p><p class="report-stat-value">{{ totals.late }}</p><span class="text-xxs text-muted">{{ summary.late_days }} affected days</span></div></div>
+    <div class="col-6 col-xl-2"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-person-walking-arrow-right"></i></span><p class="report-stat-label">Early-out Min</p><p class="report-stat-value">{{ totals.early }}</p><span class="text-xxs text-muted">{{ summary.early_out_days }} affected days</span></div></div>
+    <div class="col-6 col-xl-2"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-business-time"></i></span><p class="report-stat-label">Overtime Min</p><p class="report-stat-value text-primary">{{ totals.ot }}</p><span class="text-xxs text-muted">{{ summary.overtime_days }} affected days</span></div></div>
+    <div class="col-6 col-xl-2"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-hourglass-half"></i></span><p class="report-stat-label">Worked Hours</p><p class="report-stat-value">{{ totals.worked }}</p></div></div>
+  </div>
+  {% endif %}
+
+  {% if selected and absence_dates %}
+  <section class="report-panel p-3 mb-4 border-start border-danger border-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+      <div><h6 class="font-weight-bolder text-danger mb-0"><i class="fas fa-calendar-xmark me-2"></i>Absent Dates</h6><p class="text-xs text-muted mb-0">Every scheduled day with no attendance coverage.</p></div>
+      <span class="shift-status shift-absent">{{ absence_dates|length }} date{{ absence_dates|length|pluralize }}</span>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      {% for absent in absence_dates %}
+      <span class="shift-status shift-absent">{{ absent.date|date:'M d, Y' }} · {{ absent.weekday }}{% if absent.date_np %} · {{ absent.date_np }} BS{% endif %}</span>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if days and not range_error %}
+  <section class="report-panel overflow-hidden">
+    <div class="px-3 py-3 border-bottom d-flex justify-content-between align-items-center">
+      <div>
+        <h6 class="mb-0 font-weight-bolder">Daily Shift Ledger</h6>
+        <p class="text-xs text-muted mb-0">Every configured window is shown separately for payroll traceability.</p>
+      </div>
+      <div class="d-none d-md-flex gap-2">
+        <span class="shift-status shift-complete">Complete</span>
+        <span class="shift-status shift-incomplete">Incomplete</span>
+        <span class="shift-status shift-absent">Absent</span>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table report-table">
+        <thead>
+          <tr>
+            <th class="ps-3">Date</th><th>Window</th><th>In</th><th>Out</th>
+            <th class="text-end">Early In</th><th class="text-end">Late In</th>
+            <th class="text-end">Early Out</th><th class="text-end">Late Out</th>
+            <th class="text-end">Overtime</th><th class="text-center">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for day in days %}
+            {% for w in day.windows %}
+            <tr>
+              {% if forloop.first %}
+              <td class="ps-3" rowspan="{{ day.windows|length }}">
+                <strong>{{ day.date|date:"D, M d, Y" }}</strong>
+                {% if day.date_np %}<div class="text-xxs text-primary">{{ day.date_np }} BS</div>{% endif %}
+                <div class="mt-1">
+                  {% if day.status == 'complete' %}<span class="shift-status shift-complete"><i class="fas fa-check"></i>Day Complete</span>
+                  {% elif day.status == 'incomplete' %}<span class="shift-status shift-incomplete"><i class="fas fa-circle-half-stroke"></i>Day Incomplete</span>
+                  {% else %}<span class="shift-status shift-absent"><i class="fas fa-xmark"></i>Day Absent</span>{% endif %}
+                  {% if day.shift_count > 1 %}<span class="badge bg-gradient-dark text-white ms-1">{{ day.shift_count }} shifts</span>{% endif %}
+                </div>
+                <div class="text-xxs text-muted mt-1">{{ day.worked }} hrs worked</div>
+              </td>
+              {% endif %}
+              <td><span class="shift-window">{% if w.shift_name %}{{ w.shift_name }} · {% endif %}{{ w.label }}</span></td>
+              <td class="font-weight-bold">{{ w.punch_in|default:"—" }}</td>
+              <td class="font-weight-bold">{{ w.punch_out|default:"—" }}</td>
+              <td class="text-end {% if w.early_in_min %}text-info font-weight-bold{% endif %}">{{ w.early_in_min }}m</td>
+              <td class="text-end {% if w.late_min %}shift-metric-danger{% endif %}">
+                {{ w.late_min }}m
+                {% if w.late_min and w.late_min != w.late_penalized_min %}<div class="text-xxs text-muted">{{ w.late_penalized_min }}m after grace</div>{% endif %}
+              </td>
+              <td class="text-end {% if w.early_min %}shift-metric-warning{% endif %}">{{ w.early_min }}m</td>
+              <td class="text-end {% if w.late_out_min %}shift-metric-positive{% endif %}">{{ w.late_out_min }}m</td>
+              <td class="text-end {% if w.ot_min %}shift-metric-positive{% endif %}">{{ w.ot_min }}m</td>
+              <td class="text-center">
+                {% if not w.attended %}<span class="shift-status shift-absent"><i class="fas fa-xmark"></i>Absent</span>
+                {% elif w.complete %}<span class="shift-status shift-complete"><i class="fas fa-check"></i>Complete</span>
+                {% else %}<span class="shift-status shift-incomplete"><i class="fas fa-circle-half-stroke"></i>Incomplete</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% elif selected and not range_error %}
+  <section class="report-panel report-empty">
+    <span class="report-empty-icon"><i class="fas fa-calendar-xmark"></i></span>
+    <h6 class="font-weight-bolder">No scheduled shift data</h6>
+    <p class="text-sm mb-0">No shift windows were resolved for this member and date range.</p>
+  </section>
+  {% elif not shift_members %}
+  <section class="report-panel report-empty">
+    <span class="report-empty-icon"><i class="fas fa-user-clock"></i></span>
+    <h6 class="font-weight-bolder">Assign shifts before reporting</h6>
+    <p class="text-sm">The report only includes active members with at least one shift.</p>
+    <a href="{% url 'schooladmin:shift_assign' %}" class="btn btn-primary btn-sm"><i class="fas fa-user-plus me-1"></i>Assign Shifts</a>
+  </section>
+  {% else %}
+  <section class="report-panel report-empty">
+    <span class="report-empty-icon"><i class="fas fa-chart-column"></i></span>
+    <h6 class="font-weight-bolder">Choose a member to begin</h6>
+    <p class="text-sm mb-0">Select a shift-assigned member and reporting period above.</p>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

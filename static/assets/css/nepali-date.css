@@ -3,6 +3,10 @@
    Used by static/assets/js/global-date-picker.js for AD and BS calendars
    ═══════════════════════════════════════════════════════════════ */
 
+/* Paired AD input that mirrors a visible BS text field - never shown directly.
+   (Also declared inline in a few older templates; harmless duplication.) */
+.hidden-date-input { display: none !important; }
+
 .global-date-wrap,
 .ndp-wrap {
     position: relative;
@@ -249,26 +253,276 @@ body > .nepali-date-picker,
     position: absolute !important;
 }
 
-.flatpickr-calendar {
+/* ═══════════════════════════════════════════════════════════════
+   Flatpickr premium theme (AD/English calendar) - same visual
+   language as the BS popup above: dark gradient header, red accent
+   for the selected day, blue ring for today.
+   ═══════════════════════════════════════════════════════════════ */
+/* NOTE: every rule below is prefixed with the repeated `.flatpickr-calendar`
+   ancestor class (or scoped onto `.flatpickr-calendar <descendant>`) purely to
+   out-rank static/assets/css/soft-ui-dashboard.css's built-in flatpickr theme,
+   which ships equally-`!important` but more-specific selectors
+   (e.g. `.flatpickr-calendar .flatpickr-day.selected`). Without matching that
+   specificity here, our colors silently lose the cascade to that theme. */
+.flatpickr-calendar.flatpickr-calendar {
+    background: #ffffff !important;
     border: 1px solid rgba(15, 23, 42, .08) !important;
     border-radius: 16px !important;
-    box-shadow: 0 24px 70px rgba(15, 23, 42, .18) !important;
-    overflow: hidden;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .20), 0 4px 18px rgba(225, 29, 72, .10) !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    overflow: visible !important;
+    animation: ndpFadeIn .15s ease !important;
+}
+.flatpickr-calendar .flatpickr-innerContainer,
+.flatpickr-calendar .flatpickr-rContainer,
+.flatpickr-calendar .flatpickr-days,
+.flatpickr-calendar .dayContainer {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+.flatpickr-calendar .flatpickr-months { border-radius: 16px 16px 0 0 !important; overflow: hidden; }
+.flatpickr-calendar .flatpickr-days { border-radius: 0 0 16px 16px !important; overflow: hidden; }
+.flatpickr-calendar.arrowTop:before,
+.flatpickr-calendar.arrowTop:after,
+.flatpickr-calendar.arrowBottom:before,
+.flatpickr-calendar.arrowBottom:after {
+    display: none !important;
 }
 
-.flatpickr-day.selected,
-.flatpickr-day.startRange,
-.flatpickr-day.endRange,
-.flatpickr-day.selected:hover,
-.flatpickr-day.startRange:hover,
-.flatpickr-day.endRange:hover {
-    background: #e11d48 !important;
-    border-color: #e11d48 !important;
+.flatpickr-calendar .flatpickr-months {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+    padding: .6rem .5rem !important;
+}
+/* NOTE: do not override height here. `.flatpickr-current-month` is
+   `position: absolute` inside this element, and `.flatpickr-month` itself
+   keeps flatpickr's default `overflow: hidden`. Setting height to `auto`
+   collapses this container to 0 (its only child is out-of-flow and
+   contributes nothing to auto-height), which silently clips the absolutely
+   positioned month/year text - that was the actual "invisible month" bug. */
+.flatpickr-calendar .flatpickr-month {
+    color: #ffffff !important;
+    height: 34px !important;
+    fill: #fff !important;
+    overflow: visible !important;
+}
+.flatpickr-calendar .flatpickr-current-month {
+    color: #ffffff !important;
+    font-size: .82rem !important;
+    font-weight: 700 !important;
+    padding: 0 0 0 .3rem !important;
+}
+.flatpickr-calendar .flatpickr-current-month input.cur-year,
+.flatpickr-calendar .flatpickr-current-month .flatpickr-monthDropdown-months {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    /* A semi-transparent fill (not fully transparent) - matches the BS popup's
+       month/year selects, which render reliably; a fully transparent <select>
+       with appearance:none painted no visible text in some engines. */
+    background: rgba(255, 255, 255, .12) !important;
+    border-radius: 6px !important;
+    padding: .15rem .3rem !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+.flatpickr-calendar .flatpickr-current-month .flatpickr-monthDropdown-months option { color: #0f172a; }
+.flatpickr-calendar .numInputWrapper span.arrowUp:after { border-bottom-color: #fff !important; }
+.flatpickr-calendar .numInputWrapper span.arrowDown:after { border-top-color: #fff !important; }
+.flatpickr-calendar .numInputWrapper:hover { background: rgba(255,255,255,.1) !important; }
+
+.flatpickr-calendar .flatpickr-prev-month,
+.flatpickr-calendar .flatpickr-next-month {
+    fill: #ffffff !important;
+    padding: 8px !important;
+    border-radius: 8px !important;
+    transition: background .15s !important;
+}
+.flatpickr-calendar .flatpickr-prev-month:hover,
+.flatpickr-calendar .flatpickr-next-month:hover { background: rgba(255,255,255,.18) !important; }
+.flatpickr-calendar .flatpickr-prev-month svg,
+.flatpickr-calendar .flatpickr-next-month svg { fill: #ffffff !important; }
+
+.flatpickr-calendar .flatpickr-weekdays { background: #f8fafc !important; }
+.flatpickr-calendar .flatpickr-weekdaycontainer { background: #f8fafc !important; }
+.flatpickr-calendar span.flatpickr-weekday {
+    background: #f8fafc !important;
+    color: #64748b !important;
+    font-size: .68rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .04em !important;
+}
+
+.flatpickr-calendar .flatpickr-days { border: none !important; }
+.flatpickr-calendar .flatpickr-day {
+    color: #0f172a !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    font-size: .82rem !important;
+    max-width: none !important;
+    background: transparent !important;
+}
+.flatpickr-calendar .flatpickr-day:hover,
+.flatpickr-calendar .flatpickr-day:focus {
+    background: #fff1f2 !important;
+    color: #e11d48 !important;
+    border-color: transparent !important;
+}
+.flatpickr-calendar .flatpickr-day.today {
+    border-color: #3b82f6 !important;
+}
+.flatpickr-calendar .flatpickr-day.today:hover {
+    background: #eff6ff !important;
+    color: #3b82f6 !important;
+}
+.flatpickr-calendar .flatpickr-day.selected,
+.flatpickr-calendar .flatpickr-day.startRange,
+.flatpickr-calendar .flatpickr-day.endRange,
+.flatpickr-calendar .flatpickr-day.selected:hover,
+.flatpickr-calendar .flatpickr-day.startRange:hover,
+.flatpickr-calendar .flatpickr-day.endRange:hover,
+.flatpickr-calendar .flatpickr-day.selected.today,
+.flatpickr-calendar .flatpickr-day.today.selected {
+    background: linear-gradient(135deg, #e11d48, #be123c) !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(225, 29, 72, .30) !important;
+}
+.flatpickr-calendar .flatpickr-day.prevMonthDay,
+.flatpickr-calendar .flatpickr-day.nextMonthDay {
+    color: #cbd5e1 !important;
+}
+.flatpickr-calendar .flatpickr-day.flatpickr-disabled,
+.flatpickr-calendar .flatpickr-day.flatpickr-disabled:hover {
+    color: #e2e8f0 !important;
+    background: transparent !important;
 }
 
 @media (max-width: 575.98px) {
     .nepali-date-picker,
-    .flatpickr-calendar {
+    .flatpickr-calendar.flatpickr-calendar {
         max-width: calc(100vw - 24px) !important;
+        width: calc(100vw - 24px) !important;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Custom BS calendar popup (static/assets/js/global-date-picker.js)
+   Self-contained replacement for the third-party nepaliDatePicker
+   plugin, which formats/parses Devanagari numerals only.
+   ═══════════════════════════════════════════════════════════════ */
+.global-bs-popup {
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, .08);
+    border-radius: 16px;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .20), 0 4px 18px rgba(225, 29, 72, .10);
+    width: 280px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow: hidden;
+    animation: ndpFadeIn .15s ease;
+}
+
+.global-bs-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    padding: .6rem .5rem;
+}
+
+.global-bs-nav {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.18);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .15s;
+}
+.global-bs-nav:hover { background: rgba(255,255,255,.32); }
+
+.global-bs-month-select,
+.global-bs-year-select {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255,255,255,.12);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 700;
+    padding: .3rem .35rem;
+    outline: none;
+}
+.global-bs-month-select option,
+.global-bs-year-select option { color: #0f172a; }
+
+.global-bs-popup-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: .5rem;
+    gap: 2px;
+}
+
+.global-bs-dow {
+    text-align: center;
+    font-size: .68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #64748b;
+    padding: .3rem 0 .45rem;
+}
+
+.global-bs-day {
+    text-align: center;
+    padding: .45rem 0;
+    font-size: .82rem;
+    font-weight: 600;
+    color: #0f172a;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .12s, color .12s;
+}
+.global-bs-day:hover {
+    background: #fff1f2;
+    color: #e11d48;
+}
+.global-bs-day.is-selected {
+    background: linear-gradient(135deg, #e11d48, #be123c);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(225, 29, 72, .30);
+}
+.global-bs-day.is-empty {
+    cursor: default;
+}
+
+.global-bs-popup-footer {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: .5rem;
+    text-align: center;
+}
+.global-bs-today {
+    background: transparent;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #0f172a;
+    font-size: .75rem;
+    font-weight: 700;
+    padding: .35rem .9rem;
+    cursor: pointer;
+    transition: background .12s;
+}
+.global-bs-today:hover { background: #f0fdf4; color: #16a34a; border-color: #86efac; }

@@ -1,0 +1,123 @@
+{% extends 'dashboard.html' %}
+{% block title %}HR Module | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="fw-bold mb-4" style="color:#1e293b;">HR Module</h4>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  {% if can_manage %}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm p-4" style="border-radius:12px;">
+        <h6 class="fw-bold mb-3">File a Resignation</h6>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="file_resignation">
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Member</label>
+            <select name="member_id" class="form-select" required>
+              {% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="row mb-2">
+            <div class="col-6">
+              <label class="form-label small fw-bold">Resignation Date</label>
+              <input type="date" name="resignation_date" class="form-control" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold">Last Working Day</label>
+              <input type="date" name="last_working_day" class="form-control">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Reason</label>
+            <textarea name="reason" class="form-control" rows="2" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">File Resignation</button>
+        </form>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm p-4" style="border-radius:12px;">
+        <h6 class="fw-bold mb-3">Upload Staff Document</h6>
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="upload_document">
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Member</label>
+            <select name="member_id" class="form-select" required>
+              {% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Document Type</label>
+            <select name="document_type" class="form-select">
+              <option value="id">ID Card</option>
+              <option value="contract">Contract</option>
+              <option value="certificate">Certificate</option>
+              <option value="degree">Degree</option>
+              <option value="passport">Passport</option>
+              <option value="other" selected>Other</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Title</label>
+            <input type="text" name="title" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">File</label>
+            <input type="file" name="file" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm" style="border-radius:12px;">
+        <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 fw-bold">Resignations</h6></div>
+        <div class="card-body p-0">
+          <table class="table mb-0 align-items-center">
+            <tbody>
+              {% for r in resignations %}
+              <tr>
+                <td class="ps-4 text-sm"><strong>{{ r.member.name }}</strong><div class="text-xs text-muted">{{ r.resignation_date }}</div></td>
+                <td class="text-sm text-end pe-4"><span class="badge bg-secondary text-uppercase">{{ r.status }}</span></td>
+              </tr>
+              {% empty %}
+              <tr><td class="text-center py-4 text-muted">No resignations on record.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm" style="border-radius:12px;">
+        <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 fw-bold">Staff Documents</h6></div>
+        <div class="card-body p-0">
+          <table class="table mb-0 align-items-center">
+            <tbody>
+              {% for d in documents %}
+              <tr>
+                <td class="ps-4 text-sm"><strong>{{ d.member.name }}</strong><div class="text-xs text-muted">{{ d.title }} &middot; {{ d.get_document_type_display }}</div></td>
+                <td class="text-sm text-end pe-4"><a href="{{ d.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary py-0">View</a></td>
+              </tr>
+              {% empty %}
+              <tr><td class="text-center py-4 text-muted">No documents on record.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

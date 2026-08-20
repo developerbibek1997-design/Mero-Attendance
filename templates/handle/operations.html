@@ -17,6 +17,10 @@
 
 /* ── KPI Cards (float over hero) ─────────────────────── */
 .ops-kpi-row{margin-top:-3.5rem;padding:0 2rem 1.5rem;}
+/* With neither stock nor finance enabled, the row has no KPI cards to fill
+   the negative margin — it pulls the (empty) row, and the tab bar right
+   after it, up underneath the hero banner instead of just the cards. */
+.ops-kpi-row.ops-kpi-row-empty{margin-top:0;}
 .ops-kpi{background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.10);padding:1.4rem 1.6rem;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.8);}
 .ops-kpi::after{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.08;}
 .ops-kpi.green::after{background:#16a34a;}
@@ -38,6 +42,8 @@
 .ops-tab:hover{color:var(--ops-ink);}
 .ops-tab.active{color:var(--ops-red);border-bottom-color:var(--ops-red);}
 .ops-tab-badge{background:#fee2e2;color:var(--ops-red);font-size:.65rem;font-weight:800;padding:2px 6px;border-radius:99px;}
+.ops-tab-divider{display:flex;align-items:center;padding:0 .5rem;font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#cbd5e1;}
+.ops-tab-divider::before{content:'';width:1px;align-self:stretch;background:var(--ops-border);margin-right:.6rem;}
 
 /* ── Tab Content ──────────────────────────────────────── */
 .ops-tab-pane{display:none;padding:2rem;}
@@ -104,15 +110,19 @@
       <div>
         <div class="text-xs text-white opacity-50 mb-1 text-uppercase fw-bold tracking-wide">{{ org.name }}</div>
         <h4 class="ops-hero-title"><i class="fas fa-layer-group me-2 opacity-75"></i>Operations Center</h4>
-        <p class="ops-hero-sub">Stock inventory · Financial ledger · Birthday tracker</p>
+        <p class="ops-hero-sub">{% if features.stock %}Stock inventory · {% endif %}{% if features.finance %}Financial ledger · {% endif %}Birthday tracker</p>
       </div>
       <div class="d-flex gap-2 flex-wrap">
+        {% if features.stock %}
         <a href="?export=stock{% if filters.branch %}&branch={{ filters.branch }}{% endif %}" class="btn-ops-ghost btn text-white border-white border-opacity-25">
           <i class="fas fa-boxes me-1"></i>Export Stock
         </a>
+        {% endif %}
+        {% if features.finance %}
         <a href="?export=transactions{% if filters.start_date %}&start_date={{ filters.start_date }}{% endif %}{% if filters.end_date %}&end_date={{ filters.end_date }}{% endif %}" class="btn-ops-ghost btn text-white border-white border-opacity-25">
           <i class="fas fa-file-invoice-dollar me-1"></i>Export Finance
         </a>
+        {% endif %}
         <a href="?export=birthdays" class="btn-ops-ghost btn text-white border-white border-opacity-25">
           <i class="fas fa-birthday-cake me-1"></i>Export Birthdays
         </a>
@@ -121,7 +131,7 @@
   </div>
 
   <!-- ── KPI row ────────────────────────────────────────── -->
-  <div class="ops-kpi-row">
+  <div class="ops-kpi-row{% if not features.finance and not features.stock %} ops-kpi-row-empty{% endif %}">
     {% for message in messages %}
     <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show mb-3" role="alert">
       <i class="fas fa-{% if message.tags == 'error' %}exclamation-triangle{% else %}check-circle{% endif %} me-2"></i>{{ message }}
@@ -130,6 +140,7 @@
     {% endfor %}
 
     <div class="row g-3">
+      {% if features.finance %}
       <div class="col-6 col-md-3">
         <div class="ops-kpi green">
           <div class="ops-kpi-label">Total Income</div>
@@ -154,6 +165,8 @@
           <div class="ops-kpi-icon"><i class="fas fa-scale-balanced"></i></div>
         </div>
       </div>
+      {% endif %}
+      {% if features.stock %}
       <div class="col-6 col-md-3">
         <div class="ops-kpi {% if low_stock_items %}amber{% else %}green{% endif %}">
           <div class="ops-kpi-label">Low Stock Items</div>
@@ -162,20 +175,29 @@
           <div class="ops-kpi-icon"><i class="fas fa-boxes-stacked"></i></div>
         </div>
       </div>
+      {% endif %}
     </div>
   </div>
 
   <!-- ── Tabs ───────────────────────────────────────────── -->
   <div class="ops-tabs">
     <div class="ops-tab active" data-tab="overview"><i class="fas fa-chart-line"></i> Overview</div>
+    {% if features.stock %}
     <div class="ops-tab" data-tab="stock"><i class="fas fa-boxes"></i> Stock
       {% if low_stock_items %}<span class="ops-tab-badge">{{ low_stock_items|length }}</span>{% endif %}
     </div>
+    {% endif %}
+    {% if features.finance %}
     <div class="ops-tab" data-tab="finance"><i class="fas fa-coins"></i> Finance</div>
+    {% endif %}
+    {% if features.stock or features.finance %}
     <div class="ops-tab" data-tab="setup"><i class="fas fa-sliders"></i> Setup</div>
+    {% endif %}
+    <div class="ops-tab-divider">Tools</div>
     <div class="ops-tab" data-tab="birthdays"><i class="fas fa-birthday-cake"></i> Birthdays
       {% if todays_birthdays %}<span class="ops-tab-badge">{{ todays_birthdays|length }}</span>{% endif %}
     </div>
+    <div class="ops-tab" data-tab="messages"><i class="fas fa-envelope"></i> Messages</div>
   </div>
 
   <!-- ══════════════════════════════════════════════════════
@@ -193,6 +215,7 @@
             {% for b in branches %}<option value="{{ b.id }}" {% if filters.branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
           </select>
         </div>
+        {% if features.finance %}
         <div class="col-md-2">
           <label class="form-label text-xs fw-bold text-uppercase text-muted mb-1">Transaction</label>
           <select name="transaction_type" class="form-select form-select-sm">
@@ -201,6 +224,7 @@
             <option value="expense" {% if filters.transaction_type == "expense" %}selected{% endif %}>Expense</option>
           </select>
         </div>
+        {% endif %}
         <div class="col-md-2">
           <label class="form-label text-xs fw-bold text-uppercase text-muted mb-1">From</label>
           <input type="date" name="start_date" value="{{ filters.start_date }}" class="form-control form-control-sm">
@@ -218,6 +242,7 @@
 
     <div class="row g-4">
 
+      {% if features.finance %}
       <!-- Finance split card -->
       <div class="col-xl-4">
         <div class="ops-card h-100">
@@ -299,11 +324,12 @@
           </div>
         </div>
       </div>
+      {% endif %}
 
     </div>
 
     <!-- Low stock alert -->
-    {% if low_stock_items %}
+    {% if features.stock and low_stock_items %}
     <div class="ops-card mt-4" style="border-left:4px solid #d97706;">
       <div class="ops-card-hd">
         <h6 class="ops-card-hd-title"><i class="fas fa-triangle-exclamation text-warning"></i> Low Stock Alert — {{ low_stock_items|length }} item{{ low_stock_items|length|pluralize }}</h6>
@@ -338,6 +364,7 @@
   <!-- ══════════════════════════════════════════════════════
        TAB: STOCK
   ══════════════════════════════════════════════════════ -->
+  {% if features.stock %}
   <div class="ops-tab-pane" id="tab-stock">
 
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -431,9 +458,12 @@
 
   </div>
 
+  {% endif %}
+
   <!-- ══════════════════════════════════════════════════════
        TAB: FINANCE
   ══════════════════════════════════════════════════════ -->
+  {% if features.finance %}
   <div class="ops-tab-pane" id="tab-finance">
 
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -508,12 +538,16 @@
 
   </div>
 
+  {% endif %}
+
   <!-- ══════════════════════════════════════════════════════
        TAB: SETUP
   ══════════════════════════════════════════════════════ -->
+  {% if features.stock or features.finance %}
   <div class="ops-tab-pane" id="tab-setup">
     <div class="row g-4">
 
+      {% if features.stock %}
       <!-- Stock Category -->
       <div class="col-lg-6">
         <div class="ops-card">
@@ -548,7 +582,9 @@
           </div>
         </div>
       </div>
+      {% endif %}
 
+      {% if features.finance %}
       <!-- Transaction Category -->
       <div class="col-lg-6">
         <div class="ops-card">
@@ -585,7 +621,9 @@
           </div>
         </div>
       </div>
+      {% endif %}
 
+      {% if features.stock %}
       <!-- Add Stock Item inline form -->
       <div class="col-12">
         <div class="ops-card">
@@ -616,9 +654,11 @@
           </div>
         </div>
       </div>
+      {% endif %}
 
     </div>
   </div>
+  {% endif %}
 
   <!-- ══════════════════════════════════════════════════════
        TAB: BIRTHDAYS
@@ -636,7 +676,10 @@
           <div class="ops-card-bd">
             {% for p in todays_birthdays %}
             <div class="d-flex align-items-center gap-3 py-2 border-bottom">
-              <div class="bday-avatar bday-today">{{ p.name|first|upper }}</div>
+              <div class="bday-avatar bday-today" style="overflow:hidden;">
+                {% if p.photo %}<img src="{{ p.photo.url }}" alt="{{ p.name }}" style="width:100%;height:100%;object-fit:cover;">
+                {% else %}{{ p.name|first|upper }}{% endif %}
+              </div>
               <div class="flex-grow-1">
                 <div class="fw-bold" style="font-size:.88rem;">{{ p.name }}</div>
                 <div class="text-muted text-xs">{{ p.phone|default:"No phone" }}</div>
@@ -668,7 +711,10 @@
                 <tr>
                   <td>
                     <div class="d-flex align-items-center gap-2">
-                      <div class="bday-avatar" style="width:32px;height:32px;font-size:.75rem;flex-shrink:0;">{{ p.name|first|upper }}</div>
+                      <div class="bday-avatar" style="width:32px;height:32px;font-size:.75rem;flex-shrink:0;overflow:hidden;">
+                        {% if p.photo %}<img src="{{ p.photo.url }}" alt="{{ p.name }}" style="width:100%;height:100%;object-fit:cover;">
+                        {% else %}{{ p.name|first|upper }}{% endif %}
+                      </div>
                       <div>
                         <div class="fw-bold">{{ p.name }}</div>
                         <div class="text-muted text-xs">{{ p.phone|default:"No phone" }}</div>
@@ -688,6 +734,121 @@
                 {% endfor %}
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: MESSAGES
+  ══════════════════════════════════════════════════════ -->
+  <div class="ops-tab-pane" id="tab-messages">
+    <div class="row g-4">
+
+      <!-- Compose -->
+      <div class="col-lg-6">
+        <div class="ops-card">
+          <div class="ops-card-hd" style="background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:13px 13px 0 0;">
+            <h6 class="ops-card-hd-title text-white"><i class="fas fa-paper-plane"></i> Send Announcement</h6>
+          </div>
+          <div class="ops-card-bd">
+            <form method="post" id="msgForm">
+              {% csrf_token %}<input type="hidden" name="action" value="send_message">
+              <div class="mb-3">
+                <label class="form-label fw-bold" style="font-size:.78rem;color:#334155;">Subject</label>
+                <input type="text" name="msg_subject" class="form-control form-control-sm" placeholder="e.g. Office Closure Notice" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold" style="font-size:.78rem;color:#334155;">Message</label>
+                <textarea name="msg_body" class="form-control" rows="5" placeholder="Write your message here…" required style="font-size:.85rem;resize:vertical;"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold" style="font-size:.78rem;color:#334155;">Send To</label>
+                <select name="msg_recipient" id="msgRecipientSelect" class="form-select form-select-sm">
+                  <option value="all">All Members</option>
+                  <option value="staff">Staff Portal Users Only</option>
+                  <option value="student">Member Type: Student</option>
+                  <option value="employee">Member Type: Employee</option>
+                  <option value="specific">Specific Member…</option>
+                </select>
+              </div>
+              <div class="mb-3 d-none" id="msgSpecificMemberWrap">
+                <label class="form-label fw-bold" style="font-size:.78rem;color:#334155;">Member</label>
+                <select name="msg_member_id" class="form-select form-select-sm">
+                  <option value="">-- Select a member --</option>
+                  {% for m in messageable_members %}
+                  <option value="{{ m.pk }}">{{ m.name }} ({{ m.email }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="sendEmail" name="send_email" checked>
+                <label class="form-check-label" for="sendEmail" style="font-size:.82rem;">Send via Email</label>
+              </div>
+              <button type="submit" class="btn btn-ops-primary w-100">
+                <i class="fas fa-paper-plane me-2"></i>Send Message
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info / Tips -->
+      <div class="col-lg-6">
+        <div class="ops-card">
+          <div class="ops-card-hd">
+            <h6 class="ops-card-hd-title"><i class="fas fa-circle-info text-primary"></i> How It Works</h6>
+          </div>
+          <div class="ops-card-bd">
+            <div class="d-flex flex-column gap-3">
+              <div class="d-flex gap-3 align-items-start">
+                <div style="width:36px;height:36px;background:#dbeafe;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <i class="fas fa-users text-primary"></i>
+                </div>
+                <div>
+                  <div class="fw-bold" style="font-size:.85rem;">Targeted Recipients</div>
+                  <div class="text-muted" style="font-size:.78rem;">Choose all members, only staff portal users, filter by member type, or pick one specific member.</div>
+                </div>
+              </div>
+              <div class="d-flex gap-3 align-items-start">
+                <div style="width:36px;height:36px;background:#dcfce7;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <i class="fas fa-envelope text-success"></i>
+                </div>
+                <div>
+                  <div class="fw-bold" style="font-size:.85rem;">Email Delivery</div>
+                  <div class="text-muted" style="font-size:.78rem;">Messages are sent to members who have a registered email address.</div>
+                </div>
+              </div>
+              <div class="d-flex gap-3 align-items-start">
+                <div style="width:36px;height:36px;background:#fef3c7;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <i class="fas fa-clock text-warning"></i>
+                </div>
+                <div>
+                  <div class="fw-bold" style="font-size:.85rem;">Instant Dispatch</div>
+                  <div class="text-muted" style="font-size:.78rem;">Messages are sent immediately. Check email logs for delivery status.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 p-3 rounded-3" style="background:#f8fafc;border:1px solid #e2e8f0;">
+              <div class="fw-bold mb-2" style="font-size:.8rem;color:#334155;"><i class="fas fa-chart-bar me-1 text-primary"></i> Quick Stats</div>
+              <div class="d-flex gap-4 flex-wrap">
+                <div>
+                  <div class="fw-bold" style="font-size:1.3rem;color:#2563eb;">{{ total_members_count|default:0 }}</div>
+                  <div class="text-muted" style="font-size:.72rem;">Total Members</div>
+                </div>
+                <div>
+                  <div class="fw-bold" style="font-size:1.3rem;color:#16a34a;">{{ members_with_email|default:0 }}</div>
+                  <div class="text-muted" style="font-size:.72rem;">With Email</div>
+                </div>
+                <div>
+                  <div class="fw-bold" style="font-size:1.3rem;color:#9333ea;">{{ staff_user_count|default:0 }}</div>
+                  <div class="text-muted" style="font-size:.72rem;">Staff Users</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -837,13 +998,26 @@ document.querySelectorAll('.ops-tab').forEach(function(tab){
   });
 });
 
-// Restore active tab on page load (e.g. after form submit redirects back)
+// Restore active tab — prefer URL ?tab= param, fall back to sessionStorage
 (function(){
-  var saved = sessionStorage.getItem('ops_tab');
+  var urlTab = new URLSearchParams(location.search).get('tab');
+  var saved = urlTab || sessionStorage.getItem('ops_tab');
   if(saved){
     var found = document.querySelector('.ops-tab[data-tab="'+saved+'"]');
     if(found) found.click();
   }
+})();
+
+// ── Messages: show the member picker only for "Specific Member…" ──
+(function(){
+  var recipientSelect = document.getElementById('msgRecipientSelect');
+  var specificWrap = document.getElementById('msgSpecificMemberWrap');
+  if(!recipientSelect || !specificWrap) return;
+  function syncSpecificMemberField(){
+    specificWrap.classList.toggle('d-none', recipientSelect.value !== 'specific');
+  }
+  recipientSelect.addEventListener('change', syncSpecificMemberField);
+  syncSpecificMemberField();
 })();
 </script>
 {% endblock content %}

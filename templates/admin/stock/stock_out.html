@@ -18,7 +18,14 @@
                 {% for item in items %}<option value="{{ item.id }}">{{ item.name }} (Available: {{ item.quantity }} {{ item.unit }})</option>{% endfor %}
               </select></div>
             <div class="mb-3"><label class="form-label text-xs font-weight-bold">Quantity *</label><input type="number" step="0.01" name="quantity" class="form-control" required min="0.01"></div>
-            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Date</label><input type="date" name="movement_date" class="form-control" value="{{ today }}"></div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Date</label>
+              {% if nepali_enabled %}
+              <input type="text" class="form-control nepali-cal" name="movement_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+              <input type="date" class="hidden-date-input" name="movement_date" value="{{ today }}">
+              {% else %}
+              <input type="date" name="movement_date" class="form-control" value="{{ today }}">
+              {% endif %}
+            </div>
             <div class="mb-3"><label class="form-label text-xs font-weight-bold">Note</label><input type="text" name="note" class="form-control" placeholder="e.g. Used for classroom"></div>
             <div class="d-flex gap-2">
               <button type="submit" class="btn btn-warning"><i class="fas fa-save me-1"></i>Record Stock Out</button>

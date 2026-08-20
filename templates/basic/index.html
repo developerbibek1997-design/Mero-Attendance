@@ -1,7 +1,7 @@
 {% extends 'pillar.html' %}
 {% load static %}
 
-{% block title %}Mero Attendance | Smart Attendance, HRMS, Payroll & School Management System Nepal{% endblock title %}
+{% block title %}Mero Attendance | Smart Attendance, HRMS & Payroll for Every Organization{% endblock title %}
 
 {% block extra_css %}
 <style>
@@ -58,8 +58,8 @@
   border: none; cursor: pointer;
 }
 .hp-btn:hover { transform: translateY(-2px); text-decoration: none; }
-.hp-btn-red   { background: linear-gradient(135deg,var(--red),var(--red-dk)); color:#fff; box-shadow:0 14px 30px rgba(225,29,72,.28); }
-.hp-btn-red:hover  { color:#fff; box-shadow:0 20px 40px rgba(225,29,72,.38); }
+.hp-btn-red   { background: linear-gradient(135deg,var(--red),var(--red-dk)); color:#fff!important; box-shadow:0 14px 30px rgba(225,29,72,.28); }
+.hp-btn-red:hover  { color:#fff!important; box-shadow:0 20px 40px rgba(225,29,72,.38); }
 .hp-btn-white { background:#fff; color:var(--ink); }
 .hp-btn-white:hover { color:var(--red); }
 .hp-btn-ghost { background:rgba(255,255,255,.1); border:1.5px solid rgba(255,255,255,.22); color:#fff; }
@@ -81,6 +81,10 @@
 .ic-ink    { background:var(--ink);       color:#fff; }
 .ic-lime   { background:#f7fee7; color:#65a30d; }
 .ic-orange { background:#fff7ed; color:#ea580c; }
+/* Was referenced by the Timesheet card but never defined, so that icon rendered
+   unstyled. Defined here alongside the other accents. */
+.ic-indigo { background:#eef2ff; color:#4f46e5; }
+.ic-sky    { background:#f0f9ff; color:#0284c7; }
 .ic-pink   { background:#fdf4ff; color:#a21caf; }
 
 /* ══════════════════════════════════════════════════════════
@@ -335,7 +339,66 @@
 .hp-benefit-item p { font-size: .8rem; color: var(--muted); margin: 0; line-height: 1.7; }
 
 /* ══════════════════════════════════════════════════════════
-   9 · FINAL CTA
+   9 · FAQ
+══════════════════════════════════════════════════════════ */
+.hp-faq-section {
+  position: relative; overflow: hidden;
+  background:
+    radial-gradient(circle at 8% 18%, rgba(225,29,72,.08), transparent 25%),
+    radial-gradient(circle at 92% 82%, rgba(37,99,235,.08), transparent 28%),
+    var(--soft);
+}
+.hp-faq-section::before {
+  content:""; position:absolute; width:260px; height:260px; border-radius:50%;
+  border:1px solid rgba(225,29,72,.08); top:-150px; right:8%; pointer-events:none;
+}
+.hp-faq-intro { position: sticky; top: 96px; }
+.hp-faq-points { display:grid; gap:12px; margin:28px 0; }
+.hp-faq-point {
+  display:flex; align-items:center; gap:12px; color:var(--slate);
+  font-size:.84rem; font-weight:750;
+}
+.hp-faq-point i {
+  width:32px; height:32px; display:grid; place-items:center; border-radius:9px;
+  color:var(--green); background:var(--green-lt); flex-shrink:0;
+}
+.hp-faq-help {
+  padding:22px; border-radius:18px; color:#fff;
+  background:linear-gradient(135deg, #111c35, #1e293b);
+  box-shadow:0 18px 42px rgba(15,23,42,.16);
+}
+.hp-faq-help-icon {
+  width:42px; height:42px; display:grid; place-items:center; border-radius:12px;
+  background:rgba(255,255,255,.11); color:#fb7185; margin-bottom:14px;
+}
+.hp-faq-help h3 { color:#fff; font-size:1rem; font-weight:900; margin:0 0 7px; }
+.hp-faq-help p { color:rgba(255,255,255,.66); font-size:.78rem; line-height:1.65; margin:0 0 16px; }
+.hp-faq-help a { font-size:.78rem; min-height:40px; padding:8px 16px; }
+.hp-faq-list { display:grid; gap:14px; }
+.hp-faq-item {
+  border:1px solid var(--line) !important; border-radius:16px !important;
+  overflow:hidden; background:#fff; box-shadow:0 7px 24px rgba(15,23,42,.045);
+  transition:transform .2s, box-shadow .2s, border-color .2s;
+}
+.hp-faq-item:hover { transform:translateY(-2px); box-shadow:0 14px 34px rgba(15,23,42,.08); border-color:rgba(225,29,72,.18) !important; }
+.hp-faq-question {
+  display:flex; align-items:center; gap:14px; width:100%; padding:20px 22px !important;
+  color:var(--ink) !important; background:#fff !important; font-size:.92rem;
+  font-weight:850; line-height:1.45; box-shadow:none !important;
+}
+.hp-faq-question:not(.collapsed) { color:var(--red) !important; }
+.hp-faq-question:focus { border-color:transparent; box-shadow:inset 0 0 0 2px rgba(225,29,72,.16) !important; }
+.hp-faq-number {
+  width:34px; height:34px; display:grid; place-items:center; border-radius:10px;
+  background:var(--red-lt); color:var(--red); font-size:.72rem; font-weight:950;
+  flex-shrink:0; transition:background .2s, color .2s;
+}
+.hp-faq-question:not(.collapsed) .hp-faq-number { color:#fff; background:linear-gradient(135deg,var(--red),var(--red-dk)); }
+.hp-faq-question::after { width:1rem; height:1rem; background-size:1rem; }
+.hp-faq-answer { padding:0 24px 22px 70px; color:var(--muted); font-size:.84rem; line-height:1.8; }
+
+/* ══════════════════════════════════════════════════════════
+   10 · FINAL CTA
 ══════════════════════════════════════════════════════════ */
 .hp-cta {
   background:
@@ -368,6 +431,7 @@
   .hp-dash-grid   { grid-template-columns: repeat(2,1fr); }
   .hp-who-grid    { grid-template-columns: repeat(3,1fr); }
   .hp-benefits-grid{ grid-template-columns: 1fr; }
+  .hp-faq-intro   { position: static; }
   .hp-hero        { min-height: auto; padding: 72px 0 60px; }
 }
 @media (max-width:767px) {
@@ -383,6 +447,9 @@
   .hp-hero-btns .hp-btn { width: 100%; justify-content: center; }
   .hp-who-grid    { grid-template-columns: 1fr 1fr; }
   .hp-steps       { grid-template-columns: 1fr; }
+  .hp-faq-question { padding:17px 16px !important; gap:11px; font-size:.84rem; }
+  .hp-faq-number { width:30px; height:30px; }
+  .hp-faq-answer { padding:0 18px 18px 57px; font-size:.8rem; }
 }
 </style>
 {% endblock extra_css %}
@@ -406,13 +473,14 @@
 
         <h1 class="hp-h1">
           <span data-i18n="hero.h1.1">Smart Attendance,</span><br>
-          <span data-i18n="hero.h1.2" style="color:#fb7185;">HRMS, Payroll</span> &<br>
-          <span data-i18n="hero.h1.3">School Management</span>
+          <span data-i18n="hero.h1.2" style="color:#fb7185;">HRMS & Payroll</span><br>
+          <span data-i18n="hero.h1.3">For Every Organization</span>
         </h1>
 
         <p class="hp-hero-sub" data-i18n="hero.sub">
-          A complete cloud platform for schools, colleges, offices, institutes and multi-branch
-          organizations — from daily attendance to payroll, billing and results in one dashboard.
+          One cloud platform for schools, colleges, hospitals, banks &amp; finance firms, offices,
+          factories and multi-branch organizations of any kind — from daily attendance to payroll,
+          billing and reporting, all in one dashboard.
         </p>
 
         <div class="hp-hero-btns">
@@ -457,7 +525,7 @@
             <div class="spinner-grow text-warning" style="width:.7rem;height:.7rem;" role="status"></div>
           </div>
 
-          <form action="" method="post" onsubmit="document.getElementById('loader').style.display='block'">
+          <form action="" method="post" hx-boost="false" onsubmit="document.getElementById('loader').style.display='block'">
             {% csrf_token %}
             <div class="mb-3">
               <label class="lc-field-label">{{ form.email.label }}</label>
@@ -495,9 +563,9 @@
 <div class="hp-stats-band">
   <div class="container">
     <div class="hp-stats-inner">
-      <div class="hp-stat-item"><div class="hp-stat-val">17+</div><div class="hp-stat-lbl" data-i18n="stats.modules_lbl">System Modules</div></div>
+      <div class="hp-stat-item"><div class="hp-stat-val">20+</div><div class="hp-stat-lbl" data-i18n="stats.modules_lbl">System Modules</div></div>
       <div class="hp-stat-sep"></div>
-      <div class="hp-stat-item"><div class="hp-stat-val">5</div><div class="hp-stat-lbl" data-i18n="stats.methods_lbl">Attendance Methods</div></div>
+      <div class="hp-stat-item"><div class="hp-stat-val">10</div><div class="hp-stat-lbl" data-i18n="stats.methods_lbl">Attendance Methods</div></div>
       <div class="hp-stat-sep"></div>
       <div class="hp-stat-item"><div class="hp-stat-val">100%</div><div class="hp-stat-lbl" data-i18n="stats.cloud_lbl">Cloud Based</div></div>
       <div class="hp-stat-sep"></div>
@@ -704,6 +772,21 @@
       </div>
 
       <div class="hp-feat-card">
+        <div class="fc-icon ic ic-indigo"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <h3>Timesheet Management</h3>
+        <p>Staff log daily work hours per task or project and submit for manager approval — no spreadsheets needed.</p>
+        <ul>
+          <li>Daily or weekly period entry</li>
+          <li>Task / project hour logging</li>
+          <li>Draft, submit &amp; approve flow</li>
+          <li>Admin rejection with comment</li>
+          <li>BS / AD date support</li>
+          <li>Hours summary per period</li>
+          <li>Per-staff permission control</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
         <div class="fc-icon ic ic-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
         <h3 data-i18n="feat.complaint.title">Complaint & Request System</h3>
         <p data-i18n="feat.complaint.desc">Staff and students can file complaints; admins review and resolve with status tracking.</p>
@@ -759,6 +842,221 @@
         </ul>
       </div>
 
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-violet"><i class="fa-solid fa-face-smile"></i></div>
+        <h3 data-i18n="feat.face.title">Face Attendance</h3>
+        <p data-i18n="feat.face.desc">Contactless facial-recognition check-in that runs in the browser — no dedicated hardware to buy.</p>
+        <ul>
+          <li>Recognition runs in the browser</li>
+          <li>Enrol a face from the member photo</li>
+          <li>Any laptop, tablet or phone camera</li>
+          <li>Touch-free — nothing to press or scan</li>
+          <li>Re-enrol or update a face anytime</li>
+          <li>Works alongside QR &amp; biometric</li>
+          <li>Enable or disable per organization</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-teal"><i class="fa-solid fa-map-location-dot"></i></div>
+        <h3 data-i18n="feat.fieldvisit.title">Field Attendance &amp; Visits</h3>
+        <p data-i18n="feat.fieldvisit.desc">Let field staff check in from the client's site and give managers proof of every visit.</p>
+        <ul>
+          <li>GPS check-in from any location</li>
+          <li>Visit linked to a client record</li>
+          <li>Area name &amp; accuracy captured</li>
+          <li>Admin approve / reject workflow</li>
+          <li>Review notes on each visit</li>
+          <li>Visit history per staff member</li>
+          <li>Visit reports for the whole team</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-cyan"><i class="fa-solid fa-location-crosshairs"></i></div>
+        <h3 data-i18n="feat.tracking.title">Live GPS Tracking</h3>
+        <p data-i18n="feat.tracking.desc">See where your field team is during working hours, with an opt-in trail you enable per person.</p>
+        <ul>
+          <li>Enabled per staff member, not by default</li>
+          <li>Live map of the field team</li>
+          <li>Timestamped location trail</li>
+          <li>Route history by date</li>
+          <li>GPS accuracy recorded per ping</li>
+          <li>Pairs with field visit check-ins</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-red"><i class="fa-solid fa-bus"></i></div>
+        <h3 data-i18n="feat.bus.title">Bus &amp; Driver Tracking</h3>
+        <p data-i18n="feat.bus.desc">Live GPS tracking for school/office buses, driver check-in, and student bus-stop assignment — parents and admins see the bus in real time.</p>
+        <ul>
+          <li>Live bus location on a map</li>
+          <li>Driver profile &amp; trip check-in</li>
+          <li>Student-to-bus-stop assignment</li>
+          <li>Per-trip pickup/drop-off status</li>
+          <li>Route &amp; capacity management</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-blue"><i class="fa-solid fa-building"></i></div>
+        <h3 data-i18n="feat.clients.title">Company &amp; Client Management</h3>
+        <p data-i18n="feat.clients.desc">A CRM for the companies you serve — contracts, billing cycles, targets and every follow-up in one place.</p>
+        <ul>
+          <li>Company profile &amp; contact person</li>
+          <li>Contract start, end &amp; billing cycle</li>
+          <li>Next billing date reminders</li>
+          <li>Follow-up log after each visit</li>
+          <li>Monthly &amp; yearly targets</li>
+          <li>Proposals, contracts &amp; documents</li>
+          <li>Status: prospect, active, churned</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-amber"><i class="fa-solid fa-bullhorn"></i></div>
+        <h3 data-i18n="feat.notice.title">Notice Board</h3>
+        <p data-i18n="feat.notice.desc">Publish announcements to exactly the right people, on a schedule, and see who has actually read them.</p>
+        <ul>
+          <li>Send to the whole organization or one person</li>
+          <li>Target a branch, department, section or class</li>
+          <li>Target a course, semester or shift</li>
+          <li>Schedule ahead &amp; set an expiry date</li>
+          <li>Priority: low to urgent</li>
+          <li>Attach a file to any notice</li>
+          <li>Email delivery + read / unread tracking</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-rose"><i class="fa-solid fa-id-badge"></i></div>
+        <h3 data-i18n="feat.idcard.title">ID Card Generation</h3>
+        <p data-i18n="feat.idcard.desc">Design and print professional ID cards for staff and students in-house — no outside printer needed.</p>
+        <ul>
+          <li>6 ready-made designs</li>
+          <li>Vertical &amp; horizontal layouts</li>
+          <li>Separate front &amp; back design</li>
+          <li>QR code and barcode on every card</li>
+          <li>Your own brand colours &amp; logo</li>
+          <li>Photo, blood group, signature, valid-until</li>
+          <li>Print-ready CR80 size, bulk PDF export</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-lime"><i class="fa-solid fa-calendar-check"></i></div>
+        <h3 data-i18n="feat.appointment.title">Appointment Booking</h3>
+        <p data-i18n="feat.appointment.desc">Give visitors, parents or clients a public link to book a slot instead of calling the front desk.</p>
+        <ul>
+          <li>Public booking link per organization</li>
+          <li>Define your own appointment types</li>
+          <li>Set duration &amp; colour per type</li>
+          <li>Visitor books without an account</li>
+          <li>Name, email, phone &amp; message captured</li>
+          <li>Approve, reschedule or decline</li>
+          <li>Internal admin notes per booking</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-orange"><i class="fa-solid fa-list-check"></i></div>
+        <h3 data-i18n="feat.formbuilder.title">Form Builder</h3>
+        <p data-i18n="feat.formbuilder.desc">Build admission forms, surveys and requests yourself and collect clean, structured responses.</p>
+        <ul>
+          <li>Create forms without a developer</li>
+          <li>Shareable public form link</li>
+          <li>Custom fields &amp; success message</li>
+          <li>Responses stored, not emailed into a mess</li>
+          <li>View every submission in the admin</li>
+          <li>Activate or close a form anytime</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-violet"><i class="fa-solid fa-graduation-cap"></i></div>
+        <h3>Academic Hierarchy &amp; Subject Attendance</h3>
+        <p>Organize complete programmes, classes and subjects, then give each teacher access only to the students they actually teach.</p>
+        <ul>
+          <li>Course → classification → section → subject</li>
+          <li>Teacher assignment by subject and section</li>
+          <li>Subject attendance with validated student rosters</li>
+          <li>Daily, monthly and subject-wise reports</li>
+          <li>Nepali and English calendar reporting</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-cyan"><i class="fa-solid fa-calendar-days"></i></div>
+        <h3>Class Routine &amp; Smart Reminders</h3>
+        <p>Build conflict-safe routines and deliver the right timetable to administrators, teachers and students.</p>
+        <ul>
+          <li>Teacher, room and section conflict checks</li>
+          <li>Active and upcoming class reminders</li>
+          <li>Teacher and student dashboard schedules</li>
+          <li>Subject, period, room and time context</li>
+          <li>Routine-linked attendance</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-blue"><i class="fa-solid fa-book-open-reader"></i></div>
+        <h3>Homework &amp; Assignment Workspace</h3>
+        <p>Let teachers publish work for their assigned subjects while students track deadlines and submit from their portal.</p>
+        <ul>
+          <li>Subject and section targeted homework</li>
+          <li>Assignment files and due dates</li>
+          <li>Student online submissions</li>
+          <li>Teacher review and submission tracking</li>
+          <li>Dashboard reminders for pending work</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-rose"><i class="fa-solid fa-square-poll-vertical"></i></div>
+        <h3>Exams, Marks &amp; Student Results</h3>
+        <p>Teachers see only their assigned subject exams, enter marks safely and publish results through the student portal.</p>
+        <ul>
+          <li>Exam and subject mark entry</li>
+          <li>Teacher assignment permission checks</li>
+          <li>Student result portal</li>
+          <li>Class and subject result reports</li>
+          <li>Printable academic records</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-amber"><i class="fa-solid fa-bell"></i></div>
+        <h3>Premium Messages &amp; Notifications</h3>
+        <p>Keep every role informed with one consistent inbox and task-aware notifications across the ERP.</p>
+        <ul>
+          <li>Organization-wide message centre</li>
+          <li>Admin, staff, teacher and student alerts</li>
+          <li>Unread counts and read tracking</li>
+          <li>Action links to the correct workflow</li>
+          <li>Dashboard notification summaries</li>
+        </ul>
+      </div>
+
+      <div class="hp-feat-card">
+        <div class="fc-icon ic ic-teal"><i class="fa-solid fa-boxes-stacked"></i></div>
+        <h3>Suppliers, Purchasing &amp; Accounting</h3>
+        <p>Connect supplier purchases, stock movement and financial records without losing the source of any transaction.</p>
+        <ul>
+          <li>Supplier profiles and purchase invoices</li>
+          <li>Supplier-aware purchase creation</li>
+          <li>Stock receipts, sales and adjustments</li>
+          <li>Income, expense and ledger linkage</li>
+          <li>Source-based audit history</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="text-center mt-5">
+      <a href="{% url 'management:pricing' %}#quotation" class="hp-btn hp-btn-primary">
+        <i class="fa-solid fa-calculator"></i> Build Your Quotation
+      </a>
     </div>
   </div>
 </section>
@@ -858,6 +1156,26 @@
         <h4 data-i18n="dev.mobile.title">Mobile Web App</h4>
         <p data-i18n="dev.mobile.desc">Responsive web dashboard works on any smartphone browser without installation.</p>
       </div>
+      <div class="hp-device-card">
+        <div class="dv-icon"><i class="fa-solid fa-face-smile"></i></div>
+        <h4 data-i18n="dev.face.title">Face Attendance</h4>
+        <p data-i18n="dev.face.desc">Facial recognition runs in the browser on any laptop, tablet or phone camera — no special device.</p>
+      </div>
+      <div class="hp-device-card">
+        <div class="dv-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+        <h4 data-i18n="dev.field.title">Field Attendance</h4>
+        <p data-i18n="dev.field.desc">Field staff check in from the client's site with GPS proof, linked to the visit record.</p>
+      </div>
+      <div class="hp-device-card">
+        <div class="dv-icon"><i class="fa-solid fa-location-crosshairs"></i></div>
+        <h4 data-i18n="dev.tracking.title">Live GPS Tracking</h4>
+        <p data-i18n="dev.tracking.desc">Opt-in location trail for field teams, so managers can see the route behind each visit.</p>
+      </div>
+      <div class="hp-device-card">
+        <div class="dv-icon"><i class="fa-solid fa-download"></i></div>
+        <h4 data-i18n="dev.pwa.title">Installable App (PWA)</h4>
+        <p data-i18n="dev.pwa.desc">Install Mero Attendance to your desktop or home screen — opens in its own window and works offline.</p>
+      </div>
 
     </div>
   </div>
@@ -928,10 +1246,10 @@
   <div class="container">
     <div class="hp-sec-head ctr">
       <div class="hp-badge hp-badge-green"><i class="fa-solid fa-building"></i> <span data-i18n="sec.who.badge">Built For Everyone</span></div>
-      <h2 class="hp-h2" data-i18n="sec.who.h2">Designed for every type of organization</h2>
+      <h2 class="hp-h2" data-i18n="sec.who.h2">One platform. Every kind of organization.</h2>
       <p class="hp-lead" data-i18n="sec.who.lead">
-        Whether you run a single classroom or a multi-campus institution — Mero Attendance
-        adapts to your organization's size and structure.
+        Schools and hospitals, banks and factories, single offices and multi-branch
+        enterprises — Mero Attendance adapts to your organization's size, structure and industry.
       </p>
     </div>
     <div class="hp-who-grid">
@@ -945,8 +1263,12 @@
         <h4 data-i18n="who.colleges">Colleges</h4>
       </div>
       <div class="hp-who-card">
-        <div class="wc-icon ic-green"><i class="fa-solid fa-graduation-cap"></i></div>
-        <h4 data-i18n="who.institutes">Institutes</h4>
+        <div class="wc-icon ic-rose"><i class="fa-solid fa-hospital"></i></div>
+        <h4 data-i18n="who.hospitals">Hospitals &amp; Clinics</h4>
+      </div>
+      <div class="hp-who-card">
+        <div class="wc-icon ic-teal"><i class="fa-solid fa-sack-dollar"></i></div>
+        <h4 data-i18n="who.finance">Banks &amp; Finance Firms</h4>
       </div>
       <div class="hp-who-card">
         <div class="wc-icon ic-violet"><i class="fa-solid fa-building"></i></div>
@@ -954,10 +1276,14 @@
       </div>
       <div class="hp-who-card">
         <div class="wc-icon ic-amber"><i class="fa-solid fa-industry"></i></div>
-        <h4 data-i18n="who.factories">Factories</h4>
+        <h4 data-i18n="who.factories">Factories &amp; Industry</h4>
       </div>
       <div class="hp-who-card">
-        <div class="wc-icon ic-teal"><i class="fa-solid fa-handshake-angle"></i></div>
+        <div class="wc-icon ic-green"><i class="fa-solid fa-graduation-cap"></i></div>
+        <h4 data-i18n="who.institutes">Institutes</h4>
+      </div>
+      <div class="hp-who-card">
+        <div class="wc-icon ic-indigo"><i class="fa-solid fa-handshake-angle"></i></div>
         <h4 data-i18n="who.ngos">NGOs</h4>
       </div>
       <div class="hp-who-card">
@@ -965,7 +1291,7 @@
         <h4 data-i18n="who.multi">Multi-Branch</h4>
       </div>
       <div class="hp-who-card">
-        <div class="wc-icon ic-rose"><i class="fa-solid fa-chalkboard-teacher"></i></div>
+        <div class="wc-icon ic-pink"><i class="fa-solid fa-chalkboard-teacher"></i></div>
         <h4 data-i18n="who.training">Training Centers</h4>
       </div>
       <div class="hp-who-card">
@@ -1054,6 +1380,79 @@
   </div>
 </section>
 
+<!-- ══════════════════════════════════════════════
+     FAQ
+══════════════════════════════════════════════ -->
+{% if faqs %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for faq in faqs %}
+    {
+      "@type": "Question",
+      "name": "{{ faq.question|escapejs }}",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "{{ faq.answer|striptags|escapejs }}"
+      }
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+<section class="hp-sec hp-faq-section" id="faq" aria-labelledby="faq-title">
+  <div class="container">
+    <div class="row g-5 align-items-start">
+      <div class="col-lg-4">
+        <div class="hp-faq-intro">
+          <div class="hp-badge hp-badge-violet"><i class="fa-solid fa-circle-question"></i> Help Center</div>
+          <h2 class="hp-h2" id="faq-title">Questions? We have clear answers.</h2>
+          <p class="hp-lead">Learn how attendance, HRMS, academics, payroll and device integration work before you get started.</p>
+
+          <div class="hp-faq-points" aria-label="Support highlights">
+            <div class="hp-faq-point"><i class="fa-solid fa-check"></i><span>Setup guidance for every organization</span></div>
+            <div class="hp-faq-point"><i class="fa-solid fa-check"></i><span>Role-based access and secure data</span></div>
+            <div class="hp-faq-point"><i class="fa-solid fa-check"></i><span>Local support for Nepali workflows</span></div>
+          </div>
+
+          <div class="hp-faq-help">
+            <div class="hp-faq-help-icon"><i class="fa-solid fa-headset"></i></div>
+            <h3>Still need help?</h3>
+            <p>Tell us about your organization and we will recommend the right setup, member limit and features.</p>
+            <a href="{% url 'management:contact' %}" class="hp-btn hp-btn-red">
+              <i class="fa-solid fa-message"></i> Talk to our team
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-8">
+        <div class="accordion hp-faq-list" id="homeFaqAccordion">
+          {% for faq in faqs %}
+          <div class="accordion-item hp-faq-item">
+            <h3 class="accordion-header" id="homeFaqHeading{{ forloop.counter }}">
+              <button class="accordion-button hp-faq-question {% if not forloop.first %}collapsed{% endif %}" type="button"
+                data-bs-toggle="collapse" data-bs-target="#homeFaq{{ forloop.counter }}"
+                aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
+                aria-controls="homeFaq{{ forloop.counter }}">
+                <span class="hp-faq-number">{{ forloop.counter|stringformat:"02d" }}</span>
+                <span>{{ faq.question }}</span>
+              </button>
+            </h3>
+            <div id="homeFaq{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+              aria-labelledby="homeFaqHeading{{ forloop.counter }}" data-bs-parent="#homeFaqAccordion">
+              <div class="accordion-body hp-faq-answer">{{ faq.answer|linebreaksbr }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
 
 <!-- ══════════════════════════════════════════════
      FINAL CTA

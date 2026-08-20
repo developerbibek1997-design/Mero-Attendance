@@ -1,0 +1,139 @@
+{% if messages %}
+<div class="mero-message-stack" aria-live="polite" aria-atomic="true">
+  {% for message in messages %}
+  <div class="mero-message mero-message--{% if 'error' in message.tags %}danger{% elif 'warning' in message.tags %}warning{% elif 'success' in message.tags %}success{% else %}info{% endif %}"
+       role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}"
+       data-mero-message
+       data-timeout="{% if 'error' in message.tags %}12000{% elif 'warning' in message.tags %}9000{% else %}6500{% endif %}">
+    <div class="mero-message__icon" aria-hidden="true">
+      <i class="fas {% if 'error' in message.tags %}fa-circle-xmark{% elif 'warning' in message.tags %}fa-triangle-exclamation{% elif 'success' in message.tags %}fa-circle-check{% else %}fa-circle-info{% endif %}"></i>
+    </div>
+    <div class="mero-message__content">
+      <div class="mero-message__title">
+        {% if 'error' in message.tags %}Action needed{% elif 'warning' in message.tags %}Please check{% elif 'success' in message.tags %}Completed{% else %}Information{% endif %}
+      </div>
+      <div class="mero-message__body">{{ message }}</div>
+    </div>
+    <button class="mero-message__close" type="button" data-mero-message-close aria-label="Dismiss message">
+      <i class="fas fa-xmark" aria-hidden="true"></i>
+    </button>
+    <span class="mero-message__progress" aria-hidden="true"></span>
+  </div>
+  {% endfor %}
+</div>
+
+<style>
+  .mero-message-stack {
+    position: fixed;
+    z-index: 1095;
+    top: 1rem;
+    right: 1rem;
+    width: min(420px, calc(100vw - 2rem));
+    display: grid;
+    gap: .75rem;
+    pointer-events: none;
+  }
+  .mero-message {
+    --mero-accent: #2563eb;
+    --mero-soft: #eff6ff;
+    position: relative;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 32px;
+    gap: .8rem;
+    align-items: start;
+    overflow: hidden;
+    padding: .95rem .85rem .95rem .95rem;
+    border: 1px solid rgba(15, 23, 42, .08);
+    border-left: 4px solid var(--mero-accent);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .97);
+    box-shadow: 0 22px 55px rgba(15, 23, 42, .2);
+    backdrop-filter: blur(18px);
+    pointer-events: auto;
+    animation: mero-message-in .28s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  .mero-message--success { --mero-accent: #059669; --mero-soft: #ecfdf5; }
+  .mero-message--danger { --mero-accent: #e11d48; --mero-soft: #fff1f2; }
+  .mero-message--warning { --mero-accent: #d97706; --mero-soft: #fffbeb; }
+  .mero-message__icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    color: var(--mero-accent);
+    background: var(--mero-soft);
+    font-size: 1.05rem;
+  }
+  .mero-message__title {
+    color: #0f172a;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .025em;
+    text-transform: uppercase;
+  }
+  .mero-message__body {
+    margin-top: .18rem;
+    color: #475569;
+    font-size: .88rem;
+    font-weight: 600;
+    line-height: 1.42;
+    overflow-wrap: anywhere;
+  }
+  .mero-message__close {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 9px;
+    color: #94a3b8;
+    background: transparent;
+  }
+  .mero-message__close:hover { color: #0f172a; background: #f1f5f9; }
+  .mero-message__progress {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--mero-accent);
+    transform-origin: left;
+    animation: mero-message-progress var(--mero-timeout) linear forwards;
+  }
+  .mero-message.is-leaving { animation: mero-message-out .2s ease both; }
+  @keyframes mero-message-in {
+    from { opacity: 0; transform: translate3d(24px, -8px, 0) scale(.98); }
+    to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  }
+  @keyframes mero-message-out {
+    to { opacity: 0; transform: translate3d(20px, 0, 0) scale(.98); }
+  }
+  @keyframes mero-message-progress { to { transform: scaleX(0); } }
+  @media (max-width: 575.98px) {
+    .mero-message-stack { top: .65rem; right: .65rem; width: calc(100vw - 1.3rem); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mero-message, .mero-message__progress { animation: none; }
+  }
+</style>
+
+<script>
+  (function () {
+    document.querySelectorAll('[data-mero-message]:not([data-ready])').forEach(function (item) {
+      item.setAttribute('data-ready', '1');
+      var timeout = Number(item.getAttribute('data-timeout')) || 6500;
+      item.style.setProperty('--mero-timeout', timeout + 'ms');
+      var close = function () {
+        if (!item.isConnected || item.classList.contains('is-leaving')) return;
+        item.classList.add('is-leaving');
+        window.setTimeout(function () { item.remove(); }, 220);
+      };
+      var button = item.querySelector('[data-mero-message-close]');
+      if (button) button.addEventListener('click', close);
+      window.setTimeout(close, timeout);
+    });
+  })();
+</script>
+{% endif %}

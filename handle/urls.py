@@ -1,5 +1,6 @@
 
 from django.urls import path
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from .import rough
 from .import views
@@ -10,25 +11,40 @@ from .api_mobile import *
 app_name = 'handle'
 
 urlpatterns = [
+    path('notifications/', views.PremiumNotificationListView.as_view(), name='notifications'),
+    path('notifications/<int:pk>/open/', views.open_notification, name='open_notification'),
+    path('notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('print-preferences/<str:report_key>/', views.save_print_preference, name='save_print_preference'),
+    path('org-print-defaults/<str:report_key>/', views.save_org_print_default, name='save_org_print_default'),
     path('addMember', views.AddMember.as_view(), name="addMember"),
+    path('members/import/', views.MemberImport.as_view(), name="member_import"),
+    path('members/import/sample/', views.member_import_sample, name="member_import_sample"),
     path('addClassfication', views.AddClassification.as_view(), name="addClassification"),
     path('addDevice', views.AddDevice.as_view(), name="addDevice"),
     path('operations/', views.OperationsCenter.as_view(), name="operations"),
     path('search', views.Search.as_view(), name="search"),
+    path('search/suggestions/', views.member_search_suggestions, name='member_search_suggestions'),
     path('memberReport', views.MemberReport.as_view(), name="memberReport"),
     path('editDevice/<int:id>', views.editDevice, name="editDevice"),
     path('deleteDevice/<int:id>', views.deleteDevice, name ="deleteDevice"),
     path('memberEdit/<int:id>', views.memberEdit, name = "memberEdit"),
     path("deleteMember/<int:id>",views.deleteMember, name ="deleteMember"),
+    path("rejoinMember/<int:id>", views.rejoinMember, name="rejoinMember"),
+    path('memberDocument/<int:id>/delete', views.deleteMemberDocument, name="deleteMemberDocument"),
     path('editClassification/<int:id>', views.editClassification, name="editClassification"),
     path('deleteClassification/<int:id>', views.deleteClassification, name="deleteClassification"),
     path('sections-by-classification/', views.sections_by_classification, name="sectionsByClassification"),
+    path('classifications-by-branch/', views.classifications_by_branch, name="classificationsByBranch"),
+    path('default-shift/', views.default_shift_for_selection, name="defaultShiftForSelection"),
+    path('branch-tree/', views.BranchHierarchyTree.as_view(), name="branchTree"),
+    path('hierarchy-tree-children/', views.hierarchy_tree_children, name="hierarchyTreeChildren"),
     path('changePassword', views.changePassword, name = "changePassword"),
 
   
     path('api-org/', OrgListCreateAPIView.as_view(), name='org-data'),
     path('api-org/<int:pk>', OrgDetailAPIView.as_view(), name='org-details'),
     path('api-login/', LoginAPIView.as_view(), name='login'),
+    path('api-token-refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     path('api-register/', RegisterAPIView.as_view(), name='register'),
     path('api-change-password/', ChangePasswordAPIView.as_view(), name='change-password'),
     path('api-password-reset/', PasswordResetRequestAPIView.as_view(), name='password-reset'),

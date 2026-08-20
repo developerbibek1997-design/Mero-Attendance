@@ -1,0 +1,24 @@
+{% load static %}
+<div class="idc-card-pair">
+  <div class="idc-card-label">Front</div>
+  <div class="idc-card idc-mc" style="background:#fff;{% if template.front_background %}background-image:url('{{ template.front_background.url }}');{% endif %}">
+    <div class="idc-mc-header" style="background:{{ template.primary_color }};">
+      {% if template.show_logo and org.image %}<img class="idc-org-logo" src="{{ org.image.url }}">{% endif %}
+      {% if template.show_org_name %}<div class="idc-org-name" style="color:#fff;">{{ org.name }}</div>{% endif %}
+    </div>
+    <div class="idc-mc-body">
+      {% if template.show_photo %}
+        {% if m.photo %}<img class="idc-photo" src="{{ m.photo.url }}">{% else %}<div class="idc-photo d-flex align-items-center justify-content-center text-muted"><i class="fas fa-user"></i></div>{% endif %}
+      {% endif %}
+      <div class="idc-name" style="color:{{ template.primary_color }};">{{ m.name }}</div>
+      <div class="idc-fields">{% include "admin/idcard/designs/_fields.html" %}</div>
+    </div>
+    <div class="idc-mc-stripe" style="background:{{ template.secondary_color }};"></div>
+  </div>
+
+  <div class="idc-card-label">Back</div>
+  <div class="idc-card idc-mc idc-back" style="{% if template.back_background %}background-image:url('{{ template.back_background.url }}');{% endif %}">
+    <div class="idc-mc-header" style="background:{{ template.primary_color }};height:8mm;"></div>
+    {% include "admin/idcard/designs/_back_common.html" %}
+  </div>
+</div>

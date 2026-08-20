@@ -3,9 +3,6 @@
 {% block title %}Calendar | {{ org.name }}{% endblock %}
 
 {% block content %}
-<!-- FullCalendar CDN -->
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
 <style>
 .fc .fc-toolbar-title { font-size: 1.1rem; font-weight: 700; }
@@ -19,6 +16,26 @@
 .fc-daygrid-day-number { font-size:.85rem; }
 /* Nepali date overlay */
 .np-overlay { font-size:.65rem; color:#9ca3af; text-align:center; }
+
+/* ── BS-native calendar grid ── */
+.view-toggle-group { background:rgba(255,255,255,.15); border-radius:8px; padding:3px; display:inline-flex; gap:2px; }
+.view-toggle-btn { border:none; background:transparent; color:#fff; opacity:.7; font-size:.78rem; font-weight:700; padding:.35rem .8rem; border-radius:6px; cursor:pointer; transition:background .15s, opacity .15s; }
+.view-toggle-btn.active { background:#fff; color:#1e3a5f; opacity:1; }
+.bs-cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
+.bs-cal-title { font-weight:700; font-size:1.1rem; color:#1e293b; }
+.bs-cal-nav-btn { width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#334155; font-size:1.1rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:background .15s; }
+.bs-cal-nav-btn:hover { background:#f1f5f9; }
+.bs-cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.bs-cal-dow { text-align:center; font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:#64748b; padding:.4rem 0; }
+.bs-cal-day { min-height:84px; border:1px solid #eef2f7; border-radius:8px; padding:6px; cursor:pointer; transition:background .12s, border-color .12s; position:relative; }
+.bs-cal-day:hover { background:#eff6ff; border-color:#bfdbfe; }
+.bs-cal-day.is-empty { background:#fafafa; cursor:default; border-color:transparent; }
+.bs-cal-day.is-today { border-color:#3b82f6; border-width:2px; }
+.bs-cal-day-num { font-weight:700; font-size:.9rem; color:#1e293b; }
+.bs-cal-ad-sub { font-size:.62rem; color:#9ca3af; }
+.bs-cal-events { display:flex; flex-direction:column; gap:2px; margin-top:4px; }
+.bs-cal-event-pill { font-size:.62rem; padding:1px 5px; border-radius:4px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bs-cal-more { font-size:.6rem; color:#64748b; font-weight:700; }
 </style>
 
 <div class="container-fluid py-3">
@@ -33,10 +50,14 @@
       <div class="d-flex gap-2 align-items-center flex-wrap">
         {% if nepali_enabled %}
         <span class="badge bg-warning text-dark"><i class="fas fa-calendar me-1"></i>BS Mode</span>
+        <div class="view-toggle-group">
+          <button type="button" class="view-toggle-btn active" id="viewToggleBs">BS Calendar</button>
+          <button type="button" class="view-toggle-btn" id="viewToggleAd">AD Calendar</button>
+        </div>
         {% endif %}
         <button class="btn btn-sm btn-light" id="addHolidayBtn"><i class="fas fa-umbrella-beach me-1"></i>Add Holiday</button>
         <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" id="addOccasionBtn"><i class="fas fa-star me-1"></i>Add Occasion</button>
-        <button class="btn btn-sm" style="background:#3b82f6;color:#fff;" id="addEventBtn"><i class="fas fa-plus me-1"></i>Add Event</button>
+        <button class="btn btn-sm" style="background:#20324e;color:#fff;" id="addEventBtn"><i class="fas fa-plus me-1"></i>Add Event</button>
       </div>
     </div>
   </div>
@@ -56,7 +77,20 @@
   <!-- Calendar -->
   <div class="card shadow-sm">
     <div class="card-body p-3">
-      <div id="calendar"></div>
+      {% if nepali_enabled %}
+      <div id="bsCalendarWrap">
+        <div class="bs-cal-header">
+          <button type="button" class="bs-cal-nav-btn" id="bsCalPrev" aria-label="Previous month">&lsaquo;</button>
+          <div class="d-flex align-items-center gap-2">
+            <span class="bs-cal-title" id="bsCalTitle">Baisakh 2082</span>
+            <button type="button" class="btn btn-xs btn-outline-secondary" id="bsCalToday" style="font-size:.7rem;">Today</button>
+          </div>
+          <button type="button" class="bs-cal-nav-btn" id="bsCalNext" aria-label="Next month">&rsaquo;</button>
+        </div>
+        <div class="bs-cal-grid" id="bsCalGrid"></div>
+      </div>
+      {% endif %}
+      <div id="calendar" {% if nepali_enabled %}style="display:none;"{% endif %}></div>
     </div>
   </div>
 
@@ -145,37 +179,38 @@ let currentAddType = 'event';
 let currentDeleteType = null;
 let currentDeletePk   = null;
 
-// ── Nepali Date Conversion (BS→AD) via lookup table ──────────────────
-// Uses fetch to a simple proxy (Python side handles it) OR inline JS approximation.
-// For simplicity, we ship a client-side BS→AD converter based on known month lengths.
-
-const BS_MONTH_DATA = {
-  // [year]: [days in each month Baisakh–Chaitra]
-  2079:[31,32,31,32,31,30,30,30,29,30,29,31],
-  2080:[31,32,31,32,31,30,30,30,29,30,29,31],
-  2081:[31,31,32,32,31,30,30,30,29,30,29,31],
-  2082:[31,32,31,32,31,30,30,30,29,30,29,31],
-  2083:[31,31,32,31,31,31,30,29,30,29,30,30],
-};
-const BS_START_AD = new Date(2022, 3, 14); // 2079 Baisakh 1 = 2022 Apr 14
+// ── Nepali Date Conversion ─────────────────────────────────────────────
+// BS<->AD math (and the underlying month-length table) now lives in exactly
+// one place, static/assets/js/global-date-picker.js's window.NepaliDate,
+// loaded globally by dashboard.html. This page used to keep its own smaller,
+// separately-hand-maintained copy of that table (only 2075-2092, plus a
+// backward-year loop that silently produced garbage dates for any BS year
+// below 2079) - that's why old dates like a 2054 birthday could render on
+// the wrong weekday here even after the picker elsewhere was fixed. These
+// are thin wrappers so the rest of this file's code (bs.d/bs.m/bs.y, etc.)
+// doesn't need to change.
+const NP_MONTHS = ['वैशाख','जेठ','असार','साउन','भदौ','असोज','कार्तिक','मंसिर','पुस','माघ','फागुन','चैत्र'];
 
 function bsToAd(bsY, bsM, bsD) {
-  // Count total BS days from 2079/01/01
-  let days = 0;
-  for (let y = 2079; y < bsY; y++) {
-    const md = BS_MONTH_DATA[y] || [31,31,32,32,31,31,30,30,29,30,29,31];
-    days += md.reduce((a,b)=>a+b,0);
-  }
-  const months = BS_MONTH_DATA[bsY] || [31,31,32,32,31,31,30,30,29,30,29,31];
-  for (let m = 1; m < bsM; m++) days += months[m-1];
-  days += bsD - 1;
-  const ad = new Date(BS_START_AD);
-  ad.setDate(ad.getDate() + days);
-  return ad;
+  return window.NepaliDate.toAdDate(bsY, bsM, bsD);
+}
+
+function adToBs(adDate) {
+  const bs = window.NepaliDate.toBs(adDate);
+  return bs ? { y: bs.year, m: bs.month, d: bs.day } : null;
 }
 
 function adToIso(d) {
-  return d.toISOString().split('T')[0];
+  // NOTE: never use d.toISOString() here - it converts to UTC, and Nepal is
+  // UTC+5:45, so a local midnight Date shifts back to the PREVIOUS day once
+  // serialized that way (this was the root cause of "today" highlighting the
+  // wrong cell and off-by-one BS dates throughout this page). Use local
+  // getters instead so the calendar date we display is the calendar date we
+  // compare/store.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function npInputToAd(npStr) {
@@ -186,23 +221,155 @@ function npInputToAd(npStr) {
   return null;
 }
 
-// Wire up BS start input
-{% if nepali_enabled %}
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('addStartNp').addEventListener('blur', function() {
-    const ad = npInputToAd(this.value);
-    if (ad) document.getElementById('addStart').value = ad;
-  });
-  document.getElementById('addEndNp').addEventListener('blur', function() {
-    const ad = npInputToAd(this.value);
-    if (ad) document.getElementById('addEnd').value = ad;
-  });
-});
-{% endif %}
+// ── BS-native calendar grid ────────────────────────────────────────────
+let bsCalView = null;        // { y, m } currently displayed BS month
+let bsEventsByDate = null;   // AD ISO date string -> [events]
+let bsEventsLoading = null;  // in-flight fetch promise (dedupe)
 
-// ── FullCalendar ─────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function () {
+function bsMonthLen(y, m) {
+  return window.NepaliDate.monthLength(y, m);
+}
+
+function loadBsEvents() {
+  if (bsEventsLoading) return bsEventsLoading;
+  bsEventsLoading = fetch(EVENTS_URL)
+    .then(r => r.json())
+    .then(events => {
+      const map = {};
+      events.forEach(ev => {
+        if (!ev.start) return; // dateless legacy entries (old Holiday rows) - skip safely
+        let cur = new Date(ev.start + 'T00:00:00');
+        const endExclusive = ev.end ? new Date(ev.end + 'T00:00:00') : new Date(cur.getTime() + 86400000);
+        while (cur < endExclusive) {
+          const key = adToIso(cur);
+          (map[key] = map[key] || []).push(ev);
+          cur = new Date(cur.getTime() + 86400000);
+        }
+      });
+      bsEventsByDate = map;
+      return map;
+    })
+    .catch(() => { bsEventsByDate = {}; return {}; })
+    .finally(() => { bsEventsLoading = null; });
+  return bsEventsLoading;
+}
+
+function renderBsCalendarGrid() {
+  if (!bsCalView || !bsEventsByDate) return;
+  const { y, m } = bsCalView;
+  document.getElementById('bsCalTitle').textContent = `${NP_MONTHS[m-1]} ${y}`;
+
+  const firstAd = bsToAd(y, m, 1);
+  const startDow = firstAd.getDay(); // 0=Sun
+  const monthLen = bsMonthLen(y, m);
+  const todayIso = adToIso(new Date());
+
+  const dowRow = ['Su','Mo','Tu','We','Th','Fr','Sa']
+    .map(d => `<div class="bs-cal-dow">${d}</div>`).join('');
+
+  let cells = '';
+  for (let i = 0; i < startDow; i++) cells += '<div class="bs-cal-day is-empty"></div>';
+
+  for (let d = 1; d <= monthLen; d++) {
+    const adDate = bsToAd(y, m, d);
+    const adIso = adToIso(adDate);
+    const isToday = adIso === todayIso;
+    const dayEvents = bsEventsByDate[adIso] || [];
+    let pillsHtml = '';
+    dayEvents.slice(0, 3).forEach(ev => {
+      pillsHtml += `<div class="bs-cal-event-pill" style="background:${ev.color || '#6b7280'};" data-ev-type="${ev.extendedProps.type}" data-ev-pk="${ev.extendedProps.pk}" data-ev-title="${(ev.title||'').replace(/"/g,'&quot;')}" data-ev-start="${ev.start||''}" data-ev-end="${ev.end||''}" data-ev-cat="${ev.extendedProps.event_type||''}" data-ev-status="${ev.extendedProps.status||''}">${ev.title}</div>`;
+    });
+    if (dayEvents.length > 3) pillsHtml += `<div class="bs-cal-more">+${dayEvents.length - 3} more</div>`;
+
+    cells += `<div class="bs-cal-day${isToday ? ' is-today' : ''}" data-bs-y="${y}" data-bs-m="${m}" data-bs-d="${d}" data-ad-iso="${adIso}">
+      <div class="bs-cal-day-num">${d}</div>
+      <div class="bs-cal-ad-sub">${adDate.getDate()} ${adDate.toLocaleString('en-US',{month:'short'})}</div>
+      <div class="bs-cal-events">${pillsHtml}</div>
+    </div>`;
+  }
+
+  document.getElementById('bsCalGrid').innerHTML = dowRow + cells;
+}
+
+function refreshBsCalendar() {
+  loadBsEvents().then(renderBsCalendarGrid);
+}
+
+function initBsCalendar() {
+  const today = adToBs(new Date());
+  bsCalView = { y: today.y, m: today.m };
+  refreshBsCalendar();
+
+  document.getElementById('bsCalPrev').addEventListener('click', () => {
+    let { y, m } = bsCalView;
+    m -= 1; if (m < 1) { m = 12; y -= 1; }
+    bsCalView = { y, m };
+    renderBsCalendarGrid();
+  });
+  document.getElementById('bsCalNext').addEventListener('click', () => {
+    let { y, m } = bsCalView;
+    m += 1; if (m > 12) { m = 1; y += 1; }
+    bsCalView = { y, m };
+    renderBsCalendarGrid();
+  });
+  document.getElementById('bsCalToday').addEventListener('click', () => {
+    const t = adToBs(new Date());
+    bsCalView = { y: t.y, m: t.m };
+    renderBsCalendarGrid();
+  });
+
+  document.getElementById('bsCalGrid').addEventListener('click', function(e) {
+    const pill = e.target.closest('.bs-cal-event-pill');
+    if (pill) {
+      currentDeleteType = pill.dataset.evType;
+      currentDeletePk   = pill.dataset.evPk;
+      document.getElementById('viewModalTitle').textContent = pill.dataset.evTitle;
+      let body = `<strong>Type:</strong> ${pill.dataset.evType}`;
+      if (pill.dataset.evStart) body += `<br><strong>Start:</strong> ${pill.dataset.evStart}`;
+      if (pill.dataset.evEnd)   body += `<br><strong>End:</strong> ${pill.dataset.evEnd}`;
+      if (pill.dataset.evCat)    body += `<br><strong>Category:</strong> ${pill.dataset.evCat}`;
+      if (pill.dataset.evStatus) body += `<br><strong>Status:</strong> ${pill.dataset.evStatus}`;
+      document.getElementById('viewModalBody').innerHTML = body;
+      new bootstrap.Modal(document.getElementById('viewModal')).show();
+      e.stopPropagation();
+      return;
+    }
+    const cell = e.target.closest('.bs-cal-day:not(.is-empty)');
+    if (cell) {
+      const bsStr = `${cell.dataset.bsY}-${String(cell.dataset.bsM).padStart(2,'0')}-${String(cell.dataset.bsD).padStart(2,'0')}`;
+      openAddModal('event', cell.dataset.adIso, bsStr);
+    }
+  });
+}
+
+function setCalendarView(mode) {
+  const bsWrap = document.getElementById('bsCalendarWrap');
+  const adWrap = document.getElementById('calendar');
+  const bsBtn = document.getElementById('viewToggleBs');
+  const adBtn = document.getElementById('viewToggleAd');
+  if (mode === 'bs') {
+    bsWrap.style.display = '';
+    adWrap.style.display = 'none';
+    bsBtn.classList.add('active');
+    adBtn.classList.remove('active');
+    if (!bsCalView) initBsCalendar(); else refreshBsCalendar();
+  } else {
+    bsWrap.style.display = 'none';
+    adWrap.style.display = '';
+    adBtn.classList.add('active');
+    bsBtn.classList.remove('active');
+    if (window._calendar) setTimeout(() => window._calendar.updateSize(), 50);
+  }
+}
+
+// ── FullCalendar initializer ─────────────────────────────────────────
+function initCalendarPage() {
   const calEl = document.getElementById('calendar');
+  if (!calEl) return;
+
+  // Destroy previous instance if navigating back
+  if (calEl._fcApi) { try { calEl._fcApi.destroy(); } catch(e){} }
+
   const calendar = new FullCalendar.Calendar(calEl, {
     initialView: 'dayGridMonth',
     height: 'auto',
@@ -212,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function () {
       right: 'dayGridMonth,dayGridWeek,listMonth'
     },
     buttonText: { today:'Today', month:'Month', week:'Week', list:'List' },
-    events: EVENTS_URL,
+    events: { url: EVENTS_URL, failure: function() {} },
     eventClick: function(info) {
       const ep = info.event.extendedProps;
       currentDeleteType = ep.type;
@@ -226,38 +393,81 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('viewModalBody').innerHTML = body;
       new bootstrap.Modal(document.getElementById('viewModal')).show();
     },
-    dateClick: function(info) {
-      openAddModal('event', info.dateStr);
-    },
+    dateClick: function(info) { openAddModal('event', info.dateStr); },
     {% if nepali_enabled %}
     dayCellContent: function(arg) {
-      // Add BS date below AD date
-      const adDate = arg.date;
-      try {
-        // rough approximation: count days from 2022-04-14
-        const base = new Date(2022, 3, 14);
-        const diff = Math.round((adDate - base) / 86400000);
-        // We'll show placeholder — server will actually render this
-        return { html: `<div class="fc-daygrid-day-number">${arg.dayNumberText}</div>` };
-      } catch(e) {
-        return { html: `<div class="fc-daygrid-day-number">${arg.dayNumberText}</div>` };
+      const bs = adToBs(arg.date);
+      let html = `<div class="fc-daygrid-day-number">${arg.dayNumberText}</div>`;
+      if (bs) {
+        const label = bs.d === 1 ? `${bs.d} ${NP_MONTHS[bs.m-1]}` : `${bs.d}`;
+        html += `<div class="np-overlay">${label}</div>`;
       }
+      return { html };
     },
     {% endif %}
   });
   calendar.render();
+  calEl._fcApi = calendar;
   window._calendar = calendar;
+  // Force size recalc after layout settles (fixes rendering in HTMX swapped content)
+  setTimeout(() => calendar.updateSize(), 50);
+
+  // Wire up BS inputs
+  {% if nepali_enabled %}
+  const startNp = document.getElementById('addStartNp');
+  const endNp   = document.getElementById('addEndNp');
+  if (startNp) startNp.addEventListener('blur', function() {
+    const ad = npInputToAd(this.value);
+    if (ad) document.getElementById('addStart').value = ad;
+  });
+  if (endNp) endNp.addEventListener('blur', function() {
+    const ad = npInputToAd(this.value);
+    if (ad) document.getElementById('addEnd').value = ad;
+  });
+
+  // View toggle - default to BS calendar
+  const bsBtn = document.getElementById('viewToggleBs');
+  const adBtn = document.getElementById('viewToggleAd');
+  if (bsBtn && adBtn && !bsBtn._wired) {
+    bsBtn._wired = true;
+    bsBtn.addEventListener('click', () => setCalendarView('bs'));
+    adBtn.addEventListener('click', () => setCalendarView('ad'));
+  }
+  if (!bsCalView) initBsCalendar();
+  {% endif %}
+}
+
+// Poll until FullCalendar is ready then init (handles async CDN load + HTMX timing)
+(function tryInit(attempts) {
+  if (attempts > 50) return; // give up after ~5s
+  if (typeof FullCalendar !== 'undefined' && document.getElementById('calendar')) {
+    initCalendarPage();
+  } else if (document.getElementById('calendar')) {
+    setTimeout(function() { tryInit(attempts + 1); }, 100);
+  }
+})(0);
+
+// Re-init on HTMX navigation (htmx:afterSettle fires after scripts are processed)
+document.addEventListener('htmx:afterSettle', function() {
+  if (document.getElementById('calendar') && !document.getElementById('calendar')._fcApi) {
+    initCalendarPage();
+  }
 });
 
 // ── Add Modal helpers ─────────────────────────────────────────────────
-function openAddModal(type, dateStr) {
+function openAddModal(type, dateStr, npStr) {
   currentAddType = type;
   document.getElementById('addTitle').value = '';
   document.getElementById('addStart').value = dateStr || '';
   document.getElementById('addEnd').value   = dateStr || '';
   {% if nepali_enabled %}
-  document.getElementById('addStartNp').value = '';
-  document.getElementById('addEndNp').value   = '';
+  let prefillNp = npStr || '';
+  if (!prefillNp && dateStr) {
+    const b = adToBs(new Date(dateStr + 'T00:00:00'));
+    if (b) prefillNp = `${b.y}-${String(b.m).padStart(2,'0')}-${String(b.d).padStart(2,'0')}`;
+  }
+  document.getElementById('addStartNp').value = prefillNp;
+  document.getElementById('addEndNp').value   = prefillNp;
   {% endif %}
 
   const titleMap = { holiday:'Add Holiday', occasion:'Add Occasion / Gap', event:'Add Event' };
@@ -291,6 +501,8 @@ document.getElementById('addSaveBtn').addEventListener('click', function() {
     if (data.ok) {
       bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
       window._calendar.refetchEvents();
+      bsEventsByDate = null;
+      if (bsCalView) refreshBsCalendar();
     } else {
       alert(data.error || 'Error saving.');
     }
@@ -310,6 +522,8 @@ document.getElementById('deleteEventBtn').addEventListener('click', function() {
     if (data.ok) {
       bootstrap.Modal.getInstance(document.getElementById('viewModal')).hide();
       window._calendar.refetchEvents();
+      bsEventsByDate = null;
+      if (bsCalView) refreshBsCalendar();
     }
   });
 });

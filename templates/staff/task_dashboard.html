@@ -1,0 +1,39 @@
+{% extends 'dashboard.html' %}
+{% block title %}Task Dashboard | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 class="fw-bold mb-0" style="color:#1e293b;">Task Dashboard</h4>
+    <a href="{% url 'staff:task_list' %}" class="btn btn-outline-primary btn-sm">View All Tasks</a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-2"><div class="card border-0 shadow-sm text-center p-3"><small class="text-muted">Total</small><h5 class="mb-0">{{ total }}</h5></div></div>
+    <div class="col-6 col-md-2"><div class="card border-0 shadow-sm text-center p-3"><small class="text-muted">Pending</small><h5 class="mb-0">{{ pending }}</h5></div></div>
+    <div class="col-6 col-md-2"><div class="card border-0 shadow-sm text-center p-3"><small class="text-primary">In Progress</small><h5 class="mb-0 text-primary">{{ in_progress }}</h5></div></div>
+    <div class="col-6 col-md-2"><div class="card border-0 shadow-sm text-center p-3"><small class="text-success">Completed</small><h5 class="mb-0 text-success">{{ completed }}</h5></div></div>
+    <div class="col-6 col-md-2"><div class="card border-0 shadow-sm text-center p-3"><small class="text-danger">Overdue</small><h5 class="mb-0 text-danger">{{ overdue }}</h5></div></div>
+    <div class="col-6 col-md-2"><div class="card border-0 shadow-sm text-center p-3"><small class="text-warning">Pending Approval</small><h5 class="mb-0 text-warning">{{ pending_approval }}</h5></div></div>
+  </div>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 fw-bold">Due Today</h6></div>
+    <div class="card-body p-0">
+      <table class="table mb-0 align-items-center">
+        <tbody>
+          {% for t in today_tasks %}
+          <tr>
+            <td class="ps-4 text-sm"><a href="{% url 'staff:task_detail' t.task.id %}">{{ t.task.title }}</a></td>
+            <td class="text-sm text-muted">{{ t.assigned_member.name }}</td>
+            <td class="text-sm text-end pe-4"><span class="badge bg-secondary text-uppercase">{{ t.status }}</span></td>
+          </tr>
+          {% empty %}
+          <tr><td class="text-center py-4 text-muted">Nothing due today.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

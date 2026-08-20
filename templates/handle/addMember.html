@@ -15,48 +15,69 @@
 /* ── Page shell ─────────────────────────────────────── */
 .wiz-page{background:var(--wiz-bg);min-height:100vh;padding-bottom:3rem;}
 
-/* ── Hero strip ─────────────────────────────────────── */
+/* ── Header strip ───────────────────────────────────── */
 .wiz-hero{
-  background:linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#7f1d1d 100%);
-  padding:2rem 2rem 4.5rem;position:relative;overflow:hidden;
+  padding:1.5rem 2rem 1rem;
 }
-.wiz-hero::before{
-  content:'';position:absolute;inset:0;
-  background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M0 0h20v20H0zM20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E");
+.wiz-hero-title{color:var(--wiz-ink);font-size:1.35rem;font-weight:800;margin:0;letter-spacing:-.3px;line-height:1.2;}
+.wiz-hero-sub{color:var(--wiz-muted);font-size:.82rem;margin:.35rem 0 0;}
+.wiz-hero-actions{display:flex;gap:.5rem;flex-wrap:wrap;}
+.wiz-hero-btn{
+  display:inline-flex;align-items:center;gap:.4rem;
+  padding:.42rem .95rem;border-radius:8px;font-size:.78rem;font-weight:600;
+  text-decoration:none;transition:all .15s;
 }
-.wiz-hero-title{color:#fff;font-size:1.55rem;font-weight:800;margin:0;letter-spacing:-.4px;}
-.wiz-hero-sub{color:#94a3b8;font-size:.85rem;margin:.3rem 0 0;}
+.wiz-hero-btn-green{background:#16a34a;color:#fff;border:none;}
+.wiz-hero-btn-green:hover{background:#15803d;color:#fff;}
+.wiz-hero-btn-ghost{background:#fff;color:var(--wiz-slate);border:1px solid var(--wiz-border);}
+.wiz-hero-btn-ghost:hover{background:#f8fafc;color:var(--wiz-slate);}
 
-/* ── Progress card (floats over hero) ──────────────── */
+/* ── Progress card ───────────────────────────────────── */
 .wiz-progress-card{
-  margin:-3rem 2rem 0;background:#fff;
-  border-radius:18px;box-shadow:0 8px 32px rgba(0,0,0,.12);
-  border:1px solid rgba(255,255,255,.9);
-  padding:1.6rem 2rem;
+  margin:0 2rem;background:#fff;
+  border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.05);
+  border:1px solid var(--wiz-border);
+  padding:1.25rem 1.5rem 1rem;
 }
+.wiz-progress-label{
+  font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--wiz-muted);margin-bottom:.9rem;display:flex;align-items:center;justify-content:space-between;
+}
+.wiz-progress-bar-outer{height:4px;background:#f1f5f9;border-radius:99px;margin-bottom:1.25rem;overflow:hidden;}
+.wiz-progress-bar-inner{height:100%;background:linear-gradient(90deg,var(--accent),#2563eb);border-radius:99px;transition:width .35s ease;}
 
 /* ── Step indicators ────────────────────────────────── */
 .wiz-steps{display:flex;align-items:flex-start;gap:0;position:relative;}
 .wiz-steps::before{
-  content:'';position:absolute;top:18px;left:18px;
-  right:18px;height:2px;background:var(--wiz-border);z-index:0;
+  content:'';position:absolute;top:17px;left:17px;
+  right:17px;height:2px;background:var(--wiz-border);z-index:0;
 }
 .wiz-step{
   flex:1;display:flex;flex-direction:column;align-items:center;
-  position:relative;z-index:1;cursor:pointer;gap:.5rem;
+  position:relative;z-index:1;cursor:pointer;gap:.4rem;
 }
 .wiz-step-dot{
-  width:36px;height:36px;border-radius:50%;
+  width:34px;height:34px;border-radius:50%;
   border:2px solid var(--wiz-border);background:#fff;
   display:flex;align-items:center;justify-content:center;
-  font-size:.75rem;font-weight:800;color:var(--wiz-muted);
+  font-size:.7rem;font-weight:800;color:var(--wiz-muted);
   transition:all .25s;
 }
 .wiz-step.done .wiz-step-dot{background:var(--wiz-green);border-color:var(--wiz-green);color:#fff;}
-.wiz-step.active .wiz-step-dot{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 4px rgba(220,38,38,.15);}
-.wiz-step-label{font-size:.7rem;font-weight:700;color:var(--wiz-muted);text-align:center;line-height:1.3;}
+.wiz-step.active .wiz-step-dot{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 4px rgba(99,102,241,.18);}
+.wiz-step-label{font-size:.65rem;font-weight:700;color:var(--wiz-muted);text-align:center;line-height:1.25;}
 .wiz-step.active .wiz-step-label{color:var(--accent);}
 .wiz-step.done .wiz-step-label{color:var(--wiz-green);}
+
+/* ── File upload zone ───────────────────────────────── */
+.doc-upload-zone{
+  border:2px dashed var(--wiz-border);border-radius:14px;padding:1.5rem;
+  text-align:center;cursor:pointer;transition:all .2s;background:#fafafa;
+}
+.doc-upload-zone:hover{border-color:var(--accent);background:#f5f3ff;}
+.doc-row{display:flex;gap:.75rem;align-items:center;padding:.75rem 0;border-bottom:1px solid var(--wiz-border);}
+.doc-row:last-child{border-bottom:none;padding-bottom:0;}
+.doc-type-badge{width:36px;height:36px;border-radius:10px;background:#ede9fe;color:#7c3aed;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
 
 /* ── Form wrapper ───────────────────────────────────── */
 .wiz-body{padding:0 2rem;margin-top:1.5rem;}
@@ -181,22 +202,36 @@
 
 <div class="wiz-page">
 
-  <!-- Hero -->
+  <!-- Header -->
   <div class="wiz-hero">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
       <div>
-        <div class="text-xs text-white opacity-50 mb-1 fw-bold text-uppercase">{{ org.name }}</div>
-        <h4 class="wiz-hero-title"><i class="fas fa-user-plus me-2 opacity-75"></i>Onboard New Member</h4>
-        <p class="wiz-hero-sub">Fill in the details step-by-step — credentials are emailed automatically when portal access is enabled.</p>
+        <h4 class="wiz-hero-title"><i class="fas fa-user-plus me-2 text-muted"></i>Onboard New Member</h4>
+        <p class="wiz-hero-sub">{{ org.name }} &middot; {{ total_member }} / {{ org.member_limit }} members used &middot; credentials are emailed automatically when portal access is enabled.</p>
       </div>
-      <a href="javascript:history.back()" class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;">
-        <i class="fas fa-arrow-left me-1"></i>Back
-      </a>
+      <div class="wiz-hero-actions">
+        <a href="{% url 'handle:member_import_sample' %}" class="wiz-hero-btn wiz-hero-btn-green text-white">
+          <i class="fas fa-download text-white"></i>Sample Excel
+        </a>
+        <a href="{% url 'handle:member_import' %}" class="wiz-hero-btn wiz-hero-btn-green text-white">
+          <i class="fas fa-file-excel text-white"></i>Bulk Import
+        </a>
+        <!-- <a href="javascript:history.back()" class="wiz-hero-btn wiz-hero-btn-ghost">
+          <i class="fas fa-arrow-left"></i>Back
+        </a> -->
+      </div>
     </div>
   </div>
 
   <!-- Step progress card -->
   <div class="wiz-progress-card">
+    <div class="wiz-progress-label">
+      <span id="progressLabel">Step 1 of 5</span>
+      <span id="progressPct" style="color:var(--accent);font-size:.75rem;">20%</span>
+    </div>
+    <div class="wiz-progress-bar-outer">
+      <div class="wiz-progress-bar-inner" id="progressBar" style="width:20%;"></div>
+    </div>
     <div class="wiz-steps" id="wizSteps">
       <div class="wiz-step active" data-step="1">
         <div class="wiz-step-dot"><i class="fas fa-user"></i></div>
@@ -204,13 +239,17 @@
       </div>
       <div class="wiz-step" data-step="2">
         <div class="wiz-step-dot"><i class="fas fa-building"></i></div>
-        <div class="wiz-step-label">Organization</div>
+        <div class="wiz-step-label">Org</div>
       </div>
       <div class="wiz-step" data-step="3">
         <div class="wiz-step-dot"><i class="fas fa-coins"></i></div>
         <div class="wiz-step-label">Payroll</div>
       </div>
       <div class="wiz-step" data-step="4">
+        <div class="wiz-step-dot"><i class="fas fa-folder-open"></i></div>
+        <div class="wiz-step-label">Docs</div>
+      </div>
+      <div class="wiz-step" data-step="5">
         <div class="wiz-step-dot"><i class="fas fa-shield-halved"></i></div>
         <div class="wiz-step-label">Access</div>
       </div>
@@ -224,8 +263,9 @@
   {% endfor %}
 
   {% if total_member < org.member_limit %}
-  <form method="post" id="wizForm" class="needs-validation" novalidate>
+  <form method="post" id="wizForm" class="needs-validation" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
+    <input type="hidden" name="form_token" value="{{ form_token }}">
 
     <!-- ══ STEP 1: IDENTITY ══════════════════════════════ -->
     <div class="wiz-body wiz-pane active" id="pane-1">
@@ -268,6 +308,24 @@
                 <i class="fas fa-cake-candles ii"></i>
                 {{ form.date_of_birth }}
               </div>
+            </div>
+            <div class="col-md-4">
+              <label class="wiz-label">Joined Date <span class="text-muted fw-normal">(optional)</span></label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-calendar-check ii"></i>
+                {{ form.admission_date }}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="wiz-label">Roll / Registration No. <span class="text-muted fw-normal">(for ID card)</span></label>
+              <div class="input-icon-wrap">
+                <i class="fas fa-hashtag ii"></i>
+                {{ form.roll_number }}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="wiz-label">Photo <span class="text-muted fw-normal">(for ID card)</span></label>
+              {{ form.photo }}
             </div>
           </div>
         </div>
@@ -417,6 +475,13 @@
                 <span>%</span>
               </div>
             </div>
+            <div class="col-md-4">
+              <label class="wiz-label">Overtime Multiplier Override</label>
+              <div class="wiz-suffix">
+                {{ form.overtime_rate_multiplier_override }}
+                <span>x</span>
+              </div>
+            </div>
             <div class="col-12">
               <label class="wiz-label">Statutory Benefits</label>
               <div class="toggle-pills">
@@ -483,8 +548,98 @@
 
     </div><!-- /pane-3 -->
 
-    <!-- ══ STEP 4: ACCESS ═══════════════════════════════ -->
+    <!-- ══ STEP 4: DOCUMENTS ════════════════════════════ -->
     <div class="wiz-body wiz-pane" id="pane-4">
+
+      <div class="sec-card">
+        <div class="sec-card-hd">
+          <div class="sec-card-hd-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-folder-open"></i></div>
+          <div>
+            <div class="sec-card-hd-title">Member Documents</div>
+            <div style="font-size:.75rem;color:var(--wiz-muted);">Upload identity proofs, certificates or contracts (optional)</div>
+          </div>
+        </div>
+        <div class="sec-card-bd">
+          <div class="row g-3" id="docRows">
+
+            <div class="col-12">
+              <label class="wiz-label">Document 1</label>
+              <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                  <select name="doc_type_1" class="form-select form-select-sm" style="border-radius:8px;">
+                    <option value="">— Type —</option>
+                    <option value="id">ID Card</option>
+                    <option value="passport">Passport</option>
+                    <option value="degree">Degree</option>
+                    <option value="certificate">Certificate</option>
+                    <option value="contract">Contract</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <input type="text" name="doc_title_1" placeholder="Document title" class="form-control form-control-sm" style="border-radius:8px;">
+                </div>
+                <div class="col-md-4">
+                  <input type="file" name="doc_file_1" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="form-control form-control-sm" style="border-radius:8px;">
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="wiz-label">Document 2</label>
+              <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                  <select name="doc_type_2" class="form-select form-select-sm" style="border-radius:8px;">
+                    <option value="">— Type —</option>
+                    <option value="id">ID Card</option>
+                    <option value="passport">Passport</option>
+                    <option value="degree">Degree</option>
+                    <option value="certificate">Certificate</option>
+                    <option value="contract">Contract</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <input type="text" name="doc_title_2" placeholder="Document title" class="form-control form-control-sm" style="border-radius:8px;">
+                </div>
+                <div class="col-md-4">
+                  <input type="file" name="doc_file_2" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="form-control form-control-sm" style="border-radius:8px;">
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="wiz-label">Document 3</label>
+              <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                  <select name="doc_type_3" class="form-select form-select-sm" style="border-radius:8px;">
+                    <option value="">— Type —</option>
+                    <option value="id">ID Card</option>
+                    <option value="passport">Passport</option>
+                    <option value="degree">Degree</option>
+                    <option value="certificate">Certificate</option>
+                    <option value="contract">Contract</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <input type="text" name="doc_title_3" placeholder="Document title" class="form-control form-control-sm" style="border-radius:8px;">
+                </div>
+                <div class="col-md-4">
+                  <input type="file" name="doc_file_3" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="form-control form-control-sm" style="border-radius:8px;">
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <p class="text-muted mt-3 mb-0" style="font-size:.78rem;"><i class="fas fa-info-circle me-1"></i>All document fields are optional. Accepted: PDF, JPG, PNG, DOC, DOCX. These can also be uploaded later from the member profile.</p>
+        </div>
+      </div>
+
+    </div><!-- /pane-4 -->
+
+    <!-- ══ STEP 5: ACCESS ═══════════════════════════════ -->
+    <div class="wiz-body wiz-pane" id="pane-5">
 
       <!-- Review summary -->
       <div class="sec-card mb-3">
@@ -532,14 +687,14 @@
         <strong>Member limit:</strong> {{ total_member }} used of {{ org.member_limit }} — {{ org.member_limit|add:"-1"|add:"-0" }} remaining after this record.
       </div>
 
-    </div><!-- /pane-4 -->
+    </div><!-- /pane-5 -->
 
     <!-- Sticky nav bar -->
     <div class="wiz-nav" id="wizNav">
       <button type="button" class="btn-wiz-back" id="btnBack" style="visibility:hidden;">
         <i class="fas fa-arrow-left me-1"></i>Back
       </button>
-      <span class="wiz-counter" id="wizCounter">Step 1 of 4</span>
+      <span class="wiz-counter" id="wizCounter">Step 1 of 5</span>
       <div>
         <button type="button" class="btn-wiz-next" id="btnNext">
           Next <i class="fas fa-arrow-right ms-1"></i>
@@ -569,19 +724,20 @@
 <script>
 (function(){
   var currentStep = 1;
-  var totalSteps  = 4;
+  var totalSteps  = 5;
   var dots   = document.querySelectorAll('.wiz-step');
   var panes  = document.querySelectorAll('.wiz-pane');
   var btnBack    = document.getElementById('btnBack');
   var btnNext    = document.getElementById('btnNext');
   var btnSubmit  = document.getElementById('btnSubmit');
   var counter    = document.getElementById('wizCounter');
+  var progressBar  = document.getElementById('progressBar');
+  var progressLabel= document.getElementById('progressLabel');
+  var progressPct  = document.getElementById('progressPct');
 
   function goTo(step){
     if(step < 1 || step > totalSteps) return;
-    // panes
     panes.forEach(function(p,i){p.classList.toggle('active', i+1===step);});
-    // dots
     dots.forEach(function(d,i){
       d.classList.remove('active','done');
       if(i+1 < step) d.classList.add('done');
@@ -589,11 +745,14 @@
     });
     currentStep = step;
     counter.textContent = 'Step '+step+' of '+totalSteps;
+    var pct = Math.round((step/totalSteps)*100);
+    if(progressBar){ progressBar.style.width = pct+'%'; }
+    if(progressLabel){ progressLabel.textContent = 'Step '+step+' of '+totalSteps; }
+    if(progressPct){ progressPct.textContent = pct+'%'; }
     btnBack.style.visibility = step===1 ? 'hidden' : 'visible';
     btnNext.classList.toggle('d-none', step===totalSteps);
     btnSubmit.classList.toggle('d-none', step!==totalSteps);
     if(step===totalSteps) buildReview();
-    // Re-initialise Nepali date pickers for newly visible inputs
     if(window.NepaliDate){
       var activePane = document.getElementById('pane-'+step);
       if(activePane) NepaliDate.init(activePane);
@@ -604,6 +763,23 @@
   btnNext.addEventListener('click', function(){goTo(currentStep+1);});
   btnBack.addEventListener('click', function(){goTo(currentStep-1);});
 
+  // Guard against accidental double submission (double-click, or the form
+  // being restored from browser back/forward cache after a save).
+  var wizForm = document.getElementById('wizForm');
+  var submitOriginalHtml = btnSubmit.innerHTML;
+  if (wizForm) {
+    wizForm.addEventListener('submit', function(){
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving…';
+    });
+  }
+  window.addEventListener('pageshow', function(evt){
+    if (evt.persisted) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = submitOriginalHtml;
+    }
+  });
+
   // Click step dots to navigate back
   dots.forEach(function(d){
     d.addEventListener('click', function(){
@@ -612,7 +788,7 @@
     });
   });
 
-  // Build review grid on step 4
+  // Build review grid on step 5
   function buildReview(){
     var fields = [
       {label:'Full Name',   id:'id_name'},
@@ -651,11 +827,12 @@
     updateStaff();
   }
 
-  // Dynamic sections based on classification
+  // Dynamic classifications based on branch, then dynamic sections based on classification
   var branchSel = document.getElementById('id_branch');
   var classSel  = document.getElementById('id_classification');
   var sectionSel= document.getElementById('id_section');
   var secUrl    = "{% url 'handle:sectionsByClassification' %}";
+  var classUrl  = "{% url 'handle:classificationsByBranch' %}";
   function loadSections(){
     if(!classSel || !sectionSel || !classSel.value) return;
     var p = new URLSearchParams({classification_id:classSel.value});
@@ -669,8 +846,48 @@
       });
     });
   }
+  function loadClassifications(){
+    if(!branchSel || !classSel) return;
+    var p = new URLSearchParams();
+    if(branchSel.value) p.append('branch_id', branchSel.value);
+    fetch(classUrl+'?'+p.toString()).then(function(r){return r.json();}).then(function(data){
+      classSel.innerHTML='<option value="">Select classification</option>';
+      data.classifications.forEach(function(c){
+        var o=document.createElement('option');
+        o.value=c.id; o.textContent=c.name;
+        classSel.appendChild(o);
+      });
+      sectionSel.innerHTML='<option value="">Select section</option>';
+    });
+  }
+
+  // Suggested shift times narrow as branch/classification are picked
+  // (classification default > branch default > org default). Only ever
+  // updates the fields until the user edits one by hand — after that their
+  // choice always wins, same as an existing member's own override would.
+  var shiftStartInput = document.getElementById('id_shift_start_time');
+  var shiftEndInput = document.getElementById('id_shift_end_time');
+  var shiftFieldsTouched = false;
+  var defaultShiftUrl = "{% url 'handle:defaultShiftForSelection' %}";
+  [shiftStartInput, shiftEndInput].forEach(function(el){
+    if(el) el.addEventListener('input', function(){ shiftFieldsTouched = true; });
+  });
+  function refreshSuggestedShift(){
+    if(shiftFieldsTouched || !shiftStartInput || !shiftEndInput) return;
+    var p = new URLSearchParams();
+    if(branchSel && branchSel.value) p.append('branch_id', branchSel.value);
+    if(classSel && classSel.value) p.append('classification_id', classSel.value);
+    fetch(defaultShiftUrl+'?'+p.toString()).then(function(r){return r.json();}).then(function(data){
+      if(shiftFieldsTouched) return;
+      shiftStartInput.value = data.shift_start_time;
+      shiftEndInput.value = data.shift_end_time;
+    });
+  }
+  if(classSel) classSel.addEventListener('change', refreshSuggestedShift);
+  if(branchSel) branchSel.addEventListener('change', refreshSuggestedShift);
+
   if(classSel) classSel.addEventListener('change', loadSections);
-  if(branchSel) branchSel.addEventListener('change', loadSections);
+  if(branchSel) branchSel.addEventListener('change', function(){ loadClassifications(); });
 
 })();
 </script>

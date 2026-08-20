@@ -1,0 +1,87 @@
+{% extends 'agent/base.html' %}
+{% block title %}Add Organization{% endblock %}
+{% block page_title %}Add New Organization{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="table-card">
+      <div class="mb-4">
+        <h5 class="fw-bold mb-1" style="color:#1e293b;">Create Organization</h5>
+        <p class="text-muted small mb-0">{{ agent.org_count }}/{{ agent.max_organizations_allowed }} organizations used</p>
+      </div>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <h6 class="fw-semibold text-muted mb-3" style="font-size:.78rem;text-transform:uppercase;letter-spacing:1px;">Organization Details</h6>
+        <div class="row g-3 mb-4">
+          <div class="col-md-8">
+            <label class="form-label fw-semibold small">Organization Name *</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">Category *</label>
+            {{ form.category }}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold small">Address</label>
+            {{ form.address }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">Member Limit</label>
+            {{ form.member_limit }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Expire On *</label>
+            {{ form.expire_on }}
+            {% if form.expire_on.errors %}<div class="text-danger small mt-1">{{ form.expire_on.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Serial Key *</label>
+            {{ form.serial_key }}
+            {% if form.serial_key.errors %}<div class="text-danger small mt-1">{{ form.serial_key.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold small">Logo (optional)</label>
+            {{ form.image }}
+          </div>
+        </div>
+
+        <hr class="my-4">
+        <h6 class="fw-semibold text-muted mb-3" style="font-size:.78rem;text-transform:uppercase;letter-spacing:1px;">Admin Account</h6>
+        <p class="text-muted small mb-3">An admin login will be created automatically for this organization.</p>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Admin First Name *</label>
+            {{ form.admin_first_name }}
+            {% if form.admin_first_name.errors %}<div class="text-danger small mt-1">{{ form.admin_first_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Admin Last Name</label>
+            {{ form.admin_last_name }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Admin Email *</label>
+            {{ form.admin_email }}
+            {% if form.admin_email.errors %}<div class="text-danger small mt-1">{{ form.admin_email.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Admin Password *</label>
+            {{ form.admin_password }}
+            {% if form.admin_password.errors %}<div class="text-danger small mt-1">{{ form.admin_password.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex gap-3">
+          <button type="submit" class="btn btn-primary px-5 fw-semibold">
+            <i class="fas fa-plus me-2"></i>Create Organization
+          </button>
+          <a href="{% url 'agent:org_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

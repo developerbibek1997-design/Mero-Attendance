@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -24,9 +25,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-a)-k4if$a5ygx*0=n&2po0bl8x!5&^-73a_g^es$k5vj8%7*7*'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+# Controlled by the DJANGO_DEBUG env var so it can be flipped per-environment
+# without a code change. Defaults to True (today's behavior) until the env
+# var is set — set DJANGO_DEBUG=False on the production server (cPanel Python
+# App -> Environment variables, then touch tmp/restart.txt) so real errors
+# show the friendly 500 page instead of Django's technical traceback page.
+# DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
+DEBUG = False
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.3', 'meroattendance.com', 'www.meroattendance.com', 'adms.meroattendance.com', 'www.adms.meroattendance.com']
 
 
 # Application definition
@@ -42,6 +48,7 @@ INSTALLED_APPS = [
     'handle.apps.HandleConfig',
     'schooladmin.apps.SchooladminConfig',
     'superadmin.apps.SuperadminConfig',
+    'agent.apps.AgentConfig',
 
     #Third Party
     # 'django_progressive_web_app',
@@ -62,6 +69,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'handle.audit.MemberAuditMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'school.middleware.SecurityEnforcementMiddleware',
@@ -71,6 +79,8 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'school.urls'
+
+CSRF_FAILURE_VIEW = 'management.views.csrf_failure'
 
 TEMPLATES = [
     {
@@ -95,12 +105,38 @@ WSGI_APPLICATION = 'school.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Local development stays on SQLite with no configuration. The server switches
+# to MySQL purely by setting DB_ENGINE=mysql in the environment — no code edit,
+# so a bad env var can never silently point production at the dev SQLite file.
+if os.environ.get('DB_ENGINE', 'sqlite').lower() == 'mysql':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME':     os.environ.get('DB_NAME', 'mero_attendance'),
+            'USER':     os.environ.get('DB_USER', 'mero'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST':     os.environ.get('DB_HOST', '127.0.0.1'),
+            'PORT':     os.environ.get('DB_PORT', '3306'),
+            'OPTIONS': {
+                # utf8mb4 is required, not optional: the app stores Nepali text
+                # and the UI uses “curly quotes” and em-dashes. MySQL's legacy
+                # "utf8" is only 3 bytes and mangles both.
+                'charset': 'utf8mb4',
+                # STRICT_TRANS_TABLES makes MySQL raise on over-long values
+                # instead of silently truncating them. Django warns if it's off.
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+            # Reuse connections instead of reconnecting on every request.
+            'CONN_MAX_AGE': 60,
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -151,7 +187,12 @@ STATICFILES_DIRS = [
     BASE_DIR /'static'
 ]
 
-# STATIC_ROOT = BASE_DIR / 'static'
+# Must be a DIFFERENT directory from STATICFILES_DIRS — Django refuses to let
+# collectstatic write into one of its own source dirs, which is why this was
+# previously disabled. With it set, `collectstatic` works and the /static/
+# route in school/urls.py can serve files in production. The PWA needs this:
+# an unreachable manifest or icon makes the app silently non-installable.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR /'media'
@@ -201,11 +242,29 @@ EMAIL_BACKEND = 'django_smtp_ssl.SSLEmailBackend'
 EMAIL_HOST = 'mail.meroattendance.com'
 EMAIL_PORT = 465
 EMAIL_HOST_USER = 'info@meroattendance.com'
-EMAIL_HOST_PASSWORD = 'Heyiknow777'
+# Falls back to the previously-hardcoded value so local/dev environments
+# without the env var set keep working exactly as before — set
+# EMAIL_HOST_PASSWORD in the environment for production instead of
+# committing the real credential here.
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'Heyiknow777')
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 
+# Every email sent via Django's send_mail()/EmailMultiAlternatives without an
+# explicit from_email falls back to this. Previously unset, which silently
+# defaulted to Django's own default ('webmaster@localhost') — a real
+# deliverability problem since it doesn't match the authenticated SMTP
+# account above (SPF/DKIM mismatch risk).
+DEFAULT_FROM_EMAIL = 'Mero Attendance <info@meroattendance.com>'
+
 FRONTEND_URL = "https://meroattendance.com"
+
+# Single source of truth for app download links — referenced by both
+# templates/basic/pullar.html and outgoing emails so the URLs never drift
+# out of sync between the two.
+PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.wakeandtech.meroattendance"
+APP_STORE_URL = "https://apps.apple.com/np/app/mero-attendance/id6773998679"
+WEB_DASHBOARD_URL = FRONTEND_URL
 
 CSRF_TRUSTED_ORIGINS = ['https://meroattendance.com']
 

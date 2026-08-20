@@ -1,0 +1,59 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#dc2626">
+  <title>Offline | Mero Attendance</title>
+  <link rel="icon" href="{% static 'pwa/icon-192.png' %}">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+         font-family:'Open Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+         background:#f7f8fa;color:#111827;padding:1.5rem;}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;
+          box-shadow:0 8px 24px rgba(17,24,39,.08);padding:2.5rem 2rem;
+          max-width:420px;width:100%;text-align:center;}
+    .icon{width:72px;height:72px;border-radius:20px;background:#fef2f2;color:#dc2626;
+          display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:2rem;}
+    h1{font-size:1.25rem;font-weight:800;margin:0 0 .5rem;}
+    p{font-size:.9rem;color:#6b7280;line-height:1.6;margin:0 0 1.5rem;}
+    button{background:#dc2626;color:#fff;border:none;border-radius:10px;
+           padding:.75rem 1.75rem;font-size:.9rem;font-weight:700;cursor:pointer;
+           transition:background .15s;width:100%;}
+    button:hover{background:#991b1b}
+    .status{margin-top:1rem;font-size:.78rem;color:#9ca3af}
+    .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px}
+    .dot.on{background:#16a34a}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">&#9888;</div>
+    <h1>You're offline</h1>
+    <p>
+      Mero Attendance needs a connection to load this page. Your data is safe —
+      reconnect and it will pick up right where you left off.
+    </p>
+    <button id="retry" type="button">Try again</button>
+    <div class="status"><span class="dot" id="dot"></span><span id="statusText">No connection</span></div>
+  </div>
+
+  <script>
+    var dot = document.getElementById('dot');
+    var statusText = document.getElementById('statusText');
+    var retry = document.getElementById('retry');
+
+    function render() {
+      var on = navigator.onLine;
+      dot.className = 'dot' + (on ? ' on' : '');
+      statusText.textContent = on ? 'Back online — tap Try again' : 'No connection';
+    }
+    // Coming back online usually means the page they wanted is reachable now.
+    window.addEventListener('online', function () { render(); location.reload(); });
+    window.addEventListener('offline', render);
+    retry.addEventListener('click', function () { location.reload(); });
+    render();
+  </script>
+</body>
+</html>

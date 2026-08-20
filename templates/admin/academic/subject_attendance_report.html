@@ -1,0 +1,102 @@
+{% extends 'dashboard.html' %}
+{% block title %}Subject Attendance Report | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h6 class="mb-0 font-weight-bolder"><i class="fas fa-user-check text-success me-2"></i>Subject Attendance Report</h6>
+      <div class="d-flex gap-2">
+        <a href="{% url 'schooladmin:export_academic' %}?type=subject_attendance&fmt=csv&date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&academic_year={{ selected_academic_year|default:'' }}&course={{ selected_course|default:'' }}&classification={{ selected_classification|default:'' }}&section={{ selected_section|default:'' }}&subject={{ selected_subject|default:'' }}&teacher={{ selected_teacher|default:'' }}&student={{ selected_student|default:'' }}&attendance_status={{ selected_attendance_status|default:'' }}&session_status={{ selected_session_status|default:'' }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-file-csv me-1"></i>CSV</a>
+        <a href="{% url 'schooladmin:export_academic' %}?type=subject_attendance&fmt=excel&date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&academic_year={{ selected_academic_year|default:'' }}&course={{ selected_course|default:'' }}&classification={{ selected_classification|default:'' }}&section={{ selected_section|default:'' }}&subject={{ selected_subject|default:'' }}&teacher={{ selected_teacher|default:'' }}&student={{ selected_student|default:'' }}&attendance_status={{ selected_attendance_status|default:'' }}&session_status={{ selected_session_status|default:'' }}" class="btn btn-sm btn-outline-success"><i class="fas fa-file-excel me-1"></i>Excel</a>
+      </div>
+    </div>
+    <div class="card-body p-4">
+      <p class="text-xs text-muted">A student can appear multiple times per day here — one row per subject-period, unlike the whole-day attendance report.</p>
+      <form method="get" class="row g-2 mb-4">
+        <div class="col-md-2"><label class="form-label text-xs font-weight-bold">From</label><input type="date" name="date_from" class="form-control" value="{{ date_from|date:'Y-m-d' }}"></div>
+        <div class="col-md-2"><label class="form-label text-xs font-weight-bold">To</label><input type="date" name="date_to" class="form-control" value="{{ date_to|date:'Y-m-d' }}"></div>
+        <div class="col-md-2"><label class="form-label text-xs font-weight-bold">Academic Year</label><select name="academic_year" class="form-select"><option value="">All</option>{% for y in academic_years %}<option value="{{ y.pk }}" {% if selected_academic_year == y.pk|stringformat:'s' %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label text-xs font-weight-bold">Course</label><select name="course" class="form-select"><option value="">All</option>{% for c in courses %}<option value="{{ c.pk }}" {% if selected_course == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2">
+          <label class="form-label text-xs font-weight-bold">Class</label>
+          <select name="classification" class="form-select">
+            <option value="">All</option>
+            {% for c in classifications %}<option value="{{ c.pk }}" {% if selected_classification == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label text-xs font-weight-bold">Section</label>
+          <select name="section" class="form-select">
+            <option value="">All</option>
+            {% for s in sections %}<option value="{{ s.pk }}" {% if selected_section == s.pk|stringformat:'s' %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2"><label class="form-label text-xs font-weight-bold">Student</label><select name="student" class="form-select"><option value="">All</option>{% for s in students %}<option value="{{ s.pk }}" {% if selected_student == s.pk|stringformat:'s' %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label text-xs font-weight-bold">Attendance Status</label><select name="attendance_status" class="form-select"><option value="">All</option>{% for value,label in attendance_status_choices %}<option value="{{ value }}" {% if selected_attendance_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label text-xs font-weight-bold">Session Status</label><select name="session_status" class="form-select"><option value="">All</option>{% for value,label in session_status_choices %}<option value="{{ value }}" {% if selected_session_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-2">
+          <label class="form-label text-xs font-weight-bold">Subject</label>
+          <select name="subject" class="form-select">
+            <option value="">All</option>
+            {% for sub in subjects %}<option value="{{ sub.pk }}" {% if selected_subject == sub.pk|stringformat:'s' %}selected{% endif %}>{{ sub.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label text-xs font-weight-bold">Teacher</label>
+          <select name="teacher" class="form-select">
+            <option value="">All</option>
+            {% for t in teachers %}<option value="{{ t.admin.pk }}" {% if selected_teacher == t.admin.pk|stringformat:'s' %}selected{% endif %}>{{ t.admin.get_full_name|default:t.admin.email }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-12"><button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i>Apply Filters</button></div>
+      </form>
+
+      <h6 class="text-sm font-weight-bolder">Per-Student Summary ({{ date_from }} — {{ date_to }})</h6>
+      <div class="table-responsive mb-4">
+        <table class="table table-sm">
+          <thead><tr><th>Student</th><th>Present</th><th>Absent</th><th>Late</th><th>Excused</th><th>Leave</th><th>Total Periods</th><th>%</th></tr></thead>
+          <tbody>
+            {% for row in summary_rows %}
+            <tr>
+              <td><a href="{% url 'handle:memberEdit' row.member.id %}" class="text-dark fw-bold">{{ row.member.name }}</a></td>
+              <td class="text-success">{{ row.present }}</td>
+              <td class="text-danger">{{ row.absent }}</td>
+              <td class="text-warning">{{ row.late }}</td>
+              <td>{{ row.excused }}</td>
+              <td>{{ row.leave }}</td>
+              <td>{{ row.total }}</td>
+              <td>{{ row.pct }}%</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center text-muted">No records for the selected filters.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <h6 class="text-sm font-weight-bolder">Detail — One Row Per Subject-Period</h6>
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead><tr><th>Date</th><th>Period</th><th>Subject</th><th>Class</th><th>Section</th><th>Student</th><th>Status</th><th>Teacher</th></tr></thead>
+          <tbody>
+            {% for rec in records %}
+            <tr>
+              <td>{{ rec.teaching_log.date }}</td>
+              <td>{{ rec.teaching_log.period|default:'-' }}</td>
+              <td>{{ rec.teaching_log.subject.name }}</td>
+              <td>{{ rec.teaching_log.classification }}</td>
+              <td>{{ rec.teaching_log.section|default:'-' }}</td>
+              <td>{{ rec.member.name }}</td>
+              <td><span class="badge {% if rec.status == 'present' %}bg-success{% elif rec.status == 'absent' %}bg-danger{% elif rec.status == 'late' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ rec.get_status_display }}</span></td>
+              <td>{{ rec.teaching_log.teacher }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center text-muted">No records for the selected filters.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

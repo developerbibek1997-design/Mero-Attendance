@@ -1,0 +1,57 @@
+<section class="card border-0 shadow-sm mero-dashboard-notifications mb-4" aria-labelledby="dashboard-notification-title">
+  <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 p-md-4 pb-2">
+    <div class="d-flex align-items-center gap-3">
+      <span class="mero-dashboard-notifications__mark"><i class="fas fa-bell"></i></span>
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <h6 class="mb-0 font-weight-bolder text-dark" id="dashboard-notification-title">Notification centre</h6>
+          {% if dash_unread_notifications %}<span class="badge bg-gradient-danger">{{ dash_unread_notifications }} new</span>{% endif %}
+        </div>
+        <p class="text-xs text-muted mb-0 mt-1">Tasks, approvals and academic activity in one place</p>
+      </div>
+    </div>
+    <a href="{% url 'handle:notifications' %}" class="btn btn-sm btn-outline-primary mb-0">View all</a>
+  </div>
+  <div class="card-body p-2 p-md-3 pt-2">
+    <div class="row g-2">
+      {% for n in dash_notifications|slice:":4" %}
+      <div class="col-12 col-xl-6">
+        <a href="{% url 'handle:open_notification' n.pk %}" class="mero-dashboard-notifications__item {% if not n.is_read %}is-unread{% endif %}">
+          <span class="mero-notification-icon text-{{ n.tone }} bg-{{ n.tone }}-soft"><i class="fas {{ n.icon_class }}"></i></span>
+          <span class="min-width-0 flex-grow-1">
+            <span class="d-flex justify-content-between gap-2">
+              <strong class="text-sm text-dark text-truncate">{{ n.title }}</strong>
+              <small class="text-muted text-nowrap">{{ n.created_at|timesince }} ago</small>
+            </span>
+            {% if n.body %}<span class="d-block text-xs text-muted text-truncate mt-1">{{ n.body }}</span>{% endif %}
+          </span>
+          <i class="fas fa-chevron-right text-xs text-muted"></i>
+        </a>
+      </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="mero-dashboard-notifications__empty">
+          <i class="fas fa-circle-check text-success"></i>
+          <span><strong>No new activity</strong><small>New task and academic updates will be listed here.</small></span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<style>
+  .mero-dashboard-notifications { border-radius: 18px; overflow: hidden; }
+  .mero-dashboard-notifications__mark { width: 45px; height: 45px; display: grid; place-items: center; border-radius: 14px; color: #fff; background: linear-gradient(135deg, #6366f1, #4338ca); box-shadow: 0 10px 22px rgba(79, 70, 229, .25); }
+  .mero-dashboard-notifications__item { display: flex; align-items: center; gap: .75rem; min-height: 70px; padding: .8rem; border: 1px solid #eef2f7; border-radius: 14px; color: inherit; background: #fff; text-decoration: none; transition: .2s ease; }
+  .mero-dashboard-notifications__item:hover { border-color: #c7d2fe; box-shadow: 0 9px 24px rgba(15, 23, 42, .07); transform: translateY(-2px); }
+  .mero-dashboard-notifications__item.is-unread { border-color: #c7d2fe; background: linear-gradient(135deg, #eef2ff, #fff 65%); }
+  .mero-dashboard-notifications__empty { display: flex; align-items: center; justify-content: center; gap: .8rem; min-height: 82px; padding: 1rem; border: 1px dashed #cbd5e1; border-radius: 14px; color: #64748b; background: #f8fafc; }
+  .mero-dashboard-notifications__empty > i { font-size: 1.45rem; }
+  .mero-dashboard-notifications__empty span { display: grid; }
+  .mero-dashboard-notifications__empty small { margin-top: .15rem; }
+  @media (max-width: 575.98px) {
+    .mero-dashboard-notifications .card-header > .d-flex { min-width: 0; }
+    .mero-dashboard-notifications .card-header > .btn { width: 100%; }
+  }
+</style>

@@ -1,0 +1,10 @@
+{% if template.show_qr_code and m.idc_qr_b64 %}
+<img class="idc-qr" src="data:image/png;base64,{{ m.idc_qr_b64 }}" alt="QR">
+{% endif %}
+{% if template.show_barcode and m.idc_barcode_b64 %}
+<img class="idc-barcode" src="data:image/png;base64,{{ m.idc_barcode_b64 }}" alt="Barcode">
+{% endif %}
+<div class="idc-back-footer">
+  {% if template.footer_text %}<div class="idc-row">{{ template.footer_text }}</div>{% endif %}
+  <div class="idc-back-org">{{ org.name }}{% if org.address %} &middot; {{ org.address }}{% endif %}</div>
+</div>

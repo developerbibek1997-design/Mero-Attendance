@@ -17,7 +17,7 @@
               <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Course Code</label><input type="text" name="code" class="form-control" placeholder="e.g. ENG-101"></div>
               <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Branch</label>
                 <select name="branch" class="form-select"><option value="">-- All --</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select></div>
-              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Teacher / Staff</label>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Course Coordinator <small class="text-muted">(optional)</small></label>
                 <select name="teacher" class="form-select"><option value="">-- None --</option>{% for s in staff_list %}<option value="{{ s.admin.id }}">{{ s.member.name }}</option>{% endfor %}</select></div>
               <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Credit Hours</label><input type="number" step="0.5" name="credit_hour" class="form-control" value="0"></div>
               <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Status</label>

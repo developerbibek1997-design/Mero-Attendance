@@ -1,0 +1,11 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Assignment Graded{% endblock %}
+{% block content %}
+<p class="greeting">Hi <strong>{{ name }}</strong>,</p>
+<p class="message-text">Your submission for <strong>{{ assignment_title }}</strong> has been graded.</p>
+<table class="data">
+  <tr><td class="label">Assignment</td><td><strong>{{ assignment_title }}</strong></td></tr>
+  <tr><td class="label">Marks Obtained</td><td>{{ obtained_marks }} / {{ total_marks }}</td></tr>
+</table>
+<p class="message-text">Log in to your portal to view teacher remarks and full details.</p>
+{% endblock %}

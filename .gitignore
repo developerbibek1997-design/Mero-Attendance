@@ -1,0 +1,11 @@
+env/
+env_new/
+venv/
+*.pyc
+__pycache__/
+__MACOSX/
+backup/
+*.sqlite3-journal
+.DS_Store
+media/
+staticfiles/

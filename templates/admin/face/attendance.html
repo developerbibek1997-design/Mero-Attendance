@@ -1,0 +1,164 @@
+{% extends 'dashboard.html' %}
+{% block title %}Face Attendance Camera | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+  .face-stage {
+    background: radial-gradient(circle at top, #1e293b, #0f172a);
+    border-radius: 22px;
+    padding: 22px;
+  }
+  .cam-frame {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+    aspect-ratio: 4/3;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,.45);
+    background: #000;
+  }
+  .cam-frame video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  .cam-ring {
+    position: absolute; inset: 14px;
+    border: 3px solid rgba(255,255,255,.35);
+    border-radius: 18px; pointer-events: none;
+  }
+  .cam-ring::before, .cam-ring::after {
+    content: ""; position: absolute; width: 34px; height: 34px;
+    border: 4px solid #22d3ee; border-radius: 6px;
+  }
+  .cam-ring::before { top: -3px; left: -3px; border-right: 0; border-bottom: 0; }
+  .cam-ring::after  { bottom: -3px; right: -3px; border-left: 0; border-top: 0; }
+  .scan-line {
+    position: absolute; left: 14px; right: 14px; height: 3px;
+    background: linear-gradient(90deg, transparent, #22d3ee, transparent);
+    box-shadow: 0 0 14px #22d3ee; animation: scan 2.4s linear infinite;
+  }
+  @keyframes scan { 0%{ top: 16px; } 50%{ top: calc(100% - 16px);} 100%{ top:16px; } }
+  .status-pill {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 16px; border-radius:999px; font-weight:700; font-size:.85rem;
+  }
+  .result-banner {
+    min-height: 58px; display:flex; align-items:center; justify-content:center;
+    border-radius:14px; font-weight:800; font-size:1.15rem; transition:all .2s ease;
+  }
+</style>
+
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <a href="{% url 'schooladmin:face_enroll_list' %}" class="btn btn-outline-secondary btn-sm rounded-circle mb-0" style="width:36px;height:36px;"><i class="fas fa-arrow-left"></i></a>
+        <div>
+          <h4 class="font-weight-bolder mb-0"><i class="fas fa-face-viewfinder text-primary me-2"></i>Face Attendance</h4>
+          <p class="text-xs text-muted mb-0">Point the camera at an enrolled member — attendance is marked automatically.</p>
+        </div>
+      </div>
+
+      <div class="face-stage mb-3">
+        <div class="text-center mb-3">
+          <span id="status" class="status-pill bg-white text-dark"><i class="fas fa-satellite-dish"></i> Loading face models…</span>
+        </div>
+        <div class="cam-frame">
+          <video id="video" autoplay muted playsinline></video>
+          <div class="cam-ring"></div>
+          <div class="scan-line"></div>
+        </div>
+        <div id="result" class="result-banner text-white-50 mt-3">Looking for a face…</div>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-clipboard-check text-success me-2"></i>Recently Marked</h6>
+          <span class="badge bg-light text-dark">once / min per person</span>
+        </div>
+        <div class="card-body p-0"><ul id="log" class="list-group list-group-flush"></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+<script>
+const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+const statusEl = document.getElementById('status');
+const resultEl = document.getElementById('result');
+const logEl = document.getElementById('log');
+const video = document.getElementById('video');
+const MATCH_THRESHOLD = 0.5;
+const marked = {};
+let matcher = null;
+
+function setStatus(html, bg, fg) {
+  statusEl.className = 'status-pill ' + (bg || 'bg-white') + ' ' + (fg || 'text-dark');
+  statusEl.innerHTML = html;
+}
+function setResult(html, cls) {
+  resultEl.className = 'result-banner mt-3 ' + (cls || 'text-white-50');
+  resultEl.innerHTML = html;
+}
+
+async function init() {
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+  } catch (e) { setStatus('<i class="fas fa-triangle-exclamation"></i> Could not load models (check internet).', 'bg-danger', 'text-white'); return; }
+
+  let data;
+  try {
+    const r = await fetch("{% url 'schooladmin:face_data' %}", { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    data = await r.json();
+  } catch (e) { setStatus('<i class="fas fa-triangle-exclamation"></i> Failed to load enrolled faces.', 'bg-danger', 'text-white'); return; }
+  if (!data.members || !data.members.length) { setStatus('<i class="fas fa-user-slash"></i> No faces enrolled yet.', 'bg-warning', 'text-dark'); return; }
+
+  const labeled = data.members.map(m => new faceapi.LabeledFaceDescriptors(
+    String(m.member_id), m.descriptors.map(d => new Float32Array(d))
+  ));
+  matcher = new faceapi.FaceMatcher(labeled, MATCH_THRESHOLD);
+
+  try {
+    video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+  } catch (e) { setStatus('<i class="fas fa-video-slash"></i> Camera access denied.', 'bg-danger', 'text-white'); return; }
+  setStatus('<i class="fas fa-circle text-success"></i> Camera active — scanning', 'bg-white', 'text-dark');
+  setInterval(scan, 1500);
+}
+
+async function markAttendance(memberId) {
+  const fd = new FormData();
+  fd.append('member_id', memberId);
+  fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+  const r = await fetch(window.location.href, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+  return r.json().catch(() => ({ ok: false }));
+}
+
+async function scan() {
+  if (!matcher) return;
+  const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+  if (!det) { setResult('Looking for a face…', 'text-white-50'); return; }
+
+  const best = matcher.findBestMatch(det.descriptor);
+  if (best.label === 'unknown') { setResult('<i class="fas fa-question-circle me-2"></i>Unknown face', 'text-warning'); return; }
+
+  const memberId = best.label, now = Date.now();
+  if (marked[memberId] && (now - marked[memberId] < 60000)) return;
+  marked[memberId] = now;
+  const res = await markAttendance(memberId);
+  if (res.ok) {
+    setResult('<i class="fas fa-circle-check me-2"></i>' + (res.name || 'Marked'), 'text-success');
+    if (!res.duplicate) {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between';
+      li.innerHTML = '<span class="fw-bold">' + res.name + '</span><small class="text-muted">' + (res.time || '') + '</small>';
+      logEl.prepend(li);
+    }
+  } else {
+    setResult('<i class="fas fa-xmark me-2"></i>' + (res.error || 'Failed'), 'text-danger');
+  }
+}
+
+init();
+</script>
+{% endblock %}

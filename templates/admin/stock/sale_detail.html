@@ -1,0 +1,90 @@
+{% extends 'dashboard.html' %}
+{% block title %}Sale #{{ sale.pk }} | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 font-weight-bolder">Sale #{{ sale.pk }} — {{ sale.client.client_org_name|default:sale.customer_name|default:"Walk-in" }}</h6>
+          {% if sale.status == 'draft' %}<span class="badge bg-warning text-dark">Draft</span>
+          {% elif sale.status == 'cancelled' %}<span class="badge bg-danger">Cancelled</span>
+          {% else %}<span class="badge bg-success">Completed</span>{% endif %}
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+          <div class="row g-2 mb-3">
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Date</p><p class="text-sm font-weight-bold">{{ sale.sale_date }}</p></div>
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Invoice #</p><p class="text-sm font-weight-bold">{{ sale.invoice_number|default:"-" }}</p></div>
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Payment</p><p class="text-sm font-weight-bold">{{ sale.get_payment_status_display }} &bull; {{ sale.get_payment_method_display }}</p></div>
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Total</p><p class="text-sm font-weight-bold">Rs. {{ sale.total_amount }}</p></div>
+          </div>
+
+          <div class="table-responsive mb-3">
+            <table class="table table-sm align-middle">
+              <thead class="table-light"><tr><th class="text-xs">Item</th><th class="text-xs">Qty</th><th class="text-xs">Unit Price</th><th class="text-xs">Line Total</th></tr></thead>
+              <tbody>
+                {% for item in items %}
+                <tr><td class="text-sm">{{ item.stock_item.name }}</td><td class="text-sm">{{ item.quantity }}</td><td class="text-sm">{{ item.unit_price }}</td><td class="text-sm">{{ item.line_total }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          {% if sale.journal_entry_id %}
+          <div class="alert alert-success py-2"><i class="fas fa-check-circle me-1"></i>Journal entry <a href="{% url 'schooladmin:journal_detail' sale.journal_entry_id %}">{{ sale.journal_entry.voucher_number }}</a> posted.</div>
+          {% endif %}
+
+          {% if sale.status == 'draft' %}
+          <form method="post" action="{% url 'schooladmin:complete_sale' sale.pk %}" onsubmit="return confirm('Complete this sale? This will remove stock and post the accounting entry.')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success"><i class="fas fa-check me-1"></i>Complete Sale</button>
+          </form>
+          {% else %}
+          <a href="{% url 'schooladmin:add_sales_return' sale.pk %}" class="btn btn-outline-danger"><i class="fas fa-undo me-1"></i>Create Return</a>
+          {% endif %}
+
+          {% if sale.status != 'draft' %}
+          <hr class="my-3">
+          <h6 class="text-sm font-weight-bolder mb-2">Payments</h6>
+          <form method="post" action="{% url 'schooladmin:add_sale_payment' sale.pk %}" class="row g-2 mb-3">
+            {% csrf_token %}
+            <div class="col-md-3">{{ payment_form.amount }}</div>
+            <div class="col-md-3">{{ payment_form.payment_date }}</div>
+            <div class="col-md-2">{{ payment_form.payment_method }}</div>
+            <div class="col-md-2">{{ payment_form.reference_number }}</div>
+            <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Record</button></div>
+          </form>
+          <div class="table-responsive mb-3">
+            <table class="table table-sm align-middle">
+              <thead class="table-light"><tr><th class="text-xs">Date</th><th class="text-xs">Amount</th><th class="text-xs">Method</th><th class="text-xs">Reference</th></tr></thead>
+              <tbody>
+                {% for pay in payments %}
+                <tr><td class="text-sm">{{ pay.payment_date }}</td><td class="text-sm">Rs. {{ pay.amount }}</td><td class="text-sm text-capitalize">{{ pay.payment_method }}</td><td class="text-sm">{{ pay.reference_number|default:"-" }}</td></tr>
+                {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No payments yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+
+          {% if sale_returns %}
+          <h6 class="text-sm font-weight-bolder mb-2">Returns</h6>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead class="table-light"><tr><th class="text-xs">Date</th><th class="text-xs">Status</th><th class="text-xs">Total</th></tr></thead>
+              <tbody>
+                {% for r in sale_returns %}
+                <tr><td class="text-sm"><a href="{% url 'schooladmin:sales_return_detail' r.pk %}">{{ r.return_date }}</a></td><td><span class="badge bg-light text-dark">{{ r.get_status_display }}</span></td><td class="text-sm">Rs. {{ r.total_amount }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

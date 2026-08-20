@@ -1,0 +1,12 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}New Assignment{% endblock %}
+{% block content %}
+<p class="greeting">Hi <strong>{{ name }}</strong>,</p>
+<p class="message-text">A new assignment has been posted for <strong>{{ subject_name }}</strong>.</p>
+<table class="data">
+  <tr><td class="label">Assignment</td><td><strong>{{ assignment_title }}</strong></td></tr>
+  <tr><td class="label">Subject</td><td>{{ subject_name }}</td></tr>
+  <tr><td class="label">Due Date</td><td>{{ due_date }}</td></tr>
+</table>
+<p class="message-text">Log in to your portal to view the full assignment and submit your work.</p>
+{% endblock %}

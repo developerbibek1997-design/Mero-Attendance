@@ -1,0 +1,242 @@
+{% extends "dashboard.html" %}
+{% load static %}
+
+{% block title %}My Profile | {{ org.name }}{% endblock %}
+
+{% block content %}
+<style>
+  .portal-profile-page {
+    --profile-accent: {% if portal_role == "student" %}#4f46e5{% elif portal_role == "teacher" %}#be123c{% else %}#0f766e{% endif %};
+    --profile-accent-soft: {% if portal_role == "student" %}#eef2ff{% elif portal_role == "teacher" %}#fff1f2{% else %}#f0fdfa{% endif %};
+  }
+  .profile-hero {
+    overflow: hidden;
+    border: 0;
+    border-radius: 24px;
+    background:
+      radial-gradient(circle at 92% 10%, rgba(255,255,255,.18), transparent 30%),
+      linear-gradient(135deg, #0f172a, var(--profile-accent));
+    color: #fff;
+    box-shadow: 0 24px 55px rgba(15,23,42,.16);
+  }
+  .profile-avatar {
+    width: 104px;
+    height: 104px;
+    border-radius: 28px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    flex: 0 0 auto;
+    background: rgba(255,255,255,.16);
+    border: 3px solid rgba(255,255,255,.8);
+    box-shadow: 0 15px 32px rgba(15,23,42,.2);
+    font-size: 2.2rem;
+    font-weight: 900;
+  }
+  .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .profile-role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.22);
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .profile-panel {
+    border: 1px solid rgba(15,23,42,.07);
+    border-radius: 20px;
+    box-shadow: 0 15px 40px rgba(15,23,42,.06);
+  }
+  .profile-panel .card-header {
+    padding: 1.25rem 1.35rem;
+    background: #fff;
+    border-bottom: 1px solid #eef2f7;
+    border-radius: 20px 20px 0 0;
+  }
+  .profile-field label {
+    display: block;
+    margin-bottom: 7px;
+    color: #475569;
+    font-size: .74rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .profile-field input,
+  .profile-field select {
+    min-height: 48px;
+    border-color: #dbe3ee;
+    border-radius: 12px;
+    background: #f8fafc;
+  }
+  .profile-field input:focus,
+  .profile-field select:focus {
+    background: #fff;
+    border-color: var(--profile-accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--profile-accent) 12%, transparent);
+  }
+  .profile-field .errorlist {
+    list-style: none;
+    padding: 6px 0 0;
+    margin: 0;
+    color: #be123c;
+    font-size: .78rem;
+    font-weight: 700;
+  }
+  .account-fact {
+    padding: 14px;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 1px solid #e8edf4;
+  }
+  .account-fact small {
+    display: block;
+    color: #64748b;
+    font-size: .68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .account-fact strong { color: #0f172a; font-size: .88rem; word-break: break-word; }
+  .completion-track {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255,255,255,.18);
+  }
+  .completion-track span {
+    display: block;
+    height: 100%;
+    width: {{ profile_completion_pct }}%;
+    border-radius: inherit;
+    background: #fff;
+  }
+  .profile-save {
+    border: 0;
+    border-radius: 12px;
+    background: var(--profile-accent);
+    color: #fff;
+    font-weight: 850;
+    padding: 12px 20px;
+  }
+  .profile-save:hover { color: #fff; filter: brightness(.94); }
+</style>
+
+<div class="container-fluid py-4 portal-profile-page">
+  <section class="profile-hero p-4 p-lg-5 mb-4">
+    <div class="d-flex flex-column flex-md-row align-items-md-center gap-4">
+      <div class="profile-avatar">
+        {% if memb.photo %}
+        <img src="{{ memb.photo.url }}" alt="{{ memb.name }} profile photo">
+        {% else %}
+        {{ memb.name|default:request.user.username|slice:":1"|upper }}
+        {% endif %}
+      </div>
+      <div class="flex-grow-1">
+        <span class="profile-role-badge">
+          {% if portal_role == "student" %}
+          <i class="fas fa-user-graduate"></i> Student Profile
+          {% elif portal_role == "teacher" %}
+          <i class="fas fa-chalkboard-teacher"></i> Teacher Profile
+          {% else %}
+          <i class="fas fa-briefcase"></i> Staff Profile
+          {% endif %}
+        </span>
+        <h2 class="text-white font-weight-bolder mt-3 mb-1">{{ memb.name }}</h2>
+        <div class="d-flex flex-wrap gap-3 text-sm opacity-8">
+          <span><i class="fas fa-building me-1"></i>{{ org.name }}</span>
+          <span><i class="fas fa-envelope me-1"></i>{{ request.user.email }}</span>
+          {% if memb.designation %}<span><i class="fas fa-id-badge me-1"></i>{{ memb.designation }}</span>{% endif %}
+        </div>
+        <div class="mt-3" style="max-width:430px;">
+          <div class="d-flex justify-content-between text-xs font-weight-bold mb-1">
+            <span>Profile completion</span><span>{{ profile_completion_pct }}%</span>
+          </div>
+          <div class="completion-track"><span></span></div>
+        </div>
+      </div>
+      <div class="d-flex flex-column gap-2">
+        <a href="{% url 'handle:changePassword' %}" class="btn btn-light mb-0">
+          <i class="fas fa-key me-2"></i>Change Password
+        </a>
+        <a href="{% url 'staff:dashboard' %}" class="btn btn-outline-light mb-0">
+          <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <div class="card profile-panel">
+        <div class="card-header">
+          <h5 class="mb-1 font-weight-bolder text-dark">Personal Information</h5>
+          <p class="text-sm text-muted mb-0">Keep your contact and personal details current.</p>
+        </div>
+        <div class="card-body p-4">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="row g-3">
+              {% for field in form %}
+              <div class="{% if field.name == 'photo' %}col-12{% else %}col-md-6{% endif %} profile-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {{ field.errors }}
+                {% if field.help_text %}<div class="text-xs text-muted mt-1">{{ field.help_text }}</div>{% endif %}
+              </div>
+              {% endfor %}
+            </div>
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 border-top mt-4 pt-4">
+              <p class="text-xs text-muted mb-0">
+                <i class="fas fa-shield-halved text-success me-1"></i>
+                Organization, role, classification, salary and login email remain administrator-controlled.
+              </p>
+              <button type="submit" class="profile-save">
+                <i class="fas fa-floppy-disk me-2"></i>Save Profile
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-4">
+      <div class="card profile-panel mb-4">
+        <div class="card-header">
+          <h6 class="mb-0 font-weight-bolder text-dark"><i class="fas fa-user-shield me-2"></i>Account Details</h6>
+        </div>
+        <div class="card-body p-3 d-flex flex-column gap-2">
+          <div class="account-fact"><small>Login email</small><strong>{{ request.user.email }}</strong></div>
+          <div class="account-fact"><small>Organization</small><strong>{{ org.name }}</strong></div>
+          <div class="account-fact"><small>Account role</small><strong>{{ portal_role_label|default:memb.get_member_type_display }}</strong></div>
+          <div class="account-fact"><small>Status</small><strong>{{ memb.get_status_display }}</strong></div>
+          {% if memb.branch %}<div class="account-fact"><small>Branch</small><strong>{{ memb.branch.name }}</strong></div>{% endif %}
+          {% if memb.classification %}<div class="account-fact"><small>Classification</small><strong>{{ memb.classification.name }}{% if memb.section %} / {{ memb.section.name }}{% endif %}</strong></div>{% endif %}
+          {% if memb.roll_number %}<div class="account-fact"><small>Roll / Registration</small><strong>{{ memb.roll_number }}</strong></div>{% endif %}
+        </div>
+      </div>
+
+      {% if profile_courses %}
+      <div class="card profile-panel">
+        <div class="card-header">
+          <h6 class="mb-0 font-weight-bolder text-dark"><i class="fas fa-book-open me-2"></i>Courses</h6>
+        </div>
+        <div class="card-body p-3">
+          {% for course in profile_courses %}
+          <span class="badge bg-light text-dark border me-1 mb-1">{{ course.name }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

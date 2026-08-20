@@ -1,0 +1,83 @@
+{% extends 'dashboard.html' %}
+{% block title %}New Client | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+
+      {% for msg in messages %}
+      <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+      {% endfor %}
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom p-4">
+          <h5 class="mb-0"><i class="fas fa-building text-primary me-2"></i>New Client</h5>
+        </div>
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="text-xs font-weight-bold">Client Number <span class="text-muted">(optional)</span></label>
+                <input type="text" name="client_number" class="form-control" placeholder="Auto-generated if left blank">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="text-xs font-weight-bold">Client Organization Name</label>
+                <input type="text" name="client_org_name" class="form-control" required>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="text-xs font-weight-bold">Status</label>
+                <select name="status" class="form-select">
+                  {% for value,label in status_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="text-xs font-weight-bold">Priority</label>
+                <select name="priority" class="form-select">
+                  {% for value,label in priority_choices %}<option value="{{ value }}"{% if value == 'medium' %} selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="text-xs font-weight-bold">Branch{% if branches %} *{% endif %}</label>
+                <select name="branch" class="form-select" {% if branches %}required{% endif %}>
+                  {% if branches %}
+                    <option value="" disabled selected>-- Select Branch --</option>
+                    {% for branch in branches %}<option value="{{ branch.pk }}">{{ branch.name }}</option>{% endfor %}
+                  {% else %}
+                    <option value="">All / Head Office</option>
+                  {% endif %}
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="text-xs font-weight-bold">Contact Person</label>
+                <input type="text" name="contact_person" class="form-control">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="text-xs font-weight-bold">Phone</label>
+                <input type="text" name="phone" class="form-control">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="text-xs font-weight-bold">Email</label>
+                <input type="email" name="email" class="form-control">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="text-xs font-weight-bold">Address</label>
+                <input type="text" name="address" class="form-control">
+              </div>
+            </div>
+            <button type="submit" class="btn bg-gradient-success btn-lg w-100">
+              <i class="fas fa-check-circle me-2"></i> Create Client
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

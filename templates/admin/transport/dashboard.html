@@ -1,0 +1,118 @@
+{% extends 'dashboard.html' %}
+{% block title %}Transport & Drivers{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">Transport & Drivers</h4>
+      <p class="text-muted mb-0">Assign driver accounts, buses and student pickup stops.</p>
+    </div>
+    <a class="btn btn-outline-primary" href="{% url 'handle:addMember' %}">
+      <i class="fas fa-user-plus me-2"></i>Add Driver User
+    </a>
+  </div>
+
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+  {% endfor %}
+
+  <div class="row g-4">
+    <div class="col-xl-5">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3">Add or update bus</h6>
+          <form method="post">
+            {% csrf_token %}<input type="hidden" name="action" value="create_bus">
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label">Bus name</label><input class="form-control" name="name" required placeholder="Bus 01"></div>
+              <div class="col-md-6"><label class="form-label">Registration</label><input class="form-control" name="registration_number" required placeholder="BA 1 KHA 1234"></div>
+              <div class="col-12"><label class="form-label">Route</label><input class="form-control" name="route_name" placeholder="Koteshwor → School"></div>
+              <div class="col-md-6">
+                <label class="form-label">Driver</label>
+                <select class="form-select" name="driver_id">
+                  <option value="">Unassigned</option>
+                  {% for driver in drivers %}<option value="{{ driver.id }}">{{ driver.name }}</option>{% endfor %}
+                </select>
+                <div class="form-text">Create a member with type Driver and enable dashboard access.</div>
+              </div>
+              <div class="col-md-6"><label class="form-label">Capacity</label><input class="form-control" name="capacity" type="number" min="1" max="200" value="30"></div>
+            </div>
+            <button class="btn btn-primary mt-3"><i class="fas fa-bus me-2"></i>Save Bus</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3">Assign student to bus</h6>
+          <form method="post">
+            {% csrf_token %}<input type="hidden" name="action" value="assign_student">
+            <div class="mb-3">
+              <label class="form-label">Student</label>
+              <select class="form-select" name="student_id" required>
+                <option value="">Choose student</option>
+                {% for student in students %}<option value="{{ student.id }}">{{ student.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Bus</label>
+              <select class="form-select" name="bus_id" required>
+                <option value="">Choose bus</option>
+                {% for bus in buses %}<option value="{{ bus.id }}">{{ bus.name }} — {{ bus.registration_number }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="mb-3"><label class="form-label">Pickup stop</label><input class="form-control" name="stop_name" placeholder="New Baneshwor Chowk"></div>
+            <div class="row g-2">
+              <div class="col"><input class="form-control" name="stop_latitude" placeholder="Stop latitude"></div>
+              <div class="col"><input class="form-control" name="stop_longitude" placeholder="Stop longitude"></div>
+            </div>
+            <button class="btn btn-success mt-3"><i class="fas fa-route me-2"></i>Assign Student</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3">Fleet</h6>
+          {% for bus in buses %}
+          <div class="border rounded-3 p-3 mb-3">
+            <div class="d-flex justify-content-between">
+              <div>
+                <div class="fw-bold">{{ bus.name }} <span class="text-muted">• {{ bus.registration_number }}</span></div>
+                <div class="small text-muted">{{ bus.route_name|default:"Route not set" }}</div>
+              </div>
+              <span class="badge bg-{% if bus.is_active %}success{% else %}secondary{% endif %}">{% if bus.is_active %}Active{% else %}Inactive{% endif %}</span>
+            </div>
+            <div class="row mt-3 small">
+              <div class="col"><strong>Driver</strong><br>{{ bus.driver.name|default:"Unassigned" }}</div>
+              <div class="col"><strong>Students</strong><br>{{ bus.student_assignments.count }}</div>
+              <div class="col"><strong>Capacity</strong><br>{{ bus.capacity }}</div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-center text-muted py-5"><i class="fas fa-bus fa-3x mb-3"></i><p>No buses added yet.</p></div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3">Active student assignments</h6>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead><tr><th>Student</th><th>Bus</th><th>Pickup stop</th></tr></thead>
+              <tbody>
+                {% for item in assignments %}
+                <tr><td>{{ item.student.name }}</td><td>{{ item.bus.name }}</td><td>{{ item.stop_name|default:"—" }}</td></tr>
+                {% empty %}<tr><td colspan="3" class="text-center text-muted">No assignments.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends 'dashboard.html' %}
+{% block title %}Review Bulk Payslips | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+  .bp-input{width:78px;padding:.25rem .4rem;font-size:.76rem;border:1px solid #dde3ea;border-radius:6px;}
+  .bp-input.pct{width:56px;}
+  .bp-table th{white-space:nowrap;font-size:.68rem;text-transform:uppercase;letter-spacing:.02em;}
+  .bp-table td{white-space:nowrap;font-size:.78rem;}
+  .bp-table tfoot td{font-weight:800;background:#f8fafc;}
+  .bp-exists{background:#fff7ed;}
+  .bp-badge{font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:99px;background:#fed7aa;color:#9a3412;}
+</style>
+
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-table text-success me-2"></i>Review Bulk Payslips</h4>
+      <p class="text-xs text-muted mb-0">{{ month_name }} · {{ from_date|date:"M d, Y" }} – {{ to_date|date:"M d, Y" }} · {{ rows|length }} member(s). Edit any field, then Recalculate — nothing is saved until you generate.</p>
+    </div>
+    <a href="{% url 'schooladmin:bulk_payslip' %}" class="btn btn-outline-secondary btn-sm">Back to Selection</a>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <form method="post" action="{% url 'schooladmin:bulk_payslip' %}" id="previewForm">
+    {% csrf_token %}
+    <input type="hidden" name="from_date" value="{{ from_date|date:'Y-m-d' }}">
+    <input type="hidden" name="to_date" value="{{ to_date|date:'Y-m-d' }}">
+    <input type="hidden" name="month_name" value="{{ month_name }}">
+    {% if send_emails %}<input type="hidden" name="send_email" value="on">{% endif %}
+    {% for mid in member_ids %}<input type="hidden" name="member_ids" value="{{ mid }}">{% endfor %}
+
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 bp-table">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Employee</th>
+              <th>Branch / Dept</th>
+              <th class="text-end">Basic</th>
+              <th class="text-center">Days<br>(P / PL / UL of Total)</th>
+              <th class="text-end">OT Hrs</th>
+              <th class="text-end">OT Amt</th>
+              <th class="text-end">Bonus<br><span class="text-muted fw-normal">extra +</span></th>
+              <th class="text-end">Allowance<br><span class="text-muted fw-normal">extra +</span></th>
+              <th class="text-end">PF Emp<br><span class="text-muted fw-normal">%</span></th>
+              <th class="text-end">PF Empr</th>
+              <th class="text-end">SSF Emp<br><span class="text-muted fw-normal">%</span></th>
+              <th class="text-end">SSF Empr</th>
+              <th class="text-end">TDS<br><span class="text-muted fw-normal">%</span></th>
+              <th class="text-end">Other Ded<br><span class="text-muted fw-normal">extra +</span></th>
+              <th class="text-end">Gross</th>
+              <th class="text-end pe-3">Net</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            <tr class="{% if row.already_exists %}bp-exists{% endif %}">
+              <td class="ps-3">
+                <div class="fw-bold">{{ row.member.name }}</div>
+                {% if row.already_exists %}<span class="bp-badge">Already generated — will skip</span>{% endif %}
+              </td>
+              <td class="text-muted">{{ row.member.branch.name|default:"—" }}{% if row.member.classification %} · {{ row.member.classification.name }}{% endif %}</td>
+              <td class="text-end">Rs. {{ row.comps.base_earnings }}</td>
+              <td class="text-center text-muted">{{ row.stats.days_present }} / {{ row.stats.days_paid_leave }} / {{ row.stats.days_unpaid_absent }} of {{ row.stats.total_days }}</td>
+              <td class="text-end text-muted">{{ row.comps.overtime_hours }}</td>
+              <td class="text-end">Rs. {{ row.comps.overtime_amount }}</td>
+              <td class="text-end">
+                Rs. {{ row.comps.bonus_total }}
+                <input type="number" step="0.01" min="0" class="bp-input" name="bonus_{{ row.member.id }}" value="{{ row.overrides.extra_bonus }}">
+              </td>
+              <td class="text-end">
+                Rs. {{ row.comps.allowance_total }}
+                <input type="number" step="0.01" min="0" class="bp-input" name="allowance_{{ row.member.id }}" value="{{ row.overrides.extra_allowance }}">
+              </td>
+              <td class="text-end">
+                Rs. {{ row.comps.pf_employee }}<br>
+                <input type="number" step="0.01" min="0" class="bp-input pct" name="pf_{{ row.member.id }}" value="{{ row.comps.pf_employee_pct }}" {% if not row.member.pf_enabled %}disabled title="PF disabled for this member"{% endif %}>
+              </td>
+              <td class="text-end text-muted">Rs. {{ row.comps.pf_employer }}</td>
+              <td class="text-end">
+                Rs. {{ row.comps.ssf_employee }}<br>
+                <input type="number" step="0.01" min="0" class="bp-input pct" name="ssf_{{ row.member.id }}" value="{{ row.comps.ssf_employee_pct }}" {% if not row.member.ssf_enabled %}disabled title="SSF disabled for this member"{% endif %}>
+              </td>
+              <td class="text-end text-muted">Rs. {{ row.comps.ssf_employer }}</td>
+              <td class="text-end">
+                Rs. {{ row.comps.tax_amount }}<br>
+                <input type="number" step="0.01" min="0" class="bp-input pct" name="tds_{{ row.member.id }}" value="{{ row.comps.tax_pct }}">
+              </td>
+              <td class="text-end">
+                Rs. {{ row.comps.other_deduction }}
+                <input type="number" step="0.01" min="0" class="bp-input" name="deduction_{{ row.member.id }}" value="{{ row.overrides.extra_deduction }}">
+              </td>
+              <td class="text-end fw-bold">Rs. {{ row.comps.gross_salary }}</td>
+              <td class="text-end fw-bold text-success pe-3">Rs. {{ row.comps.net_payable }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="16" class="text-center text-muted py-4">No members selected.</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if rows %}
+          <tfoot>
+            <tr>
+              <td class="ps-3" colspan="5">Totals</td>
+              <td class="text-end">Rs. {{ totals.overtime_amount }}</td>
+              <td class="text-end">Rs. {{ totals.bonus_total }}</td>
+              <td class="text-end">Rs. {{ totals.allowance_total }}</td>
+              <td class="text-end">Rs. {{ totals.pf_employee }}</td>
+              <td class="text-end">Rs. {{ totals.pf_employer }}</td>
+              <td class="text-end">Rs. {{ totals.ssf_employee }}</td>
+              <td class="text-end">Rs. {{ totals.ssf_employer }}</td>
+              <td class="text-end">Rs. {{ totals.tax_amount }}</td>
+              <td class="text-end">Rs. {{ totals.other_deduction }}</td>
+              <td class="text-end">Rs. {{ totals.gross_salary }}</td>
+              <td class="text-end text-success pe-3">Rs. {{ totals.net_payable }}</td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+
+    {% if rows %}
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button type="submit" name="step" value="preview" class="btn btn-outline-primary"><i class="fas fa-rotate me-1"></i>Recalculate</button>
+      <button type="submit" name="step" value="generate" class="btn btn-success" onclick="return confirm('Generate {{ rows|length }} payslip(s) with these figures? This cannot be edited afterward.');">
+        <i class="fas fa-check me-1"></i>Confirm &amp; Generate Payslips
+      </button>
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

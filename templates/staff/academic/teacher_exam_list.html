@@ -1,0 +1,16 @@
+{% extends 'dashboard.html' %}
+{% block title %}My Subject Exams | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-4"><div><h4 class="font-weight-bolder mb-1"><i class="fas fa-clipboard-check text-primary me-2"></i>My Subject Exams</h4><p class="text-sm text-muted mb-0">You can enter marks only for subjects and sections assigned to you.</p></div><a href="{% url 'staff:dashboard' %}" class="btn btn-sm btn-outline-secondary mb-0">Dashboard</a></div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %}">{{ msg }}</div>{% endfor %}
+  <div class="row g-3">
+    {% for exam in exams %}
+    <div class="col-lg-6"><div class="card border-0 shadow-sm h-100"><div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-start mb-2"><div><h6 class="font-weight-bolder mb-1">{{ exam.name }}</h6><div class="text-xs text-muted">{{ exam.classification.name }}{% if exam.section %} / {{ exam.section.name }}{% endif %} · {{ exam.start_date }}–{{ exam.end_date }}</div></div><span class="badge {% if exam.is_published %}bg-success{% elif exam.status == 'marks_entry' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ exam.get_status_display }}</span></div>
+      <div class="mt-3">{% for scope in exam.teacher_scopes %}<a href="{% url 'staff:teacher_exam_marks' exam.pk scope.pk %}" class="btn btn-sm {% if exam.is_published %}btn-outline-secondary{% else %}btn-outline-primary{% endif %} me-1 mb-2">{{ scope.subject.name }}{% if scope.section %} · {{ scope.section.name }}{% endif %}</a>{% empty %}<span class="text-sm text-muted">No assigned subject for this exam.</span>{% endfor %}</div>
+    </div></div></div>
+    {% empty %}<div class="col-12"><div class="card border-0 shadow-sm text-center text-muted py-5">No exams match your active subject assignments.</div></div>{% endfor %}
+  </div>
+</div>
+{% endblock %}

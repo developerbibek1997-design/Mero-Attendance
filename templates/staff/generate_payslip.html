@@ -1,0 +1,46 @@
+{% extends 'dashboard.html' %}
+{% block title %}Generate Payslip | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      {% for msg in messages %}
+      <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+      {% endfor %}
+
+      <div class="card border-0 shadow-sm p-4" style="border-radius:12px;">
+        <h5 class="fw-bold mb-1">Generate Payslip</h5>
+        <p class="text-xs text-muted mb-4">Creates a single draft payslip for one member. An administrator must finalize it before payment.</p>
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Member</label>
+            <select name="member_id" class="form-select" required>
+              <option value="" disabled selected>Select member...</option>
+              {% for m in members %}
+              <option value="{{ m.id }}">{{ m.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold">From Date</label>
+              <input type="date" name="from_date" class="form-control" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold">To Date</label>
+              <input type="date" name="to_date" class="form-control" required>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label small fw-bold">Month Label</label>
+            <input type="text" name="month_name" class="form-control" placeholder="e.g. July 2026" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Generate Payslip</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

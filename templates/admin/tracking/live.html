@@ -1,0 +1,163 @@
+{% extends 'dashboard.html' %}
+{% block title %}Live Tracking | {{ org.name }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-route text-primary me-2"></i>Live Location Tracking</h4>
+      <p class="text-xs text-muted mb-0">See where field staff / marketers travelled. Enable tracking per member.</p>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="row g-3">
+    <!-- Members -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 font-weight-bolder">Field Staff</h6></div>
+        <div class="card-body p-0" style="max-height:520px;overflow-y:auto;">
+          <ul class="list-group list-group-flush">
+            {% for row in rows %}
+            <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div>
+                <div class="text-sm font-weight-bold">{{ row.m.name }}</div>
+                {% if row.last %}
+                  <div class="text-xs text-muted">Last: {{ row.last.tracked_at|date:"M d, H:i" }}</div>
+                {% else %}
+                  <div class="text-xs text-muted">No pings yet</div>
+                {% endif %}
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                {% if row.last %}
+                <a href="?member={{ row.m.id }}" class="btn btn-outline-primary btn-sm mb-0" title="Quick trail"><i class="fas fa-map-location-dot"></i></a>
+                <a href="{% url 'schooladmin:live_tracking_detail' row.m.id %}" class="btn btn-outline-dark btn-sm mb-0" title="Full report"><i class="fas fa-chart-area"></i></a>
+                {% endif %}
+                <form method="post" class="mb-0">
+                  {% csrf_token %}
+                  <input type="hidden" name="member_id" value="{{ row.m.id }}">
+                  <button class="btn btn-sm mb-0 {% if row.m.live_tracking_enabled %}bg-gradient-success text-white{% else %}btn-outline-secondary{% endif %}">
+                    {% if row.m.live_tracking_enabled %}<i class="fas fa-toggle-on me-1"></i>On{% else %}<i class="fas fa-toggle-off me-1"></i>Off{% endif %}
+                  </button>
+                </form>
+              </div>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-center text-muted py-4">No active members.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map + trail -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <h6 class="mb-0 font-weight-bolder">{% if selected %}Trail — {{ selected.name }}{% else %}Travel Trail{% endif %}</h6>
+            {% if selected %}<span id="liveBadge" class="badge bg-gradient-success text-white">live</span>{% endif %}
+          </div>
+          {% if selected %}
+          <form method="get" class="d-flex gap-2 mb-0">
+            <input type="hidden" name="member" value="{{ selected.id }}">
+            <input type="date" name="date" value="{{ date }}" class="form-control form-control-sm" style="max-width:170px;">
+            <button class="btn btn-primary btn-sm mb-0">View</button>
+          </form>
+          {% endif %}
+        </div>
+        <div class="card-body p-2">
+          {% if selected %}
+            <div id="distBanner" class="d-none alert alert-primary d-flex justify-content-between align-items-center py-2 mb-2">
+              <span><i class="fas fa-person-walking me-2"></i>Total walked distance</span>
+              <strong id="distValue" class="fs-6">—</strong>
+            </div>
+            <div id="map" style="height:440px;border-radius:12px;"></div>
+            <div id="noData" class="text-center text-muted py-5 d-none">No location trail for this day.</div>
+          {% else %}
+            <div class="text-center text-muted py-5"><i class="fas fa-map-location-dot fa-2x mb-2 d-block opacity-6"></i>Select a member with pings to view their route.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if selected %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const DATA_URL = "{% url 'schooladmin:live_tracking_data' %}?member={{ selected.id }}&date={{ date }}";
+let map = null, line = null, startMarker = null, endMarker = null, dotLayer = null, lastCount = 0;
+
+function render(data) {
+  const pts = data.points || [];
+  const mapEl = document.getElementById('map');
+  const noData = document.getElementById('noData');
+  const distBanner = document.getElementById('distBanner');
+  if (!pts.length) {
+    if (!map) { mapEl.classList.add('d-none'); noData.classList.remove('d-none'); }
+    return;
+  }
+  mapEl.classList.remove('d-none'); noData.classList.add('d-none');
+  const latlngs = pts.map(p => [p.lat, p.lng]);
+
+  if (!map) {
+    map = L.map('map').setView(latlngs[0], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+    line = L.polyline(latlngs, { color: '#e11d48', weight: 4, opacity: 0.85 }).addTo(map);
+    dotLayer = L.layerGroup().addTo(map);
+    startMarker = L.circleMarker(latlngs[0], { radius: 9, color: '#16a34a', fillColor: '#16a34a', fillOpacity: 1 })
+      .bindPopup('Start · ' + pts[0].time).addTo(map);
+    endMarker = L.circleMarker(latlngs[latlngs.length - 1], { radius: 10, color: '#e11d48', fillColor: '#e11d48', fillOpacity: 1 }).addTo(map);
+    map.fitBounds(line.getBounds(), { padding: [30, 30] });
+  } else {
+    line.setLatLngs(latlngs);
+    endMarker.setLatLng(latlngs[latlngs.length - 1]);
+  }
+
+  // Colored dot at every recorded point (skip first/last — they have their own markers).
+  dotLayer.clearLayers();
+  for (let i = 1; i < pts.length - 1; i++) {
+    L.circleMarker([pts[i].lat, pts[i].lng], {
+      radius: 5, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.9, weight: 1
+    }).bindPopup('Point ' + (i + 1) + ' · ' + pts[i].time + (pts[i].acc ? ' (±' + Math.round(pts[i].acc) + 'm)' : '')).addTo(dotLayer);
+  }
+  endMarker.bindPopup('Latest · ' + pts[pts.length - 1].time);
+  startMarker.bindPopup('Start · ' + pts[0].time);
+
+  // Total walked distance banner
+  if (distBanner) {
+    distBanner.classList.remove('d-none');
+    const km = data.total_km || 0, m = data.total_meters || 0;
+    document.getElementById('distValue').textContent =
+      (km >= 1 ? km + ' km' : Math.round(m) + ' m') + '  ·  ' + pts.length + ' points';
+  }
+
+  // Only recentre when new points arrived, so the admin can pan freely otherwise.
+  if (pts.length !== lastCount) {
+    endMarker.setStyle({ radius: 13 });
+    setTimeout(() => endMarker.setStyle({ radius: 10 }), 600);
+    map.panTo(latlngs[latlngs.length - 1]);
+  }
+  lastCount = pts.length;
+  const badge = document.getElementById('liveBadge');
+  if (badge) badge.textContent = pts.length + ' pts · ' + new Date().toLocaleTimeString();
+}
+
+function refresh() {
+  fetch(DATA_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(r => r.json())
+    .then(d => render(d))
+    .catch(() => {});
+}
+
+refresh();
+// Live auto-refresh every 15s (only meaningful for "today"/no-date view).
+const REFRESH = setInterval(refresh, 15000);
+window.addEventListener('beforeunload', () => clearInterval(REFRESH));
+</script>
+{% endif %}
+{% endblock %}

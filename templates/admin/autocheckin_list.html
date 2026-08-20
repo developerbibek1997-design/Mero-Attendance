@@ -67,7 +67,10 @@
                 </div>
                 <div class="modal-footer">
                   <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                  <a href="{% url 'schooladmin:auto_checkin_delete' ac.id %}" class="btn bg-gradient-danger">Yes, Delete</a>
+                  <form method="post" action="{% url 'schooladmin:auto_checkin_delete' ac.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn bg-gradient-danger">Yes, Delete</button>
+                  </form>
                 </div>
               </div>
             </div>

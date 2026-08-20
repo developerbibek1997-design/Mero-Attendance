@@ -3,16 +3,48 @@
 {% block title %}Finance Dashboard | {{ org.name }}{% endblock %}
 {% block content %}
 <div class="container-fluid py-2">
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>
       <h4 class="font-weight-bolder mb-0">Finance Dashboard</h4>
-      <p class="text-sm text-muted mb-0">Income, Expense & Balance Overview</p>
+      <p class="text-sm text-muted mb-0">Income, Expense & Balance Overview{% if selected_branch %} — filtered by branch{% endif %}</p>
     </div>
-    <div>
-      <a href="{% url 'schooladmin:add_income' %}" class="btn btn-success btn-sm me-2"><i class="fas fa-plus me-1"></i>Add Income</a>
-      <a href="{% url 'schooladmin:add_expense' %}" class="btn btn-danger btn-sm"><i class="fas fa-minus me-1"></i>Add Expense</a>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'schooladmin:add_income' %}" class="btn btn-success btn-sm"><i class="fas fa-plus me-1"></i>Add Income</a>
+      <a href="{% url 'schooladmin:add_expense' %}" class="btn btn-danger btn-sm text-white"><i class="fas fa-minus me-1"></i>Add Expense</a>
     </div>
   </div>
+
+<form method="get" class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-2">
+    <div class="row g-2 align-items-end">
+      <!-- Branch Filter -->
+      <div class="col-12 col-md-6">
+        <label class="text-xs fw-bold d-block mb-1">Filter by Branch</label>
+        <select name="branch" class="form-select form-select-sm w-100">
+          <option value="">All Branches</option>
+          {% for b in branches %}
+            <option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <!-- Buttons with hidden labels for alignment -->
+      <div class="col-6 col-md-3">
+        <label class="text-xs fw-bold d-block mb-1" style="visibility: hidden; height: 20px;">&nbsp;</label>
+        <button type="submit" class="btn btn-primary btn-sm w-100" style="height: 38px;">
+          <i class="fas fa-filter me-1"></i>Filter
+        </button>
+      </div>
+      
+      <div class="col-6 col-md-3">
+        <label class="text-xs fw-bold d-block mb-1" style="visibility: hidden; height: 20px;">&nbsp;</label>
+        <a href="{% url 'schooladmin:finance_dashboard' %}" class="btn btn-outline-secondary btn-sm w-100" style="height: 38px; display: flex; align-items: center; justify-content: center;">
+          Clear
+        </a>
+      </div>
+    </div>
+  </div>
+</form>
 
   {% for msg in messages %}
   <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show" role="alert">
@@ -110,6 +142,51 @@
       </div>
     </div>
   </div>
+
+  {% if accounting_linked %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 font-weight-bolder"><i class="fas fa-link text-info me-2"></i>Accounting-linked (Stock &amp; Sales)</h6>
+      <a href="{% url 'schooladmin:accounting_dashboard' %}" class="text-xs text-primary font-weight-bold">Open Accounting →</a>
+    </div>
+    <div class="card-body">
+      <p class="text-xs text-muted">Read-only figures posted automatically to the double-entry ledger from Purchases and Sales — kept separate from the manual Income/Expense entries above so nothing is counted twice.</p>
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span class="text-sm">Purchases posted (Inventory debited)</span>
+            <span class="font-weight-bold">Rs. {{ linked_purchase_total|floatformat:2 }}</span>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span class="text-sm">Sales revenue posted</span>
+            <span class="font-weight-bold text-success">Rs. {{ linked_sale_total|floatformat:2 }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light"><tr><th class="text-xs">Date</th><th class="text-xs">Voucher</th><th class="text-xs">Source</th><th class="text-xs">Account</th><th class="text-xs text-end">Debit</th><th class="text-xs text-end">Credit</th></tr></thead>
+          <tbody>
+            {% for line in linked_recent_entries %}
+            <tr>
+              <td class="text-sm">{{ line.entry.entry_date }}</td>
+              <td class="text-sm"><a href="{% url 'schooladmin:journal_detail' line.entry.pk %}">{{ line.entry.voucher_number }}</a></td>
+              <td class="text-xs text-capitalize">{{ line.entry.source }}</td>
+              <td class="text-sm">{{ line.account.name }}</td>
+              <td class="text-sm text-end">{% if line.debit %}{{ line.debit }}{% endif %}</td>
+              <td class="text-sm text-end">{% if line.credit %}{{ line.credit }}{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-3">No Purchase/Sale journal entries yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between">

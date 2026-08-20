@@ -1,26 +1,87 @@
 {% extends 'dashboard.html' %}
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Auto Check-in | {{ org.name }}{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="row">
-    <div class="col-lg-6 mx-auto">
-      <div class="card p-4 shadow-sm">
-        <h5 class="mb-4">Configure Auto Check-in</h5>
-        <form method="post" novalidate>
-          {% csrf_token %}
-          {% for field in form %}
-            <div class="mb-3">
-              <label class="form-label text-xs font-weight-bold text-uppercase">{{ field.label }}</label>
-              {{ field }}
-            </div>
-          {% endfor %}
-          <button type="submit" class="btn bg-gradient-success w-100 mt-3">Save Attendance Log</button>
-        </form>
+<style>
+.autocheckin-hero{background:linear-gradient(135deg,#0f172a,#166534);border-radius:18px;padding:1.3rem 1.5rem;color:#fff}
+.autocheckin-hero p{opacity:.8}
+</style>
+<div class="container-fluid py-3">
+  <div class="row justify-content-center">
+    <div class="col-xl-8">
+      <div class="autocheckin-hero mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <div class="text-xs text-uppercase opacity-75">Attendance</div>
+          <h4 class="text-white font-weight-bolder mb-1"><i class="fas fa-calendar-check me-2"></i>{% if form.instance.pk %}Edit{% else %}Configure{% endif %} Auto Check-in</h4>
+          <p class="text-sm mb-0">Set a fixed check-in / check-out time for a member — useful when a device can't scan them directly.</p>
+        </div>
+        <a href="{% url 'schooladmin:auto_checkin_list' %}" class="btn btn-light btn-sm mb-0"><i class="fas fa-arrow-left me-1"></i>Auto Check-in Logs</a>
       </div>
+
+      {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+      {% if form.non_field_errors %}<div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0">Who &amp; What</h6></div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label text-xs font-weight-bold">{{ form.member.label }} *</label>
+                {{ form.member }}
+                {% for e in form.member.errors %}<div class="text-danger text-xs mt-1">{{ e }}</div>{% endfor %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-xs font-weight-bold">{{ form.name.label }} *</label>
+                {{ form.name }}
+                {% for e in form.name.errors %}<div class="text-danger text-xs mt-1">{{ e }}</div>{% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0"><i class="fas fa-arrow-right-to-bracket me-2 text-success"></i>Check-in</h6></div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label text-xs font-weight-bold">{{ form.checkin_date.label }} *</label>
+                {{ form.checkin_date }}
+                {% for e in form.checkin_date.errors %}<div class="text-danger text-xs mt-1">{{ e }}</div>{% endfor %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-xs font-weight-bold">{{ form.checkin_time_only.label }} *</label>
+                {{ form.checkin_time_only }}
+                {% for e in form.checkin_time_only.errors %}<div class="text-danger text-xs mt-1">{{ e }}</div>{% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0"><i class="fas fa-arrow-right-from-bracket me-2 text-danger"></i>Check-out</h6></div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label text-xs font-weight-bold">{{ form.checkout_date.label }} *</label>
+                {{ form.checkout_date }}
+                {% for e in form.checkout_date.errors %}<div class="text-danger text-xs mt-1">{{ e }}</div>{% endfor %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-xs font-weight-bold">{{ form.checkout_time_only.label }} *</label>
+                {{ form.checkout_time_only }}
+                {% for e in form.checkout_time_only.errors %}<div class="text-danger text-xs mt-1">{{ e }}</div>{% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn bg-gradient-success mb-0"><i class="fas fa-calendar-check me-1"></i>Save Attendance Log</button>
+          <a href="{% url 'schooladmin:auto_checkin_list' %}" class="btn btn-outline-secondary mb-0">Cancel</a>
+        </div>
+      </form>
     </div>
   </div>
 </div>
-<script>
-    // Make sure all form inputs have the 'form-control' class for the premium styling
-    document.querySelectorAll('input, select').forEach(el => el.classList.add('form-control'));
-</script>
 {% endblock content %}

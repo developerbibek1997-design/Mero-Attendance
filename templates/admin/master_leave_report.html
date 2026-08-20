@@ -37,7 +37,7 @@
                                     {{ row.member.name|slice:":1" }}
                                 </div>
                                 <div class="d-flex flex-column justify-content-center">
-                                    <h6 class="mb-0 text-sm">{{ row.member.name }}</h6>
+                                    <h6 class="mb-0 text-sm"><a href="{% url 'handle:memberEdit' row.member.id %}" class="text-dark">{{ row.member.name }}</a></h6>
                                     <p class="text-xs text-secondary mb-0">{{ row.member.classification.name }}</p>
                                 </div>
                             </div>

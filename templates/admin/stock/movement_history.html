@@ -12,13 +12,27 @@
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-3">
       <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-3"><label class="text-xs font-weight-bold">Item</label>
+        <div class="col-md-3 col-6"><label class="text-xs font-weight-bold">Item</label>
           <select name="item" class="form-select form-select-sm"><option value="">All Items</option>{% for i in items %}<option value="{{ i.id }}" {% if selected_item == i.id|stringformat:"s" %}selected{% endif %}>{{ i.name }}</option>{% endfor %}</select></div>
-        <div class="col-md-2"><label class="text-xs font-weight-bold">Type</label>
+        <div class="col-md-3 col-6"><label class="text-xs font-weight-bold">Type</label>
           <select name="movement_type" class="form-select form-select-sm"><option value="">All</option><option value="in" {% if selected_type == 'in' %}selected{% endif %}>In</option><option value="out" {% if selected_type == 'out' %}selected{% endif %}>Out</option><option value="damage" {% if selected_type == 'damage' %}selected{% endif %}>Damage</option><option value="adjustment" {% if selected_type == 'adjustment' %}selected{% endif %}>Adjustment</option></select></div>
-        <div class="col-md-2"><label class="text-xs font-weight-bold">From</label><input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from|default:'' }}"></div>
-        <div class="col-md-2"><label class="text-xs font-weight-bold">To</label><input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to|default:'' }}"></div>
-        <div class="col-md-3 d-flex gap-1 flex-wrap">
+        <div class="col-md-3 col-6"><label class="text-xs font-weight-bold">From</label>
+          {% if nepali_enabled %}
+          <input type="text" class="form-control form-control-sm nepali-cal" name="date_from_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+          <input type="date" class="hidden-date-input" name="date_from" value="{{ date_from|default:'' }}">
+          {% else %}
+          <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from|default:'' }}">
+          {% endif %}
+        </div>
+        <div class="col-md-3 col-6"><label class="text-xs font-weight-bold">To</label>
+          {% if nepali_enabled %}
+          <input type="text" class="form-control form-control-sm nepali-cal" name="date_to_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+          <input type="date" class="hidden-date-input" name="date_to" value="{{ date_to|default:'' }}">
+          {% else %}
+          <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to|default:'' }}">
+          {% endif %}
+        </div>
+        <div class="col-12 d-flex gap-1 flex-wrap">
           <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-filter me-1"></i>Filter</button>
           <a href="{% url 'schooladmin:stock_movements' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
           <a href="{% url 'schooladmin:export_stock' %}?fmt=excel&type=movements" class="btn btn-success btn-sm" title="Export Excel"><i class="fas fa-file-excel"></i></a>
@@ -37,7 +51,7 @@
           {% for m in movements %}
           <tr>
             <td class="text-xs text-muted">{{ forloop.counter }}</td>
-            <td class="text-sm">{{ m.movement_date }}</td>
+            <td class="text-sm">{{ m.movement_date }}{% if nepali_enabled %}<br><small class="text-muted">{{ m.movement_date_np }} BS</small>{% endif %}</td>
             <td class="text-sm font-weight-bold">{{ m.item.name }}</td>
             <td>
               {% if m.movement_type == 'in' %}<span class="badge bg-success">IN</span>

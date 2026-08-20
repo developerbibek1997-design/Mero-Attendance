@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ session.location_name|default:"Permanent QR" }} | Mero Attendance</title>
+  <style>
+    :root { --ink:#0f172a; --muted:#64748b; --indigo:#4f46e5; --green:#16a34a; --red:#dc2626; }
+    * { box-sizing:border-box; }
+    @page { size:A4 portrait; margin:0; }
+    body {
+      margin:0; background:#e2e8f0; color:var(--ink);
+      font-family:Inter,Arial,sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact;
+    }
+    .print-toolbar {
+      width:210mm; max-width:100%; margin:16px auto; padding:12px 14px;
+      display:flex; justify-content:space-between; align-items:center; gap:12px;
+      background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(15,23,42,.12);
+    }
+    .toolbar-note { color:var(--muted); font-size:13px; }
+    .toolbar-actions { display:flex; gap:8px; }
+    .toolbar-btn {
+      border:1px solid #cbd5e1; border-radius:9px; padding:9px 14px; cursor:pointer;
+      background:#fff; color:#334155; font-weight:800; text-decoration:none; font-size:13px;
+    }
+    .toolbar-btn.primary { border-color:var(--indigo); background:var(--indigo); color:#fff; }
+    .sheet {
+      width:210mm; min-height:297mm; margin:0 auto 24px; padding:17mm 18mm 16mm;
+      background:#fff; position:relative; overflow:hidden; text-align:center;
+      box-shadow:0 18px 50px rgba(15,23,42,.16);
+    }
+    .sheet::before, .sheet::after {
+      content:""; position:absolute; border-radius:50%; pointer-events:none;
+    }
+    .sheet::before { width:90mm; height:90mm; top:-54mm; right:-36mm; background:#eef2ff; }
+    .sheet::after { width:70mm; height:70mm; bottom:-44mm; left:-32mm; background:#ecfdf5; }
+    .status-strip {
+      position:absolute; left:0; right:0; top:0; height:8mm; display:flex;
+      align-items:center; justify-content:center; color:#fff; font-size:10pt;
+      font-weight:900; letter-spacing:.08em; text-transform:uppercase;
+      background:{% if session.status == 'active' %}#16a34a{% else %}#dc2626{% endif %};
+    }
+    .brand { position:relative; z-index:1; margin-top:5mm; }
+    .brand-mark {
+      width:17mm; height:17mm; margin:0 auto 4mm; display:flex; align-items:center;
+      justify-content:center; border-radius:5mm; color:#fff; font-size:24pt; font-weight:950;
+      background:linear-gradient(135deg,#4f46e5,#312e81); box-shadow:0 8px 22px rgba(79,70,229,.25);
+    }
+    .brand-name { color:var(--indigo); font-size:13pt; font-weight:950; letter-spacing:.12em; text-transform:uppercase; }
+    .org-name { font-size:25pt; line-height:1.12; font-weight:950; margin:5mm 0 1.5mm; }
+    .headline { color:#334155; font-size:16pt; font-weight:850; margin:0 0 7mm; }
+    .qr-frame {
+      display:inline-flex; padding:7mm; border:1.2mm solid var(--indigo); border-radius:8mm;
+      background:#fff; box-shadow:0 12px 32px rgba(79,70,229,.15);
+    }
+    .qr-frame img { display:block; width:102mm; height:102mm; image-rendering:pixelated; }
+    .scan-copy { font-size:13pt; font-weight:900; margin:7mm 0 1.5mm; }
+    .scan-sub { max-width:145mm; margin:0 auto; color:var(--muted); font-size:9.5pt; line-height:1.55; }
+    .location-card {
+      position:relative; z-index:1; max-width:165mm; margin:7mm auto 0; padding:5mm 6mm;
+      display:grid; grid-template-columns:1fr 1fr; gap:3.5mm 6mm; text-align:left;
+      border:1px solid #dbe3ef; border-radius:5mm; background:#f8fafc;
+    }
+    .location-item small { display:block; color:var(--muted); font-size:7.5pt; font-weight:800; text-transform:uppercase; letter-spacing:.06em; margin-bottom:1mm; }
+    .location-item strong { display:block; color:var(--ink); font-size:9.5pt; line-height:1.35; }
+    .coordinates { font-family:"SFMono-Regular",Consolas,monospace; font-size:8.5pt !important; }
+    .inactive-warning {
+      max-width:165mm; margin:5mm auto 0; padding:3.5mm 5mm; border-radius:3mm;
+      color:#991b1b; background:#fee2e2; border:1px solid #fecaca;
+      font-size:9pt; font-weight:850; line-height:1.45;
+    }
+    .footer {
+      position:absolute; z-index:1; left:18mm; right:18mm; bottom:13mm;
+      display:flex; justify-content:space-between; align-items:center; padding-top:4mm;
+      border-top:1px solid #e2e8f0; color:var(--muted); font-size:8.5pt;
+    }
+    .footer strong { color:var(--indigo); font-size:11pt; }
+    @media print {
+      body { background:#fff; }
+      .print-toolbar { display:none !important; }
+      .sheet { margin:0; box-shadow:none; }
+    }
+    @media screen and (max-width:850px) {
+      .print-toolbar { width:auto; margin:10px; }
+      .toolbar-note { display:none; }
+      .sheet { transform-origin:top left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-toolbar">
+    <div class="toolbar-note">A4 print preview · Enable “Background graphics” for the best result</div>
+    <div class="toolbar-actions">
+      <a class="toolbar-btn" href="{% url 'schooladmin:qr_attendance' %}#saved-qr-history">Back</a>
+      <button class="toolbar-btn primary" type="button" onclick="window.print()">Print / Save PDF</button>
+    </div>
+  </div>
+
+  <main class="sheet">
+    <div class="status-strip">
+      {% if session.status == 'active' %}Active permanent attendance QR{% else %}Archived · attendance disabled{% endif %}
+    </div>
+
+    <header class="brand">
+      <div class="brand-mark">M</div>
+      <div class="brand-name">Mero Attendance</div>
+      <h1 class="org-name">{{ org.name }}</h1>
+      <p class="headline">Scan QR to mark attendance</p>
+    </header>
+
+    <div class="qr-frame">
+      <img src="{{ qr_data_uri }}" alt="Permanent geofenced attendance QR">
+    </div>
+
+    <div class="scan-copy">Open the Mero Attendance app and scan</div>
+    <p class="scan-sub">Location permission must be enabled. Attendance is accepted only when the member is signed in and physically inside this approved geofence.</p>
+
+    <section class="location-card" aria-label="Attendance location">
+      <div class="location-item">
+        <small>Location</small>
+        <strong>{{ session.location_name|default:"Organisation premises" }}</strong>
+      </div>
+      <div class="location-item">
+        <small>Branch</small>
+        <strong>{{ session.branch.name|default:"All branches" }}</strong>
+      </div>
+      <div class="location-item">
+        <small>Coordinates</small>
+        <strong class="coordinates">{{ session.latitude|floatformat:6 }}, {{ session.longitude|floatformat:6 }}</strong>
+      </div>
+      <div class="location-item">
+        <small>Allowed radius</small>
+        <strong>{{ session.radius_meters }} metres</strong>
+      </div>
+    </section>
+
+    {% if session.status != 'active' %}
+    <div class="inactive-warning">This is a historical QR. It is retained for records but will not mark attendance. Print the active QR from the QR Attendance page for current use.</div>
+    {% endif %}
+
+    <footer class="footer">
+      <span>Generated {{ session.created_at|date:"F j, Y · h:i A" }}</span>
+      <strong>meroattendance.com</strong>
+    </footer>
+  </main>
+</body>
+</html>

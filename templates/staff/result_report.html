@@ -1,0 +1,75 @@
+{% extends 'dashboard.html' %}
+{% load schooladmin_extras %}
+{% block title %}Result Report | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="fw-bold mb-4" style="color:#1e293b;">Result Report</h4>
+
+  <form method="get" class="d-flex gap-2 mb-4 flex-wrap">
+    <select name="exam" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+      <option value="">Select Exam...</option>
+      {% for e in exams %}<option value="{{ e.id }}" {% if selected_exam.id == e.id %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+    </select>
+    <select name="classification" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+      <option value="">Select Classification...</option>
+      {% for c in classifications %}<option value="{{ c.id }}" {% if selected_classification.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    </select>
+    {% if sections %}
+    <select name="section" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+      <option value="">All Sections</option>
+      {% for s in sections %}<option value="{{ s.id }}" {% if selected_section == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select>
+    {% endif %}
+  </form>
+
+  {% if stat_summary %}
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-2"><div class="card border-0 shadow-sm text-center p-2"><small class="text-muted">Total</small><h5 class="mb-0">{{ stat_summary.total_students }}</h5></div></div>
+    <div class="col-6 col-md-2"><div class="card border-0 shadow-sm text-center p-2"><small class="text-muted">Entered</small><h5 class="mb-0">{{ stat_summary.entry_count }}</h5></div></div>
+    <div class="col-6 col-md-2"><div class="card border-0 shadow-sm text-center p-2"><small class="text-success">Passed</small><h5 class="mb-0 text-success">{{ stat_summary.pass_count }}</h5></div></div>
+    <div class="col-6 col-md-2"><div class="card border-0 shadow-sm text-center p-2"><small class="text-danger">Failed</small><h5 class="mb-0 text-danger">{{ stat_summary.fail_count }}</h5></div></div>
+    <div class="col-6 col-md-2"><div class="card border-0 shadow-sm text-center p-2"><small class="text-warning">Absent</small><h5 class="mb-0 text-warning">{{ stat_summary.absent_count }}</h5></div></div>
+    <div class="col-6 col-md-2"><div class="card border-0 shadow-sm text-center p-2"><small class="text-muted">Pending</small><h5 class="mb-0">{{ stat_summary.pending_count }}</h5></div></div>
+  </div>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="table-responsive">
+      <table class="table mb-0 align-items-center">
+        <thead>
+          <tr>
+            <th class="ps-4 text-uppercase text-xxs text-secondary font-weight-bolder">Rank</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Student</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end">Total</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end">%</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-center">Grade</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-center pe-4">Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in report_data %}
+          <tr>
+            <td class="ps-4 text-sm">{{ row.rank|default:"—" }}</td>
+            <td class="text-sm"><strong>{{ row.member.name }}</strong></td>
+            <td class="text-sm text-end">{{ row.total|floatformat:1 }} / {{ row.full_total|floatformat:0 }}</td>
+            <td class="text-sm text-end">{{ row.percentage }}%</td>
+            <td class="text-sm text-center">{{ row.grade }}</td>
+            <td class="text-center pe-4">
+              {% if row.has_absent %}<span class="badge bg-warning">Absent</span>
+              {% elif not row.results %}<span class="badge bg-secondary">Pending</span>
+              {% elif row.passed %}<span class="badge bg-success">Pass</span>
+              {% else %}<span class="badge bg-danger">Fail</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center py-4 text-muted">No students found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="text-center text-muted py-5">Select an exam and classification to view the report.</div>
+  {% endif %}
+</div>
+{% endblock content %}

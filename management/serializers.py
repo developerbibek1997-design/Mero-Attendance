@@ -27,4 +27,6 @@ class ClassificationSerializer(serializers.ModelSerializer):
 class DeviceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Device
-        fields = ("__all__")
+        # The legacy puller endpoint must never expose ADMS serial numbers,
+        # heartbeat IPs, or server connection metadata.
+        fields = ('id', 'org', 'name', 'ip_address', 'port_no')

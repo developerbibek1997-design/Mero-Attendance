@@ -1,0 +1,47 @@
+{% extends 'dashboard.html' %}
+{% block title %}{{ assignment.title }} | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div><h4 class="font-weight-bolder mb-1">{{ assignment.title }}</h4><p class="text-sm text-muted mb-0">{{ assignment.classification.name }}{% if assignment.section %} / {{ assignment.section.name }}{% endif %} · {{ assignment.subject.name }} · Due {{ assignment.due_date }}</p></div>
+    <a href="{% url 'staff:teacher_assignments' %}" class="btn btn-sm btn-outline-secondary mb-0">All Assignments</a>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %}">{{ msg }}</div>{% endfor %}
+  <div class="card border-0 shadow-sm mb-3"><div class="card-body p-4">
+    <p class="text-sm mb-2">{{ assignment.description|default:"No description." }}</p>
+    {% if assignment.instructions %}<div class="text-sm text-muted"><strong>Instructions:</strong> {{ assignment.instructions }}</div>{% endif %}
+    {% for attachment in assignment.attachments.all %}<a href="{{ attachment.file.url }}" class="badge bg-light text-dark text-decoration-none mt-2 me-1"><i class="fas fa-paperclip me-1"></i>{{ attachment.file.name|slice:"-30:" }}</a>{% endfor %}
+  </div></div>
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom"><h6 class="mb-0 font-weight-bolder">Student submissions ({{ submissions|length }})</h6></div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light"><tr><th>Student</th><th>Submitted</th><th>Files / comments</th><th>Grade</th></tr></thead>
+        <tbody>
+          {% for submission in submissions %}
+          <tr>
+            <td class="text-sm font-weight-bold">{{ submission.student.name }}{% if submission.is_late %}<span class="badge bg-danger ms-1">Late</span>{% endif %}</td>
+            <td class="text-sm">{{ submission.submitted_at|date:"Y-m-d H:i"|default:"-" }}</td>
+            <td class="text-sm">{{ submission.student_comments|default:"-" }}<div>{% for attachment in submission.attachments.all %}<a href="{{ attachment.file.url }}" class="badge bg-light text-dark me-1">File</a>{% endfor %}</div></td>
+            <td>
+              <form method="post" class="d-flex flex-wrap align-items-center gap-1">
+                {% csrf_token %}<input type="hidden" name="submission_id" value="{{ submission.pk }}">
+                <input type="number" name="obtained_marks" step="0.01" min="0" max="{{ assignment.total_marks }}" value="{{ submission.obtained_marks|default:'' }}" class="form-control form-control-sm" style="width:80px" placeholder="/ {{ assignment.total_marks }}">
+                <input type="text" name="teacher_remarks" value="{{ submission.teacher_remarks|default:'' }}" class="form-control form-control-sm" style="width:150px" placeholder="Remarks">
+                <select name="status" class="form-select form-select-sm" style="width:130px">
+                  <option value="reviewed" {% if submission.status == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                  <option value="graded" {% if submission.status == 'graded' %}selected{% endif %}>Graded</option>
+                  <option value="returned" {% if submission.status == 'returned' %}selected{% endif %}>Returned</option>
+                  <option value="resubmission_requested" {% if submission.status == 'resubmission_requested' %}selected{% endif %}>Resubmit</option>
+                </select>
+                <button class="btn btn-xs btn-primary mb-0">Save</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}<tr><td colspan="4" class="text-center text-muted py-5">No student submissions yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

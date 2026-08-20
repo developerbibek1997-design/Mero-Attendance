@@ -5,17 +5,20 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Mero Attendance is a cloud-based attendance management, HRMS, leave, payroll and payslip system for schools, colleges, companies and organizations in Nepal.">
-  <meta name="keywords" content="attendance management system Nepal, school attendance system, college attendance system, payroll system Nepal, HRMS Nepal, biometric attendance, salary sheet, payslip system">
+  {% block meta %}
+  <meta name="description" content="Mero Attendance is a cloud-based attendance, HRMS and payroll platform for schools, colleges, hospitals, banks and finance firms, offices, factories and any multi-branch organization in Nepal.">
+  <meta name="keywords" content="attendance management system Nepal, HRMS Nepal, payroll system Nepal, hospital attendance system, hospital HRMS, bank attendance system, factory attendance system, office attendance system, school attendance system, college attendance system, biometric attendance, salary sheet, payslip system">
+  {% endblock meta %}
   <meta name="author" content="Wake and Tech Nepal Pvt. Ltd.">
-  <meta property="og:title" content="Mero Attendance | Attendance, HRMS & Payroll System Nepal">
-  <meta property="og:description" content="Manage attendance, leave, payroll, salary sheet, payslip, GPS, QR and biometric attendance from one cloud platform.">
+  {% block og_title %}
+  <meta property="og:title" content="Mero Attendance | Attendance, HRMS & Payroll for Every Organization">
+  {% endblock og_title %}
+  {% block og_description %}
+  <meta property="og:description" content="Manage attendance, leave, payroll, salary sheet, payslip, GPS, QR and biometric attendance from one cloud platform — built for schools, hospitals, banks, offices, factories and every organization.">
+  {% endblock og_description %}
   <meta property="og:type" content="website">
 
-  <title>{% block title %}Mero Attendance | School, College, HRMS, Payroll & Attendance Management System Nepal{% endblock title %}</title>
-  {% block meta %}
-  <meta name="description" content="Mero Attendance is Nepal's leading attendance management system for schools, colleges, offices and institutes. Biometric, QR, GPS, WiFi attendance with full HRMS.">
-  {% endblock meta %}
+  <title>{% block title %}Mero Attendance | Smart Attendance, HRMS & Payroll for Every Organization{% endblock title %}</title>
 
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TS47V03PY9"></script>
@@ -130,7 +133,15 @@
       padding: 8px 11px;
       box-shadow: none !important;
     }
-    .navbar-toggler-icon { filter: invert(1); }
+    /* Bootstrap only paints the hamburger SVG via .navbar-dark / .navbar-light,
+       and this nav uses neither — so the icon was an empty box. Draw it
+       explicitly in white instead of relying on a theme class. */
+    .navbar-toggler-icon {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255,255,255,0.9)' stroke-width='2.2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 100%;
+    }
 
     .ma-nav-link {
       color: rgba(255,255,255,.75) !important;
@@ -292,11 +303,19 @@
     /* ── Responsive ─────────────────────────────────────── */
     @media (max-width: 991px) {
       .ma-navbar { background: rgba(15,23,42,.97); }
+      /* The open menu drops BELOW the fixed navbar's painted strip, so a 5%
+         white tint left it transparent and the hero text showed straight
+         through. Give the panel its own opaque background (plus a shadow so it
+         reads as a layer above the page), and let it scroll if the menu is
+         taller than the screen. */
       .navbar-collapse {
         margin-top: 12px; padding: 16px;
-        background: rgba(255,255,255,.05);
+        background: #0f172a;
         border-radius: 18px;
-        border: 1px solid rgba(255,255,255,.08);
+        border: 1px solid rgba(255,255,255,.12);
+        box-shadow: 0 20px 48px rgba(0,0,0,.5);
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
       }
       .ma-nav-cta, .ma-nav-login { margin-left: 0; text-align: center; }
       .ma-dropdown-menu { position: static; width: 100%; transform: none; grid-template-columns: 1fr 1fr; box-shadow: none; border: 1px solid rgba(255,255,255,.07); background: rgba(255,255,255,.04); margin-top: 6px; }
@@ -305,6 +324,24 @@
       .ma-dd-item b { color: rgba(255,255,255,.9); }
       .ma-dd-item span { color: rgba(255,255,255,.5); }
       .ma-dropdown:hover .ma-dropdown-menu { display: grid; }
+
+      /* The collapsed menu stacks every link full-width, but the desktop
+         spacing (margin: 2px 1px) was made for a horizontal row - stacked
+         vertically it left almost no room between items, so taps landed on
+         the wrong link. Give every item real padding and a visible gap. */
+      .ma-nav-link {
+        display: block;
+        margin: 4px 0;
+        padding: 13px 16px !important;
+      }
+      .ma-dropdown { margin: 4px 0; }
+      .ma-dropdown > .ma-nav-link { margin: 0; }
+      .ma-nav-login, .ma-nav-cta {
+        display: block;
+        margin: 6px 0 0 !important;
+        padding: 13px 16px !important;
+      }
+      .ma-nav-login { margin-top: 12px !important; }
     }
 
     @media (max-width: 767px) {
@@ -381,9 +418,11 @@
     #nprogress .peg { box-shadow: 0 0 10px #e11d48, 0 0 5px #e11d48 !important; }
     #site-main { min-height: 60vh; }
   </style>
+
+  {% include "pwa/_head.html" %}
 </head>
 
-<body hx-boost="true">
+<body>
 <div class="ma-site-wrapper">
 
   {% url 'management:homepage' as home_url %}
@@ -575,6 +614,7 @@
                 <li><a href="{% url 'management:about' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.about">About Us</span></a></li>
                 <li><a href="{% url 'management:pricing' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.pricing">Pricing</span></a></li>
                 <li><a href="{% url 'management:blog' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.blog">Blog</span></a></li>
+                <li><a href="{% url 'management:homepage' %}#faq"><i class="fa-solid fa-circle-dot"></i><span>Frequently Asked Questions</span></a></li>
                 <li><a href="{% url 'management:document' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.docs">Documentation</span></a></li>
                 <li><a href="{% url 'management:pullar' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.download">Download Puller</span></a></li>
                 <li><a href="{% url 'management:privacy' %}"><i class="fa-solid fa-circle-dot"></i><span data-i18n="footer.link.privacy">Privacy Policy</span></a></li>
@@ -601,10 +641,10 @@
               </div>
               <div class="ma-footer-contact-item">
                 <i class="fa-brands fa-whatsapp"></i>
-                <span>+977-9800000000</span>
+                <span>+977-9861397178</span>
               </div>
               <a href="{% url 'management:contact' %}" class="ma-footer-demo-btn">
-                <i class="fa-solid fa-calendar-check"></i> <span data-i18n="footer.request_demo">Request Demo</span>
+                <i class="fa-solid fa-calendar-check text-white"></i> <span data-i18n="footer.request_demo" class="text-white">Request Demo</span>
               </a>
             </div>
           </div>
@@ -666,6 +706,8 @@ document.addEventListener('click', function(e) {
 
 {% block extra_js %}{% endblock extra_js %}
 
-<script src="{% static 'js/i18n.js' %}"></script>
+<script src="{% static 'js/i18n.js' %}?v=3"></script>
+
+{% include "pwa/_scripts.html" %}
 </body>
 </html>

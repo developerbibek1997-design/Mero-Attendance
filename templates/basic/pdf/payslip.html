@@ -1,0 +1,24 @@
+<html>
+<head>
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; color: #111827; font-size: 12px; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .muted { color: #6b7280; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
+  .label { color: #6b7280; width: 60%; }
+  .total { background: #111827; color: #fff; font-weight: bold; }
+</style>
+</head>
+<body>
+  <h1>{{ org_name }}</h1>
+  <p class="muted">Payslip &mdash; {{ month_name }}</p>
+  <p>Employee: <strong>{{ name }}</strong></p>
+  <table>
+    {% for k, v in details.items %}
+    <tr><td class="label">{{ k }}</td><td>{{ v }}</td></tr>
+    {% endfor %}
+    <tr class="total"><td>Net Payable</td><td>Rs. {{ net_payable }}</td></tr>
+  </table>
+</body>
+</html>

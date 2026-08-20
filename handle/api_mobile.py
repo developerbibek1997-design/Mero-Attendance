@@ -261,30 +261,40 @@ class AttendanceReportAPIView(APIView):
 @authentication_classes([JWTAuthentication])
 def api_wifi_checkin(request):
     try:
+        from school.features import has_feature
         # Securely get the logged-in staff member
         if hasattr(request.user, 'staff') and request.user.staff:
             memb = request.user.staff.member
             org = request.user.staff.org
         else:
             return Response({"error": "Only staff members can use WiFi check-in."}, status=status.HTTP_403_FORBIDDEN)
+        if not has_feature(org, 'wifi'):
+            return Response(
+                {"error": "WiFi attendance is not enabled for this organization."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         # Get WiFi details from Flutter
         ssid = request.data.get('ssid')
         bssid = request.data.get('bssid')
 
-        if not ssid:
-            return Response({"error": "Could not detect WiFi network. Ensure location permissions are granted."}, status=status.HTTP_400_BAD_REQUEST)
+        if not ssid or not bssid:
+            return Response({
+                "error": "Could not securely detect the WiFi network. Enable Location and WiFi access for Mero Attendance, then try again."
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         # ⚠️ CRITICAL: Mobile OSs often wrap the SSID in quotes (e.g., '"Office_WiFi"'). 
         # We must strip them to match your database cleanly.
-        clean_ssid = ssid.strip('"')
+        clean_ssid = ssid.strip().strip('"')
+        clean_bssid = (bssid or '').strip().upper().replace('-', ':')
 
         # Check if this WiFi is registered for this organization
         # Note: We check by SSID (Name). BSSID (MAC Address) can sometimes change based on 2.4Ghz vs 5Ghz bands, so SSID is safer to check!
-        valid_wifi = WifiBased.objects.filter(
-            org=org,
-            ssid__iexact=clean_ssid
-        ).exists()
+        network_qs = WifiBased.objects.filter(org=org, ssid__iexact=clean_ssid)
+        # When iOS/Android provides a BSSID, require it to match the registered
+        # access point as well. The server never trusts an SSID alone when the
+        # stronger device identifier is available.
+        valid_wifi = network_qs.filter(bssid__iexact=clean_bssid).exists()
 
         if not valid_wifi:
             return Response(
@@ -292,22 +302,25 @@ def api_wifi_checkin(request):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Ensure they haven't already marked attendance today
-        today = timezone.localtime().date()
-        already_marked = AttendanceRecord.objects.filter(
-            mem=memb,
-            org=org,
-            scanned_time__date=today
-        ).exists()
-        
-       
-        
-        # Mark Present!
-        AttendanceRecord.objects.create(
-            mem=memb,
-            org=org,
-            scanned_time=timezone.now()
+        from .attendance_writes import (
+            DuplicateAttendancePunch,
+            create_attendance_punch,
         )
+        try:
+            record, already_marked = create_attendance_punch(
+                memb=memb,
+                org=org,
+                attendance_method='wifi',
+            )
+        except DuplicateAttendancePunch as duplicate:
+            return Response(
+                {
+                    "status": "duplicate",
+                    "error": "Attendance was already recorded. Please wait one minute before trying again.",
+                    "retry_after_seconds": duplicate.retry_after,
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
         if already_marked:
             return Response(
                 {"status": "already_marked", "message": "WiFi Check-Out successful!"},
@@ -964,22 +977,25 @@ def api_location_checkin(request):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # 5. Check for duplicate check-ins today
-        today = timezone.localtime().date()
-        already_marked = AttendanceRecord.objects.filter(
-            mem=memb,
-            org=org,
-            scanned_time__date=today
-        ).exists()
-        
-        
-        
-        # 6. Mark Present!
-        AttendanceRecord.objects.create(
-            mem=memb,
-            org=org,
-            scanned_time=timezone.now()
+        from .attendance_writes import (
+            DuplicateAttendancePunch,
+            create_attendance_punch,
         )
+        try:
+            record, already_marked = create_attendance_punch(
+                memb=memb,
+                org=org,
+                attendance_method='gps',
+            )
+        except DuplicateAttendancePunch as duplicate:
+            return Response(
+                {
+                    "status": "duplicate",
+                    "error": "Attendance was already recorded. Please wait one minute before trying again.",
+                    "retry_after_seconds": duplicate.retry_after,
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
         if already_marked:
             return Response(
                 {"status": "success", "message": f"Successfully checked out from {matched_location.name}!"},
@@ -1307,11 +1323,9 @@ class PasswordResetRequestAPIView(APIView):
                 )
                 
             except CustomUser.DoesNotExist:
-                # TEMPORARY DEBUG: Shows exactly what the Flutter app sent if it fails
-                return Response(
-                    {"error": f"DEBUG: The exact email sent from phone was [{email}]"}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                # Return the same response for known and unknown addresses so
+                # this public endpoint cannot be used to enumerate accounts.
+                pass
                 
             return Response({'message': 'Password reset link sent to email'}, 
                            status=status.HTTP_200_OK)

@@ -1,0 +1,1076 @@
+{% extends 'dashboard.html' %}
+{% block title %}{{ client.client_org_name }} | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+/* ── Hero ── */
+.crm-hero{background:linear-gradient(135deg,#1e3a5f 0%,#1d4ed8 60%,#2563eb 100%);border-radius:16px;padding:28px 32px 24px;color:#fff;position:relative;overflow:hidden}
+.crm-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:220px;height:220px;background:rgba(255,255,255,.06);border-radius:50%}
+.crm-hero::after{content:'';position:absolute;bottom:-60px;right:60px;width:140px;height:140px;background:rgba(255,255,255,.04);border-radius:50%}
+.crm-hero-org{font-size:1.5rem;font-weight:800;letter-spacing:-.5px;margin:0}
+.crm-hero-meta{font-size:.78rem;opacity:.75;margin:4px 0 0}
+.crm-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.3px}
+.crm-badge.active{background:rgba(134,239,172,.25);color:#86efac}
+.crm-badge.prospect{background:rgba(147,197,253,.25);color:#93c5fd}
+.crm-badge.customer{background:rgba(134,239,172,.25);color:#86efac}
+.crm-badge.inquiry{background:rgba(147,197,253,.25);color:#93c5fd}
+.crm-badge.inactive{background:rgba(255,255,255,.12);color:rgba(255,255,255,.65)}
+.crm-badge.churned{background:rgba(252,165,165,.25);color:#fca5a5}
+/* ── KPI tiles ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+@media(max-width:640px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.kpi-tile{background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 16px}
+.kpi-tile .kpi-label{font-size:.68rem;opacity:.7;margin:0;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.kpi-tile .kpi-value{font-size:1.1rem;font-weight:800;margin:4px 0 0}
+/* ── Tabs ── */
+.crm-tabs{display:flex;gap:4px;padding:4px;background:#f1f5f9;border-radius:10px;flex-wrap:wrap}
+.crm-tabs .nav-link{border:0;background:transparent;color:#64748b;font-size:.78rem;font-weight:600;padding:8px 14px;border-radius:8px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.crm-tabs .nav-link.active{background:#fff;color:#1e40af;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.crm-tabs .nav-link .cnt{background:#e2e8f0;color:#475569;border-radius:20px;font-size:.65rem;padding:1px 7px;font-weight:700}
+.crm-tabs .nav-link.active .cnt{background:#dbeafe;color:#1e40af}
+/* ── Section cards ── */
+.section-card{background:#fff;border-radius:14px;box-shadow:0 1px 8px rgba(0,0,0,.07);border:1px solid #e2e8f0;overflow:hidden}
+.section-card-header{padding:16px 20px 12px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center}
+.section-card-header h6{font-size:.85rem;font-weight:700;margin:0;color:#0f172a}
+/* ── Info panel ── */
+.info-field{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f8fafc}
+.info-field:last-child{border-bottom:0}
+.info-field-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;margin-top:2px}
+.info-field-label{font-size:.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin:0}
+.info-field-value{font-size:.83rem;color:#0f172a;font-weight:500;margin:2px 0 0}
+/* ── Timeline ── */
+.timeline-item{position:relative;padding-left:28px;margin-bottom:16px}
+.timeline-item::before{content:'';position:absolute;left:9px;top:24px;bottom:-8px;width:2px;background:#e2e8f0}
+.timeline-item:last-child::before{display:none}
+.timeline-dot{position:absolute;left:0;top:6px;width:20px;height:20px;border-radius:50%;background:#dbeafe;border:2px solid #93c5fd;display:flex;align-items:center;justify-content:center;font-size:.55rem;color:#1e40af}
+/* ── Record cards (bills/contracts/proposals) ── */
+.rec-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;transition:box-shadow .15s,border-color .15s;cursor:pointer}
+.rec-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);border-color:#bfdbfe}
+.rec-card-title{font-size:.85rem;font-weight:700;color:#0f172a;margin:0}
+.rec-card-meta{font-size:.72rem;color:#64748b;margin:4px 0 0}
+.rec-card-amount{font-size:1rem;font-weight:800;color:#1e40af}
+/* ── Status badges ── */
+.sb{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.65rem;font-weight:700;letter-spacing:.2px}
+.sb-draft{background:#f1f5f9;color:#475569}
+.sb-sent{background:#dbeafe;color:#1d4ed8}
+.sb-paid,.sb-active,.sb-accepted,.sb-customer{background:#dcfce7;color:#15803d}
+.sb-overdue,.sb-churned,.sb-rejected,.sb-terminated{background:#fee2e2;color:#b91c1c}
+.sb-cancelled,.sb-expired{background:#fef3c7;color:#92400e}
+.sb-prospect,.sb-pending,.sb-inquiry{background:#e0f2fe;color:#0369a1}
+.sb-unpaid,.sb-partial{background:#fef3c7;color:#92400e}
+/* ── Quick follow-up ── */
+.quick-fu{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #bbf7d0;border-radius:14px;padding:20px 22px}
+/* ── Add buttons ── */
+.add-fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:#1d4ed8;color:#fff;border:0;box-shadow:0 4px 16px rgba(29,78,216,.4);font-size:1.2rem;display:flex;align-items:center;justify-content:center;z-index:99;transition:transform .15s}
+.add-fab:hover{transform:scale(1.08);background:#1e40af}
+/* ── Modal premium ── */
+.modal-premium .modal-content{border-radius:16px;border:0;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.modal-premium .modal-header{background:linear-gradient(135deg,#1e3a5f,#1d4ed8);color:#fff;border-radius:16px 16px 0 0;border-bottom:0;padding:18px 24px}
+.modal-premium .modal-header .btn-close{filter:invert(1) brightness(2)}
+.modal-premium .modal-body{padding:24px}
+.modal-detail-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9}
+.modal-detail-row:last-child{border-bottom:0}
+.modal-detail-label{font-size:.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.3px;min-width:110px;padding-top:2px}
+.modal-detail-value{font-size:.85rem;color:#0f172a;font-weight:500;flex:1}
+</style>
+
+<div class="container-fluid py-3">
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show mb-3 shadow-sm">
+    <i class="fas fa-{% if msg.tags == 'error' %}exclamation-circle{% else %}check-circle{% endif %} me-2"></i>{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% if billing_alert %}
+  <div class="alert alert-warning alert-dismissible fade show mb-3 d-flex align-items-center gap-2 shadow-sm">
+    <i class="fas fa-bell fa-lg"></i>
+    <div><strong>Billing Alert:</strong> Next billing for <strong>{{ client.client_org_name }}</strong> is on <strong>{{ client.next_billing_date }}</strong>{% if client.billing_amount %} — Rs. {{ client.billing_amount|floatformat:0 }}{% endif %}</div>
+    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+  </div>
+  {% endif %}
+
+  <!-- ── Hero ── -->
+  <div class="crm-hero mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+          <h1 class="crm-hero-org">{{ client.client_org_name }}</h1>
+          <span class="crm-badge {{ client.status }}">{{ client.get_status_display }}</span>
+          <span class="crm-badge {% if client.priority == 'high' %}churned{% elif client.priority == 'medium' %}cancelled{% else %}inactive{% endif %}">{{ client.get_priority_display }} Priority</span>
+        </div>
+        <p class="crm-hero-meta mb-0">
+          <i class="fas fa-hashtag me-1"></i>{{ client.client_number }}
+          {% if client.industry %}&nbsp;&middot;&nbsp;<i class="fas fa-industry me-1"></i>{{ client.industry }}{% endif %}
+          &nbsp;&middot;&nbsp;<i class="fas fa-comments me-1"></i>{{ follow_ups|length }} follow-up(s)
+        </p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap align-items-center">
+        {% if not client.can_be_billed %}
+        <form method="post" class="d-inline">
+          {% csrf_token %}<input type="hidden" name="action" value="convert_to_customer">
+          <button type="submit" class="btn btn-sm fw-bold" style="background:#16a34a;color:#fff;border:1px solid #16a34a;border-radius:8px" onclick="return confirm('Convert {{ client.client_org_name|escapejs }} to a Customer? This unlocks billing, contracts, proposals, docs and sales.');"><i class="fas fa-check-circle me-1"></i>Convert to Customer</button>
+        </form>
+        {% endif %}
+        {% if features.stock %}
+        <a href="{% url 'schooladmin:convert_client_to_supplier' client.pk %}" class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px"><i class="fas fa-truck me-1"></i>Convert to Supplier</a>
+        {% endif %}
+        <a href="{% url 'schooladmin:billing_reminders' %}" class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px"><i class="fas fa-bell me-1"></i>Reminders</a>
+        <a href="{% url 'schooladmin:client_list' %}" class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:8px"><i class="fas fa-arrow-left me-1"></i>Back</a>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-tile">
+        <p class="kpi-label"><i class="fas fa-file-invoice me-1"></i>Invoices</p>
+        <p class="kpi-value">{{ total_invoices }} / Rs. {{ total_invoice_amount|floatformat:0 }}</p>
+      </div>
+      <div class="kpi-tile">
+        <p class="kpi-label"><i class="fas fa-check-circle me-1"></i>Total Paid</p>
+        <p class="kpi-value">Rs. {{ total_paid|floatformat:0 }}</p>
+      </div>
+      <div class="kpi-tile">
+        <p class="kpi-label"><i class="fas fa-hourglass-half me-1"></i>Outstanding</p>
+        <p class="kpi-value">Rs. {{ total_outstanding|floatformat:0 }}</p>
+      </div>
+      <div class="kpi-tile">
+        <p class="kpi-label"><i class="fas fa-exclamation-triangle me-1"></i>Overdue</p>
+        <p class="kpi-value">Rs. {{ total_overdue|floatformat:0 }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tabs ── -->
+  <ul class="nav crm-tabs mb-4" id="crmTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-followup" type="button" role="tab" aria-selected="true">
+        <i class="fas fa-comments"></i>Follow-ups <span class="cnt">{{ follow_ups|length }}</span>
+      </button>
+    </li>
+    {% if client.can_be_billed %}
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-info" type="button" role="tab">
+        <i class="fas fa-building"></i>Info
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-bills" type="button" role="tab">
+        <i class="fas fa-file-invoice-dollar"></i>Bills <span class="cnt">{{ bills|length }}</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-contracts" type="button" role="tab">
+        <i class="fas fa-file-signature"></i>Contracts <span class="cnt">{{ contracts|length }}</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-proposals" type="button" role="tab">
+        <i class="fas fa-file-alt"></i>Proposals <span class="cnt">{{ proposals|length }}</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-docs" type="button" role="tab">
+        <i class="fas fa-folder"></i>Docs <span class="cnt">{{ documents|length }}</span>
+      </button>
+    </li>
+    {% if has_sales %}
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-sales" type="button" role="tab">
+        <i class="fas fa-cash-register"></i>Sales <span class="cnt">{{ sales|length }}</span>
+      </button>
+    </li>
+    {% endif %}
+    {% endif %}
+  </ul>
+  {% if not client.can_be_billed %}
+  <div class="alert alert-info d-flex align-items-center gap-2 mb-4 py-2 px-3" style="font-size:.8rem;">
+    <i class="fas fa-info-circle"></i>
+    <span>This client is still an <strong>Inquiry</strong>. Info, Bills, Contracts, Proposals, Docs and Sales unlock once converted to a Customer.</span>
+  </div>
+  {% endif %}
+
+  <div class="tab-content" id="crmTabContent">
+
+    <!-- ══════════ FOLLOW-UPS TAB (first) ══════════ -->
+    <div class="tab-pane fade show active" id="tab-followup" role="tabpanel">
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="quick-fu mb-3">
+            <h6 class="fw-bold text-success mb-3"><i class="fas fa-plus-circle me-2"></i>Log Follow-up</h6>
+            <form method="post">
+              {% csrf_token %}<input type="hidden" name="action" value="follow_up">
+              <div class="mb-2">
+                <label class="text-xs fw-bold text-dark">Feedback / Note *</label>
+                <textarea name="feedback" rows="3" class="form-control form-control-sm mt-1" placeholder="What happened in this follow-up?" required></textarea>
+              </div>
+              <div class="mb-2">
+                <label class="text-xs fw-bold text-dark">Priority</label>
+                <select name="priority" class="form-select form-select-sm mt-1">
+                  <option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option>
+                </select>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="text-xs fw-bold text-dark">Date</label>
+                  <input type="date" name="follow_up_date" value="{{ today }}" class="form-control form-control-sm mt-1">
+                </div>
+                <div class="col-6">
+                  <label class="text-xs fw-bold text-dark">Next Follow-up</label>
+                  <input type="date" name="next_follow_up_date" class="form-control form-control-sm mt-1">
+                </div>
+              </div>
+              <button class="btn btn-success btn-sm w-100 fw-bold"><i class="fas fa-check me-1"></i>Log Follow-up</button>
+            </form>
+          </div>
+          <div class="section-card">
+            <div class="section-card-header">
+              <h6><i class="fas fa-chart-line me-2 text-primary"></i>Quick Stats</h6>
+            </div>
+            <div class="p-3">
+              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <span class="text-xs text-muted">Total follow-ups</span>
+                <span class="fw-bold text-primary">{{ follow_ups|length }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <span class="text-xs text-muted">Open bills</span>
+                <span class="fw-bold text-warning">{{ bills|length }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <span class="text-xs text-muted">Active contracts</span>
+                <span class="fw-bold text-success">{{ contracts|length }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center py-2">
+                <span class="text-xs text-muted">Proposals</span>
+                <span class="fw-bold text-info">{{ proposals|length }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="section-card">
+            <div class="section-card-header">
+              <h6><i class="fas fa-history me-2 text-primary"></i>Follow-up History</h6>
+            </div>
+            <div class="p-3 pb-0">
+              <form method="get" class="row g-2 align-items-end">
+                <input type="hidden" name="tab" value="followup">
+                <div class="col-auto">
+                  <label class="text-xxs text-muted d-block">Status</label>
+                  <select name="fu_status" class="form-select form-select-sm">
+                    <option value="all" {% if fu_filters.status == 'all' %}selected{% endif %}>All</option>
+                    {% for value, label in fu_status_choices %}
+                    <option value="{{ value }}" {% if fu_filters.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-auto">
+                  <label class="text-xxs text-muted d-block">Priority</label>
+                  <select name="fu_priority" class="form-select form-select-sm">
+                    <option value="">Any</option>
+                    {% for value, label in priority_choices %}
+                    <option value="{{ value }}" {% if fu_filters.priority == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-auto">
+                  <label class="text-xxs text-muted d-block">From</label>
+                  <input type="date" name="fu_from" value="{{ fu_filters.from_date }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-auto">
+                  <label class="text-xxs text-muted d-block">To</label>
+                  <input type="date" name="fu_to" value="{{ fu_filters.to_date }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-auto">
+                  <button type="submit" class="btn btn-sm btn-outline-primary mb-0">Filter</button>
+                </div>
+              </form>
+            </div>
+            <div class="p-3">
+              {% if follow_ups %}
+              <div class="timeline">
+                {% for f in follow_ups %}
+                <div class="timeline-item" onclick="showFollowUpModal('{{ f.follow_up_date }}','{{ f.visited_by.name|default:'Admin' }}','{{ f.feedback|escapejs }}','{{ f.next_follow_up_date|default:'' }}')" style="cursor:pointer">
+                  <div class="timeline-dot"><i class="fas fa-comment"></i></div>
+                  <div class="d-flex justify-content-between align-items-start flex-wrap gap-1 mb-1">
+                    <span class="text-xs fw-bold text-primary">
+                      {{ f.follow_up_date }}{% if nepali_enabled %} <span class="text-muted fw-normal">({{ f.date_np }} BS)</span>{% endif %}
+                      <span class="badge {% if f.priority == 'high' %}bg-danger{% elif f.priority == 'medium' %}bg-warning text-dark{% else %}bg-secondary{% endif %} ms-1">{{ f.get_priority_display }}</span>
+                      <span class="badge {% if f.status == 'open' %}bg-success{% else %}bg-secondary{% endif %} ms-1">{{ f.get_status_display }}</span>
+                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="text-xs text-muted">Added by {% if f.created_by %}{{ f.created_by.get_full_name|default:f.created_by.username }}{% else %}{{ f.visited_by.name|default:"Admin" }}{% endif %}</span>
+                      <span class="sb sb-sent text-xs">View</span>
+                    </div>
+                  </div>
+                  <p class="text-sm mb-1 text-dark">{{ f.feedback|truncatechars:120 }}</p>
+                  {% if f.next_follow_up_date %}<p class="text-xs text-muted mb-0"><i class="fas fa-calendar-check me-1 text-success"></i>Next: {{ f.next_follow_up_date }}{% if nepali_enabled %} ({{ f.next_date_np }} BS){% endif %}</p>{% endif %}
+                  <form method="post" class="mt-2" onclick="event.stopPropagation()">
+                    {% csrf_token %}
+                    <input type="hidden" name="follow_up_id" value="{{ f.pk }}">
+                    {% if f.status == 'open' %}
+                    <button type="submit" name="action" value="close_followup" class="btn btn-xs btn-outline-secondary py-0 px-2"><i class="fas fa-check me-1"></i>Close this case</button>
+                    {% else %}
+                    <button type="submit" name="action" value="reopen_followup" class="btn btn-xs btn-outline-success py-0 px-2"><i class="fas fa-rotate-left me-1"></i>Reopen follow-up</button>
+                    {% endif %}
+                  </form>
+                </div>
+                {% endfor %}
+              </div>
+              {% else %}
+              <div class="text-center py-5">
+                <i class="fas fa-comments fa-2x text-muted mb-3 d-block"></i>
+                <p class="text-muted text-sm mb-0">No follow-ups match these filters.</p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if client.can_be_billed %}
+    <!-- ══════════ INFO TAB ══════════ -->
+    <div class="tab-pane fade" id="tab-info" role="tabpanel">
+      <div class="row g-3">
+        <!-- Contact card -->
+        <div class="col-md-4">
+          <div class="section-card h-100">
+            <div class="section-card-header">
+              <h6><i class="fas fa-address-card me-2 text-primary"></i>Contact</h6>
+              <button class="btn btn-sm btn-outline-primary py-0 px-2" data-bs-toggle="modal" data-bs-target="#editInfoModal"><i class="fas fa-edit me-1"></i>Edit</button>
+            </div>
+            <div class="p-3">
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#dbeafe"><i class="fas fa-user" style="color:#1d4ed8"></i></div>
+                <div><p class="info-field-label">Contact Person</p><p class="info-field-value">{{ client.contact_person|default:"—" }}</p></div>
+              </div>
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#dcfce7"><i class="fas fa-phone" style="color:#15803d"></i></div>
+                <div><p class="info-field-label">Phone</p><p class="info-field-value">{{ client.phone|default:"—" }}</p></div>
+              </div>
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#fef3c7"><i class="fas fa-envelope" style="color:#d97706"></i></div>
+                <div><p class="info-field-label">Email</p><p class="info-field-value">{% if client.email %}<a href="mailto:{{ client.email }}">{{ client.email }}</a>{% else %}—{% endif %}</p></div>
+              </div>
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#f3e8ff"><i class="fas fa-map-marker-alt" style="color:#7c3aed"></i></div>
+                <div><p class="info-field-label">Address</p><p class="info-field-value">{{ client.address|default:"—" }}</p></div>
+              </div>
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#ecfdf5"><i class="fas fa-globe" style="color:#059669"></i></div>
+                <div><p class="info-field-label">Website</p><p class="info-field-value">{% if client.website %}<a href="{{ client.website }}" target="_blank">{{ client.website }}</a>{% else %}—{% endif %}</p></div>
+              </div>
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#fdf2f8"><i class="fas fa-industry" style="color:#9d174d"></i></div>
+                <div><p class="info-field-label">Industry</p><p class="info-field-value">{{ client.industry|default:"—" }}</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Billing card -->
+        <div class="col-md-4">
+          <div class="section-card h-100">
+            <div class="section-card-header">
+              <h6><i class="fas fa-rupee-sign me-2 text-success"></i>Billing</h6>
+              <button class="btn btn-sm btn-outline-success py-0 px-2" data-bs-toggle="modal" data-bs-target="#editInfoModal"><i class="fas fa-edit me-1"></i>Edit</button>
+            </div>
+            <div class="p-3">
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#dcfce7"><i class="fas fa-sync-alt" style="color:#15803d"></i></div>
+                <div><p class="info-field-label">Billing Cycle</p><p class="info-field-value">{{ client.get_billing_cycle_display|default:"—" }}</p></div>
+              </div>
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#dbeafe"><i class="fas fa-money-bill-wave" style="color:#1d4ed8"></i></div>
+                <div><p class="info-field-label">Billing Amount</p><p class="info-field-value fw-bold text-primary">{% if client.billing_amount %}Rs. {{ client.billing_amount|floatformat:2 }}{% else %}—{% endif %}</p></div>
+              </div>
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#fef3c7"><i class="fas fa-calendar-check" style="color:#d97706"></i></div>
+                <div><p class="info-field-label">Next Billing</p><p class="info-field-value {% if billing_alert %}text-danger fw-bold{% endif %}">{{ client.next_billing_date|default:"—" }}</p></div>
+              </div>
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#dcfce7"><i class="fas fa-trophy" style="color:#15803d"></i></div>
+                <div><p class="info-field-label">Monthly Target</p><p class="info-field-value">{% if client.monthly_target %}Rs. {{ client.monthly_target|floatformat:0 }}{% else %}—{% endif %}</p></div>
+              </div>
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#f3e8ff"><i class="fas fa-flag-checkered" style="color:#7c3aed"></i></div>
+                <div><p class="info-field-label">Yearly Target</p><p class="info-field-value">{% if client.yearly_target %}Rs. {{ client.yearly_target|floatformat:0 }}{% else %}—{% endif %}</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Contract period card -->
+        <div class="col-md-4">
+          <div class="section-card h-100">
+            <div class="section-card-header">
+              <h6><i class="fas fa-file-contract me-2 text-warning"></i>Contract Period</h6>
+              <button class="btn btn-sm btn-outline-warning py-0 px-2" data-bs-toggle="modal" data-bs-target="#editInfoModal"><i class="fas fa-edit me-1"></i>Edit</button>
+            </div>
+            <div class="p-3">
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#dcfce7"><i class="fas fa-play" style="color:#15803d"></i></div>
+                <div><p class="info-field-label">Contract Start</p><p class="info-field-value">{{ client.contract_start|default:"—" }}</p></div>
+              </div>
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#fee2e2"><i class="fas fa-stop" style="color:#b91c1c"></i></div>
+                <div><p class="info-field-label">Contract End</p><p class="info-field-value">{{ client.contract_end|default:"—" }}</p></div>
+              </div>
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#dbeafe"><i class="fas fa-tag" style="color:#1d4ed8"></i></div>
+                <div><p class="info-field-label">Status</p>
+                  <p class="info-field-value">
+                    <span class="sb sb-{{ client.status }}">{{ client.get_status_display }}</span>
+                  </p>
+                </div>
+              </div>
+              {% if client.notes %}
+              <div class="info-field">
+                <div class="info-field-icon" style="background:#fef3c7"><i class="fas fa-sticky-note" style="color:#d97706"></i></div>
+                <div><p class="info-field-label">Notes</p><p class="info-field-value text-muted">{{ client.notes|truncatechars:100 }}</p></div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ BILLS TAB ══════════ -->
+    <div class="tab-pane fade" id="tab-bills" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h6 class="fw-bold mb-0">Bills & Invoices</h6>
+          <p class="text-xs text-muted mb-0">{{ bills|length }} total &middot; Rs. {{ total_billed|floatformat:0 }} paid &middot; Rs. {{ total_outstanding|floatformat:0 }} outstanding</p>
+        </div>
+        {% if client.can_be_billed %}<button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBillModal"><i class="fas fa-plus me-1"></i>Add Bill</button>{% endif %}
+      </div>
+      {% if bills %}
+      <div class="row g-3">
+        {% for b in bills %}
+        <div class="col-md-6 col-xl-4">
+          <div class="rec-card" onclick="showBillModal({{ b.id }},'{{ b.invoice_number }}','{{ b.amount }}','{{ b.issue_date }}','{{ b.due_date }}','{{ b.status }}','{{ b.get_status_display }}','{{ b.description|escapejs }}','{% if b.paid_date %}{{ b.paid_date }}{% endif %}','{% if b.bill_image %}{{ b.bill_image.url }}{% endif %}')">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="text-xs fw-bold text-muted">{{ b.invoice_number }}</span>
+              <span class="sb sb-{{ b.status }}">{{ b.get_status_display }}{% if b.is_overdue %} ⚠{% endif %}</span>
+            </div>
+            <p class="rec-card-amount mb-1">Rs. {{ b.amount|floatformat:0 }}</p>
+            <p class="rec-card-meta">Paid: Rs. {{ b.paid_amount|floatformat:0 }} · Due: Rs. {{ b.remaining_amount|floatformat:0 }}</p>
+            <p class="rec-card-meta"><i class="fas fa-calendar-alt me-1"></i>Due: {{ b.due_date }}</p>
+            {% if b.description %}<p class="text-xs text-muted mt-2 mb-0">{{ b.description|truncatechars:60 }}</p>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="section-card text-center py-5">
+        <i class="fas fa-file-invoice-dollar fa-2x text-muted mb-3 d-block"></i>
+        <p class="text-muted mb-2">No bills yet.</p>
+        {% if client.can_be_billed %}<button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBillModal"><i class="fas fa-plus me-1"></i>Add First Bill</button>{% endif %}
+      </div>
+      {% endif %}
+      {% if payment_history %}
+      <div class="section-card mt-4">
+        <div class="section-card-header"><h6><i class="fas fa-history me-2 text-success"></i>Payment History</h6></div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead><tr><th>Date</th><th>Invoice</th><th>Method</th><th>Reference</th><th>Income</th><th class="text-end">Amount</th></tr></thead>
+            <tbody>{% for payment in payment_history %}
+              <tr>
+                <td>{{ payment.payment_date }}</td><td>{{ payment.bill.invoice_number }}</td>
+                <td>{{ payment.get_payment_method_display }}</td><td>{{ payment.payment_reference|default:"—" }}</td>
+                <td>{% if payment.income_transaction_id %}<span class="badge bg-success">Linked</span>{% else %}<span class="text-muted">Not added</span>{% endif %}</td>
+                <td class="text-end fw-bold">Rs. {{ payment.amount|floatformat:2 }}</td>
+              </tr>
+            {% endfor %}</tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ══════════ CONTRACTS TAB ══════════ -->
+    <div class="tab-pane fade" id="tab-contracts" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h6 class="fw-bold mb-0">Contracts</h6>
+          <p class="text-xs text-muted mb-0">{{ contracts|length }} contract(s)</p>
+        </div>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addContractModal"><i class="fas fa-plus me-1"></i>Add Contract</button>
+      </div>
+      {% if contracts %}
+      <div class="row g-3">
+        {% for c in contracts %}
+        <div class="col-md-6 col-xl-4">
+          <div class="rec-card" onclick="showContractModal('{{ c.title|escapejs }}','{% if c.contract_value %}Rs. {{ c.contract_value|floatformat:0 }}{% else %}—{% endif %}','{{ c.start_date }}','{{ c.end_date|default:'—' }}','{{ c.status }}','{{ c.get_status_display }}','{{ c.notes|escapejs }}','{% if c.document %}{{ c.document.url }}{% endif %}')">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="sb sb-{{ c.status }}">{{ c.get_status_display }}</span>
+              {% if c.document %}<span class="text-xs text-primary"><i class="fas fa-paperclip"></i></span>{% endif %}
+            </div>
+            <p class="rec-card-title mb-1">{{ c.title }}</p>
+            {% if c.contract_value %}<p class="rec-card-amount mb-1">Rs. {{ c.contract_value|floatformat:0 }}</p>{% endif %}
+            <p class="rec-card-meta"><i class="fas fa-calendar me-1"></i>{{ c.start_date }} — {{ c.end_date|default:"Open" }}</p>
+            {% if c.notes %}<p class="text-xs text-muted mt-2 mb-0">{{ c.notes|truncatechars:60 }}</p>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="section-card text-center py-5">
+        <i class="fas fa-file-signature fa-2x text-muted mb-3 d-block"></i>
+        <p class="text-muted mb-2">No contracts yet.</p>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addContractModal"><i class="fas fa-plus me-1"></i>Add Contract</button>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ══════════ PROPOSALS TAB ══════════ -->
+    <div class="tab-pane fade" id="tab-proposals" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h6 class="fw-bold mb-0">Proposals</h6>
+          <p class="text-xs text-muted mb-0">{{ proposals|length }} proposal(s)</p>
+        </div>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addProposalModal"><i class="fas fa-plus me-1"></i>Add Proposal</button>
+      </div>
+      {% if proposals %}
+      <div class="row g-3">
+        {% for p in proposals %}
+        <div class="col-md-6 col-xl-4">
+          <div class="rec-card" onclick="showProposalModal('{{ p.title|escapejs }}','{% if p.amount %}Rs. {{ p.amount|floatformat:0 }}{% else %}—{% endif %}','{{ p.sent_date|default:'—' }}','{{ p.valid_until|default:'—' }}','{{ p.status }}','{{ p.get_status_display }}','{{ p.notes|escapejs }}','{% if p.document %}{{ p.document.url }}{% endif %}')">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="sb sb-{{ p.status }}">{{ p.get_status_display }}</span>
+              {% if p.document %}<span class="text-xs text-primary"><i class="fas fa-paperclip"></i></span>{% endif %}
+            </div>
+            <p class="rec-card-title mb-1">{{ p.title }}</p>
+            {% if p.amount %}<p class="rec-card-amount mb-1">Rs. {{ p.amount|floatformat:0 }}</p>{% endif %}
+            <p class="rec-card-meta"><i class="fas fa-paper-plane me-1"></i>Sent: {{ p.sent_date|default:"—" }} &middot; Valid: {{ p.valid_until|default:"—" }}</p>
+            {% if p.notes %}<p class="text-xs text-muted mt-2 mb-0">{{ p.notes|truncatechars:60 }}</p>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="section-card text-center py-5">
+        <i class="fas fa-file-alt fa-2x text-muted mb-3 d-block"></i>
+        <p class="text-muted mb-2">No proposals yet.</p>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addProposalModal"><i class="fas fa-plus me-1"></i>Add Proposal</button>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ══════════ DOCUMENTS TAB ══════════ -->
+    <div class="tab-pane fade" id="tab-docs" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h6 class="fw-bold mb-0">Documents</h6>
+          <p class="text-xs text-muted mb-0">{{ documents|length }} file(s)</p>
+        </div>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addDocModal"><i class="fas fa-upload me-1"></i>Upload</button>
+      </div>
+      {% if documents %}
+      <div class="row g-3">
+        {% for d in documents %}
+        <div class="col-md-6 col-xl-4">
+          <div class="section-card">
+            <div class="card-body p-3 d-flex align-items-start gap-3">
+              <div style="width:44px;height:44px;border-radius:10px;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <i class="fas fa-file text-primary"></i>
+              </div>
+              <div class="flex-1 overflow-hidden">
+                <p class="fw-bold text-sm mb-0 text-truncate">{{ d.title }}</p>
+                <p class="text-xs text-muted mb-1">{{ d.get_doc_type_display }} &middot; {{ d.uploaded_at|date:"M d, Y" }}</p>
+                {% if d.notes %}<p class="text-xs text-muted mb-2">{{ d.notes|truncatechars:50 }}</p>{% endif %}
+                <a href="{{ d.file.url }}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2 text-xs"><i class="fas fa-download me-1"></i>Download</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="section-card text-center py-5">
+        <i class="fas fa-folder-open fa-2x text-muted mb-3 d-block"></i>
+        <p class="text-muted mb-2">No documents yet.</p>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addDocModal"><i class="fas fa-upload me-1"></i>Upload First Document</button>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if has_sales %}
+    <!-- ══════════ SALES TAB ══════════ -->
+    <div class="tab-pane fade" id="tab-sales" role="tabpanel">
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="section-card text-center p-3">
+            <p class="text-xs text-uppercase text-muted mb-1">Total Sales</p>
+            <h5 class="fw-bold mb-0">Rs. {{ total_sales|floatformat:2 }}</h5>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="section-card text-center p-3">
+            <p class="text-xs text-uppercase text-muted mb-1">Outstanding</p>
+            <h5 class="fw-bold mb-0 {% if sales_outstanding > 0 %}text-danger{% endif %}">Rs. {{ sales_outstanding|floatformat:2 }}</h5>
+          </div>
+        </div>
+      </div>
+
+      <h6 class="fw-bold text-sm mb-2">Sales Invoices</h6>
+      <div class="section-card mb-3">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th class="text-xs">Date</th><th class="text-xs">Invoice #</th><th class="text-xs">Status</th><th class="text-xs">Total</th></tr></thead>
+            <tbody>
+              {% for s in sales %}
+              <tr><td class="text-sm"><a href="{% url 'schooladmin:sale_detail' s.pk %}">{{ s.sale_date }}</a></td><td class="text-sm">{{ s.invoice_number|default:"-" }}</td><td><span class="badge bg-light text-dark">{{ s.get_status_display }}</span></td><td class="text-sm">Rs. {{ s.total_amount }}</td></tr>
+              {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No sales yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h6 class="fw-bold text-sm mb-2">Payments</h6>
+      <div class="section-card mb-3">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th class="text-xs">Date</th><th class="text-xs">Amount</th><th class="text-xs">Method</th></tr></thead>
+            <tbody>
+              {% for pay in sale_payments %}
+              <tr><td class="text-sm">{{ pay.payment_date }}</td><td class="text-sm">Rs. {{ pay.amount }}</td><td class="text-sm text-capitalize">{{ pay.payment_method }}</td></tr>
+              {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">No payments yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h6 class="fw-bold text-sm mb-2">Returns</h6>
+      <div class="section-card">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th class="text-xs">Date</th><th class="text-xs">Status</th><th class="text-xs">Total</th></tr></thead>
+            <tbody>
+              {% for r in sales_returns %}
+              <tr><td class="text-sm"><a href="{% url 'schooladmin:sales_return_detail' r.pk %}">{{ r.return_date }}</a></td><td><span class="badge bg-light text-dark">{{ r.get_status_display }}</span></td><td class="text-sm">Rs. {{ r.total_amount }}</td></tr>
+              {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">No returns yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODALS
+══════════════════════════════════════ -->
+
+<!-- Edit Info Modal -->
+<div class="modal fade modal-premium" id="editInfoModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Edit Customer Info</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" id="editInfoForm">
+          {% csrf_token %}<input type="hidden" name="action" value="update_info">
+          <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Contact Details</h6>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6"><label class="text-xs fw-bold">Organization Name *</label><input type="text" name="client_org_name" value="{{ client.client_org_name }}" class="form-control form-control-sm mt-1" required></div>
+            <div class="col-md-6"><label class="text-xs fw-bold">Contact Person</label><input type="text" name="contact_person" value="{{ client.contact_person }}" class="form-control form-control-sm mt-1"></div>
+            <div class="col-md-4"><label class="text-xs fw-bold">Phone</label><input type="number" name="phone" value="{{ client.phone|default:'' }}" class="form-control form-control-sm mt-1"></div>
+            <div class="col-md-4"><label class="text-xs fw-bold">Email</label><input type="email" name="email" value="{{ client.email|default:'' }}" class="form-control form-control-sm mt-1"></div>
+            <div class="col-md-4"><label class="text-xs fw-bold">Industry</label><input type="text" name="industry" value="{{ client.industry }}" class="form-control form-control-sm mt-1"></div>
+            <div class="col-md-6"><label class="text-xs fw-bold">Address</label><input type="text" name="address" value="{{ client.address }}" class="form-control form-control-sm mt-1"></div>
+            <div class="col-md-6"><label class="text-xs fw-bold">Website</label><input type="text" name="website" value="{{ client.website }}" class="form-control form-control-sm mt-1" placeholder="https://"></div>
+          </div>
+          <h6 class="fw-bold text-success mb-3 border-bottom pb-2">Billing & Contract</h6>
+          <div class="row g-3 mb-3">
+            <div class="col-md-3"><label class="text-xs fw-bold">Status</label>
+              <select name="status" class="form-select form-select-sm mt-1">
+                {% for val,lbl in client.STATUS_CHOICES %}<option value="{{ val }}"{% if client.status == val %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3"><label class="text-xs fw-bold">Priority</label>
+              <select name="priority" class="form-select form-select-sm mt-1">
+                {% for val,lbl in priority_choices %}<option value="{{ val }}"{% if client.priority == val %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3"><label class="text-xs fw-bold">Branch{% if branches %} *{% endif %}</label>
+              <select name="branch" class="form-select form-select-sm mt-1" {% if branches %}required{% endif %}>
+                {% if branches %}
+                  {% if not client.branch_id %}<option value="" disabled selected>-- Select Branch --</option>{% endif %}
+                  {% for branch in branches %}<option value="{{ branch.pk }}"{% if client.branch_id == branch.pk %} selected{% endif %}>{{ branch.name }}</option>{% endfor %}
+                {% else %}
+                  <option value="">All / Head Office</option>
+                {% endif %}
+              </select>
+            </div>
+            <div class="col-md-3"><label class="text-xs fw-bold">Billing Cycle</label>
+              <select name="billing_cycle" class="form-select form-select-sm mt-1">
+                <option value="">— None —</option>
+                {% for val,lbl in client.BILLING_CYCLE_CHOICES %}<option value="{{ val }}"{% if client.billing_cycle == val %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3"><label class="text-xs fw-bold">Billing Amount (Rs)</label><input type="number" name="billing_amount" value="{{ client.billing_amount|default:'' }}" step="0.01" class="form-control form-control-sm mt-1"></div>
+            <div class="col-md-3"><label class="text-xs fw-bold">Next Billing Date</label><input type="date" name="next_billing_date" value="{{ client.next_billing_date|default:'' }}" class="form-control form-control-sm mt-1"></div>
+            <div class="col-md-3"><label class="text-xs fw-bold">Contract Start</label><input type="date" name="contract_start" value="{{ client.contract_start|default:'' }}" class="form-control form-control-sm mt-1"></div>
+            <div class="col-md-3"><label class="text-xs fw-bold">Contract End</label><input type="date" name="contract_end" value="{{ client.contract_end|default:'' }}" class="form-control form-control-sm mt-1"></div>
+            <div class="col-md-3"><label class="text-xs fw-bold">Monthly Target</label><input type="number" name="monthly_target" value="{{ client.monthly_target|default:'' }}" step="0.01" class="form-control form-control-sm mt-1"></div>
+            <div class="col-md-3"><label class="text-xs fw-bold">Yearly Target</label><input type="number" name="yearly_target" value="{{ client.yearly_target|default:'' }}" step="0.01" class="form-control form-control-sm mt-1"></div>
+            <div class="col-12"><label class="text-xs fw-bold">Notes</label><textarea name="notes" rows="2" class="form-control form-control-sm mt-1">{{ client.notes }}</textarea></div>
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm fw-bold"><i class="fas fa-save me-1"></i>Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Bill Modal -->
+<div class="modal fade modal-premium" id="addBillModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="fas fa-file-invoice-dollar me-2"></i>Add Bill / Invoice</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" id="addBillForm" enctype="multipart/form-data">
+          {% csrf_token %}<input type="hidden" name="action" value="add_bill">
+          <div class="mb-3"><label class="text-xs fw-bold">Invoice # <span class="text-muted">(auto-generated if blank)</span></label><input type="text" name="invoice_number" class="form-control form-control-sm mt-1" placeholder="e.g. INV-2024-001"></div>
+          <div class="row g-2 mb-3">
+            <div class="col-7"><label class="text-xs fw-bold">Amount (Rs) *</label><input type="number" name="amount" step="0.01" class="form-control form-control-sm mt-1" required placeholder="0.00"></div>
+            <div class="col-5"><label class="text-xs fw-bold">Status</label>
+              <select name="bill_status" class="form-select form-select-sm mt-1"><option value="draft">Draft</option><option value="sent">Sent</option><option value="paid">Paid</option></select>
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6"><label class="text-xs fw-bold">Issue Date</label><input type="date" name="issue_date" value="{{ today }}" class="form-control form-control-sm mt-1"></div>
+            <div class="col-6"><label class="text-xs fw-bold">Due Date *</label><input type="date" name="due_date" class="form-control form-control-sm mt-1" required></div>
+          </div>
+          <div class="mb-3"><label class="text-xs fw-bold">Description</label><textarea name="description" rows="2" class="form-control form-control-sm mt-1" placeholder="Optional notes about this invoice..."></textarea></div>
+          <div class="mb-3">
+            <label class="text-xs fw-bold">VAT / Bill Image <span class="text-muted">(photo of bill, receipt, or VAT document)</span></label>
+            <input type="file" name="bill_image" accept="image/*,.pdf" class="form-control form-control-sm mt-1" id="billImageInput">
+            <div id="billImagePreview" class="mt-2" style="display:none;">
+              <img id="billImageThumb" src="" style="max-height:100px;border-radius:8px;border:1px solid #e2e8f0;">
+            </div>
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm fw-bold"><i class="fas fa-plus me-1"></i>Add Bill</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Bill Modal -->
+<div class="modal fade modal-premium" id="viewBillModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title fw-bold" id="vbInvoice"></h5>
+          <p class="mb-0 mt-1" style="opacity:.75;font-size:.78rem" id="vbStatus"></p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-detail-row"><span class="modal-detail-label">Amount</span><span class="modal-detail-value fw-bold text-primary fs-5" id="vbAmount"></span></div>
+        <div class="modal-detail-row"><span class="modal-detail-label">Issue Date</span><span class="modal-detail-value" id="vbIssue"></span></div>
+        <div class="modal-detail-row"><span class="modal-detail-label">Due Date</span><span class="modal-detail-value" id="vbDue"></span></div>
+        <div class="modal-detail-row" id="vbPaidRow"><span class="modal-detail-label">Paid Date</span><span class="modal-detail-value text-success" id="vbPaid"></span></div>
+        <div class="modal-detail-row" id="vbDescRow"><span class="modal-detail-label">Description</span><span class="modal-detail-value text-muted" id="vbDesc"></span></div>
+        <div id="vbImageRow" style="display:none;margin-bottom:.75rem;">
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:.4rem;">VAT / Bill Image</div>
+          <a id="vbImageLink" href="#" target="_blank">
+            <img id="vbImageThumbView" src="" style="max-width:100%;max-height:220px;border-radius:10px;border:1px solid #e2e8f0;cursor:pointer;" title="Click to open full image">
+          </a>
+        </div>
+        <hr class="my-3">
+        <form method="post" class="d-flex align-items-center gap-2">
+          {% csrf_token %}<input type="hidden" name="action" value="update_bill_status"><input type="hidden" name="bill_id" id="vbBillId">
+          <label class="text-xs fw-bold">Update Status:</label>
+          <select name="bill_status" class="form-select form-select-sm" style="width:auto" id="vbStatusSel">
+            <option value="draft">Draft</option><option value="unpaid">Unpaid</option><option value="overdue">Overdue</option><option value="cancelled">Cancelled</option>
+          </select>
+          <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </form>
+        {% if client.can_be_billed %}
+        <hr class="my-3">
+        <form method="post">
+          {% csrf_token %}<input type="hidden" name="action" value="record_bill_payment"><input type="hidden" name="bill_id" id="pbBillId">
+          <h6 class="fw-bold text-success mb-2">Record an additional payment</h6>
+          <div class="row g-2">
+            <div class="col-6"><label class="text-xs fw-bold">Amount *</label><input type="number" min="0.01" step="0.01" name="payment_amount" class="form-control form-control-sm" required></div>
+            <div class="col-6"><label class="text-xs fw-bold">Date *</label><input type="date" name="payment_date" value="{{ today|date:'Y-m-d' }}" class="form-control form-control-sm" required></div>
+            <div class="col-6"><label class="text-xs fw-bold">Method</label><select name="payment_method" class="form-select form-select-sm"><option value="cash">Cash</option><option value="bank">Bank</option><option value="card">Card</option><option value="online">Online</option><option value="other">Other</option></select></div>
+            <div class="col-6"><label class="text-xs fw-bold">Reference</label><input type="text" name="payment_reference" class="form-control form-control-sm"></div>
+            <div class="col-12 form-check ms-2 mt-3"><input type="checkbox" name="add_to_income" id="addToIncome" class="form-check-input"><label for="addToIncome" class="form-check-label text-sm">Add this received payment to Income</label></div>
+          </div>
+          <button type="submit" class="btn btn-success btn-sm mt-3"><i class="fas fa-money-bill-wave me-1"></i>Record Payment</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Contract Modal -->
+<div class="modal fade modal-premium" id="addContractModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="fas fa-file-signature me-2"></i>Add Contract</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" enctype="multipart/form-data" id="addContractForm">
+          {% csrf_token %}<input type="hidden" name="action" value="add_contract">
+          <div class="mb-3"><label class="text-xs fw-bold">Title *</label><input type="text" name="contract_title" class="form-control form-control-sm mt-1" required placeholder="e.g. Annual Service Agreement"></div>
+          <div class="row g-2 mb-3">
+            <div class="col-7"><label class="text-xs fw-bold">Contract Value (Rs)</label><input type="number" name="contract_value" step="0.01" class="form-control form-control-sm mt-1" placeholder="0.00"></div>
+            <div class="col-5"><label class="text-xs fw-bold">Status</label>
+              <select name="contract_status" class="form-select form-select-sm mt-1"><option value="active">Active</option><option value="draft">Draft</option><option value="expired">Expired</option><option value="terminated">Terminated</option></select>
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6"><label class="text-xs fw-bold">Start Date *</label><input type="date" name="start_date" value="{{ today }}" class="form-control form-control-sm mt-1" required></div>
+            <div class="col-6"><label class="text-xs fw-bold">End Date</label><input type="date" name="contract_end_date" class="form-control form-control-sm mt-1"></div>
+          </div>
+          <div class="mb-3"><label class="text-xs fw-bold">Attach Document <span class="text-muted">(PDF, DOC)</span></label><input type="file" name="contract_file" class="form-control form-control-sm mt-1" accept=".pdf,.doc,.docx"></div>
+          <div class="mb-3"><label class="text-xs fw-bold">Notes</label><textarea name="contract_notes" rows="2" class="form-control form-control-sm mt-1"></textarea></div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm fw-bold"><i class="fas fa-plus me-1"></i>Add Contract</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Contract Modal -->
+<div class="modal fade modal-premium" id="viewContractModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title fw-bold" id="vcTitle"></h5>
+          <p class="mb-0 mt-1" style="opacity:.75;font-size:.78rem" id="vcStatus"></p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-detail-row"><span class="modal-detail-label">Value</span><span class="modal-detail-value fw-bold text-primary" id="vcValue"></span></div>
+        <div class="modal-detail-row"><span class="modal-detail-label">Period</span><span class="modal-detail-value" id="vcPeriod"></span></div>
+        <div class="modal-detail-row" id="vcNotesRow"><span class="modal-detail-label">Notes</span><span class="modal-detail-value text-muted" id="vcNotes"></span></div>
+        <div class="mt-3" id="vcDocRow"><a id="vcDocLink" href="#" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i>Download Document</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Proposal Modal -->
+<div class="modal fade modal-premium" id="addProposalModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="fas fa-file-alt me-2"></i>Add Proposal</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" enctype="multipart/form-data" id="addProposalForm">
+          {% csrf_token %}<input type="hidden" name="action" value="add_proposal">
+          <div class="mb-3"><label class="text-xs fw-bold">Title *</label><input type="text" name="proposal_title" class="form-control form-control-sm mt-1" required placeholder="e.g. Q1 Service Proposal"></div>
+          <div class="row g-2 mb-3">
+            <div class="col-7"><label class="text-xs fw-bold">Amount (Rs)</label><input type="number" name="proposal_amount" step="0.01" class="form-control form-control-sm mt-1" placeholder="0.00"></div>
+            <div class="col-5"><label class="text-xs fw-bold">Status</label>
+              <select name="proposal_status" class="form-select form-select-sm mt-1"><option value="draft">Draft</option><option value="sent">Sent</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option><option value="expired">Expired</option></select>
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6"><label class="text-xs fw-bold">Sent Date</label><input type="date" name="sent_date" class="form-control form-control-sm mt-1"></div>
+            <div class="col-6"><label class="text-xs fw-bold">Valid Until</label><input type="date" name="valid_until" class="form-control form-control-sm mt-1"></div>
+          </div>
+          <div class="mb-3"><label class="text-xs fw-bold">Attach Document</label><input type="file" name="proposal_file" class="form-control form-control-sm mt-1"></div>
+          <div class="mb-3"><label class="text-xs fw-bold">Notes</label><textarea name="proposal_notes" rows="2" class="form-control form-control-sm mt-1"></textarea></div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm fw-bold"><i class="fas fa-plus me-1"></i>Add Proposal</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Proposal Modal -->
+<div class="modal fade modal-premium" id="viewProposalModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title fw-bold" id="vpTitle"></h5>
+          <p class="mb-0 mt-1" style="opacity:.75;font-size:.78rem" id="vpStatus"></p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-detail-row"><span class="modal-detail-label">Amount</span><span class="modal-detail-value fw-bold text-primary" id="vpAmount"></span></div>
+        <div class="modal-detail-row"><span class="modal-detail-label">Sent Date</span><span class="modal-detail-value" id="vpSent"></span></div>
+        <div class="modal-detail-row"><span class="modal-detail-label">Valid Until</span><span class="modal-detail-value" id="vpValid"></span></div>
+        <div class="modal-detail-row" id="vpNotesRow"><span class="modal-detail-label">Notes</span><span class="modal-detail-value text-muted" id="vpNotes"></span></div>
+        <div class="mt-3" id="vpDocRow"><a id="vpDocLink" href="#" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i>Download Document</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Follow-up Modal -->
+<div class="modal fade modal-premium" id="viewFollowUpModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title fw-bold"><i class="fas fa-comment me-2"></i>Follow-up Details</h5>
+          <p class="mb-0 mt-1" style="opacity:.75;font-size:.78rem" id="vfDate"></p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-detail-row"><span class="modal-detail-label">Date</span><span class="modal-detail-value" id="vfDateVal"></span></div>
+        <div class="modal-detail-row"><span class="modal-detail-label">By</span><span class="modal-detail-value" id="vfBy"></span></div>
+        <div class="modal-detail-row"><span class="modal-detail-label">Feedback</span><span class="modal-detail-value" id="vfFeedback"></span></div>
+        <div class="modal-detail-row" id="vfNextRow"><span class="modal-detail-label">Next Follow-up</span><span class="modal-detail-value text-success fw-bold" id="vfNext"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Doc Modal -->
+<div class="modal fade modal-premium" id="addDocModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="fas fa-upload me-2"></i>Upload Document</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}<input type="hidden" name="action" value="add_document">
+          <div class="mb-3"><label class="text-xs fw-bold">Title <span class="text-muted">(leave blank to use filename)</span></label><input type="text" name="doc_title" class="form-control form-control-sm mt-1"></div>
+          <div class="mb-3"><label class="text-xs fw-bold">Document Type</label>
+            <select name="doc_type" class="form-select form-select-sm mt-1"><option value="other">Other</option><option value="contract">Contract</option><option value="invoice">Invoice</option><option value="proposal">Proposal</option><option value="agreement">Agreement</option><option value="report">Report</option></select>
+          </div>
+          <div class="mb-3"><label class="text-xs fw-bold">File *</label><input type="file" name="doc_file" class="form-control form-control-sm mt-1" required></div>
+          <div class="mb-3"><label class="text-xs fw-bold">Notes</label><input type="text" name="doc_notes" class="form-control form-control-sm mt-1"></div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm fw-bold"><i class="fas fa-upload me-1"></i>Upload</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Tab restoration from ?tab= query param ──
+document.addEventListener('DOMContentLoaded', function(){
+  const params = new URLSearchParams(location.search);
+  const tab = params.get('tab');
+  if(tab){
+    const btn = document.querySelector('[data-bs-target="#tab-'+tab+'"]');
+    if(btn){ new bootstrap.Tab(btn).show(); }
+  }
+});
+
+// ── Image preview in Add Bill modal ──
+document.addEventListener('DOMContentLoaded', function(){
+  var inp = document.getElementById('billImageInput');
+  if(inp) inp.addEventListener('change', function(){
+    var prev = document.getElementById('billImagePreview');
+    var thumb = document.getElementById('billImageThumb');
+    if(this.files && this.files[0] && this.files[0].type.startsWith('image/')){
+      var reader = new FileReader();
+      reader.onload = function(e){ thumb.src = e.target.result; prev.style.display='block'; };
+      reader.readAsDataURL(this.files[0]);
+    } else { prev.style.display='none'; }
+  });
+});
+
+// ── Modal openers ──
+function showBillModal(id,inv,amount,issue,due,status,statusLabel,desc,paid,imageUrl){
+  document.getElementById('vbInvoice').textContent = inv;
+  document.getElementById('vbStatus').innerHTML = '<span class="crm-badge '+status+'">'+statusLabel+'</span>';
+  document.getElementById('vbAmount').textContent = 'Rs. '+parseFloat(amount).toLocaleString();
+  document.getElementById('vbIssue').textContent = issue;
+  document.getElementById('vbDue').textContent = due;
+  document.getElementById('vbBillId').value = id;
+  const paymentBill = document.getElementById('pbBillId');
+  if(paymentBill){ paymentBill.value = id; }
+  document.getElementById('vbStatusSel').value = status;
+  const paidRow = document.getElementById('vbPaidRow');
+  if(paid){ document.getElementById('vbPaid').textContent = paid; paidRow.style.display='flex'; }
+  else { paidRow.style.display='none'; }
+  const descRow = document.getElementById('vbDescRow');
+  if(desc){ document.getElementById('vbDesc').textContent = desc; descRow.style.display='flex'; }
+  else { descRow.style.display='none'; }
+  const imageRow = document.getElementById('vbImageRow');
+  if(imageUrl){
+    document.getElementById('vbImageThumbView').src = imageUrl;
+    document.getElementById('vbImageLink').href = imageUrl;
+    imageRow.style.display='block';
+  } else { imageRow.style.display='none'; }
+  new bootstrap.Modal(document.getElementById('viewBillModal')).show();
+}
+
+function showContractModal(title,value,start,end,status,statusLabel,notes,docUrl){
+  document.getElementById('vcTitle').textContent = title;
+  document.getElementById('vcStatus').innerHTML = '<span class="crm-badge '+status+'">'+statusLabel+'</span>';
+  document.getElementById('vcValue').textContent = value;
+  document.getElementById('vcPeriod').textContent = start+' — '+end;
+  const notesRow = document.getElementById('vcNotesRow');
+  if(notes){ document.getElementById('vcNotes').textContent = notes; notesRow.style.display='flex'; }
+  else { notesRow.style.display='none'; }
+  const docRow = document.getElementById('vcDocRow');
+  if(docUrl){ document.getElementById('vcDocLink').href = docUrl; docRow.style.display='block'; }
+  else { docRow.style.display='none'; }
+  new bootstrap.Modal(document.getElementById('viewContractModal')).show();
+}
+
+function showProposalModal(title,amount,sent,valid,status,statusLabel,notes,docUrl){
+  document.getElementById('vpTitle').textContent = title;
+  document.getElementById('vpStatus').innerHTML = '<span class="crm-badge '+status+'">'+statusLabel+'</span>';
+  document.getElementById('vpAmount').textContent = amount;
+  document.getElementById('vpSent').textContent = sent;
+  document.getElementById('vpValid').textContent = valid;
+  const notesRow = document.getElementById('vpNotesRow');
+  if(notes){ document.getElementById('vpNotes').textContent = notes; notesRow.style.display='flex'; }
+  else { notesRow.style.display='none'; }
+  const docRow = document.getElementById('vpDocRow');
+  if(docUrl){ document.getElementById('vpDocLink').href = docUrl; docRow.style.display='block'; }
+  else { docRow.style.display='none'; }
+  new bootstrap.Modal(document.getElementById('viewProposalModal')).show();
+}
+
+function showFollowUpModal(date,by,feedback,next){
+  document.getElementById('vfDate').textContent = date;
+  document.getElementById('vfDateVal').textContent = date;
+  document.getElementById('vfBy').textContent = by;
+  document.getElementById('vfFeedback').textContent = feedback;
+  const nextRow = document.getElementById('vfNextRow');
+  if(next){ document.getElementById('vfNext').textContent = next; nextRow.style.display='flex'; }
+  else { nextRow.style.display='none'; }
+  new bootstrap.Modal(document.getElementById('viewFollowUpModal')).show();
+}
+</script>
+{% endblock %}

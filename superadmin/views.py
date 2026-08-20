@@ -1,16 +1,32 @@
 from datetime import timezone
 import datetime
+import os
 from django.http.response import HttpResponseRedirect
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 from django.contrib import messages
 from django.urls import reverse
+from django.db import transaction
+from django.utils.text import slugify
 from management.models import Holiday, Occasion, Organization
-from management.models import Schooladmin
+from management.models import Schooladmin, AgentProfile, AgentLedger, AgentActivityLog
 from management.models import CustomUser
 from school import settings
-from .forms import OrgForm, SchooladminForm
+from .forms import OrgForm, SchooladminForm, BlogPostForm, FAQForm
+from management.models import BlogPost, FAQ, ContactUs, PackageRequest
+from agent.forms import SuperAdminAgentForm
 from handle.models import AttendanceRecord, Classification, Course, Device, Staff, member
+from management.pricing_services import pricing_tier_payload
+from .organization_services import (
+    active_dynamic_features,
+    build_feature_groups,
+    dashboard_subscription_context,
+    preset_feature_keys,
+    save_feature_selection,
+    selected_feature_keys,
+    subscription_summary,
+)
 
 from django.core.mail import send_mail
 
@@ -43,20 +59,26 @@ class Dashboard(View):
     template_name = 'super_admin/SAdashboard.html'
 
     def get(self, request, *args, **kwargs):
-        org = Organization.objects.all()
-        org_count = org.count()
+        organizations = list(Organization.objects.all().order_by('name'))
+        org_count = len(organizations)
         user_count = Schooladmin.objects.all().count()
         
         # Fetching both weekly and occasion holidays for the dashboard
         recent_holidays = Holiday.objects.all().select_related('org').order_by('-id')[:5] 
         recent_occasions = Occasion.objects.all().select_related('org').order_by('-date')[:5]
         
+        subscription_context = dashboard_subscription_context(organizations)
+        recent_contacts = ContactUs.objects.order_by('-created_at')[:5]
+        recent_package_requests = PackageRequest.objects.order_by('-created_at')[:5]
         dist = {
-            'org': org,
+            'org': organizations,
             'org_count': org_count,
             'user_count': user_count,
             'recent_holidays': recent_holidays,
             'recent_occasions': recent_occasions,
+            'recent_contacts': recent_contacts,
+            'recent_package_requests': recent_package_requests,
+            **subscription_context,
         }
         return render(request, self.template_name, dist)
 
@@ -68,7 +90,7 @@ class OrganizationDetail(View):
         org = get_object_or_404(Organization, id=id)
         
         # 1. Fetch Members & Classifications
-        members = member.objects.filter(org=org).order_by('-created_date')
+        members = member.objects.filter(org=org).exclude(status='dumped').order_by('-created_date')
         classifications = Classification.objects.filter(org=org)
         
         # Generate Classification Distribution for the Chart
@@ -115,8 +137,9 @@ class OrganizationDetail(View):
             'weekly_holidays': weekly_holidays,
             'occasions': occasions,
             'connected_year': connected_year,
+            'subscription_summary': subscription_summary(org),
         }
-    
+
         return render(request, self.template_name, context)
 
 
@@ -260,7 +283,7 @@ class MemberList(View):
             mem = member.objects.all()
             th = 'All' 
         else:
-            mem = member.objects.filter(org = ors)
+            mem = member.objects.filter(org = ors).exclude(status='dumped')
             th = Organization.objects.get(id = clas).name
         dist = {
             'mem':mem,
@@ -274,15 +297,74 @@ class Settings(View):
     template_name = 'super_admin/settings.html'
 
     def get(self, request, *args, **kwargs):
+        from django.db import connection
         org = Organization.objects.all()
         dist = {
-            'org': org
+            'org': org,
+            'db_is_sqlite': connection.vendor == 'sqlite',
         }
         return render(request, self.template_name, dist)
-    
+
     def post(self, request, *args, **kwargs):
         messages.success(request, "Settings Updated Successfully")
-        return HttpResponseRedirect(reverse('superadmin:settings'))
+        return HttpResponseRedirect(reverse('superadmin:setting'))
+
+
+def build_sqlite_backup_response(source_path):
+    """
+    Copies the SQLite file at `source_path` via the sqlite3 online backup
+    API (not a raw file copy) into a server-side temp file, then wraps it in
+    a FileResponse that deletes the temp file once fully streamed — nothing
+    from the backup is left on disk after the download completes. Using the
+    backup API instead of a plain file copy means a backup taken while the
+    app is live and writing never captures a torn/partial page, and
+    correctly picks up committed WAL data a plain file copy of db.sqlite3
+    could miss.
+    """
+    import sqlite3
+    import tempfile
+
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix='.sqlite3')
+    os.close(tmp_fd)
+
+    source_conn = sqlite3.connect(f'file:{source_path}?mode=ro', uri=True)
+    dest_conn = sqlite3.connect(tmp_path)
+    try:
+        source_conn.backup(dest_conn)
+    finally:
+        dest_conn.close()
+        source_conn.close()
+
+    filename = f"mero_attendance_backup_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.sqlite3"
+    file_handle = open(tmp_path, 'rb')
+    original_close = file_handle.close
+
+    def _close_and_cleanup():
+        original_close()
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+
+    file_handle.close = _close_and_cleanup
+    response = FileResponse(file_handle, as_attachment=True, filename=filename, content_type='application/x-sqlite3')
+    response['Content-Length'] = os.path.getsize(tmp_path)
+    return response
+
+
+def database_backup(request):
+    """Superadmin-only: download a point-in-time SQLite backup. See build_sqlite_backup_response()."""
+    from django.db import connection
+
+    if request.method != 'POST':
+        messages.error(request, "Invalid request method.")
+        return redirect('superadmin:setting')
+
+    if connection.vendor != 'sqlite':
+        messages.error(request, "Database backup is only available for SQLite deployments.")
+        return redirect('superadmin:setting')
+
+    return build_sqlite_backup_response(str(connection.settings_dict['NAME']))
 
 
 class SearchView(View):
@@ -295,7 +377,7 @@ class SearchView(View):
         if search_query:
             org = Organization.objects.filter(name__icontains=search_query)
             user = Schooladmin.objects.filter(admin__first_name__icontains=search_query) | Schooladmin.objects.filter(admin__last_name__icontains=search_query)
-            mem = member.objects.filter(name=search_query) | member.objects.filter(email__icontains=search_query)
+            mem = member.objects.filter(name=search_query).exclude(status='dumped') | member.objects.filter(email__icontains=search_query).exclude(status='dumped')
 
             print(org, user, mem)
             
@@ -323,28 +405,87 @@ class SearchView(View):
         return render(request, self.template_name, dist)
     
 
+def _organization_form_context(form, org=None, selected_keys=None):
+    category = (
+        form.data.get('category')
+        if form.is_bound
+        else (org.category if org else form.initial.get('category', 'others'))
+    ) or 'others'
+    dynamic_features = active_dynamic_features()
+    if selected_keys is None:
+        selected_keys = (
+            selected_feature_keys(org)
+            if org
+            else preset_feature_keys(category, dynamic_features)
+        )
+    return {
+        'form': form,
+        'org': org,
+        'is_edit': bool(org),
+        'feature_groups': build_feature_groups(
+            org=org,
+            selected_keys=selected_keys,
+            dynamic_features=dynamic_features,
+        ),
+        'feature_presets': {
+            category_key: sorted(
+                preset_feature_keys(category_key, dynamic_features)
+            )
+            for category_key, _label in Organization.CATEGORY_CHOICES
+        },
+        'pricing_tiers': pricing_tier_payload(),
+        'subscription_summary': subscription_summary(org) if org else None,
+    }
+
+
+def _posted_feature_keys(request):
+    selected = set(request.POST.getlist('feature_keys'))
+    # Older/no-JavaScript submissions do not include the unified feature input.
+    # In that case the category's safe recommended preset is the intended state.
+    if not selected:
+        selected = preset_feature_keys(request.POST.get('category', 'others'))
+    return selected
+
+
+def _normalize_subscription(org):
+    if org.created_at:
+        org.subscription_start = org.created_at.date()
+    if not org.subscription_end and org.expire_on:
+        org.subscription_end = (
+            org.expire_on.date() if hasattr(org.expire_on, 'date') else org.expire_on
+        )
+    if not org.subscription_plan:
+        org.subscription_plan = 'Free Demo' if org.free_demo else 'Annual Custom'
+
+
 class addOrg(View):
-    template_name = 'super_admin/addOrg.html'
+    template_name = 'super_admin/organization_form.html'
 
     def get(self, request, *args, **kwargs):
-        org = Organization.objects.all()
         form = OrgForm()
-        dist = {
-            'org': org,
-            'form': form
-        }
-        return render(request, self.template_name, dist)
-    
+        return render(request, self.template_name, _organization_form_context(form))
+
     def post(self, request, *args, **kwargs):
-        # Added request.FILES to support image uploads if you add them later
         form = OrgForm(request.POST, request.FILES or None)
+        posted_keys = _posted_feature_keys(request)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Successfully Added Organization")
-            return HttpResponseRedirect(reverse('superadmin:addOrg'))
-        else:
-            messages.error(request, "Please check the form for errors.")
-            return render(request, self.template_name, {'form': form, 'org': Organization.objects.all()})
+            with transaction.atomic():
+                new_org = form.save(commit=False)
+                _normalize_subscription(new_org)
+                new_org.save()
+                save_feature_selection(new_org, posted_keys)
+            messages.success(
+                request,
+                "Organization created with its subscription and feature package.",
+            )
+            return HttpResponseRedirect(reverse('superadmin:editOrg', args=[new_org.id]))
+
+        messages.error(request, "Please correct the highlighted organization details.")
+        return render(
+            request,
+            self.template_name,
+            _organization_form_context(form, selected_keys=posted_keys),
+        )
 
 
 def deleteOrg(request, id):
@@ -355,109 +496,36 @@ def deleteOrg(request, id):
 
 
 def editOrg(request, id):
-    org = Organization.objects.get(id=id)
-    
+    org = get_object_or_404(Organization, id=id)
+
     if request.method == 'POST':
-        # Text, Int, Date, and Choice fields
-        org.name = request.POST.get('name', org.name)
-        org.category = request.POST.get('category', org.category)
-        org.address = request.POST.get('address', org.address)
-        org.member_limit = request.POST.get('member_limit', org.member_limit)
-        org.serial_key = request.POST.get('serial_key', org.serial_key)
-        org.new_serial_key = request.POST.get('new_serial_key', org.new_serial_key)
-        org.expire_on = request.POST.get('expire_on', org.expire_on)
+        form = OrgForm(request.POST, request.FILES or None, instance=org)
+        posted_keys = _posted_feature_keys(request)
+        if form.is_valid():
+            with transaction.atomic():
+                org = form.save(commit=False)
+                _normalize_subscription(org)
+                org.save()
+                save_feature_selection(org, posted_keys)
+            messages.success(
+                request,
+                "Organization, subscription, pricing and features updated successfully.",
+            )
+            return HttpResponseRedirect(reverse('superadmin:editOrg', args=[org.id]))
 
-        # Refactored Boolean fields (cleaner approach without try/except)
-        org.activate = request.POST.get('activate') == 'on'
-        org.mutifeature_enable = request.POST.get('mutifeature_enable') == 'on'
-        org.location_based = request.POST.get('location_based') == 'on'
-        org.qr_based = request.POST.get('qr_based') == 'on'
-        org.auto_checkin = request.POST.get('auto_checkin') == 'on'
-        
-        # Attendance & platform booleans
-        org.rfid_based = request.POST.get('rfid_based') == 'on'
-        org.manual_attendance = request.POST.get('manual_attendance') == 'on'
-        org.nepali_date = request.POST.get('nepali_date') == 'on'
-        org.free_demo = request.POST.get('free_demo') == 'on'
-        org.course_based_attendance = request.POST.get('course_based_attendance') == 'on'
+        messages.error(request, "Please correct the highlighted organization details.")
+        return render(
+            request,
+            'super_admin/organization_form.html',
+            _organization_form_context(form, org=org, selected_keys=posted_keys),
+        )
 
-        # Module feature flags
-        org.feature_finance      = request.POST.get('feature_finance') == 'on'
-        org.feature_billing      = request.POST.get('feature_billing') == 'on'
-        org.feature_stock        = request.POST.get('feature_stock') == 'on'
-        org.feature_tasks        = request.POST.get('feature_tasks') == 'on'
-        org.feature_results      = request.POST.get('feature_results') == 'on'
-        org.feature_hrms         = request.POST.get('feature_hrms') == 'on'
-        org.feature_payroll      = request.POST.get('feature_payroll') == 'on'
-        org.feature_complaints   = request.POST.get('feature_complaints') == 'on'
-        org.feature_events       = request.POST.get('feature_events') == 'on'
-        org.feature_branches     = request.POST.get('feature_branches') == 'on'
-        org.feature_leave        = request.POST.get('feature_leave') == 'on'
-        # Extended feature flags
-        org.feature_study_gap      = request.POST.get('feature_study_gap') == 'on'
-        org.feature_bulk_export    = request.POST.get('feature_bulk_export') == 'on'
-        org.feature_notifications  = request.POST.get('feature_notifications') == 'on'
-        org.feature_courses        = request.POST.get('feature_courses') == 'on'
-        org.feature_student_mgmt   = request.POST.get('feature_student_mgmt') == 'on'
-        org.feature_member_mgmt    = request.POST.get('feature_member_mgmt') == 'on'
-        # Dependency enforcement
-        if not org.feature_courses:
-            org.feature_results = False
-            org.feature_study_gap = False
-        if not org.feature_student_mgmt:
-            org.feature_billing = False
-
-        org.save()
-        messages.success(request, "Successfully Updated Organization")
-        return HttpResponseRedirect(reverse('superadmin:editOrg', args=[org.id]))
-
-    # GET request - initialize form
-    form = OrgForm()
-    
-    # Initialize Text/Choice fields
-    form.fields['name'].initial = org.name
-    form.fields['category'].initial = org.category
-    form.fields['address'].initial = org.address
-    form.fields['member_limit'].initial = org.member_limit
-    form.fields['serial_key'].initial = org.serial_key
-    form.fields['new_serial_key'].initial = org.new_serial_key
-    form.fields['expire_on'].initial = org.expire_on
-    
-    # Initialize Boolean fields
-    form.fields['activate'].initial = org.activate
-    form.fields['mutifeature_enable'].initial = org.mutifeature_enable
-    form.fields['location_based'].initial = org.location_based
-    form.fields['qr_based'].initial = org.qr_based
-    form.fields['auto_checkin'].initial = org.auto_checkin
-    form.fields['rfid_based'].initial = org.rfid_based
-    form.fields['manual_attendance'].initial = org.manual_attendance
-    form.fields['nepali_date'].initial = org.nepali_date
-    form.fields['free_demo'].initial = org.free_demo
-    form.fields['course_based_attendance'].initial = org.course_based_attendance
-    # Feature flags
-    form.fields['feature_finance'].initial    = org.feature_finance
-    form.fields['feature_billing'].initial    = org.feature_billing
-    form.fields['feature_stock'].initial      = org.feature_stock
-    form.fields['feature_tasks'].initial      = org.feature_tasks
-    form.fields['feature_results'].initial    = org.feature_results
-    form.fields['feature_hrms'].initial       = org.feature_hrms
-    form.fields['feature_payroll'].initial    = org.feature_payroll
-    form.fields['feature_complaints'].initial = org.feature_complaints
-    form.fields['feature_events'].initial     = org.feature_events
-    form.fields['feature_branches'].initial   = org.feature_branches
-    form.fields['feature_leave'].initial      = org.feature_leave
-    form.fields['feature_study_gap'].initial      = org.feature_study_gap
-    form.fields['feature_bulk_export'].initial    = org.feature_bulk_export
-    form.fields['feature_notifications'].initial  = org.feature_notifications
-    form.fields['feature_courses'].initial        = org.feature_courses
-    form.fields['feature_student_mgmt'].initial   = org.feature_student_mgmt
-    form.fields['feature_member_mgmt'].initial    = org.feature_member_mgmt
-
-    dist = {
-        'form': form,
-        'org': org
-    }
-    return render(request, 'super_admin/editOrg.html', dist)
+    form = OrgForm(instance=org)
+    return render(
+        request,
+        'super_admin/organization_form.html',
+        _organization_form_context(form, org=org),
+    )
 
 class addUser(View):
     template_name = 'super_admin/addUser.html'
@@ -579,3 +647,449 @@ class SuperAttendanceReportView(View):
         except Exception as e:
             messages.error(request, str(e))
         return redirect('superadmin:attendance_report')
+
+
+# ─── Agent Management Views ───────────────────────────────────────────────────
+
+class AgentListView(View):
+    template_name = 'super_admin/agents/list.html'
+
+    def get(self, request):
+        agents = AgentProfile.objects.all().select_related('admin').order_by('-created_at')
+        return render(request, self.template_name, {'agents': agents})
+
+
+class AgentAddView(View):
+    template_name = 'super_admin/agents/add.html'
+
+    def get(self, request):
+        form = SuperAdminAgentForm()
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        form = SuperAdminAgentForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    user = CustomUser.objects.create_user(
+                        username=form.cleaned_data['email'],
+                        email=form.cleaned_data['email'],
+                        password=form.cleaned_data['password'],
+                        first_name=form.cleaned_data['first_name'],
+                        last_name=form.cleaned_data.get('last_name', ''),
+                        user_type='4',
+                    )
+                    agent = form.save(commit=False)
+                    agent.admin = user
+                    agent.created_by = request.user
+                    agent.save()
+                messages.success(request, f"Agent '{agent.full_name}' created successfully.")
+                return redirect('superadmin:agent_list')
+            except Exception as e:
+                messages.error(request, f"Error creating agent: {e}")
+        return render(request, self.template_name, {'form': form})
+
+
+class AgentDetailView(View):
+    template_name = 'super_admin/agents/detail.html'
+
+    def get(self, request, agent_id):
+        agent = get_object_or_404(AgentProfile, id=agent_id)
+        orgs = agent.organizations.all().order_by('-id')
+        ledger = agent.ledger_entries.all().order_by('-created_at')[:20]
+        activity = agent.activity_logs.all()[:20]
+        return render(request, self.template_name, {
+            'agent': agent, 'orgs': orgs, 'ledger': ledger, 'activity': activity
+        })
+
+
+class AgentEditView(View):
+    template_name = 'super_admin/agents/edit.html'
+
+    def get(self, request, agent_id):
+        agent = get_object_or_404(AgentProfile, id=agent_id)
+        form = SuperAdminAgentForm(instance=agent)
+        return render(request, self.template_name, {'agent': agent, 'form': form})
+
+    def post(self, request, agent_id):
+        agent = get_object_or_404(AgentProfile, id=agent_id)
+        form = SuperAdminAgentForm(request.POST, request.FILES, instance=agent)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Agent updated successfully.")
+            return redirect('superadmin:agent_detail', agent_id=agent_id)
+        return render(request, self.template_name, {'agent': agent, 'form': form})
+
+
+def agent_suspend(request, agent_id):
+    agent = get_object_or_404(AgentProfile, id=agent_id)
+    agent.status = 'suspended'
+    agent.save()
+    messages.success(request, f"Agent '{agent.full_name}' has been suspended.")
+    return redirect('superadmin:agent_detail', agent_id=agent_id)
+
+
+def agent_activate(request, agent_id):
+    agent = get_object_or_404(AgentProfile, id=agent_id)
+    agent.status = 'active'
+    agent.save()
+    messages.success(request, f"Agent '{agent.full_name}' has been activated.")
+    return redirect('superadmin:agent_detail', agent_id=agent_id)
+
+
+# ── Blog Management ──────────────────────────────────────────────────────────
+
+class BlogListView(View):
+    template_name = 'super_admin/blog/list.html'
+
+    def get(self, request):
+        posts = BlogPost.objects.all().order_by('-created_at')
+        return render(request, self.template_name, {'posts': posts})
+
+
+class BlogCreateView(View):
+    template_name = 'super_admin/blog/form.html'
+
+    def get(self, request):
+        form = BlogPostForm()
+        return render(request, self.template_name, {'form': form, 'is_edit': False})
+
+    def post(self, request):
+        form = BlogPostForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Blog post created successfully.")
+            return redirect('superadmin:blog_list')
+        return render(request, self.template_name, {'form': form, 'is_edit': False})
+
+
+class BlogEditView(View):
+    template_name = 'super_admin/blog/form.html'
+
+    def get(self, request, pk):
+        post = get_object_or_404(BlogPost, pk=pk)
+        form = BlogPostForm(instance=post)
+        return render(request, self.template_name, {'form': form, 'post': post, 'is_edit': True})
+
+    def post(self, request, pk):
+        post = get_object_or_404(BlogPost, pk=pk)
+        form = BlogPostForm(request.POST, request.FILES, instance=post)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Blog post updated successfully.")
+            return redirect('superadmin:blog_list')
+        return render(request, self.template_name, {'form': form, 'post': post, 'is_edit': True})
+
+
+def blog_delete(request, pk):
+    post = get_object_or_404(BlogPost, pk=pk)
+    if request.method == 'POST':
+        post.delete()
+        messages.success(request, "Blog post deleted.")
+    return redirect('superadmin:blog_list')
+
+
+def blog_toggle_publish(request, pk):
+    post = get_object_or_404(BlogPost, pk=pk)
+    if request.method == 'POST':
+        post.published = not post.published
+        post.save(update_fields=['published'])
+        messages.success(request, f"'{post.title}' is now {'published' if post.published else 'unpublished'}.")
+    return redirect('superadmin:blog_list')
+
+
+class FAQListView(View):
+    template_name = 'super_admin/faq/list.html'
+
+    def get(self, request):
+        faqs = FAQ.objects.all().order_by('order', 'id')
+        return render(request, self.template_name, {'faqs': faqs})
+
+
+class FAQCreateView(View):
+    template_name = 'super_admin/faq/form.html'
+
+    def get(self, request):
+        form = FAQForm()
+        return render(request, self.template_name, {'form': form, 'is_edit': False})
+
+    def post(self, request):
+        form = FAQForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "FAQ created successfully.")
+            return redirect('superadmin:faq_list')
+        return render(request, self.template_name, {'form': form, 'is_edit': False})
+
+
+class FAQEditView(View):
+    template_name = 'super_admin/faq/form.html'
+
+    def get(self, request, pk):
+        faq = get_object_or_404(FAQ, pk=pk)
+        form = FAQForm(instance=faq)
+        return render(request, self.template_name, {'form': form, 'faq': faq, 'is_edit': True})
+
+    def post(self, request, pk):
+        faq = get_object_or_404(FAQ, pk=pk)
+        form = FAQForm(request.POST, instance=faq)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "FAQ updated successfully.")
+            return redirect('superadmin:faq_list')
+        return render(request, self.template_name, {'form': form, 'faq': faq, 'is_edit': True})
+
+
+def faq_delete(request, pk):
+    faq = get_object_or_404(FAQ, pk=pk)
+    if request.method == 'POST':
+        faq.delete()
+        messages.success(request, "FAQ deleted.")
+    return redirect('superadmin:faq_list')
+
+
+def faq_toggle_active(request, pk):
+    faq = get_object_or_404(FAQ, pk=pk)
+    if request.method == 'POST':
+        faq.is_active = not faq.is_active
+        faq.save(update_fields=['is_active'])
+        messages.success(request, f"'{faq.question}' is now {'active' if faq.is_active else 'inactive'}.")
+    return redirect('superadmin:faq_list')
+
+
+class ContactSubmissionListView(View):
+    template_name = 'super_admin/contacts/list.html'
+
+    def get(self, request):
+        contacts = ContactUs.objects.order_by('-created_at')
+        return render(request, self.template_name, {'contacts': contacts})
+
+
+def contact_delete(request, pk):
+    contact = get_object_or_404(ContactUs, pk=pk)
+    if request.method == 'POST':
+        contact.delete()
+        messages.success(request, "Contact submission deleted.")
+    return redirect('superadmin:contact_list')
+
+
+class PackageRequestListView(View):
+    template_name = 'super_admin/package_requests/list.html'
+
+    def get(self, request):
+        package_requests = PackageRequest.objects.order_by('-created_at')
+        return render(request, self.template_name, {'package_requests': package_requests})
+
+
+def package_request_delete(request, pk):
+    pkg_request = get_object_or_404(PackageRequest, pk=pk)
+    if request.method == 'POST':
+        pkg_request.delete()
+        messages.success(request, "Package request deleted.")
+    return redirect('superadmin:package_request_list')
+
+
+# ---------------------------------------------------------------------------
+# Dynamic Feature Registry — add features/permissions with zero code changes.
+# Additive layer alongside the legacy addOrg/editOrg flat checkbox grid above,
+# which continues to control the original 31 hardcoded feature columns.
+# ---------------------------------------------------------------------------
+
+class FeatureRegistryView(View):
+    template_name = 'super_admin/features/registry.html'
+
+    def get(self, request):
+        from handle.models import DynamicFeature
+        from management.pricing_services import feature_catalog
+        from school.permissions import PERMISSION_REGISTRY
+        features = DynamicFeature.objects.all().prefetch_related('permissions').order_by('category', 'label')
+        categories = [(c['slug'], c['label']) for c in PERMISSION_REGISTRY]
+        return render(request, self.template_name, {
+            'features': features,
+            'categories': categories,
+            'pricing_rows': feature_catalog(sync_missing=True),
+        })
+
+    def post(self, request):
+        from decimal import Decimal, InvalidOperation
+        from handle.models import DynamicFeature, DynamicPermission
+        from management.models import FeaturePrice
+        from management.pricing_services import sync_feature_price_catalog
+        action = request.POST.get('action')
+
+        if action == 'create_feature':
+            key = slugify(request.POST.get('key', '')).replace('-', '_')
+            label = request.POST.get('label', '').strip()
+            if not key or not label:
+                messages.error(request, "Key and label are required.")
+                return redirect('superadmin:feature_registry')
+            if key in FEATURE_MAP_KEYS():
+                messages.error(request, f"'{key}' collides with a built-in feature key — choose another.")
+                return redirect('superadmin:feature_registry')
+            try:
+                annual_price = Decimal(request.POST.get('annual_price', '0') or '0')
+                if annual_price < 0:
+                    raise InvalidOperation
+            except (InvalidOperation, ValueError):
+                messages.error(request, "Feature price must be zero or a positive amount.")
+                return redirect('superadmin:feature_registry')
+            feature, created = DynamicFeature.objects.get_or_create(key=key, defaults={
+                'label': label,
+                'icon': request.POST.get('icon', '').strip() or 'fa-puzzle-piece',
+                'category': request.POST.get('category', '').strip(),
+                'description': request.POST.get('description', '').strip(),
+                'price': annual_price,
+            })
+            if created:
+                FeaturePrice.objects.update_or_create(
+                    feature_key=key,
+                    defaults={
+                        'label': label,
+                        'annual_price': annual_price,
+                        'is_active': True,
+                        'is_public': request.POST.get('is_public') == 'on',
+                        'updated_by': request.user if request.user.is_authenticated else None,
+                    },
+                )
+                messages.success(request, f"Feature '{label}' created. Grant it to organizations from the org list.")
+            else:
+                messages.error(request, f"A feature with key '{key}' already exists.")
+
+        elif action == 'toggle_active':
+            feature = get_object_or_404(DynamicFeature, pk=request.POST.get('feature_id'))
+            feature.is_active = not feature.is_active
+            feature.save(update_fields=['is_active'])
+            FeaturePrice.objects.filter(feature_key=feature.key).update(
+                is_active=feature.is_active
+            )
+            messages.success(request, f"'{feature.label}' is now {'active' if feature.is_active else 'inactive'}.")
+
+        elif action == 'delete_feature':
+            feature = get_object_or_404(DynamicFeature, pk=request.POST.get('feature_id'))
+            label = feature.label
+            FeaturePrice.objects.filter(feature_key=feature.key).delete()
+            feature.delete()
+            messages.success(request, f"Feature '{label}' deleted (grants and permissions removed).")
+
+        elif action == 'update_feature_price':
+            sync_feature_price_catalog(
+                request.user if request.user.is_authenticated else None
+            )
+            feature_price = get_object_or_404(
+                FeaturePrice,
+                feature_key=request.POST.get('feature_key'),
+            )
+            try:
+                annual_price = Decimal(request.POST.get('annual_price', '') or '0')
+                if annual_price < 0:
+                    raise InvalidOperation
+            except (InvalidOperation, ValueError):
+                messages.error(request, "Feature price must be zero or a positive amount.")
+                return redirect('superadmin:feature_registry')
+            feature_price.annual_price = annual_price
+            feature_price.is_public = request.POST.get('is_public') == 'on'
+            feature_price.is_active = request.POST.get('is_active') == 'on'
+            feature_price.updated_by = (
+                request.user if request.user.is_authenticated else None
+            )
+            feature_price.save(
+                update_fields=[
+                    'annual_price',
+                    'is_public',
+                    'is_active',
+                    'updated_by',
+                    'updated_at',
+                ]
+            )
+            DynamicFeature.objects.filter(key=feature_price.feature_key).update(
+                price=annual_price,
+                is_active=feature_price.is_active,
+            )
+            messages.success(
+                request,
+                f"{feature_price.label} rate updated to Rs {annual_price}/year.",
+            )
+
+        elif action == 'add_permission':
+            feature = get_object_or_404(DynamicFeature, pk=request.POST.get('feature_id'))
+            flag = slugify(request.POST.get('flag', '')).replace('-', '_')
+            label = request.POST.get('perm_label', '').strip()
+            if not flag.startswith('can_'):
+                flag = f"can_{flag}" if flag else ''
+            if not flag or not label:
+                messages.error(request, "Permission flag and label are required.")
+                return redirect('superadmin:feature_registry')
+            _, created = DynamicPermission.objects.get_or_create(flag=flag, defaults={
+                'label': label,
+                'icon': request.POST.get('perm_icon', '').strip() or 'fa-check-circle',
+                'feature': feature,
+            })
+            if created:
+                messages.success(request, f"Permission '{label}' added to '{feature.label}'.")
+            else:
+                messages.error(request, f"A permission with flag '{flag}' already exists.")
+
+        elif action == 'delete_permission':
+            perm = get_object_or_404(DynamicPermission, pk=request.POST.get('permission_id'))
+            perm.delete()
+            messages.success(request, "Permission deleted.")
+
+        return redirect('superadmin:feature_registry')
+
+
+def FEATURE_MAP_KEYS():
+    from school.features import FEATURE_MAP
+    return set(FEATURE_MAP.keys())
+
+
+class OrgFeatureGrantsView(View):
+    """Per-org grant matrix for dynamic features, with bulk enable/disable and clone-from-org."""
+    template_name = 'super_admin/features/org_grants.html'
+
+    def get(self, request, org_id):
+        from handle.models import DynamicFeature, OrganizationFeatureGrant
+        org = get_object_or_404(Organization, pk=org_id)
+        features = DynamicFeature.objects.filter(is_active=True).order_by('category', 'label')
+        enabled_keys = set(
+            OrganizationFeatureGrant.objects.filter(org=org, enabled=True).values_list('feature__key', flat=True)
+        )
+        rows = [{'feature': f, 'enabled': f.key in enabled_keys} for f in features]
+        other_orgs = Organization.objects.exclude(pk=org.id).order_by('name')
+        return render(request, self.template_name, {
+            'org': org, 'rows': rows, 'other_orgs': other_orgs,
+        })
+
+    def post(self, request, org_id):
+        from handle.models import DynamicFeature, OrganizationFeatureGrant
+        from school.features import invalidate_org_feature_cache
+        org = get_object_or_404(Organization, pk=org_id)
+        action = request.POST.get('action')
+
+        if action == 'save_grants':
+            checked = set(request.POST.getlist('feature_key'))
+            for feature in DynamicFeature.objects.filter(is_active=True):
+                OrganizationFeatureGrant.objects.update_or_create(
+                    org=org, feature=feature, defaults={'enabled': feature.key in checked}
+                )
+            messages.success(request, f"Feature grants updated for {org.name}.")
+
+        elif action == 'enable_all':
+            for feature in DynamicFeature.objects.filter(is_active=True):
+                OrganizationFeatureGrant.objects.update_or_create(org=org, feature=feature, defaults={'enabled': True})
+            messages.success(request, f"All features enabled for {org.name}.")
+
+        elif action == 'disable_all':
+            OrganizationFeatureGrant.objects.filter(org=org).update(enabled=False)
+            messages.success(request, f"All features disabled for {org.name}.")
+
+        elif action == 'clone_from':
+            source = get_object_or_404(Organization, pk=request.POST.get('source_org_id'))
+            source_grants = OrganizationFeatureGrant.objects.filter(org=source)
+            for grant in source_grants:
+                OrganizationFeatureGrant.objects.update_or_create(
+                    org=org, feature=grant.feature, defaults={'enabled': grant.enabled}
+                )
+            messages.success(request, f"Cloned feature grants from {source.name}.")
+
+        invalidate_org_feature_cache(org.id)
+        return redirect('superadmin:org_feature_grants', org_id=org.id)

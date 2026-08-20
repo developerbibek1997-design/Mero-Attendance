@@ -5,6 +5,12 @@
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
+
+            {% for msg in messages %}
+            <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+            {% endfor %}
+
+            {% if staff_perms.can_request_leave %}
             <div class="card shadow-sm border-0 p-4">
                 <div class="d-flex align-items-center mb-4">
                     <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-md me-3">
@@ -12,7 +18,7 @@
                     </div>
                     <h4 class="mb-0">Request Time Off</h4>
                 </div>
-                
+
               <form method="post">
                     {% csrf_token %}
                     
@@ -81,6 +87,53 @@
                         <button type="submit" class="btn bg-gradient-primary btn-lg">Submit Request</button>
                     </div>
                 </form>
+            </div>
+            {% endif %}
+
+            <div class="card shadow-sm border-0 mt-4">
+                <div class="card-header bg-light border-bottom p-3">
+                    <h6 class="mb-0 font-weight-bolder text-dark">My Leave Applications</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-items-center mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Details / Reason</th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Dates</th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder text-center">Status</th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for l in my_leaves %}
+                            <tr>
+                                <td class="text-sm ps-4" style="max-width: 300px; white-space: normal;">
+                                    <strong>{{ l.leave_type.name|default:"Leave" }}</strong><br>
+                                    <small class="text-muted">{{ l.reason }}</small>
+                                </td>
+                                <td class="text-sm">{{ l.start_display }} to {{ l.end_display }}{% if nepali_enabled %} <span class="text-muted">BS</span>{% endif %}</td>
+                                <td class="text-center">
+                                    {% if l.approved %} <span class="badge bg-gradient-success">Approved</span>
+                                    {% elif l.rejected %} <span class="badge bg-gradient-danger">Rejected</span>
+                                    {% else %} <span class="badge bg-gradient-secondary">Pending</span> {% endif %}
+                                </td>
+                                <td class="text-end pe-3">
+                                    {% if not l.approved and not l.rejected %}
+                                    <form method="post" action="{% url 'staff:delete_leave' l.pk %}" onsubmit="return confirm('Delete this leave request?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2"><i class="fas fa-trash fa-xs"></i></button>
+                                    </form>
+                                    {% else %}
+                                    <span class="text-muted text-xs">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-4 text-muted">No leave requests yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

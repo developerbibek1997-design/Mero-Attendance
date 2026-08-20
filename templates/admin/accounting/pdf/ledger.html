@@ -1,0 +1,34 @@
+<html>
+<head>
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; color: #111827; font-size: 11px; }
+  h1 { font-size: 17px; margin-bottom: 2px; }
+  .muted { color: #6b7280; margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  th { background: #0f766e; color: #fff; text-align: left; padding: 6px 8px; }
+  td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; }
+  .num { text-align: right; }
+  .total { font-weight: bold; background: #f1f5f9; }
+</style>
+</head>
+<body>
+  <h1>{{ org.name }}</h1>
+  <p class="muted">General Ledger &mdash; {{ account.full_path }} &mdash; {{ date_from }} to {{ date_to }}</p>
+  <table>
+    <tr class="total"><td colspan="4">Opening Balance</td><td class="num">{{ gl.opening_balance|floatformat:2 }}</td></tr>
+    <tr><th>Date</th><th>Voucher</th><th>Reference</th><th>Remarks</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr>
+    {% for row in gl.rows %}
+    <tr>
+      <td>{{ row.date }}</td>
+      <td>{{ row.voucher_number }}</td>
+      <td>{{ row.reference|default:"" }}</td>
+      <td>{{ row.remarks|default:"" }}</td>
+      <td class="num">{{ row.debit|floatformat:2 }}</td>
+      <td class="num">{{ row.credit|floatformat:2 }}</td>
+      <td class="num">{{ row.running_balance|floatformat:2 }}</td>
+    </tr>
+    {% endfor %}
+    <tr class="total"><td colspan="6">Closing Balance</td><td class="num">{{ gl.closing_balance|floatformat:2 }}</td></tr>
+  </table>
+</body>
+</html>

@@ -1,0 +1,268 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Scan QR Attendance | Staff Portal{% endblock %}
+
+{% block content %}
+<style>
+  .scan-wrapper {
+    max-width: 480px; margin: 0 auto;
+  }
+  #qr-reader {
+    border-radius: 16px; overflow: hidden;
+    border: 3px solid #4f46e5;
+    min-height: 280px;
+  }
+  #qr-reader video { border-radius: 13px; }
+  .result-card {
+    border-radius: 16px; padding: 24px; text-align: center;
+    margin-top: 20px; display: none;
+  }
+  .result-card.success { background: linear-gradient(135deg,#d1fae5,#ecfdf5); border: 1.5px solid #6ee7b7; }
+  .result-card.error   { background: linear-gradient(135deg,#fee2e2,#fff1f2); border: 1.5px solid #fca5a5; }
+  .result-card .icon   { font-size: 3rem; margin-bottom: 12px; }
+  .scan-btn {
+    background: linear-gradient(135deg,#4f46e5,#7c3aed);
+    color: #fff; border: none; border-radius: 12px;
+    padding: 14px 36px; font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: all .2s; width: 100%;
+  }
+  .scan-btn:hover { opacity: .9; transform: translateY(-1px); }
+  .scan-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  .scanner-anim {
+    position: relative; width: 100%; padding-top: 75%;
+    background: #1e293b; border-radius: 13px; overflow: hidden;
+  }
+  .scanner-anim .line {
+    position: absolute; left: 10%; width: 80%; height: 3px;
+    background: linear-gradient(90deg, transparent, #4f46e5, transparent);
+    animation: scan-line 2s ease-in-out infinite;
+    border-radius: 2px;
+  }
+  @keyframes scan-line {
+    0%   { top: 15%; opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { top: 80%; opacity: 0; }
+  }
+  .scanner-anim .corner {
+    position: absolute; width: 24px; height: 24px;
+    border-color: #4f46e5; border-style: solid; border-radius: 3px;
+  }
+  .scanner-anim .corner.tl { top: 12%; left: 10%; border-width: 4px 0 0 4px; }
+  .scanner-anim .corner.tr { top: 12%; right: 10%; border-width: 4px 4px 0 0; }
+  .scanner-anim .corner.bl { bottom: 12%; left: 10%; border-width: 0 0 4px 4px; }
+  .scanner-anim .corner.br { bottom: 12%; right: 10%; border-width: 0 4px 4px 0; }
+</style>
+
+<div class="container py-4">
+  <div class="scan-wrapper">
+    <!-- Header -->
+    <div class="text-center mb-4">
+      <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#4f46e5,#7c3aed);
+        display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <i class="fas fa-qrcode" style="font-size:1.8rem;color:#fff;"></i>
+      </div>
+      <h4 class="fw-bold mb-1" style="color:#1e293b;">Scan QR Attendance</h4>
+      <p class="text-muted small">Scan the QR code shown by your administrator</p>
+    </div>
+
+    <!-- Camera scanner -->
+    <div id="scanner-section">
+      <!-- Animated placeholder while loading -->
+      <div class="scanner-anim mb-3" id="scanner-placeholder">
+        <div class="line"></div>
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+          <p style="color:rgba(255,255,255,.6);font-size:.85rem;margin:0;">Camera loading…</p>
+        </div>
+      </div>
+      <div id="qr-reader"></div>
+    </div>
+
+    <!-- Manual token input (fallback) -->
+    <div class="mt-3" id="manual-section" style="display:none;">
+      <label class="form-label fw-semibold small text-muted">Or enter QR token manually:</label>
+      <div class="input-group">
+        <input type="text" class="form-control" id="manual-token" placeholder="Paste QR token here…">
+        <button class="btn btn-primary fw-semibold" onclick="submitToken(document.getElementById('manual-token').value)">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Toggle manual entry -->
+    <div class="text-center mt-2">
+      <button class="btn btn-link btn-sm text-muted text-decoration-none" onclick="toggleManual()">
+        <i class="fas fa-keyboard me-1"></i>Enter token manually
+      </button>
+    </div>
+
+    <!-- Result card -->
+    <div class="result-card" id="result-card">
+      <div class="icon" id="result-icon"></div>
+      <h5 class="fw-bold mb-2" id="result-title"></h5>
+      <p class="text-muted mb-3" id="result-msg"></p>
+      <button class="scan-btn" onclick="resetScanner()">
+        <i class="fas fa-rotate-right me-2"></i>Scan Another
+      </button>
+    </div>
+
+    <!-- Back link -->
+    <div class="text-center mt-4">
+      <a href="{% url 'staff:dashboard' %}" class="text-muted text-decoration-none small">
+        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- html5-qrcode library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+const SCAN_URL  = "{% url 'staff:api_qr_attendance_scan' %}";
+const CSRF      = "{{ csrf_token }}";
+let scanner     = null;
+let scanning    = true;
+
+function startScanner() {
+  const placeholder = document.getElementById('scanner-placeholder');
+
+  // Library failed to load (CDN blocked / offline)
+  if (typeof Html5Qrcode === 'undefined') {
+    placeholder.style.display = 'none';
+    showManualFallback('Scanner library could not load. Enter the token below.');
+    return;
+  }
+
+  // Secure-context requirement: camera only works on HTTPS or localhost.
+  if (!window.isSecureContext) {
+    placeholder.style.display = 'none';
+    showManualFallback('Camera needs a secure connection (HTTPS). Open this page over HTTPS or on localhost, or enter the token below.');
+    return;
+  }
+
+  scanner = new Html5Qrcode('qr-reader');
+  const config = { fps: 10, qrbox: { width: 230, height: 230 } };
+
+  const onScan = (decodedText) => {
+    if (!scanning) return;
+    scanning = false;
+    scanner.stop().catch(() => {});
+    submitToken(decodedText);
+  };
+
+  // Start directly with the back camera — this triggers the permission prompt
+  // reliably (getCameras() often returns nothing before permission is granted).
+  scanner.start({ facingMode: { exact: 'environment' } }, config, onScan, () => {})
+    .then(() => { placeholder.style.display = 'none'; })
+    .catch(() => {
+      // Fall back to any available camera (front/user), then to manual entry.
+      scanner.start({ facingMode: 'environment' }, config, onScan, () => {})
+        .then(() => { placeholder.style.display = 'none'; })
+        .catch(() => {
+          scanner.start({ facingMode: 'user' }, config, onScan, () => {})
+            .then(() => { placeholder.style.display = 'none'; })
+            .catch((err) => {
+              placeholder.style.display = 'none';
+              const msg = (err && /permission|denied|notallowed/i.test(String(err)))
+                ? 'Camera permission was denied. Allow camera access in your browser, or enter the token below.'
+                : 'Camera not available. Enter the token below.';
+              showManualFallback(msg);
+            });
+        });
+    });
+}
+
+function showManualFallback(message) {
+  document.getElementById('manual-section').style.display = '';
+  document.getElementById('qr-reader').innerHTML =
+    '<div style="padding:40px;text-align:center;background:#f8fafc;border-radius:13px;">' +
+    '<i class="fas fa-camera-slash fa-3x text-muted mb-3"></i>' +
+    '<p class="text-muted small mb-0">' + (message || 'Camera not available. Enter token below.') + '</p></div>';
+}
+
+function toggleManual() {
+  const el = document.getElementById('manual-section');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+function submitToken(token) {
+  token = token.trim();
+  if (!token) return;
+
+  fetch(SCAN_URL, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': CSRF,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ token }),
+  })
+  .then(r => r.json().then(d => ({ ok: r.ok, status: r.status, data: d })))
+  .then(({ ok, status, data }) => {
+    document.getElementById('scanner-section').style.display = 'none';
+    document.getElementById('manual-section').style.display  = 'none';
+    const card  = document.getElementById('result-card');
+    const icon  = document.getElementById('result-icon');
+    const title = document.getElementById('result-title');
+    const msg   = document.getElementById('result-msg');
+
+    if (data.status === 'success' || data.status === 'check_out') {
+      card.className  = 'result-card success';
+      icon.innerHTML  = '✅';
+      title.textContent = data.status === 'check_out' ? 'Check-Out Recorded' : 'Attendance Marked!';
+      msg.textContent = data.message || 'Your attendance has been recorded successfully.';
+    } else if (data.status === 'expired') {
+      card.className  = 'result-card error';
+      icon.innerHTML  = '⏱️';
+      title.textContent = 'QR Expired';
+      msg.textContent = data.message || 'QR expired. Please ask admin to generate a new QR.';
+    } else if (data.status === 'session_closed') {
+      card.className  = 'result-card error';
+      icon.innerHTML  = '🚫';
+      title.textContent = 'Session Closed';
+      msg.textContent = data.message || 'QR session has been closed by admin.';
+    } else if (data.status === 'invalid_org') {
+      card.className  = 'result-card error';
+      icon.innerHTML  = '❌';
+      title.textContent = 'Wrong Organization';
+      msg.textContent = data.message || 'This QR code is not for your organization.';
+    } else if (data.status === 'invalid_qr') {
+      card.className  = 'result-card error';
+      icon.innerHTML  = '❌';
+      title.textContent = 'Invalid QR Code';
+      msg.textContent = data.message || 'Invalid QR code. Please scan the correct QR.';
+    } else {
+      card.className  = 'result-card error';
+      icon.innerHTML  = '⚠️';
+      title.textContent = 'Error';
+      msg.textContent = data.message || data.error || 'An error occurred. Please try again.';
+    }
+    card.style.display = '';
+  })
+  .catch(() => {
+    const card = document.getElementById('result-card');
+    document.getElementById('scanner-section').style.display = 'none';
+    card.className = 'result-card error';
+    document.getElementById('result-icon').innerHTML = '⚠️';
+    document.getElementById('result-title').textContent = 'Network Error';
+    document.getElementById('result-msg').textContent = 'Could not connect. Please check your internet and try again.';
+    card.style.display = '';
+  });
+}
+
+function resetScanner() {
+  document.getElementById('result-card').style.display = 'none';
+  document.getElementById('scanner-section').style.display = '';
+  document.getElementById('qr-reader').innerHTML = '';
+  scanning = true;
+  startScanner();
+}
+
+// Start camera on load
+startScanner();
+</script>
+{% endblock %}

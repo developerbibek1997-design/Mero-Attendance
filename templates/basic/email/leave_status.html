@@ -1,0 +1,14 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Leave {{ status_label }}{% endblock %}
+{% block content %}
+<p class="greeting">Hi <strong>{{ name }}</strong>,</p>
+<p class="message-text">Your {{ leave_type }} leave request has been
+  <span class="badge" style="background:{% if status == 'approved' %}#16a34a{% else %}#dc2626{% endif %};">{{ status_label }}</span>
+</p>
+<table class="data">
+  <tr><td class="label">Leave Type</td><td><strong>{{ leave_type }}</strong></td></tr>
+  <tr><td class="label">From</td><td><strong>{{ start }}</strong></td></tr>
+  <tr><td class="label">To</td><td><strong>{{ end }}</strong></td></tr>
+  {% if remarks %}<tr><td class="label">Remarks</td><td>{{ remarks }}</td></tr>{% endif %}
+</table>
+{% endblock %}

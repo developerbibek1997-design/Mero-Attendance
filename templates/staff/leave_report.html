@@ -1,0 +1,35 @@
+{% extends 'dashboard.html' %}
+{% block title %}Leave Report | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="fw-bold mb-4" style="color:#1e293b;">Leave Balance Report</h4>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-body p-0">
+      <table class="table mb-0 align-items-center">
+        <thead>
+          <tr>
+            <th class="ps-4 text-uppercase text-xxs text-secondary font-weight-bolder">Member</th>
+            {% for lt in leave_types %}
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-center">{{ lt.name }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in master_data %}
+          <tr>
+            <td class="ps-4 text-sm"><strong>{{ row.member.name }}</strong></td>
+            {% for b in row.balances %}
+            <td class="text-sm text-center">{{ b.data.remaining|default:"—" }}</td>
+            {% endfor %}
+          </tr>
+          {% empty %}
+          <tr><td colspan="{{ leave_types|length|add:1 }}" class="text-center py-4 text-muted">No members found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

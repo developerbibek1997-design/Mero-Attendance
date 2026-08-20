@@ -280,6 +280,66 @@
                 </div>
               </div>
 
+              <!-- Timesheet -->
+              <div class="col-md-4 col-6">
+                <div class="feature-card p-3 rounded border h-100" id="fc_timesheet">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="feature-icon" style="background:#e0e7ff;"><i class="fas fa-clock-rotate-left" style="color:#4f46e5;"></i></div>
+                    <span class="text-sm font-weight-bold">Timesheet</span>
+                  </div>
+                  <p class="text-xs text-muted mb-2">Daily timesheet management</p>
+                  <div class="form-check form-switch mb-0">
+                    {{ form.feature_timesheet }}
+                    <label class="form-check-label text-xs" for="{{ form.feature_timesheet.id_for_label }}">Enable</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ID Cards -->
+              <div class="col-md-4 col-6">
+                <div class="feature-card p-3 rounded border h-100" id="fc_id_cards">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="feature-icon" style="background:#fef3c7;"><i class="fas fa-id-card" style="color:#b45309;"></i></div>
+                    <span class="text-sm font-weight-bold">ID Cards</span>
+                  </div>
+                  <p class="text-xs text-muted mb-2">Printable member ID card generation</p>
+                  <div class="form-check form-switch mb-0">
+                    {{ form.feature_id_cards }}
+                    <label class="form-check-label text-xs" for="{{ form.feature_id_cards.id_for_label }}">Enable</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Field Visits -->
+              <div class="col-md-4 col-6">
+                <div class="feature-card p-3 rounded border h-100" id="fc_field_visits">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="feature-icon" style="background:#ccfbf1;"><i class="fas fa-location-arrow" style="color:#0d9488;"></i></div>
+                    <span class="text-sm font-weight-bold">Field Visits</span>
+                  </div>
+                  <p class="text-xs text-muted mb-2">Field staff location sharing</p>
+                  <div class="form-check form-switch mb-0">
+                    {{ form.feature_field_visits }}
+                    <label class="form-check-label text-xs" for="{{ form.feature_field_visits.id_for_label }}">Enable</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Clients -->
+              <div class="col-md-4 col-6">
+                <div class="feature-card p-3 rounded border h-100" id="fc_clients">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="feature-icon" style="background:#dbeafe;"><i class="fas fa-building text-primary"></i></div>
+                    <span class="text-sm font-weight-bold">Clients</span>
+                  </div>
+                  <p class="text-xs text-muted mb-2">Client follow-up tracking (CRM)</p>
+                  <div class="form-check form-switch mb-0">
+                    {{ form.feature_clients }}
+                    <label class="form-check-label text-xs" for="{{ form.feature_clients.id_for_label }}">Enable</label>
+                  </div>
+                </div>
+              </div>
+
               {% endwith %}
             </div>
           </div>
@@ -345,6 +405,22 @@
               <button type="button" class="btn btn-sm btn-primary" onclick="enableAllModules()">Enable All Modules</button>
               <button type="button" class="btn btn-sm btn-outline-secondary" onclick="disableAllModules()">Disable All</button>
             </div>
+          </div>
+        </div>
+
+        <!-- Allowed Features (Platform Plan) -->
+        <div class="card border-0 shadow-sm mb-3" style="border-left:4px solid #6366f1 !important;">
+          <div class="card-header bg-white border-bottom py-3">
+            <h6 class="mb-0 font-weight-bolder"><i class="fas fa-shield-halved text-primary me-2"></i>Allowed Features (Plan)</h6>
+            <p class="text-xs text-muted mb-0 mt-1">Which features this org's plan is allowed to use at all. Schooladmin can only toggle features checked here &mdash; unchecked ones stay locked regardless of the switches above.</p>
+          </div>
+          <div class="card-body p-3" style="max-height:280px;overflow-y:auto;">
+            {% for key, label in all_feature_keys %}
+            <div class="form-check">
+              <input class="form-check-input allowed-feature-cb" type="checkbox" name="allowed_features" value="{{ key }}" id="af_{{ key }}" checked>
+              <label class="form-check-label text-xs" for="af_{{ key }}">{{ label }}</label>
+            </div>
+            {% endfor %}
           </div>
         </div>
 

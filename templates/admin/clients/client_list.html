@@ -1,0 +1,105 @@
+{% extends 'dashboard.html' %}
+{% block title %}Clients | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-building text-primary me-2"></i>Customers / CRM</h4>
+      <p class="text-xs text-muted mb-0">Manage customers, contracts, billing, proposals, and follow-ups</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'schooladmin:billing_reminders' %}" class="btn btn-outline-warning btn-sm"><i class="fas fa-bell me-1"></i>Reminders</a>
+      <a href="{% url 'schooladmin:client_followup_due' %}" class="btn btn-warning btn-sm"><i class="fas fa-comments me-1"></i>Due Follow-Up ({{ due_count }})</a>
+      <a href="{% url 'schooladmin:create_client' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i>New Customer</a>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3 col-6">
+          <label class="text-xs font-weight-bold">Client Number</label>
+          <input type="text" name="client_number" class="form-control form-control-sm" value="{{ filters.client_number }}">
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="text-xs font-weight-bold">Status</label>
+          <select name="status" class="form-select form-select-sm">
+            <option value="">All</option>
+            {% for value,label in status_choices %}<option value="{{ value }}"{% if filters.status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="text-xs font-weight-bold">Priority</label>
+          <select name="priority" class="form-select form-select-sm">
+            <option value="">All</option>
+            {% for value,label in priority_choices %}<option value="{{ value }}"{% if filters.priority == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="text-xs font-weight-bold">Client Organization</label>
+          <input type="text" name="client_org" class="form-control form-control-sm" value="{{ filters.client_org }}">
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 font-weight-bolder">Results <span class="text-muted fw-normal">({{ clients|length }})</span></h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="text-xs">#</th>
+            <th class="text-xs">Organization</th>
+            <th class="text-xs">Status</th>
+            <th class="text-xs">Priority</th>
+            <th class="text-xs">Contact</th>
+            <th class="text-xs">Next Billing</th>
+            <th class="text-xs">Follow-Ups</th>
+            <th class="text-xs text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in clients %}
+          <tr>
+            <td class="text-xs text-muted">{{ row.client.client_number }}</td>
+            <td class="text-xs font-weight-bold">
+              {{ row.client.client_org_name }}
+              {% if row.client.industry %}<br><span class="text-muted fw-normal">{{ row.client.industry }}</span>{% endif %}
+            </td>
+            <td>
+              <span class="badge rounded-pill
+                {% if row.client.status == 'customer' %}bg-success{% else %}bg-info{% endif %}
+                text-xs">{{ row.client.get_status_display }}</span>
+            </td>
+            <td><span class="badge rounded-pill {% if row.client.priority == 'high' %}bg-danger{% elif row.client.priority == 'medium' %}bg-warning text-dark{% else %}bg-secondary{% endif %} text-xs">{{ row.client.get_priority_display }}</span></td>
+            <td class="text-xs">{{ row.client.contact_person|default:"—" }}</td>
+            <td class="text-xs">
+              {% if row.client.next_billing_date %}
+                {{ row.client.next_billing_date }}
+                {% if row.client.billing_amount %}<br><span class="text-muted">Rs. {{ row.client.billing_amount|floatformat:0 }}</span>{% endif %}
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td class="text-xs">{{ row.count }}</td>
+            <td class="text-center">
+              <a href="{% url 'schooladmin:client_detail' row.client.pk %}" class="btn btn-outline-primary btn-sm">View</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-muted py-4">No clients found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

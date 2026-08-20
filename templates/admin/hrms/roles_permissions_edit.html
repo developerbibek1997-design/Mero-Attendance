@@ -1,0 +1,186 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% load schooladmin_extras %}
+{% block title %}Roles & Permissions — {{ member.name }}{% endblock %}
+
+{% block content %}
+<style>
+  .ep-header { background:linear-gradient(135deg,#1e293b,#0f172a); border-radius:16px; padding:28px 32px; color:#fff; margin-bottom:20px; display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+  .ep-avatar { width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,#6366f1,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:1.6rem; font-weight:900; color:#fff; flex-shrink:0; }
+
+  .preset-card { background:#fff; border-radius:14px; border:1px solid #e2e8f0; padding:20px 22px; margin-bottom:20px; }
+  .preset-title { font-size:.9rem; font-weight:800; color:#0f172a; margin:0 0 3px; }
+  .preset-sub { font-size:.75rem; color:#94a3b8; margin:0 0 14px; }
+  .preset-btn { border:1px solid #e2e8f0; background:#fafafa; border-radius:10px; padding:10px 16px; font-size:.8rem; font-weight:700; color:#334155; cursor:pointer; transition:all .15s; }
+  .preset-btn:hover { border-color:#6366f1; background:#f5f3ff; }
+  .preset-btn.active { border-color:#6366f1; background:#6366f1; color:#fff; }
+
+  .toolbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  .toolbar input[type="search"] { max-width:280px; }
+
+  .ep-section { background:#fff; border-radius:14px; border:1px solid #e2e8f0; margin-bottom:20px; overflow:hidden; }
+  .ep-section-header { padding:16px 22px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; gap:12px; }
+  .ep-section-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:.9rem; color:#fff; flex-shrink:0; background:#6366f1; }
+  .ep-section-title { font-size:.9rem; font-weight:800; color:#0f172a; margin:0; }
+  .ep-section-sub   { font-size:.75rem; color:#94a3b8; margin:0; }
+  .ep-section-actions { margin-left:auto; display:flex; gap:8px; }
+  .ep-mini-btn { font-size:.72rem; font-weight:700; padding:4px 10px; border-radius:7px; border:1px solid #e2e8f0; background:#f8fafc; color:#475569; cursor:pointer; }
+  .ep-mini-btn:hover { background:#eef2ff; border-color:#6366f1; color:#4338ca; }
+  .ep-perm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; padding:18px 22px; }
+  .ep-perm-row { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; border:1px solid #e2e8f0; background:#fafafa; transition:border-color .15s; }
+  .ep-perm-row:has(input:checked) { border-color:#6366f1; background:#f5f3ff; }
+  .ep-perm-label { flex:1; }
+  .ep-perm-name { font-size:.84rem; font-weight:700; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px; }
+  .ep-toggle { position:relative; display:inline-block; width:40px; height:22px; flex-shrink:0; }
+  .ep-toggle input { opacity:0; width:0; height:0; }
+  .ep-slider { position:absolute; inset:0; background:#cbd5e1; border-radius:999px; cursor:pointer; transition:background .2s; }
+  .ep-slider::after { content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; background:#fff; border-radius:50%; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+  .ep-toggle input:checked + .ep-slider { background:#6366f1; }
+  .ep-toggle input:checked + .ep-slider::after { transform:translateX(18px); }
+  .save-bar { position:sticky; bottom:0; background:#fff; border-top:1px solid #e2e8f0; padding:14px 22px; display:flex; align-items:center; gap:12px; z-index:10; border-radius:14px; box-shadow:0 -4px 16px rgba(0,0,0,.06); margin-top:8px; }
+</style>
+
+<div class="container-fluid py-2">
+
+  <!-- Header -->
+  <div class="ep-header">
+    <div class="ep-avatar">{{ member.name|slice:":1"|upper }}</div>
+    <div>
+      <h3 style="font-size:1.3rem;font-weight:900;margin:0 0 4px;">{{ member.name }}</h3>
+      <p style="margin:0;opacity:.7;font-size:.85rem;">{{ member.member_type|title }} &mdash; {{ org.name }}</p>
+      <p style="margin:4px 0 0;opacity:.6;font-size:.78rem;">
+        Permissions are applied to the staff portal immediately after saving.
+      </p>
+    </div>
+    <div class="ms-auto">
+      <a href="{% url 'schooladmin:roles_permissions_list' %}" class="btn btn-outline-light btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Back
+      </a>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="fas fa-check-circle me-2"></i>{{ msg }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <form method="post" id="permForm">
+    {% csrf_token %}
+    <input type="hidden" name="privilege" id="privilegeInput" value="{{ member.privilege }}">
+
+    <!-- Role Presets -->
+    <div class="preset-card">
+      <p class="preset-title"><i class="fas fa-user-shield me-2 text-primary"></i>Role Preset</p>
+      <p class="preset-sub">Applying a preset bulk-checks the permissions below as a starting point — you can still fine-tune any individual box before saving.</p>
+      <div class="d-flex gap-2 flex-wrap">
+        {% for val, label in privilege_choices %}
+        <button type="button" class="preset-btn {% if member.privilege == val %}active{% endif %}" data-preset="{{ val }}">{{ label }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Search + global actions -->
+    <div class="toolbar">
+      <input type="search" id="permSearch" class="form-control" placeholder="Search permissions...">
+      <button type="button" class="ep-mini-btn" id="selectAllBtn"><i class="fas fa-check-double me-1"></i>Select All</button>
+      <button type="button" class="ep-mini-btn" id="clearAllBtn"><i class="fas fa-xmark me-1"></i>Clear All</button>
+    </div>
+
+    {% for cat in registry %}
+    {% if cat.visible %}
+    <div class="ep-section perm-category" data-category="{{ cat.slug }}">
+      <div class="ep-section-header">
+        <div class="ep-section-icon"><i class="fas {{ cat.icon }}"></i></div>
+        <div>
+          <p class="ep-section-title">{{ cat.label }}</p>
+          <p class="ep-section-sub">{{ cat.visible_count }} permission{{ cat.visible_count|pluralize }}</p>
+        </div>
+        <div class="ep-section-actions">
+          <button type="button" class="ep-mini-btn cat-select-all">Select All</button>
+          <button type="button" class="ep-mini-btn cat-clear-all">Clear</button>
+        </div>
+      </div>
+      <div class="ep-perm-grid">
+        {% for perm in cat.staff_perms %}
+        {% if perm.visible %}
+        <div class="ep-perm-row perm-row" data-label="{{ perm.label|lower }}">
+          <div class="ep-perm-label">
+            <p class="ep-perm-name"><i class="fas {{ perm.icon }} text-muted" style="font-size:.75rem;"></i>{{ perm.label }}</p>
+          </div>
+          <label class="ep-toggle">
+            <input type="checkbox" name="{{ perm.flag }}" value="1" {% if perm.dynamic %}{% if perm.checked %}checked{% endif %}{% else %}{% if sp|getattr_filter:perm.flag %}checked{% endif %}{% endif %}>
+            <span class="ep-slider"></span>
+          </label>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    <div class="save-bar">
+      <button type="submit" class="btn btn-primary px-5" style="font-weight:700;">
+        <i class="fas fa-save me-2"></i> Save Permissions
+      </button>
+      <a href="{% url 'schooladmin:roles_permissions_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      <span style="font-size:.78rem;color:#94a3b8;margin-left:auto;">
+        Changes apply immediately to this staff member's session.
+      </span>
+    </div>
+  </form>
+</div>
+
+<script id="presetData" type="application/json">{{ presets_json|safe }}</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var PRESETS = JSON.parse(document.getElementById('presetData').textContent);
+  var form = document.getElementById('permForm');
+  var privilegeInput = document.getElementById('privilegeInput');
+
+  document.querySelectorAll('.preset-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var level = btn.getAttribute('data-preset');
+      var flags = PRESETS[level] || [];
+      form.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+        // Full Admin includes enabled dynamic-module permissions too (for
+        // example Library), which are not part of the static preset payload.
+        cb.checked = level === '5' || flags.indexOf(cb.name) !== -1;
+      });
+      privilegeInput.value = level;
+      document.querySelectorAll('.preset-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+  });
+
+  document.getElementById('selectAllBtn').addEventListener('click', function () {
+    form.querySelectorAll('.perm-row:not([style*="display: none"]) input[type="checkbox"]').forEach(function (cb) { cb.checked = true; });
+  });
+  document.getElementById('clearAllBtn').addEventListener('click', function () {
+    form.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+  });
+
+  document.querySelectorAll('.perm-category').forEach(function (cat) {
+    cat.querySelector('.cat-select-all').addEventListener('click', function () {
+      cat.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; });
+    });
+    cat.querySelector('.cat-clear-all').addEventListener('click', function () {
+      cat.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+    });
+  });
+
+  document.getElementById('permSearch').addEventListener('input', function (e) {
+    var q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('.perm-row').forEach(function (row) {
+      row.style.display = (!q || row.getAttribute('data-label').indexOf(q) !== -1) ? '' : 'none';
+    });
+    document.querySelectorAll('.perm-category').forEach(function (cat) {
+      var anyVisible = Array.prototype.some.call(cat.querySelectorAll('.perm-row'), function (r) { return r.style.display !== 'none'; });
+      cat.style.display = anyVisible ? '' : 'none';
+    });
+  });
+});
+</script>
+{% endblock %}

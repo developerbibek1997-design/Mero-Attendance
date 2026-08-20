@@ -110,6 +110,11 @@
                       {% widthratio adv.paid_installments adv.num_installments 100 as pct %}
                       <div class="prog-bar" style="width:{{ pct }}%;background:{% if adv.status == 'fully_recovered' %}#22c55e{% else %}#e11d48{% endif %};"></div>
                     </div>
+                    {% if adv.payments.all %}
+                    <a class="text-xs" data-bs-toggle="collapse" href="#adv-history-{{ adv.pk }}" role="button">
+                      <i class="fas fa-clock-rotate-left me-1"></i>Paid-on history
+                    </a>
+                    {% endif %}
                   </td>
                   <td class="px-3 py-2 fw-bold">Rs. {{ adv.remaining_balance|floatformat:0 }}</td>
                   <td class="px-3 py-2">
@@ -138,6 +143,37 @@
                     {% endif %}
                   </td>
                 </tr>
+                {% if adv.payments.all %}
+                <tr class="collapse" id="adv-history-{{ adv.pk }}">
+                  <td colspan="7" class="px-3 py-2" style="background:#f9fafb;">
+                    <strong class="text-xs text-muted d-block mb-1">Installment payment history</strong>
+                    <table class="table table-sm mb-0" style="font-size:.8rem;">
+                      <thead>
+                        <tr>
+                          <th class="text-muted">Paid On</th>
+                          <th class="text-muted">Amount</th>
+                          <th class="text-muted">Payslip</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for pmt in adv.payments.all %}
+                        <tr>
+                          <td>{{ pmt.paid_on }}</td>
+                          <td>Rs. {{ pmt.amount|floatformat:2 }}</td>
+                          <td>
+                            {% if pmt.payslip %}
+                            <a href="{% url 'schooladmin:payslip_detail' pmt.payslip.pk %}">{{ pmt.payslip.month_name|default:pmt.payslip.pk }}</a>
+                            {% else %}
+                            <span class="text-muted">Manual</span>
+                            {% endif %}
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+                {% endif %}
                 {% endfor %}
               </tbody>
             </table>

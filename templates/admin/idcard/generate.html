@@ -1,0 +1,292 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block title %}Generate ID Cards | {{ org.name }}{% endblock title %}
+
+{% block content %}
+<style>
+    .idc-generate-hero { background:linear-gradient(135deg,#111827,#312e81 65%,#0ea5e9);border-radius:20px;padding:24px 26px;color:#fff;box-shadow:0 18px 44px rgba(49,46,129,.2); }
+    .idc-generate-hero h4 { color:#fff; }
+    .idc-filter-card { background: #fff; border: 1px solid #e6eaf1; border-radius: 14px; box-shadow: 0 8px 24px rgba(18, 24, 40, 0.06); }
+    .idc-filter-body { padding: 18px; }
+    .form-control, .form-select { border-radius: 6px; border-color: #d8dde6; min-height: 40px; }
+
+    /* Card sheet: rendered at true mm size so the PDF prints to scale */
+    #idc-sheet { display: flex; flex-wrap: wrap; gap: 14px; }
+    .idc-print-unit { position:relative;page-break-inside:avoid; }
+    .idc-card-pair { display: flex; flex-direction: column; gap: 6px; page-break-inside: avoid; position:relative; }
+    .idc-card-pair.is-excluded { opacity:.22;filter:grayscale(1); }
+    .idc-select-card { position:absolute;z-index:12;top:6px;right:6px;width:26px;height:26px;border-radius:8px;background:#fff;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(15,23,42,.16); }
+    .idc-select-card input { width:15px;height:15px; }
+    .idc-card {
+        width: {{ card_width_mm }}mm;
+        height: {{ card_height_mm }}mm;
+        border-radius: 3mm;
+        border: 0.3mm solid #d8dde6;
+        position: relative;
+        overflow: hidden;
+        background-size: cover;
+        background-position: center;
+        background-color: #fff;
+        font-family: {{ template.font_css_stack }};
+        font-size: {{ template.base_font_size }}px;
+        line-height: {{ template.line_height }};
+        box-sizing: border-box;
+        padding: 3mm;
+        color: {{ template.text_color }};
+    }
+    .idc-card-label { font-size: 15px; color: #6b7280; text-align: center; text-transform: uppercase; letter-spacing: .05em; }
+    .idc-org-header { display: flex; align-items: center; gap: 2mm; margin-bottom: 1.5mm; }
+    .idc-org-logo { width: 12mm; height: 12mm; object-fit: contain; border-radius: 1mm; }
+    .idc-org-name { font-size: {{ template.org_font_size }}px; font-weight: 800; line-height: 1.05; }
+    .idc-body { display: flex; gap: 2.5mm; align-items: flex-start; }
+    .idc-photo { width: {{ photo_width_mm }}mm; height: {{ photo_height_mm }}mm; object-fit: cover; border-radius: 1.5mm; border: 0.3mm solid #d8dde6; background: #f3f4f6; flex-shrink: 0; }
+    .idc-fields { font-size: {{ template.base_font_size }}px; line-height: {{ template.line_height }}; }
+    .idc-name, .idc-fields .idc-name { font-size: {{ template.name_font_size }}px; font-weight: 800; margin-bottom: 0.6mm; }
+    .idc-document-title { font-size:calc({{ template.base_font_size }}px - 1px);font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:{{ template.secondary_color }};margin-bottom:.6mm; }
+    .idc-fields .idc-row { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40mm; }
+    .idc-fields .idc-row b { font-weight: 700; color: #6b7280; }
+    .idc-back { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 8px; color: #6b7280; gap: 1.5mm; padding-top: 3mm; }
+
+    /* Shared back-of-card elements */
+    .idc-qr { width: 18mm; height: 18mm; }
+    .idc-barcode { width: 30mm; height: 10mm; object-fit: contain; }
+    .idc-back-footer { text-align: center; }
+    .idc-signature { width: 20mm; height: 8mm; object-fit: contain; display: block; margin: 1mm auto; }
+    .idc-back-org { font-weight: 700; margin-top: 1mm; }
+
+    /* ── Modern Corporate (vertical) ── */
+    .idc-mc { display: flex; flex-direction: column; padding: 0; }
+    .idc-mc-header { display: flex; align-items: center; gap: 1.5mm; padding: 2mm 3mm; }
+    .idc-mc-body { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 2mm 3mm; text-align: center; }
+    .idc-mc-stripe { height: 3mm; }
+    .idc-mc .idc-photo { width: 20mm; height: 20mm; border-radius: 50%; margin-bottom: 2mm; }
+    .idc-mc .idc-fields .idc-row { max-width: none; text-align: center; }
+
+    /* ── Minimal Clean (vertical) ── */
+    .idc-mn { display: flex; flex-direction: column; }
+    .idc-mn-header { display: flex; align-items: center; gap: 1.5mm; margin-bottom: 2mm; }
+    .idc-mn-logo { width: 8mm; height: 8mm; }
+    .idc-mn-body { flex: 1; }
+    .idc-mn-photo { width: 18mm; height: 18mm; border-radius: 1.5mm; margin-bottom: 1.5mm; }
+    .idc-mn-rule { height: 1mm; margin-top: auto; }
+
+    /* ── School Style (vertical) ── */
+    .idc-sc { display: flex; flex-direction: column; align-items: center; padding: 0; text-align: center; }
+    .idc-sc-wave { width: 100%; padding: 2mm 0 6mm; border-radius: 0 0 50% 50% / 0 0 20% 20%; }
+    .idc-sc-label { font-size: 8px; color: #fff; opacity: .85; text-transform: uppercase; }
+    .idc-sc-photo { width: 20mm; height: 20mm; border-radius: 50%; border-width: 0.6mm; border-style: solid; margin-top: -12mm; }
+    .idc-sc-body { padding: 2mm 3mm; }
+    .idc-sc-fields .idc-row { text-align: center; max-width: none; }
+
+    /* ── Corporate Landscape (horizontal) ── */
+    .idc-cl { display: flex; padding: 0; }
+    .idc-cl-side { width: 22mm; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2mm; padding: 2mm; }
+    .idc-cl-photo { width: 16mm; height: 16mm; border-radius: 1.5mm; }
+    .idc-cl-logo { width: 8mm; height: 8mm; }
+    .idc-cl-body { flex: 1; padding: 2.5mm; display: flex; flex-direction: column; justify-content: center; }
+
+    /* ── Employee Professional (horizontal) ── */
+    .idc-ep { display: flex; flex-direction: column; padding: 0; }
+    .idc-ep-top { display: flex; align-items: center; gap: 1.5mm; padding: 1.5mm 3mm; }
+    .idc-ep-body { flex: 1; display: flex; gap: 2.5mm; align-items: center; padding: 2mm 3mm; }
+    .idc-ep-photo { width: 16mm; height: 16mm; border-radius: 50%; border-width: 0.5mm; border-style: solid; }
+    .idc-ep-bar { height: 2mm; }
+
+    /* ── Student Landscape (horizontal) ── */
+    .idc-sl { display: flex; flex-direction: column; padding: 0; }
+    .idc-sl-band { display: flex; align-items: center; gap: 1.5mm; padding: 1.5mm 3mm; }
+    .idc-sl-label { margin-left: auto; font-size: 8px; color: #fff; text-transform: uppercase; }
+    .idc-sl-body { flex: 1; display: flex; gap: 2.5mm; align-items: center; padding: 2mm 3mm; }
+    .idc-sl-photo { width: 16mm; height: 16mm; border-radius: 1.5mm; }
+    @media print {
+        .idc-generate-hero, .idc-filter-card, .idc-select-card,
+        #selectAllCards, #clearAllCards, .navbar, .sidenav { display:none !important; }
+        .col-lg-9 { width:100% !important; }
+        #idc-sheet { gap:5mm; }
+    }
+</style>
+
+<div class="idc-generate-hero d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+        <span class="badge bg-white text-primary mb-2">Print Workspace</span>
+        <h4 class="font-weight-bolder mb-1">Generate ID Cards</h4>
+        <p class="text-sm mb-0 opacity-8">Filter the roster, review card readiness, choose individual cards, then export at true CR80 dimensions.</p>
+    </div>
+    <a href="{% url 'schooladmin:idcard_settings' %}?design={{ selected_design }}" class="btn btn-light btn-sm mb-0"><i class="fas fa-palette me-1"></i>Edit This Design</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-3">
+        <div class="idc-filter-card sticky-top" style="top:80px;">
+            <div class="idc-filter-body">
+                <h6 class="mb-3">Filter Members</h6>
+                <form method="get" id="filterForm">
+                    <div class="mb-3">
+                        <label class="form-label text-xs font-weight-bold">Design</label>
+                        <select name="design" class="form-select">
+                            {% for t in available_templates %}
+                            <option value="{{ t.name }}" {% if selected_design == t.name %}selected{% endif %}>{{ t.get_name_display }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-xs font-weight-bold">Search member</label>
+                        <input type="search" name="q" class="form-control" value="{{ search }}" placeholder="Name, card or roll number">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-xs font-weight-bold">Member type</label>
+                        <select name="member_type" class="form-select">
+                            <option value="">All member types</option>
+                            {% for key, label in member_type_choices %}
+                            <option value="{{ key }}" {% if selected_member_type == key %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-xs font-weight-bold">Classification</label>
+                        <select name="classification" class="form-select">
+                            <option value="">All</option>
+                            {% for c in classifications %}
+                            <option value="{{ c.id }}" {% if selected_classification == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-xs font-weight-bold">Branch</label>
+                        <select name="branch" class="form-select">
+                            <option value="">All</option>
+                            {% for b in branches %}
+                            <option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-xs font-weight-bold">Section</label>
+                        <select name="section" class="form-select">
+                            <option value="">All</option>
+                            {% for s in sections %}
+                            <option value="{{ s.id }}" {% if selected_section == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <input type="hidden" name="generate" value="1">
+                    <button type="submit" class="btn btn-danger w-100 mb-2">
+                        <i class="fas fa-filter me-1"></i> Generate Cards
+                    </button>
+                </form>
+                {% if generate %}
+                <button id="downloadPdfBtn" class="btn btn-outline-dark w-100">
+                    <i class="fas fa-file-pdf me-1"></i> Save as PDF
+                </button>
+                <button id="printCardsBtn" type="button" class="btn btn-outline-primary w-100 mt-2">
+                    <i class="fas fa-print me-1"></i> Print Selected
+                </button>
+                <div class="text-xs text-muted mt-2"><span id="selectedCardCount">{{ members|length }}</span> selected · Front &amp; back · {{ card_width_mm }}mm × {{ card_height_mm }}mm.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-9">
+        {% if generate %}
+        <div class="row g-3 mb-3">
+            <div class="col-4"><div class="card border-0 shadow-sm p-3"><span class="text-xxs text-muted text-uppercase font-weight-bolder">Matched</span><h5 class="mb-0">{{ result_count }}</h5></div></div>
+            <div class="col-4"><div class="card border-0 shadow-sm p-3"><span class="text-xxs text-muted text-uppercase font-weight-bolder">With Photo</span><h5 class="mb-0 text-success">{{ members_with_photo }}</h5></div></div>
+            <div class="col-4"><div class="card border-0 shadow-sm p-3"><span class="text-xxs text-muted text-uppercase font-weight-bolder">Design</span><div class="text-sm font-weight-bolder mt-1">{{ template.get_name_display }}</div></div></div>
+        </div>
+        {% if result_limited %}
+        <div class="alert alert-warning border-0"><i class="fas fa-triangle-exclamation me-1"></i>{{ result_count }} members matched. The preview is limited to the first 500 cards; narrow the filters before printing.</div>
+        {% endif %}
+        <div class="d-flex gap-2 mb-3">
+            <button type="button" class="btn btn-sm btn-outline-primary mb-0" id="selectAllCards">Select all</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-0" id="clearAllCards">Clear all</button>
+        </div>
+        {% endif %}
+        {% if not generate %}
+        <div class="text-center text-muted py-5">
+            <i class="fas fa-id-card fa-3x mb-3 opacity-25"></i>
+            <p>Choose a filter (or leave as "All") and click <b>Generate Cards</b> to preview.</p>
+        </div>
+        {% elif not members %}
+        <div class="text-center text-muted py-5">No members match this filter.</div>
+        {% else %}
+        <div id="idc-sheet">
+            {% for m in members %}
+            <div class="idc-print-unit" data-member-id="{{ m.id }}">
+                <label class="idc-select-card d-print-none" title="Include {{ m.name }}">
+                    <input type="checkbox" class="idc-card-checkbox" checked>
+                </label>
+                {% include design_path with m=m template=template org=org %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    const cardUnits = Array.from(document.querySelectorAll('.idc-print-unit'));
+    const cardCheckboxes = Array.from(document.querySelectorAll('.idc-card-checkbox'));
+    const selectedCardCount = document.getElementById('selectedCardCount');
+
+    function syncSelectedCards() {
+        cardUnits.forEach(function (unit) {
+            const checked = unit.querySelector('.idc-card-checkbox')?.checked;
+            unit.classList.toggle('is-excluded', !checked);
+        });
+        if (selectedCardCount) {
+            selectedCardCount.textContent = cardCheckboxes.filter(function (box) { return box.checked; }).length;
+        }
+    }
+
+    cardCheckboxes.forEach(function (box) { box.addEventListener('change', syncSelectedCards); });
+    document.getElementById('selectAllCards')?.addEventListener('click', function () {
+        cardCheckboxes.forEach(function (box) { box.checked = true; });
+        syncSelectedCards();
+    });
+    document.getElementById('clearAllCards')?.addEventListener('click', function () {
+        cardCheckboxes.forEach(function (box) { box.checked = false; });
+        syncSelectedCards();
+    });
+
+    function hideExcludedForExport() {
+        cardUnits.forEach(function (unit) {
+            unit.style.display = unit.querySelector('.idc-card-checkbox')?.checked ? '' : 'none';
+        });
+    }
+    function restoreExportUnits() {
+        cardUnits.forEach(function (unit) { unit.style.display = ''; });
+    }
+
+    document.getElementById('printCardsBtn')?.addEventListener('click', function () {
+        if (!cardCheckboxes.some(function (box) { return box.checked; })) {
+            alert('Select at least one card to print.');
+            return;
+        }
+        hideExcludedForExport();
+        window.print();
+        window.setTimeout(restoreExportUnits, 250);
+    });
+
+    document.getElementById('downloadPdfBtn')?.addEventListener('click', function () {
+        if (!cardCheckboxes.some(function (box) { return box.checked; })) {
+            alert('Select at least one card to export.');
+            return;
+        }
+        hideExcludedForExport();
+        const el = document.getElementById('idc-sheet');
+        const opt = {
+            margin: 0.2,
+            filename: 'ID_Cards_{{ org.name|slugify }}.pdf',
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 3, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['css', 'legacy'] }
+        };
+        html2pdf().set(opt).from(el).save().then(restoreExportUnits);
+    });
+    syncSelectedCards();
+</script>
+{% endblock content %}

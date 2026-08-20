@@ -1,0 +1,47 @@
+{% extends 'dashboard.html' %}
+{% block title %}Library Settings | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="mb-3 d-flex gap-2 flex-wrap">
+  <a href="{% url 'schooladmin:library_categories' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'library_categories' %}btn-primary{% else %}btn-outline-primary{% endif %}">Categories</a>
+  <a href="{% url 'schooladmin:library_authors' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'library_authors' %}btn-primary{% else %}btn-outline-primary{% endif %}">Authors</a>
+  <a href="{% url 'schooladmin:library_publishers' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'library_publishers' %}btn-primary{% else %}btn-outline-primary{% endif %}">Publishers</a>
+  <a href="{% url 'schooladmin:library_racks_shelves' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'library_racks_shelves' %}btn-primary{% else %}btn-outline-primary{% endif %}">Racks &amp; Shelves</a>
+  <a href="{% url 'schooladmin:library_settings' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'library_settings' %}btn-primary{% else %}btn-outline-primary{% endif %}">Settings</a>
+</div>
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-sliders text-primary me-2"></i>Library Settings</h6>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label text-xs font-weight-bold">Default Loan Period (days)</label>
+                {{ form.loan_period_days }}
+                <p class="text-xs text-muted mt-1 mb-0">Used to pre-fill the due date when issuing a book.</p>
+              </div>
+              <div class="col-12">
+                <label class="form-label text-xs font-weight-bold">Fine Per Day Overdue (Rs.)</label>
+                {{ form.fine_per_day }}
+              </div>
+              <div class="col-12">
+                <label class="form-label text-xs font-weight-bold">Max Books Per Member</label>
+                {{ form.max_books_per_member }}
+                <p class="text-xs text-muted mt-1 mb-0">A member cannot hold more than this many books at once.</p>
+              </div>
+              <div class="col-12 d-flex gap-2 mt-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save Settings</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

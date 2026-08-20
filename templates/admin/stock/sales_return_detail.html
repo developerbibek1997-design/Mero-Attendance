@@ -1,0 +1,48 @@
+{% extends 'dashboard.html' %}
+{% block title %}Sales Return #{{ return_doc.pk }} | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 font-weight-bolder">Sales Return #{{ return_doc.pk }} — {{ return_doc.client.client_org_name|default:"Walk-in" }}</h6>
+          {% if return_doc.status == 'draft' %}<span class="badge bg-warning text-dark">Draft</span>{% else %}<span class="badge bg-success">Completed</span>{% endif %}
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+          <div class="row g-2 mb-3">
+            <div class="col-md-4"><p class="text-xs text-muted mb-0">Date</p><p class="text-sm font-weight-bold">{{ return_doc.return_date }}</p></div>
+            <div class="col-md-4"><p class="text-xs text-muted mb-0">Original Sale</p><p class="text-sm font-weight-bold"><a href="{% url 'schooladmin:sale_detail' return_doc.sale_id %}">#{{ return_doc.sale_id }}</a></p></div>
+            <div class="col-md-4"><p class="text-xs text-muted mb-0">Total</p><p class="text-sm font-weight-bold">Rs. {{ return_doc.total_amount }}</p></div>
+          </div>
+          {% if return_doc.reason %}<p class="text-sm"><b>Reason:</b> {{ return_doc.reason }}</p>{% endif %}
+
+          <div class="table-responsive mb-3">
+            <table class="table table-sm align-middle">
+              <thead class="table-light"><tr><th class="text-xs">Item</th><th class="text-xs">Qty</th><th class="text-xs">Unit Price</th><th class="text-xs">Line Total</th></tr></thead>
+              <tbody>
+                {% for item in items %}
+                <tr><td class="text-sm">{{ item.stock_item.name }}</td><td class="text-sm">{{ item.quantity }}</td><td class="text-sm">{{ item.unit_price }}</td><td class="text-sm">{{ item.line_total }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          {% if return_doc.journal_entry_id %}
+          <div class="alert alert-success py-2"><i class="fas fa-check-circle me-1"></i>Journal entry <a href="{% url 'schooladmin:journal_detail' return_doc.journal_entry_id %}">{{ return_doc.journal_entry.voucher_number }}</a> posted.</div>
+          {% endif %}
+
+          {% if return_doc.status == 'draft' %}
+          <form method="post" action="{% url 'schooladmin:complete_sales_return' return_doc.pk %}" onsubmit="return confirm('Complete this return? This will add back stock and post the accounting entry.')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success"><i class="fas fa-check me-1"></i>Complete Return</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

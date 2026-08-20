@@ -4,7 +4,11 @@
 <div class="container-fluid py-2">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="font-weight-bolder mb-0">Branch Management</h4>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBranchModal"><i class="fas fa-plus me-1"></i>Add Branch</button>
+    <div class="d-flex gap-2">
+      <a href="{% url 'handle:branchTree' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-sitemap me-1"></i>Hierarchy Tree</a>
+      <a href="{% url 'handle:addClassification' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-layer-group me-1"></i>{{ terms.classification_plural|default:"Classifications" }} & {{ terms.section_plural|default:"Sections" }}</a>
+      <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBranchModal"><i class="fas fa-plus me-1"></i>Add Branch</button>
+    </div>
   </div>
   {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
   <div class="row g-3">

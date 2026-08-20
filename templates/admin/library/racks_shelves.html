@@ -1,0 +1,80 @@
+{% extends 'dashboard.html' %}
+{% block title %}Racks &amp; Shelves | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="mb-3 d-flex gap-2 flex-wrap">
+  <a href="{% url 'schooladmin:library_categories' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'library_categories' %}btn-primary{% else %}btn-outline-primary{% endif %}">Categories</a>
+  <a href="{% url 'schooladmin:library_authors' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'library_authors' %}btn-primary{% else %}btn-outline-primary{% endif %}">Authors</a>
+  <a href="{% url 'schooladmin:library_publishers' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'library_publishers' %}btn-primary{% else %}btn-outline-primary{% endif %}">Publishers</a>
+  <a href="{% url 'schooladmin:library_racks_shelves' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'library_racks_shelves' %}btn-primary{% else %}btn-outline-primary{% endif %}">Racks &amp; Shelves</a>
+  <a href="{% url 'schooladmin:library_settings' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'library_settings' %}btn-primary{% else %}btn-outline-primary{% endif %}">Settings</a>
+</div>
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0">Racks &amp; Shelves</h4>
+    <div>
+      <button class="btn btn-primary btn-sm me-1" data-bs-toggle="modal" data-bs-target="#addRackModal"><i class="fas fa-plus me-1"></i>Add Rack</button>
+      <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addShelfModal"><i class="fas fa-plus me-1"></i>Add Shelf</button>
+    </div>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+  <div class="row g-3">
+    {% for rack in racks %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+          <span class="text-sm font-weight-bolder"><i class="fas fa-shelves text-primary me-1"></i>{{ rack.code }}{% if rack.name %} — {{ rack.name }}{% endif %}</span>
+          <form method="post" onsubmit="return confirm('Delete this rack and all its shelves?')">{% csrf_token %}<input type="hidden" name="action" value="delete_rack"><input type="hidden" name="item_id" value="{{ rack.id }}"><button type="submit" class="btn btn-xs btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+        </div>
+        <div class="card-body py-2">
+          {% for shelf in rack.shelves.all %}
+          <div class="d-flex justify-content-between align-items-center border-bottom py-1">
+            <span class="text-sm">{{ shelf.code }}{% if shelf.name %} — {{ shelf.name }}{% endif %}</span>
+            <form method="post" onsubmit="return confirm('Delete this shelf?')">{% csrf_token %}<input type="hidden" name="action" value="delete_shelf"><input type="hidden" name="item_id" value="{{ shelf.id }}"><button type="submit" class="btn btn-xs btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+          </div>
+          {% empty %}
+          <p class="text-xs text-muted mb-0">No shelves yet.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12"><div class="card border-0 shadow-sm"><div class="card-body text-center text-muted py-5"><i class="fas fa-shelves fa-2x mb-2 d-block"></i>No racks yet.</div></div></div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="modal fade" id="addRackModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h6 class="modal-title font-weight-bolder">Add Rack</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="add_rack">
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label text-xs font-weight-bold">Code *</label><input type="text" name="code" class="form-control" placeholder="e.g. R1" required></div>
+          <div class="mb-3"><label class="form-label text-xs font-weight-bold">Label</label><input type="text" name="name" class="form-control" placeholder="Optional"></div>
+          <div class="mb-3"><label class="form-label text-xs font-weight-bold">Branch</label>
+            <select name="branch" class="form-select"><option value="">-- General --</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm">Save</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addShelfModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h6 class="modal-title font-weight-bolder">Add Shelf</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="add_shelf">
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label text-xs font-weight-bold">Rack *</label>
+            <select name="rack" class="form-select" required><option value="">-- Select --</option>{% for rack in racks %}<option value="{{ rack.id }}">{{ rack.code }}{% if rack.name %} — {{ rack.name }}{% endif %}</option>{% endfor %}</select></div>
+          <div class="mb-3"><label class="form-label text-xs font-weight-bold">Code *</label><input type="text" name="code" class="form-control" placeholder="e.g. S1" required></div>
+          <div class="mb-3"><label class="form-label text-xs font-weight-bold">Label</label><input type="text" name="name" class="form-control" placeholder="Optional"></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm">Save</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

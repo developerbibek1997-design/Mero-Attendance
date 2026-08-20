@@ -1,0 +1,41 @@
+{% extends 'dashboard.html' %}
+{% block title %}Task Report | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="fw-bold mb-4" style="color:#1e293b;">Task Report</h4>
+
+  <form method="get" class="d-flex gap-2 mb-4">
+    <input type="date" name="from_date" class="form-control form-control-sm" style="width:auto;" value="{{ from_date }}">
+    <input type="date" name="to_date" class="form-control form-control-sm" style="width:auto;" value="{{ to_date }}">
+    <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+  </form>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-body p-0">
+      <table class="table mb-0 align-items-center">
+        <thead>
+          <tr>
+            <th class="ps-4 text-uppercase text-xxs text-secondary font-weight-bolder">Task</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Assignee</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Due</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end pe-4">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in instances %}
+          <tr>
+            <td class="ps-4 text-sm">{{ i.task.title }}</td>
+            <td class="text-sm text-muted">{{ i.assigned_member.name }}</td>
+            <td class="text-sm text-muted">{{ i.due_date }}</td>
+            <td class="text-end pe-4"><span class="badge bg-secondary text-uppercase">{{ i.status }}</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center py-4 text-muted">No tasks found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

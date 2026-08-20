@@ -1,0 +1,103 @@
+{% extends 'dashboard.html' %}
+{% block title %}{% if mode == 'edit' %}Edit{% else %}Create{% endif %} Routine Period | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+.routine-form-hero{background:linear-gradient(135deg,#0f172a,#312e81);border-radius:18px;padding:1.3rem 1.5rem;color:#fff}
+.step-number{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#eef2ff;color:#4f46e5;font-weight:800;margin-right:.55rem}
+.assignment-preview{border:1px solid #c7d2fe;background:#eef2ff;border-radius:12px;padding:1rem;color:#312e81}
+</style>
+<div class="container-fluid py-3">
+  <div class="row justify-content-center">
+    <div class="col-xl-9">
+      <div class="routine-form-hero mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <div class="text-xs text-uppercase opacity-75">Class Routine</div>
+          <h4 class="text-white font-weight-bolder mb-1">{% if mode == 'edit' %}Edit{% else %}Create{% endif %} Routine Period</h4>
+          <p class="text-sm mb-0 opacity-75">Choose an assigned teacher-subject scope, then schedule its day and time.</p>
+        </div>
+        <a href="{% url 'schooladmin:routine_grid' %}" class="btn btn-light btn-sm mb-0"><i class="fas fa-arrow-left me-1"></i>Weekly Routine</a>
+      </div>
+
+      {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+      {% if period and not period.teacher_assignment %}
+      <div class="alert alert-warning"><i class="fas fa-triangle-exclamation me-1"></i>This is a legacy period without a valid subject-teacher assignment. Select the correct assignment before saving.</div>
+      {% endif %}
+      {% if not assignment_count %}
+      <div class="alert alert-warning">
+        <strong>No active subject-teacher assignment is available.</strong>
+        Open Subjects, choose a subject, and assign its teacher first.
+        <a href="{% url 'schooladmin:subject_list' %}" class="btn btn-sm btn-warning ms-2 mb-0">Manage Subject Teachers</a>
+      </div>
+      {% endif %}
+      {% if form.non_field_errors %}<div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0"><span class="step-number">1</span>Choose the assigned teaching scope</h6></div>
+          <div class="card-body p-4">
+            <label class="form-label text-xs font-weight-bold">{{ form.teacher_assignment.label }} *</label>
+            {{ form.teacher_assignment }}
+            {% for e in form.teacher_assignment.errors %}<div class="text-danger text-xs mt-1">{{ e }}</div>{% endfor %}
+            <div class="text-xs text-muted mt-2">{{ form.teacher_assignment.help_text }}</div>
+            <div class="assignment-preview mt-3" id="assignmentPreview"><i class="fas fa-link me-2"></i><span>Select an assignment to preview Teacher → Class/Section → Subject.</span></div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0"><span class="step-number">2</span>Set the weekly schedule</h6></div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label text-xs font-weight-bold">Day{% if mode == 'create' %}(s) *{% else %} *{% endif %}</label>
+                {% if mode == 'create' %}
+                <div class="d-flex flex-wrap gap-2">
+                  {% for value, label in day_choices %}
+                  <div class="form-check form-check-inline mb-0 me-0">
+                    <input class="form-check-input" type="checkbox" name="days" value="{{ value }}" id="day-{{ value }}" {% if value|stringformat:"s" in preselected_days %}checked{% endif %}>
+                    <label class="form-check-label text-xs" for="day-{{ value }}">{{ label|slice:":3" }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+                <div class="text-xs text-muted mt-1">Pick every day this period repeats on — one routine entry is created per day. A day already booked for this teacher/class/room is left empty instead of blocking the rest.</div>
+                {% else %}
+                {{ form.day_of_week }}{% for e in form.day_of_week.errors %}<div class="text-danger text-xs">{{ e }}</div>{% endfor %}
+                {% endif %}
+              </div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Period Number *</label>{{ form.period_number }}{% for e in form.period_number.errors %}<div class="text-danger text-xs">{{ e }}</div>{% endfor %}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Shift</label>{{ form.shift }}{% for e in form.shift.errors %}<div class="text-danger text-xs">{{ e }}</div>{% endfor %}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Start Time *</label>{{ form.start_time }}{% for e in form.start_time.errors %}<div class="text-danger text-xs">{{ e }}</div>{% endfor %}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">End Time *</label>{{ form.end_time }}{% for e in form.end_time.errors %}<div class="text-danger text-xs">{{ e }}</div>{% endfor %}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Room</label>{{ form.room }}{% for e in form.room.errors %}<div class="text-danger text-xs">{{ e }}</div>{% endfor %}</div>
+              <div class="col-12">
+                <div class="form-check form-switch">{{ form.is_active }}<label class="form-check-label text-sm" for="{{ form.is_active.id_for_label }}">Active routine period</label></div>
+              </div>
+              <div class="col-12 d-flex gap-2 mt-3">
+                <button type="submit" class="btn btn-primary mb-0" {% if not assignment_count %}disabled{% endif %}><i class="fas fa-calendar-check me-1"></i>Save Routine Period</button>
+                <a href="{% url 'schooladmin:routine_grid' %}" class="btn btn-outline-secondary mb-0">Cancel</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var select = document.getElementById('{{ form.teacher_assignment.id_for_label }}');
+  var preview = document.querySelector('#assignmentPreview span');
+  function refreshPreview() {
+    if (!select || !preview) return;
+    var option = select.options[select.selectedIndex];
+    preview.textContent = option && option.value
+      ? option.text
+      : 'Select an assignment to preview Teacher → Class/Section → Subject.';
+  }
+  if (select) {
+    select.addEventListener('change', refreshPreview);
+    refreshPreview();
+  }
+})();
+</script>
+{% endblock %}

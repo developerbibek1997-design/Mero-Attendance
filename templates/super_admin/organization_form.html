@@ -1,0 +1,575 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}{% if is_edit %}Edit {{ org.name }}{% else %}Add Organization{% endif %} | Mero Attendance{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --org-primary: #4f46e5;
+    --org-dark: #172554;
+    --org-soft: #eef2ff;
+    --org-border: #e2e8f0;
+  }
+  .org-form-shell { max-width: 1540px; margin: 0 auto; }
+  .org-hero {
+    background:
+      radial-gradient(circle at 88% 0%, rgba(56,189,248,.42), transparent 30%),
+      linear-gradient(128deg, #172554 0%, #312e81 54%, #4f46e5 100%);
+    border-radius: 1.25rem; color: #fff; overflow: hidden; position: relative;
+  }
+  .org-hero::after {
+    content: ""; position: absolute; width: 230px; height: 230px; border: 1px solid rgba(255,255,255,.14);
+    border-radius: 50%; right: -65px; bottom: -145px;
+  }
+  .org-card { border: 1px solid var(--org-border); border-radius: 1rem; box-shadow: 0 10px 30px rgba(15,23,42,.045); }
+  .org-card .card-header { background: #fff; border-bottom: 1px solid #eef2f7; border-radius: 1rem 1rem 0 0; }
+  .section-icon {
+    width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: .8rem; color: var(--org-primary); background: var(--org-soft); flex: 0 0 auto;
+  }
+  .form-label { color: #475569; font-weight: 700; font-size: .76rem; letter-spacing: .015em; }
+  .form-control, .form-select {
+    min-height: 43px; border: 1px solid #dbe3ee; border-radius: .7rem; font-size: .875rem;
+  }
+  .form-control:focus, .form-select:focus { border-color: #818cf8; box-shadow: 0 0 0 .2rem rgba(99,102,241,.12); }
+  .feature-toolbar { background: linear-gradient(135deg, #f8fafc, #eef2ff); border: 1px solid #e0e7ff; border-radius: .9rem; }
+  .feature-group { border-top: 1px solid #edf2f7; padding-top: 1.25rem; margin-top: 1.25rem; }
+  .feature-group:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+  .feature-tile {
+    height: 100%; border: 1px solid #e2e8f0; border-radius: .9rem; padding: 1rem;
+    background: #fff; cursor: pointer; transition: .18s ease; position: relative;
+  }
+  .feature-tile:hover { transform: translateY(-2px); border-color: #a5b4fc; box-shadow: 0 8px 20px rgba(79,70,229,.08); }
+  .feature-tile.is-selected { border-color: #818cf8; background: linear-gradient(145deg, #fff, #f5f3ff); box-shadow: 0 8px 22px rgba(79,70,229,.1); }
+  .feature-tile.is-hidden { display: none; }
+  .feature-symbol {
+    width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+    border-radius: .72rem; background: #eff6ff; color: #4f46e5; flex: 0 0 auto;
+  }
+  .feature-toggle { width: 2.35em !important; height: 1.2em; cursor: pointer; }
+  .price-pill, .free-pill {
+    font-size: .65rem; font-weight: 800; border-radius: 999px; padding: .28rem .5rem; white-space: nowrap;
+  }
+  .price-pill { color: #4338ca; background: #eef2ff; }
+  .free-pill { color: #047857; background: #ecfdf5; }
+  .summary-card {
+    position: sticky; top: 1rem; color: #fff; border: 0; border-radius: 1rem;
+    background: linear-gradient(155deg, #111827, #312e81); box-shadow: 0 18px 36px rgba(30,41,59,.18);
+  }
+  .summary-line { border-top: 1px solid rgba(255,255,255,.13); }
+  .summary-number { font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em; }
+  .status-switch {
+    border: 1px solid #e2e8f0; border-radius: .85rem; padding: .9rem 1rem; background: #f8fafc;
+  }
+  .errorlist { color: #dc2626; list-style: none; padding: .35rem 0 0; margin: 0; font-size: .75rem; font-weight: 600; }
+  .feature-empty { display: none; border: 1px dashed #cbd5e1; border-radius: .8rem; color: #64748b; }
+  @media (max-width: 991px) { .summary-card { position: static; } }
+</style>
+
+<div class="container-fluid py-4">
+  <div class="org-form-shell">
+    <div class="org-hero p-4 p-lg-5 mb-4 shadow-sm">
+      <div class="position-relative" style="z-index:1;">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="bg-white rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width:58px;height:58px;color:#4338ca;">
+              <i class="fas {% if is_edit %}fa-building-circle-check{% else %}fa-building-circle-arrow-right{% endif %} fa-xl"></i>
+            </div>
+            <div>
+              <span class="badge bg-white text-primary mb-2">SUPERADMIN ORGANIZATION CONTROL</span>
+              <h3 class="text-white mb-1">{% if is_edit %}Configure {{ org.name }}{% else %}Onboard an Organization{% endif %}</h3>
+              <p class="mb-0 text-white opacity-8 text-sm">Identity, subscription, expiry, features and annual price in one safe workflow.</p>
+            </div>
+          </div>
+          <a href="{% url 'superadmin:dashboard' %}" class="btn btn-sm bg-white text-dark mb-0 px-3">
+            <i class="fas fa-arrow-left me-2"></i>Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {% for message in messages %}
+      <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show shadow-sm border-0" role="alert">
+        <i class="fas {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %} me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" id="organization-form">
+      {% csrf_token %}
+      <input type="hidden" name="feature_configuration" value="unified">
+      <div class="row g-4">
+        <div class="col-xl-9 col-lg-8">
+          <div class="card org-card mb-4">
+            <div class="card-header p-4">
+              <div class="d-flex align-items-center gap-3">
+                <span class="section-icon"><i class="fas fa-building"></i></span>
+                <div>
+                  <h6 class="mb-1">Organization Profile</h6>
+                  <p class="text-xs text-muted mb-0">Core identity and license enforcement details.</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <label class="form-label">ORGANIZATION NAME *</label>
+                  {{ form.name }}{{ form.name.errors }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">ORGANIZATION TYPE *</label>
+                  {{ form.category }}{{ form.category.errors }}
+                  <div class="text-xxs text-primary mt-1"><i class="fas fa-wand-magic-sparkles me-1"></i>Changing type applies its recommended features.</div>
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label">ADDRESS</label>
+                  {{ form.address }}{{ form.address.errors }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">MEMBER LIMIT *</label>
+                  {{ form.member_limit }}{{ form.member_limit.errors }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">ORGANIZATION KEY *</label>
+                  {{ form.serial_key }}{{ form.serial_key.errors }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">ACTIVATION NUMBER *</label>
+                  {{ form.new_serial_key }}{{ form.new_serial_key.errors }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">LICENSE EXPIRY *</label>
+                  {{ form.expire_on }}{{ form.expire_on.errors }}
+                </div>
+                <div class="col-12">
+                  <label class="form-label">ORGANIZATION LOGO</label>
+                  {{ form.image }}{{ form.image.errors }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card org-card mb-4">
+            <div class="card-header p-4">
+              <div class="d-flex align-items-center gap-3">
+                <span class="section-icon"><i class="fas fa-receipt"></i></span>
+                <div>
+                  <h6 class="mb-1">Subscription & Commercial Status</h6>
+                  <p class="text-xs text-muted mb-0">Track the plan, payment, term and operational state.</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">PLAN NAME</label>
+                  {{ form.subscription_plan }}{{ form.subscription_plan.errors }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">PAYMENT STATUS</label>
+                  {{ form.payment_status }}{{ form.payment_status.errors }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">ORG STATUS</label>
+                  {{ form.org_status }}{{ form.org_status.errors }}
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">CREATED / SUBSCRIPTION START</label>
+                  <div class="form-control d-flex align-items-center bg-light">
+                    <i class="fas fa-lock text-muted me-2"></i>
+                    {% if org.created_at %}
+                      {{ org.created_at|date:"M d, Y" }}
+                    {% else %}
+                      Set automatically when the organization is created
+                    {% endif %}
+                  </div>
+                  <div class="text-xxs text-muted mt-1">This date is system-recorded and cannot be manually designed or changed.</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">SUBSCRIPTION END</label>
+                  {{ form.subscription_end }}{{ form.subscription_end.errors }}
+                  <div class="text-xxs text-muted mt-1">If blank, license expiry is used for reminders.</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">CUSTOM ANNUAL AMOUNT (OPTIONAL)</label>
+                  {{ form.custom_subscription_amount }}{{ form.custom_subscription_amount.errors }}
+                  <div class="text-xxs text-muted mt-1">Superadmin override. Leave blank to calculate from member package + selected feature rates.</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">CUSTOM AMOUNT NOTE</label>
+                  {{ form.custom_amount_note }}{{ form.custom_amount_note.errors }}
+                </div>
+                <div class="col-md-6">
+                  <div class="status-switch d-flex align-items-center justify-content-between h-100">
+                    <div>
+                      <div class="text-sm font-weight-bold text-dark">Platform Access</div>
+                      <div class="text-xs text-muted">Allow the organization to sign in.</div>
+                    </div>
+                    <div class="form-check form-switch mb-0">{{ form.activate }}</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="status-switch d-flex align-items-center justify-content-between h-100">
+                    <div>
+                      <div class="text-sm font-weight-bold text-dark">Free Demo</div>
+                      <div class="text-xs text-muted">Features stay enabled but commercial total becomes zero.</div>
+                    </div>
+                    <div class="form-check form-switch mb-0">{{ form.free_demo }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card org-card mb-4" id="features-card">
+            <div class="card-header p-4">
+              <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                  <span class="section-icon"><i class="fas fa-layer-group"></i></span>
+                  <div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                      <h6 class="mb-0">All Features — One Unified Block</h6>
+                      <span class="badge bg-success">ENABLE + PLAN ACCESS</span>
+                    </div>
+                    <p class="text-xs text-muted mb-0 mt-1">One switch controls both organization access and subscription entitlement.</p>
+                  </div>
+                </div>
+                <div class="input-group input-group-sm" style="max-width:250px;">
+                  <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                  <input type="search" id="feature-search" class="form-control" placeholder="Search every feature">
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-4">
+              <div class="feature-toolbar p-3 mb-4">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                  <div>
+                    <div class="text-sm font-weight-bold text-dark"><i class="fas fa-wand-magic-sparkles text-primary me-2"></i>Smart setup</div>
+                    <div class="text-xs text-muted">Use the organization type recommendation or choose the complete package.</div>
+                  </div>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary mb-0" id="apply-recommended">
+                      <i class="fas fa-wand-magic-sparkles me-1"></i>Recommended
+                    </button>
+                    <button type="button" class="btn btn-sm bg-gradient-primary mb-0" id="enable-all">
+                      <i class="fas fa-circle-check me-1"></i>All Features On
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mb-0" id="core-only">
+                      Attendance Core
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {% for group in feature_groups %}
+                <section class="feature-group" data-feature-group>
+                  <div class="d-flex align-items-center gap-3 mb-3">
+                    <span class="section-icon"><i class="fas {{ group.icon }}"></i></span>
+                    <div>
+                      <h6 class="mb-0">{{ group.label }}</h6>
+                      <p class="text-xs text-muted mb-0">{{ group.description }}</p>
+                    </div>
+                  </div>
+                  <div class="row g-3">
+                    {% for feature in group.features %}
+                      <div class="col-12 col-md-6 col-xxl-4 feature-column"
+                           data-search="{{ feature.label|lower }} {{ feature.description|lower }} {{ feature.key }}">
+                        <label class="feature-tile d-block {% if feature.checked %}is-selected{% endif %}" for="feature_{{ feature.key }}">
+                          <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
+                            <div class="d-flex align-items-center gap-2 min-w-0">
+                              <span class="feature-symbol"><i class="fas {{ feature.icon }}"></i></span>
+                              <div>
+                                <div class="text-sm font-weight-bold text-dark">{{ feature.label }}</div>
+                                {% if feature.is_dynamic %}<span class="text-xxs text-primary">Registry module</span>{% endif %}
+                              </div>
+                            </div>
+                            {% if feature.is_free %}
+                              <span class="free-pill">FREE</span>
+                            {% else %}
+                              <span class="price-pill">Rs {{ feature.price|floatformat:0 }}/yr</span>
+                            {% endif %}
+                          </div>
+                          <p class="text-xs text-muted mb-3" style="min-height:32px;">{{ feature.description }}</p>
+                          <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-xs font-weight-bold {% if feature.checked %}text-primary{% else %}text-muted{% endif %}" data-toggle-label>
+                              {% if feature.checked %}Enabled{% else %}Disabled{% endif %}
+                            </span>
+                            <div class="form-check form-switch mb-0">
+                              <input class="form-check-input feature-toggle"
+                                     type="checkbox"
+                                     name="feature_keys"
+                                     value="{{ feature.key }}"
+                                     id="feature_{{ feature.key }}"
+                                     data-price="{{ feature.price }}"
+                                     data-requires="{{ feature.requires|join:',' }}"
+                                     {% if feature.checked %}checked{% endif %}
+                                     {% if feature.locked %}disabled{% endif %}>
+                              {% if feature.locked %}
+                                <input type="hidden" name="feature_keys" value="{{ feature.key }}">
+                              {% endif %}
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </section>
+              {% endfor %}
+
+              <div class="feature-empty text-center p-4 mt-4" id="feature-empty">
+                <i class="fas fa-magnifying-glass me-2"></i>No feature matches your search.
+              </div>
+
+              <section class="feature-group">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                  <span class="section-icon"><i class="fas fa-gears"></i></span>
+                  <div>
+                    <h6 class="mb-0">Advanced Compatibility</h6>
+                    <p class="text-xs text-muted mb-0">Platform behaviors kept inside the same feature configuration block.</p>
+                  </div>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="status-switch d-flex align-items-center justify-content-between h-100">
+                      <div>
+                        <div class="text-sm font-weight-bold text-dark">Auto Check-in</div>
+                        <div class="text-xs text-muted">Automatically check configured members in.</div>
+                      </div>
+                      <div class="form-check form-switch mb-0">{{ form.auto_checkin }}</div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="status-switch d-flex align-items-center justify-content-between h-100">
+                      <div>
+                        <div class="text-sm font-weight-bold text-dark">Legacy Course Attendance</div>
+                        <div class="text-xs text-muted">Compatibility only; subject attendance remains the active academic flow.</div>
+                      </div>
+                      <div class="form-check form-switch mb-0">{{ form.course_based_attendance }}</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-4">
+          <div class="card summary-card mb-4">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                  <div class="text-xs text-uppercase opacity-7 font-weight-bold">Live package total</div>
+                  <div class="summary-number mt-1">Rs <span id="annual-total">0</span></div>
+                  <div class="text-xs opacity-7">per year</div>
+                </div>
+                <div class="bg-white bg-opacity-10 rounded-3 p-3"><i class="fas fa-calculator fa-lg"></i></div>
+              </div>
+              <div class="summary-line pt-3 mt-3 d-flex justify-content-between">
+                <span class="text-xs opacity-7">Member package</span>
+                <strong class="text-sm">Rs <span id="base-total">0</span></strong>
+              </div>
+              <div class="summary-line pt-3 mt-3 d-flex justify-content-between">
+                <span class="text-xs opacity-7">Feature add-ons</span>
+                <strong class="text-sm">Rs <span id="feature-total">0</span></strong>
+              </div>
+              <div class="summary-line pt-3 mt-3 d-flex justify-content-between">
+                <span class="text-xs opacity-7">Enabled features</span>
+                <strong class="text-sm" id="selected-count">0</strong>
+              </div>
+              <div class="summary-line pt-3 mt-3 d-flex justify-content-between">
+                <span class="text-xs opacity-7">Term estimate</span>
+                <strong class="text-sm">Rs <span id="term-total">0</span></strong>
+              </div>
+              <div class="summary-line pt-3 mt-3 d-flex justify-content-between">
+                <span class="text-xs opacity-7">Ends</span>
+                <strong class="text-sm" id="summary-end">Not set</strong>
+              </div>
+              {% if subscription_summary %}
+                <div class="mt-4 p-3 rounded-3" style="background:rgba(255,255,255,.09);">
+                  <div class="text-xxs text-uppercase opacity-7 mb-1">Saved subscription</div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-sm">{{ org.subscription_plan|default:"Custom plan" }}</span>
+                    {% if subscription_summary.expiry_state == 'expired' %}
+                      <span class="badge bg-danger">Expired</span>
+                    {% elif subscription_summary.expiry_state == 'due_soon' %}
+                      <span class="badge bg-warning text-dark">{{ subscription_summary.days_remaining }} days</span>
+                    {% else %}
+                      <span class="badge bg-success">Active</span>
+                    {% endif %}
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span class="text-xs opacity-7">Annual cost</span>
+                    <strong class="text-sm">
+                      Rs {{ subscription_summary.annual_cost }}
+                      {% if subscription_summary.custom_amount_applied %}<span class="badge bg-info text-dark ms-1">Custom</span>{% endif %}
+                    </strong>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center mt-1">
+                    <span class="text-xs opacity-7">Contract total (term)</span>
+                    <strong class="text-sm">Rs {{ subscription_summary.contract_total }}</strong>
+                  </div>
+                  {% if org.custom_amount_note %}
+                  <div class="text-xxs opacity-7 mt-1">Note: {{ org.custom_amount_note }}</div>
+                  {% endif %}
+                </div>
+              {% endif %}
+              <button type="submit" class="btn bg-white text-primary w-100 mt-4 mb-0 py-2 font-weight-bold">
+                <i class="fas fa-floppy-disk me-2"></i>{% if is_edit %}Save All Changes{% else %}Create Organization{% endif %}
+              </button>
+              <div class="text-xxs text-center opacity-7 mt-3">
+                Feature flags, plan access and registry grants save atomically.
+              </div>
+            </div>
+          </div>
+          {% if is_edit %}
+            <a href="{% url 'superadmin:orgDetail' org.id %}" class="btn btn-outline-primary w-100 mb-3">
+              <i class="fas fa-chart-line me-2"></i>Open Organization Analytics
+            </a>
+            <a href="{% url 'superadmin:feature_registry' %}" class="btn btn-outline-secondary w-100">
+              <i class="fas fa-puzzle-piece me-2"></i>Manage Feature Registry
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{ feature_presets|json_script:"organization-feature-presets" }}
+{{ pricing_tiers|json_script:"organization-pricing-tiers" }}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const presets = JSON.parse(document.getElementById("organization-feature-presets").textContent);
+  const pricingTiers = JSON.parse(document.getElementById("organization-pricing-tiers").textContent);
+  const category = document.getElementById("id_category");
+  const planName = document.getElementById("id_subscription_plan");
+  const memberLimit = document.getElementById("id_member_limit");
+  const customAmount = document.getElementById("id_custom_subscription_amount");
+  const createdDateValue = "{% if org.created_at %}{{ org.created_at|date:'Y-m-d' }}{% endif %}";
+  const toggles = Array.from(document.querySelectorAll(".feature-toggle"));
+  const freeDemo = document.getElementById("id_free_demo");
+  const endDate = document.getElementById("id_subscription_end");
+  const licenseEnd = document.getElementById("id_expire_on");
+  const coreKeys = new Set(["member_mgmt", "payroll", "leave", "biometric", "qr", "gps", "manual", "wifi", "nepali_cal", "qr_attendance"]);
+
+  function setToggle(toggle, enabled) {
+    if (toggle.disabled) enabled = true;
+    toggle.checked = enabled;
+    const tile = toggle.closest(".feature-tile");
+    const label = tile ? tile.querySelector("[data-toggle-label]") : null;
+    if (tile) tile.classList.toggle("is-selected", enabled);
+    if (label) {
+      label.textContent = enabled ? "Enabled" : "Disabled";
+      label.classList.toggle("text-primary", enabled);
+      label.classList.toggle("text-muted", !enabled);
+    }
+  }
+
+  function enforceDependencies() {
+    const byKey = Object.fromEntries(toggles.map(toggle => [toggle.value, toggle]));
+    toggles.filter(toggle => toggle.checked).forEach(toggle => {
+      (toggle.dataset.requires || "").split(",").filter(Boolean).forEach(required => {
+        if (byKey[required]) setToggle(byKey[required], true);
+      });
+    });
+  }
+
+  function money(value) {
+    return Math.round(value).toLocaleString("en-IN");
+  }
+
+  function calculate() {
+    enforceDependencies();
+    const enabled = toggles.filter(toggle => toggle.checked);
+    const featureAnnual = enabled.reduce((total, toggle) => total + Number(toggle.dataset.price || 0), 0);
+    const requestedMembers = Math.max(Number(memberLimit && memberLimit.value || 1), 1);
+    let selectedTier = pricingTiers.find(tier => Number(tier.limit) >= requestedMembers);
+    let packageUnits = 1;
+    if (!selectedTier && pricingTiers.length) {
+      selectedTier = pricingTiers[pricingTiers.length - 1];
+      packageUnits = Math.ceil(requestedMembers / Math.max(Number(selectedTier.limit), 1));
+    }
+    const baseAnnual = selectedTier ? Number(selectedTier.price || 0) * packageUnits : 0;
+    const calculatedAnnual = baseAnnual + featureAnnual;
+    const hasCustomAmount = customAmount && customAmount.value.trim() !== "";
+    const quotedAnnual = hasCustomAmount ? Math.max(Number(customAmount.value || 0), 0) : calculatedAnnual;
+    const annual = freeDemo && freeDemo.checked ? 0 : quotedAnnual;
+    let term = annual;
+    const start = createdDateValue ? new Date(createdDateValue + "T00:00:00") : new Date();
+    start.setHours(0, 0, 0, 0);
+    const rawEnd = endDate && endDate.value ? endDate.value : (licenseEnd ? licenseEnd.value : "");
+    const end = rawEnd ? new Date(rawEnd + "T00:00:00") : null;
+    if (start && end && end >= start) {
+      const days = Math.floor((end - start) / 86400000) + 1;
+      term = annual * days / 365;
+    }
+    document.getElementById("annual-total").textContent = money(annual);
+    document.getElementById("base-total").textContent = money(baseAnnual);
+    document.getElementById("feature-total").textContent = money(featureAnnual);
+    document.getElementById("term-total").textContent = money(term);
+    document.getElementById("selected-count").textContent = enabled.length;
+    document.getElementById("summary-end").textContent = rawEnd || "Not set";
+  }
+
+  function applyKeys(keys) {
+    const selected = new Set(keys || []);
+    toggles.forEach(toggle => setToggle(toggle, selected.has(toggle.value)));
+    calculate();
+  }
+
+  toggles.forEach(toggle => {
+    toggle.addEventListener("change", function () {
+      setToggle(toggle, toggle.checked);
+      calculate();
+    });
+  });
+  [freeDemo, memberLimit, customAmount, endDate, licenseEnd].filter(Boolean).forEach(field => {
+    field.addEventListener("change", calculate);
+    field.addEventListener("input", calculate);
+  });
+
+  document.getElementById("apply-recommended").addEventListener("click", function () {
+    applyKeys(presets[category.value] || presets.others || []);
+  });
+  document.getElementById("enable-all").addEventListener("click", function () {
+    applyKeys(toggles.map(toggle => toggle.value));
+  });
+  document.getElementById("core-only").addEventListener("click", function () {
+    applyKeys(Array.from(coreKeys));
+  });
+
+  if (category) {
+    category.addEventListener("change", function () {
+      applyKeys(presets[category.value] || presets.others || []);
+      if (planName && !planName.value.trim()) {
+        const selectedLabel = category.options[category.selectedIndex].text;
+        planName.value = selectedLabel + " Annual";
+      }
+    });
+  }
+
+  const search = document.getElementById("feature-search");
+  search.addEventListener("input", function () {
+    const query = search.value.trim().toLowerCase();
+    let visible = 0;
+    document.querySelectorAll(".feature-column").forEach(column => {
+      const show = !query || column.dataset.search.includes(query);
+      column.classList.toggle("d-none", !show);
+      if (show) visible += 1;
+    });
+    document.querySelectorAll("[data-feature-group]").forEach(group => {
+      const hasVisible = group.querySelector(".feature-column:not(.d-none)");
+      group.classList.toggle("d-none", !hasVisible);
+    });
+    document.getElementById("feature-empty").style.display = visible ? "none" : "block";
+  });
+
+  toggles.forEach(toggle => setToggle(toggle, toggle.checked));
+  calculate();
+});
+</script>
+{% endblock content %}

@@ -1,0 +1,55 @@
+<div class="week-panel">
+  <p class="text-xs text-muted mb-3">{{ week_start|date:"M d" }} – {{ week_end|date:"M d, Y" }}</p>
+  {% for day in days %}
+  <div class="week-day-card p-3 mb-2 {% if day.is_today %}week-day-today{% endif %}">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+      <div>
+        <strong class="text-sm">{{ day.weekday_label }}</strong>
+        <span class="text-xs text-muted ms-1">{{ day.date|date:"M d, Y" }}</span>
+        {% if day.is_today %}<span class="badge bg-gradient-dark text-white ms-1">Today</span>{% endif %}
+      </div>
+      <div>
+        {% if day.is_future and day.has_shift %}
+          <span class="shift-status shift-upcoming"><i class="fas fa-clock"></i>Upcoming</span>
+        {% elif day.is_future %}
+          <span class="shift-status shift-off">Off</span>
+        {% elif day.status == 'complete' %}
+          <span class="shift-status shift-complete"><i class="fas fa-check"></i>Complete</span>
+        {% elif day.status == 'incomplete' %}
+          <span class="shift-status shift-incomplete"><i class="fas fa-circle-half-stroke"></i>Incomplete</span>
+        {% elif day.status == 'absent' %}
+          <span class="shift-status shift-absent"><i class="fas fa-xmark"></i>Absent</span>
+        {% else %}
+          <span class="shift-status shift-off">Off</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mt-2 d-flex flex-wrap gap-1 align-items-center">
+      {% if not day.has_shift %}
+      <span class="text-xs text-muted">No shift scheduled</span>
+      {% endif %}
+      {% for s in day.shifts %}
+      <span class="badge bg-gradient-info text-white">{{ s.name }}</span>
+      {% endfor %}
+      {% for o in day.overrides %}
+      <span class="override-chip">
+        <i class="fas fa-plus"></i>{{ o.shift.name }} (extra)
+        <button type="button" onclick="deleteOverride({{ o.member_id }}, {{ o.id }})" title="Remove extra shift">&times;</button>
+      </span>
+      {% endfor %}
+    </div>
+
+    <form class="mt-2 d-flex gap-2 align-items-center flex-wrap" onsubmit="return submitOverrideAdd({{ member.id }}, this)">
+      <input type="hidden" name="date" value="{{ day.date|date:'Y-m-d' }}">
+      <select name="shift_id" class="form-select form-select-sm" style="max-width:200px;" required>
+        <option value="">+ Add extra shift for this date…</option>
+        {% for s in all_shifts %}
+        <option value="{{ s.id }}">{{ s.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-outline-primary btn-sm mb-0">Add</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>

@@ -103,6 +103,11 @@
 .sub-title { font-size:.82rem; font-weight:800; color:var(--ink); margin:0; }
 .sub-sub { font-size:.72rem; color:var(--muted); margin:.1rem 0 0; }
 
+/* documents */
+.doc-row { display:flex; gap:.75rem; align-items:center; padding:.75rem 0; border-bottom:1px solid var(--border); }
+.doc-row:last-child { border-bottom:none; padding-bottom:0; }
+.doc-type-badge { width:36px; height:36px; border-radius:10px; background:#ede9fe; color:#7c3aed; display:flex; align-items:center; justify-content:center; font-size:.85rem; flex-shrink:0; }
+
 /* form controls */
 .f-label {
   font-size:.7rem; font-weight:700; color:var(--muted);
@@ -170,14 +175,17 @@
   font-size:.85rem; display:flex; align-items:center; gap:.6rem;
 }
 .pg-alert.info { background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; }
+.pg-alert.success { background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; }
+.pg-alert.warning { background:#fffbeb; border:1px solid #fde68a; color:#92400e; }
+.pg-alert.error { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; }
 </style>
 
 <div class="pg">
 
   <!-- Messages -->
   {% for message in messages %}
-  <div class="pg-alert info mb-3">
-    <i class="fas fa-circle-info"></i>{{ message }}
+  <div class="pg-alert {{ message.tags|default:'info' }} mb-3">
+    <i class="fas {% if message.tags == 'success' %}fa-circle-check{% elif message.tags == 'warning' %}fa-triangle-exclamation{% elif message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-info{% endif %}"></i>{{ message }}
   </div>
   {% endfor %}
 
@@ -187,7 +195,10 @@
     <div class="col-lg-3">
       <div class="profile-card">
         <div class="profile-header">
-          <div class="avatar-ring">{{ mem.name|slice:":1" }}</div>
+          <div class="avatar-ring">
+            {% if mem.photo %}<img src="{{ mem.photo.url }}" alt="{{ mem.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+            {% else %}{{ mem.name|slice:":1" }}{% endif %}
+          </div>
           <div class="profile-name">{{ mem.name }}</div>
           {% if mem.classification %}
           <div class="profile-badge">{{ mem.classification.name }}</div>
@@ -227,6 +238,10 @@
             <span class="meta-val">{{ mem.date_of_birth|default:"—" }}</span>
           </div>
           <div class="meta-row">
+            <span class="meta-key">Joined Date</span>
+            <span class="meta-val">{{ mem.admission_date|default:"—" }}</span>
+          </div>
+          <div class="meta-row">
             <span class="meta-key">Staff Type</span>
             <span class="meta-val text-capitalize">{{ mem.staff_type }}</span>
           </div>
@@ -247,10 +262,11 @@
           <button class="sec-tab active" onclick="switchSec('identity', this)"><i class="fas fa-id-card"></i>Identity</button>
           <button class="sec-tab" onclick="switchSec('org', this)"><i class="fas fa-sitemap"></i>Organization</button>
           <button class="sec-tab" onclick="switchSec('payroll', this)"><i class="fas fa-wallet"></i>Payroll</button>
+          <button class="sec-tab" onclick="switchSec('docs', this)"><i class="fas fa-folder-open"></i>Documents</button>
           <button class="sec-tab" onclick="switchSec('access', this)"><i class="fas fa-shield-halved"></i>Access</button>
         </div>
 
-        <form action="" method="post">
+        <form action="" method="post" enctype="multipart/form-data" id="editMemberForm">
           {% csrf_token %}
 
           <!-- Identity -->
@@ -285,7 +301,18 @@
                 <label class="f-label">Date of Birth</label>{{ form.date_of_birth }}
               </div>
               <div class="col-md-6">
+                <label class="f-label">Joined Date <span class="text-muted">(optional)</span></label>{{ form.admission_date }}
+              </div>
+              <div class="col-md-6">
                 <label class="f-label">Address</label>{{ form.address }}
+              </div>
+              <div class="col-md-6">
+                <label class="f-label">Roll / Registration No. <span class="text-muted">(for ID card)</span></label>{{ form.roll_number }}
+              </div>
+              <div class="col-md-6">
+                <label class="f-label">Photo <span class="text-muted">(for ID card)</span></label>
+                {% if mem.photo %}<img src="{{ mem.photo.url }}" style="height:40px;width:40px;object-fit:cover;border-radius:6px;margin-bottom:6px;">{% endif %}
+                {{ form.photo }}
               </div>
               <div class="col-md-6">
                 <label class="f-label" style="color:#16a34a;"><i class="fas fa-hourglass-start me-1"></i>Shift Start</label>{{ form.shift_start_time }}
@@ -341,6 +368,10 @@
                 <label class="f-label">Tax Rate</label>
                 <div class="wiz-suffix">{{ form.tax_percentage }}<span>%</span></div>
               </div>
+              <div class="col-md-4">
+                <label class="f-label">Overtime Multiplier Override</label>
+                <div class="wiz-suffix">{{ form.overtime_rate_multiplier_override }}<span>x</span></div>
+              </div>
               <div class="col-12">
                 <label class="f-label">Statutory Benefits</label>
                 <div class="toggle-pills">
@@ -376,6 +407,63 @@
                   </label>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Documents -->
+          <div class="sec-pane" id="sec-docs">
+            <div class="sub-hd">
+              <div class="sub-icon indigo"><i class="fas fa-folder-open"></i></div>
+              <div><div class="sub-title">Member Documents</div><div class="sub-sub">Identity proofs, certificates or contracts on file</div></div>
+            </div>
+
+            {% if documents %}
+            <div class="mb-4">
+              {% for doc in documents %}
+              <div class="doc-row">
+                <div class="doc-type-badge"><i class="fas fa-file-lines"></i></div>
+                <div class="flex-grow-1">
+                  <div style="font-size:.85rem;font-weight:700;color:var(--ink);">{{ doc.title }}</div>
+                  <div style="font-size:.72rem;color:var(--muted);">{{ doc.get_document_type_display }} &middot; uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
+                </div>
+                <a href="{{ doc.file.url }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0"><i class="fas fa-download"></i></a>
+                <a href="{% url 'handle:deleteMemberDocument' doc.id %}" class="btn btn-sm btn-outline-danger py-0" onclick="return confirm('Delete this document?');"><i class="fas fa-trash"></i></a>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted" style="font-size:.85rem;">No documents uploaded yet.</p>
+            {% endif %}
+
+            <div class="sub-hd mt-2">
+              <div class="sub-icon amber"><i class="fas fa-cloud-arrow-up"></i></div>
+              <div><div class="sub-title">Upload New</div><div class="sub-sub">Up to 3 files per save &middot; PDF, JPG, PNG, DOC, DOCX</div></div>
+            </div>
+            <div class="row g-3">
+              {% for i in "123" %}
+              <div class="col-12">
+                <label class="f-label">Document {{ i }}</label>
+                <div class="row g-2 align-items-end">
+                  <div class="col-md-4">
+                    <select name="doc_type_{{ i }}" class="form-select form-select-sm" style="border-radius:8px;">
+                      <option value="">— Type —</option>
+                      <option value="id">ID Card</option>
+                      <option value="passport">Passport</option>
+                      <option value="degree">Degree</option>
+                      <option value="certificate">Certificate</option>
+                      <option value="contract">Contract</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <input type="text" name="doc_title_{{ i }}" placeholder="Document title" class="form-control form-control-sm" style="border-radius:8px;">
+                  </div>
+                  <div class="col-md-4">
+                    <input type="file" name="doc_file_{{ i }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="form-control form-control-sm" style="border-radius:8px;">
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
             </div>
           </div>
 
@@ -424,16 +512,30 @@
     <div class="modal-content" style="border-radius:18px;border:none;box-shadow:0 20px 60px rgba(0,0,0,.15);">
       <div class="modal-body p-4 text-center">
         <div style="width:58px;height:58px;background:#ffe4e6;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.3rem;color:var(--rose);">
-          <i class="fas fa-trash"></i>
+          <i class="fas fa-user-slash"></i>
         </div>
-        <h5 style="font-weight:800;color:var(--ink);">Delete {{ mem.name }}?</h5>
-        <p style="color:var(--muted);font-size:.88rem;">This will permanently remove all records for this member. This action cannot be undone.</p>
-        <div class="d-flex gap-2 justify-content-center mt-3">
-          <button type="button" class="btn btn-light fw-bold rounded-3" data-bs-dismiss="modal">Cancel</button>
-          <a href="{% url 'handle:deleteMember' mem.id %}" style="background:var(--rose);color:#fff;border:none;border-radius:10px;padding:.7rem 1.5rem;font-size:.88rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;">
-            <i class="fas fa-trash"></i>Delete
-          </a>
-        </div>
+        <h5 style="font-weight:800;color:var(--ink);">Remove {{ mem.name }}?</h5>
+        <p style="color:var(--muted);font-size:.88rem;">Choose how you want to remove this member from the active roster.</p>
+        <form method="post" action="{% url 'handle:deleteMember' mem.id %}">
+          {% csrf_token %}
+          <div class="text-start mb-2" style="background:#f8f9fb;border-radius:10px;padding:.75rem .9rem;">
+            <div style="font-weight:700;color:var(--ink);font-size:.85rem;"><i class="fas fa-box-archive me-1"></i>Dump (Recommended)</div>
+            <div style="color:var(--muted);font-size:.78rem;">Moves the member to Dumped Members. Attendance, payslips, documents and every linked record stay intact and can be searched by member ID. You can Rejoin them anytime.</div>
+          </div>
+          <div class="text-start mb-3" style="background:#fff5f5;border-radius:10px;padding:.75rem .9rem;">
+            <div style="font-weight:700;color:var(--rose);font-size:.85rem;"><i class="fas fa-trash me-1"></i>Permanently Delete</div>
+            <div style="color:var(--muted);font-size:.78rem;">Erases the member and cannot be undone. Only use this if you really want to purge all their records.</div>
+          </div>
+          <div class="d-flex gap-2 justify-content-center flex-wrap">
+            <button type="button" class="btn btn-light fw-bold rounded-3" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" name="action" value="delete" class="btn fw-bold rounded-3" style="background:var(--rose);color:#fff;border:none;padding:.7rem 1.2rem;font-size:.85rem;">
+              <i class="fas fa-trash me-1"></i>Permanently Delete
+            </button>
+            <button type="submit" name="action" value="dump" class="btn fw-bold rounded-3" style="background:var(--primary,#4f46e5);color:#fff;border:none;padding:.7rem 1.2rem;font-size:.85rem;">
+              <i class="fas fa-box-archive me-1"></i>Dump (Keep Records)
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -486,5 +588,23 @@ async function loadSections(keepSelected){
 }
 if(classSel){ classSel.addEventListener('change', function(){ loadSections(false); }); loadSections(true); }
 if(branchSel){ branchSel.addEventListener('change', function(){ loadSections(false); }); }
+
+// Guard against accidental double submission (double-click, or the form
+// being restored from browser back/forward cache after a save).
+var editMemberForm = document.getElementById('editMemberForm');
+var saveBtn = editMemberForm ? editMemberForm.querySelector('.btn-save') : null;
+var saveBtnOriginalHtml = saveBtn ? saveBtn.innerHTML : null;
+if (editMemberForm && saveBtn) {
+  editMemberForm.addEventListener('submit', function(){
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+  });
+}
+window.addEventListener('pageshow', function(evt){
+  if (evt.persisted && saveBtn) {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = saveBtnOriginalHtml;
+  }
+});
 </script>
 {% endblock %}

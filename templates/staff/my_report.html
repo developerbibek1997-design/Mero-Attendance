@@ -1,113 +1,112 @@
 {% extends 'dashboard.html' %}
 {% load static %}
-{% block title %}My Attendance Report{% endblock title %}
-
+{% block title %}My Attendance Report | {{ org.name }}{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-    
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-8">
-            <div class="card p-3 d-flex flex-row align-items-center border-0 shadow-sm">
-                <div class="avatar avatar-lg bg-gradient-primary text-white rounded-circle me-4">
-                    {{ memb.name|slice:":1" }}
-                </div>
-                <div>
-                    <h5 class="mb-0">{{ memb.name }}</h5>
-                    <p class="text-sm text-muted mb-0">{{ memb.classification.name }} | {{ org.name }}</p>
-                </div>
-            </div>
+{% include 'components/report_workspace_styles.html' %}
+<div class="container-fluid py-4 report-workspace">
+  <section class="report-hero mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-3">
+        {% if memb.photo %}
+        <img src="{{ memb.photo.url }}" alt="{{ memb.name }}" class="rounded-circle border border-2 border-white" style="width:58px;height:58px;object-fit:cover;">
+        {% else %}
+        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white text-primary font-weight-bolder" style="width:58px;height:58px;font-size:1.25rem;">{{ memb.name|slice:":1"|upper }}</span>
+        {% endif %}
+        <div>
+          <span class="report-eyebrow"><i class="fas fa-fingerprint"></i> Personal Report</span>
+          <h3 class="font-weight-bolder mt-2 mb-0">{{ memb.name }}</h3>
+          <p class="text-sm mb-0 opacity-8">{{ memb.classification.name|default:memb.get_member_type_display }} · {{ org.name }}</p>
         </div>
-        
-        <div class="col-md-4 mt-3 mt-md-0">
-            <form method="get" class="card p-3 border-0 shadow-sm d-flex flex-row align-items-center">
-                <label class="mb-0 me-3 font-weight-bolder text-sm text-secondary">Select Month:</label>
-                <input type="month" name="month" class="form-control" value="{{ selected_month }}" onchange="this.form.submit()">
-            </form>
-        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-light btn-sm mb-0 no-print" onclick="window.print()"><i class="fas fa-print me-1"></i>Print</button>
+      </div>
     </div>
+  </section>
 
-    {% if error %}
-    <div class="alert alert-danger text-white">{{ error }}</div>
-    {% endif %}
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="card p-4 text-center shadow-sm border-0">
-                <h6 class="text-uppercase text-xs text-secondary font-weight-bolder">Total Days Present</h6>
-                <h2 class="text-success mb-0">{{ total_present }}</h2>
-                <small class="text-muted">In {{ selected_month }}</small>
-            </div>
+  <section class="report-toolbar mb-4 no-print">
+    <form method="get">
+      <div class="d-flex gap-2 flex-wrap mb-3">
+        <a href="?preset=this_month" class="btn btn-sm {% if active_preset == 'this_month' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-0">This Month</a>
+        <a href="?preset=last_month" class="btn btn-sm {% if active_preset == 'last_month' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-0">Last Month</a>
+      </div>
+      <div class="row g-3 align-items-end">
+        <div class="col-lg-3 col-6">
+          <label class="report-filter-label">Month</label>
+          <input type="month" name="month" class="form-control" value="{{ selected_month }}">
         </div>
-        <div class="col-md-6">
-            <div class="card p-4 text-center shadow-sm border-0">
-                <h6 class="text-uppercase text-xs text-secondary font-weight-bolder">Leave Requests</h6>
-                <h2 class="text-warning mb-0">{{ leaves|length }}</h2>
-                <small class="text-muted">In {{ selected_month }}</small>
-            </div>
+        <div class="col-lg-3 col-6">
+          <label class="report-filter-label">From</label>
+          {% if nepali_enabled %}
+          <input type="text" name="date_from_np" class="form-control nepali-cal" placeholder="YYYY-MM-DD BS" data-global-date-picker>
+          <input type="hidden" name="date_from" value="{{ date_from }}" class="hidden-date-input">
+          {% else %}
+          <input type="date" name="date_from" value="{{ date_from }}" class="form-control" data-global-date-picker>
+          {% endif %}
         </div>
-    </div>
+        <div class="col-lg-3 col-6">
+          <label class="report-filter-label">To</label>
+          {% if nepali_enabled %}
+          <input type="text" name="date_to_np" class="form-control nepali-cal" placeholder="YYYY-MM-DD BS" data-global-date-picker>
+          <input type="hidden" name="date_to" value="{{ date_to }}" class="hidden-date-input">
+          {% else %}
+          <input type="date" name="date_to" value="{{ date_to }}" class="form-control" data-global-date-picker>
+          {% endif %}
+        </div>
+        <div class="col-lg-3 col-6">
+          <button class="btn btn-primary w-100 mb-0 py-2"><i class="fas fa-filter me-1"></i>Generate Report</button>
+        </div>
+      </div>
+    </form>
+  </section>
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-light border-bottom p-3 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 font-weight-bolder text-dark">Attendance Logs ({{ selected_month }})</h6>
-        </div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-calendar-check"></i></span><p class="report-stat-label">Days Present</p><p class="report-stat-value text-success">{{ total_present }}</p><span class="text-xxs text-muted">{% if date_from and date_to %}{{ date_from }} to {{ date_to }}{% else %}{{ selected_month }}{% endif %}</span></div></div>
+    <div class="col-md-4"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-fingerprint"></i></span><p class="report-stat-label">Punch Records</p><p class="report-stat-value">{{ logs|length }}</p></div></div>
+    <div class="col-md-4"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-calendar-minus"></i></span><p class="report-stat-label">Leave Requests</p><p class="report-stat-value text-warning">{{ leaves|length }}</p></div></div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-7">
+      <section class="report-panel overflow-hidden h-100">
+        <div class="px-3 py-3 border-bottom"><h6 class="mb-0 font-weight-bolder">Attendance Ledger</h6><p class="text-xs text-muted mb-0">Verified attendance scans for the selected period.</p></div>
         <div class="table-responsive">
-            <table class="table align-items-center mb-0">
-                <thead>
-                    <tr>
-                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Date</th>
-                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Time</th>
-                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Type</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for log in logs %}
-                    <tr>
-                        <td class="text-sm font-weight-bold ps-4">{{ log.scanned_time|date:"Y-m-d (l)" }}</td>
-                        <td class="text-sm">{{ log.scanned_time|date:"H:i A" }}</td>
-                        <td><span class="badge bg-gradient-info">Check-In Log</span></td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="3" class="text-center py-4 text-muted">No attendance records found for this month.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+          <table class="table report-table">
+            <thead><tr><th class="ps-3">Date</th><th>Time</th><th>Method</th></tr></thead>
+            <tbody>
+              {% for log in logs %}
+              <tr><td class="ps-3 font-weight-bold">{{ log.scanned_time|date:"Y-m-d (D)" }}{% if nepali_enabled %}<div class="text-xxs text-muted">{{ log.scanned_time_np }} BS</div>{% endif %}</td><td>{{ log.scanned_time|date:"g:i A" }}</td><td><span class="report-chip"><i class="fas fa-fingerprint"></i>{{ log.get_attendance_method_display|default:"Attendance" }}</span></td></tr>
+              {% empty %}
+              <tr><td colspan="3"><div class="report-empty"><span class="report-empty-icon"><i class="fas fa-calendar-xmark"></i></span><h6>No attendance records</h6></div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
+      </section>
     </div>
-
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-light border-bottom p-3">
-            <h6 class="mb-0 font-weight-bolder text-dark">Leave History ({{ selected_month }})</h6>
-        </div>
+    <div class="col-xl-5">
+      <section class="report-panel overflow-hidden h-100">
+        <div class="px-3 py-3 border-bottom"><h6 class="mb-0 font-weight-bolder">Leave History</h6><p class="text-xs text-muted mb-0">Approval status and covered dates.</p></div>
         <div class="table-responsive">
-            <table class="table align-items-center mb-0">
-                <thead>
-                    <tr>
-                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Details / Reason</th>
-                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Dates</th>
-                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder text-center">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for l in leaves %}
-                    <tr>
-                        <td class="text-sm ps-4" style="max-width: 300px; white-space: normal;">
-                            <strong>{{ l.leave_type.name }}</strong><br>
-                            <small class="text-muted">{{ l.reason }}</small>
-                        </td>
-                        <td class="text-sm">{{ l.gap_start|date:"M d" }} to {{ l.gap_end|date:"M d" }}</td>
-                        <td class="text-center">
-                            {% if l.approved %} <span class="badge bg-gradient-success">Approved</span>
-                            {% elif l.rejected %} <span class="badge bg-gradient-danger">Rejected</span>
-                            {% else %} <span class="badge bg-gradient-secondary">Pending</span> {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="3" class="text-center py-4 text-muted">No leave requests found for this month.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+          <table class="table report-table">
+            <thead><tr><th class="ps-3">Leave</th><th>Dates</th><th>Status</th></tr></thead>
+            <tbody>
+              {% for leave in leaves %}
+              <tr>
+                <td class="ps-3"><strong>{{ leave.leave_type.name }}</strong><div class="text-xxs text-muted">{{ leave.reason|truncatechars:45 }}</div></td>
+                <td>{{ leave.start_display }}–{{ leave.end_display }}{% if nepali_enabled %} <span class="text-muted text-xxs">BS</span>{% endif %}</td>
+                <td>{% if leave.approved %}<span class="badge bg-success">Approved</span>{% elif leave.rejected %}<span class="badge bg-danger">Rejected</span>{% else %}<span class="badge bg-secondary">Pending</span>{% endif %}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3"><div class="report-empty"><span class="report-empty-icon"><i class="fas fa-check-circle"></i></span><h6>No leave requests</h6></div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
+      </section>
     </div>
+  </div>
 </div>
-{% endblock content %}
+{% endblock %}

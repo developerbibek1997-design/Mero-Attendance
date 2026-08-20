@@ -15,7 +15,14 @@
             <div class="row g-3">
               <div class="col-12"><label class="form-label text-xs text-uppercase font-weight-bold">Title *</label><input type="text" name="title" class="form-control" placeholder="e.g. Office Supplies" required></div>
               <div class="col-md-6"><label class="form-label text-xs text-uppercase font-weight-bold">Amount (Rs.) *</label><input type="number" step="0.01" name="amount" class="form-control" placeholder="0.00" required></div>
-              <div class="col-md-6"><label class="form-label text-xs text-uppercase font-weight-bold">Date *</label><input type="date" name="transaction_date" class="form-control" value="{{ today }}" required></div>
+              <div class="col-md-6"><label class="form-label text-xs text-uppercase font-weight-bold">Date *</label>
+                {% if nepali_enabled %}
+                <input type="text" class="form-control nepali-cal" name="transaction_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off" required>
+                <input type="date" class="hidden-date-input" name="transaction_date" value="{{ today }}">
+                {% else %}
+                <input type="date" name="transaction_date" class="form-control" value="{{ today }}" required>
+                {% endif %}
+              </div>
               <div class="col-md-6"><label class="form-label text-xs text-uppercase font-weight-bold">Category</label>
                 <select name="category" class="form-select"><option value="">-- None --</option>{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
               <div class="col-md-6"><label class="form-label text-xs text-uppercase font-weight-bold">Branch</label>

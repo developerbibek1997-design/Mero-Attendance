@@ -1,0 +1,28 @@
+{% load static %}
+{# Renders a single timesheet entry table row. #}
+{# Used by both add and edit flows via HTMX outerHTML swap. #}
+<tr id="entry-row-{{ entry.pk }}" {% if new %}class="ts-entry-new"{% endif %}>
+  <td class="ps-3 fw-semibold" style="color:#1e293b;">{{ entry.task }}</td>
+  <td class="text-center">
+    <span class="badge rounded-pill" style="background:#ede9fe;color:#6d28d9;font-size:.82rem;">{{ entry.hours }}h</span>
+  </td>
+  <td class="text-muted small">{{ entry.notes|default:"—"|truncatechars:60 }}</td>
+  <td class="text-end pe-3">
+    {% if ts.can_edit %}
+    <button class="btn btn-sm btn-outline-secondary py-0 px-2 me-1"
+            hx-get="{% url 'staff:ts_entry_edit' pk=ts.pk entry_pk=entry.pk %}"
+            hx-target="#entry-row-{{ entry.pk }}"
+            hx-swap="outerHTML">
+      <i class="fas fa-pencil fa-xs"></i>
+    </button>
+    <button class="btn btn-sm btn-outline-danger py-0 px-2"
+            hx-post="{% url 'staff:ts_entry_delete' pk=ts.pk entry_pk=entry.pk %}"
+            hx-target="#entry-row-{{ entry.pk }}"
+            hx-swap="outerHTML"
+            hx-confirm="Delete this entry?"
+            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+      <i class="fas fa-trash fa-xs"></i>
+    </button>
+    {% endif %}
+  </td>
+</tr>

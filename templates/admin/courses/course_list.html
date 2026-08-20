@@ -6,7 +6,7 @@
     <h4 class="font-weight-bolder mb-0">Courses</h4>
     <div>
       <a href="{% url 'schooladmin:add_course' %}" class="btn btn-primary btn-sm me-1"><i class="fas fa-plus me-1"></i>Add Course</a>
-      <a href="{% url 'schooladmin:course_attendance' %}" class="btn btn-success btn-sm"><i class="fas fa-clipboard-check me-1"></i>Take Attendance</a>
+      <a href="{% url 'schooladmin:subject_list' %}" class="btn btn-success btn-sm"><i class="fas fa-book-open me-1"></i>Manage Subjects</a>
     </div>
   </div>
   {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
@@ -22,12 +22,13 @@
             </div>
             <span class="badge {% if course.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">{{ course.status|capfirst }}</span>
           </div>
-          {% if course.teacher %}<div class="text-sm text-muted mb-1"><i class="fas fa-chalkboard-teacher me-1"></i>{{ course.teacher.get_full_name|default:course.teacher.username }}</div>{% endif %}
+          {% if course.teacher %}<div class="text-sm text-muted mb-1"><i class="fas fa-chalkboard-teacher me-1"></i>Coordinator: {{ course.teacher.get_full_name|default:course.teacher.username }}</div>{% endif %}
           {% if course.branch %}<div class="text-sm text-muted mb-1"><i class="fas fa-code-branch me-1"></i>{{ course.branch.name }}</div>{% endif %}
           {% if course.credit_hour %}<div class="text-sm text-muted mb-1"><i class="fas fa-clock me-1"></i>{{ course.credit_hour }} credit hours</div>{% endif %}
           {% if course.classifications.all %}<div class="text-xs text-muted mt-2">Classes: {% for c in course.classifications.all %}<span class="badge bg-light text-dark me-1">{{ c.name }}</span>{% endfor %}</div>{% endif %}
-          <div class="d-flex gap-2 mt-3">
-            <a href="{% url 'schooladmin:course_attendance' %}?course={{ course.pk }}" class="btn btn-success btn-sm flex-fill"><i class="fas fa-clipboard-check me-1"></i>Attendance</a>
+          <div class="d-flex gap-2 mt-3 flex-wrap">
+            <a href="{% url 'schooladmin:subject_list' %}?course={{ course.pk }}" class="btn btn-success btn-sm flex-fill"><i class="fas fa-book-open me-1"></i>Subjects &amp; Teachers</a>
+            <a href="{% url 'schooladmin:course_enrollments' course.pk %}" class="btn btn-outline-primary btn-sm flex-fill"><i class="fas fa-user-graduate me-1"></i>Enrollments</a>
             <form method="post" action="{% url 'schooladmin:delete_course' course.pk %}" class="d-inline" onsubmit="return confirm('Delete course?')">{% csrf_token %}<button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button></form>
           </div>
         </div>

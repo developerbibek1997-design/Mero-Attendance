@@ -1,0 +1,105 @@
+{% extends 'dashboard.html' %}
+{% load schooladmin_extras %}
+{% block title %}Class Routine | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+.routine-hero{background:linear-gradient(135deg,#0f172a,#312e81);border-radius:18px;padding:1.4rem 1.6rem;color:#fff}
+.routine-stat{border:1px solid #e2e8f0;border-radius:14px;background:#fff;padding:1rem;height:100%}
+.routine-table{min-width:1100px}
+.routine-table th{min-width:155px;background:#f8fafc;vertical-align:middle}
+.routine-table th.today{background:#eef2ff;color:#4338ca}
+.routine-table td{height:132px;vertical-align:top;background:#fff}
+.period-card{border:1px solid #e2e8f0;border-left:4px solid #6366f1;border-radius:10px;padding:.65rem;margin-bottom:.5rem;background:#fff;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.period-card:last-child{margin-bottom:0}
+.period-card:hover{box-shadow:0 2px 10px rgba(99,102,241,.18);border-color:#6366f1}
+.period-title{font-size:.8rem;font-weight:800;color:#0f172a}
+.period-meta{font-size:.7rem;color:#64748b;line-height:1.45}
+.empty-cell-add{display:flex;align-items:center;justify-content:center;height:100%;min-height:96px;color:#cbd5e1;text-decoration:none;border-radius:10px;border:1.5px dashed transparent;transition:color .15s,border-color .15s,background .15s}
+.empty-cell-add:hover{color:#6366f1;border-color:#c7d2fe;background:#eef2ff;text-decoration:none}
+</style>
+<div class="container-fluid py-3">
+  <div class="routine-hero mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+      <div class="text-xs text-uppercase opacity-75 mb-1">{{ org.name }}</div>
+      <h4 class="font-weight-bolder text-white mb-1"><i class="fas fa-calendar-week me-2"></i>Weekly Class Routine</h4>
+      <p class="text-sm mb-0 opacity-75">Every period comes from a valid Subject Teacher Assignment.</p>
+    </div>
+    <a href="{% url 'schooladmin:add_routine_period' %}" class="btn btn-light btn-sm mb-0"><i class="fas fa-plus me-1"></i>Create Routine Period</a>
+  </div>
+
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+  {% if unmapped_count %}
+  <div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span><i class="fas fa-triangle-exclamation me-1"></i>{{ unmapped_count }} legacy routine period(s) have no valid teacher-subject assignment. Edit them before teachers use them.</span>
+  </div>
+  {% endif %}
+
+  <div class="row g-3 mb-3">
+    <div class="col-4"><div class="routine-stat"><div class="text-xs text-muted">Visible Periods</div><div class="h4 mb-0">{{ period_count }}</div></div></div>
+    <div class="col-4"><div class="routine-stat"><div class="text-xs text-muted">Assigned Teachers</div><div class="h4 mb-0">{{ teacher_count }}</div></div></div>
+    <div class="col-4"><div class="routine-stat"><div class="text-xs text-muted">Classes</div><div class="h4 mb-0">{{ class_count }}</div></div></div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body p-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Class</label><select name="classification" class="form-select"><option value="">All Classes</option>{% for c in classifications %}<option value="{{ c.id }}" {% if selected_classification == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label text-xs font-weight-bold">Section</label><select name="section" class="form-select"><option value="">All Sections</option>{% for s in sections %}<option value="{{ s.id }}" {% if selected_section == s.id|stringformat:'s' %}selected{% endif %}>{{ s.classification.name }} / {{ s.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Teacher</label><select name="teacher" class="form-select"><option value="">All Teachers</option>{% for s in teachers %}<option value="{{ s.admin.id }}" {% if selected_teacher == s.admin.id|stringformat:'s' %}selected{% endif %}>{{ s.member.name|default:s.admin.email }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label text-xs font-weight-bold">Day</label><select name="day" class="form-select"><option value="">Whole Week</option>{% for value,label in day_choices %}<option value="{{ value }}" {% if selected_day == value|stringformat:'s' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-2 d-flex gap-2"><button class="btn btn-primary btn-sm flex-fill mb-0"><i class="fas fa-filter me-1"></i>Apply</button><a href="{% url 'schooladmin:routine_grid' %}" class="btn btn-outline-secondary btn-sm mb-0"><i class="fas fa-rotate-right"></i></a></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3">
+      <h6 class="mb-0 font-weight-bolder">Routine Timetable</h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-bordered routine-table mb-0">
+        <thead>
+          <tr>
+            <th class="text-center text-xs">Period</th>
+            {% for day_num, day_name in days %}<th class="text-center text-xs {% if current_day == day_num %}today{% endif %}">{{ day_name }}{% if current_day == day_num %}<div class="text-xxs">Today</div>{% endif %}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in schedule_rows %}
+          <tr>
+            <th class="text-center"><span class="badge bg-dark">Period {{ row.period_number }}</span></th>
+            {% for day_num, day_name in days %}
+            <td>
+              {% with periods=row.by_day|dict_get:day_num %}
+              {% for p in periods %}
+              <div class="period-card" onclick="location.href='{% url 'schooladmin:edit_routine_period' p.pk %}'" title="Tap to edit this period">
+                <div class="d-flex justify-content-between gap-2">
+                  <div class="period-title">{{ p.subject.name }}</div>
+                  <div class="d-flex gap-1">
+                    <a href="{% url 'schooladmin:edit_routine_period' p.pk %}" class="btn btn-xs btn-outline-primary mb-0" title="Edit" onclick="event.stopPropagation()"><i class="fas fa-pen"></i></a>
+                    <form method="post" action="{% url 'schooladmin:delete_routine_period' p.pk %}" onsubmit="return confirm('Delete this routine period?')" onclick="event.stopPropagation()">{% csrf_token %}<button class="btn btn-xs btn-outline-danger mb-0" title="Delete"><i class="fas fa-trash"></i></button></form>
+                  </div>
+                </div>
+                <div class="period-meta mt-1"><i class="fas fa-users me-1"></i>{{ p.classification.name }}{% if p.section %} / {{ p.section.name }}{% else %} / All Sections{% endif %}</div>
+                <div class="period-meta"><i class="fas fa-user-tie me-1"></i>{{ p.teacher.get_full_name|default:p.teacher.email }}</div>
+                <div class="period-meta"><i class="fas fa-clock me-1"></i>{{ p.start_time|time:"H:i" }}–{{ p.end_time|time:"H:i" }}{% if p.room %} · {{ p.room }}{% endif %}</div>
+                {% if p.academic_year %}<div class="period-meta"><i class="fas fa-graduation-cap me-1"></i>{{ p.academic_year.name }}</div>{% endif %}
+              </div>
+              {% empty %}
+              <a href="{% url 'schooladmin:add_routine_period' %}?day={{ day_num }}&period={{ row.period_number }}" class="empty-cell-add" title="Tap to add a period here">
+                <i class="fas fa-plus-circle"></i>
+              </a>
+              {% endfor %}
+              {% endwith %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% empty %}
+          <tr><td colspan="{{ days|length|add:'1' }}" class="text-center py-5 text-muted"><i class="fas fa-calendar-plus fa-2x d-block mb-2 opacity-50"></i>No routine periods match these filters.<br><a href="{% url 'schooladmin:add_routine_period' %}" class="btn btn-primary btn-sm mt-3">Create First Period</a></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

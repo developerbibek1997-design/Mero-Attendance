@@ -1,0 +1,20 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Payslip — {{ month_name }}{% endblock %}
+{% block content %}
+<p class="greeting">Hi <strong>{{ name }}</strong>,</p>
+<p class="message-text">Your payslip for <strong>{{ month_name }}</strong> is ready.</p>
+{% if details %}
+<table class="data">
+  {% for k, v in details.items %}
+  <tr><td class="label">{{ k }}</td><td style="text-align:right;">{{ v }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+<div class="total-box">
+  <table width="100%"><tr>
+    <td style="color:#fff;font-weight:700;">Net Payable</td>
+    <td style="color:#fff;font-weight:700;text-align:right;">Rs. {{ net_payable }}</td>
+  </tr></table>
+</div>
+<p class="message-text" style="margin-top:16px;">Log in to your portal to view the full breakdown.</p>
+{% endblock %}

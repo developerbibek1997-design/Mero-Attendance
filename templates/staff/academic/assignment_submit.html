@@ -1,0 +1,60 @@
+{% extends 'dashboard.html' %}
+{% block title %}{{ assignment.title }} | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder">{{ assignment.title }}</h6>
+          <span class="text-xs text-muted">{{ assignment.subject.name }} &bull; Due {{ assignment.due_date }} &bull; {{ assignment.total_marks }} marks</span>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+          <p class="text-sm">{{ assignment.description }}</p>
+          {% if assignment.instructions %}<p class="text-sm text-muted"><b>Instructions:</b> {{ assignment.instructions }}</p>{% endif %}
+          {% if assignment.attachments.all %}
+          <div class="mb-3">{% for att in assignment.attachments.all %}<a href="{{ att.file.url }}" target="_blank" class="badge bg-light text-dark text-decoration-none me-1"><i class="fas fa-paperclip me-1"></i>{{ att.file.name|slice:"-25:" }}</a>{% endfor %}</div>
+          {% endif %}
+
+          {% if submission and submission.status == 'graded' %}
+          <div class="alert alert-success">
+            <b>Graded:</b> {{ submission.obtained_marks }} / {{ assignment.total_marks }}
+            {% if submission.teacher_remarks %}<div class="mt-1">{{ submission.teacher_remarks }}</div>{% endif %}
+          </div>
+          {% endif %}
+
+          {% if submission %}
+          <div class="mb-3">
+            <p class="text-xs text-muted mb-1">Submitted {{ submission.submitted_at }}{% if submission.is_late %} <span class="badge bg-danger">Late</span>{% endif %}</p>
+            {% if submission.attachments.all %}
+            <div>{% for att in submission.attachments.all %}<a href="{{ att.file.url }}" target="_blank" class="badge bg-light text-dark text-decoration-none me-1"><i class="fas fa-paperclip me-1"></i>{{ att.file.name|slice:"-25:" }}</a>{% endfor %}</div>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {% if submission and submission.status == 'graded' %}
+          <a href="{% url 'staff:student_assignments' %}" class="btn btn-outline-secondary">Back to Assignments</a>
+          {% else %}
+          {% if form.errors %}<div class="alert alert-danger">Please correct the errors below.</div>{% endif %}
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">Comments</label>
+              {{ form.student_comments }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">Attachments</label>
+              <input type="file" name="attachments" class="form-control" multiple>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane me-1"></i>{% if submission %}Resubmit{% else %}Submit{% endif %}</button>
+            <a href="{% url 'staff:student_assignments' %}" class="btn btn-outline-secondary">Back</a>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

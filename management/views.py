@@ -7,6 +7,8 @@ from django.shortcuts import render, redirect
 from django.views.generic import TemplateView
 from django.views import View
 from django.contrib.auth import authenticate, login, logout
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 import nepali_datetime
 from .models import Organization, Pricing
 from .forms import ContactForm, LeaveForm, SignForm
@@ -23,6 +25,12 @@ from django.core.mail import send_mail, BadHeaderError
 from django.http import HttpResponse
 from django.conf import settings
 from django.template.loader import render_to_string
+from django.core.exceptions import ValidationError
+from .pricing_services import (
+    calculate_quote,
+    feature_catalog,
+    pricing_tier_payload,
+)
 
 
 
@@ -90,10 +98,24 @@ def askVerify(request):
     return render(request, "basic/askSerial.html")
 
 
+def csrf_failure(request, reason=""):
+    """
+    A submitted form's CSRF token no longer matches the current cookie —
+    almost always because the page sat open (another tab, browser back/
+    forward cache) while a login/logout elsewhere on the same browser
+    rotated the token. Rather than dead-ending on Django's default 403 page,
+    send the user straight back to a freshly-rendered login page (which
+    carries a valid token) so they can just retype their credentials.
+    """
+    messages.error(request, "Your session had refreshed — please try logging in again.")
+    return redirect('/')
+
+
 # Create your views here.
+@method_decorator(never_cache, name='dispatch')
 class Homepage(TemplateView):
     template_name = 'basic/index.html'
-    
+
     def get(self, request, *agrs, **kwargs):
         form = SignForm()
         if request.user.is_authenticated:
@@ -104,12 +126,20 @@ class Homepage(TemplateView):
             else:
                 return HttpResponseRedirect(reverse('staff:dashboard'))
         else:
-            from management.models import BlogPost as _BlogPost
+            from management.models import BlogPost as _BlogPost, FAQ as _FAQ
             blog_posts = _BlogPost.objects.filter(published=True).order_by('-created_at')[:3]
-            return render(request, self.template_name, {'form': form, 'blog_posts': blog_posts})
+            faqs = _FAQ.objects.filter(is_active=True).order_by('order', 'id')
+            return render(request, self.template_name, {'form': form, 'blog_posts': blog_posts, 'faqs': faqs})
 
 
     def post(self,request, *args, **kwargs):
+            # A stale/leftover session (e.g. a previous account never explicitly
+            # logged out on a shared device) must not silently survive a new
+            # login attempt on this same form — otherwise a failed attempt
+            # (wrong password) leaves the browser looking "logged in" as
+            # whoever used it last, which is exactly what it should not do.
+            if request.user.is_authenticated:
+                logout(request)
             email = request.POST['email']
             password = request.POST['password']
             user = authenticate(request, username=email, password=password)
@@ -139,8 +169,28 @@ class PricingView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['pricing_list'] = Pricing.objects.all()  # Fetch all pricing data
+        context['pricing_list'] = Pricing.objects.all().order_by('limit', 'price')
+        context['quote_features'] = feature_catalog(public_only=True)
+        context['pricing_tiers'] = pricing_tier_payload()
+        context.setdefault('selected_feature_keys', set())
+        context.setdefault('quote_member_limit', 25)
         return context
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        selected_keys = set(request.POST.getlist('feature_keys'))
+        context['selected_feature_keys'] = selected_keys
+        try:
+            member_limit = int(request.POST.get('member_limit', '0'))
+            context['quote_member_limit'] = member_limit
+            context['quote_result'] = calculate_quote(member_limit, selected_keys)
+        except (TypeError, ValueError, ValidationError) as exc:
+            context['quote_error'] = (
+                exc.messages[0]
+                if isinstance(exc, ValidationError)
+                else "Enter a valid member limit."
+            )
+        return render(request, self.template_name, context)
 
 def completeLeave(request):
     return render(request, "basic/complete.html")
@@ -167,6 +217,48 @@ def Contact(request):
     return render(request, "basic/contact.html", dist)
 
 
+def RequestPackage(request):
+    """Pricing page's 'Request this package' modal — captures the exact quote
+    (member count, chosen features, computed price) alongside contact info,
+    distinct from the generic ContactUs message."""
+    if request.method != 'POST':
+        return HttpResponseRedirect(reverse('management:pricing'))
+
+    from decimal import Decimal, InvalidOperation
+    from management.models import PackageRequest
+
+    full_name = request.POST.get('full_name', '').strip()
+    email = request.POST.get('email', '').strip()
+    phone = request.POST.get('phone', '').strip()
+    note = request.POST.get('note', '').strip()
+
+    if not full_name or not email:
+        messages.error(request, "Name and email are required to request a package.")
+        return HttpResponseRedirect(reverse('management:pricing'))
+
+    def _decimal(key):
+        try:
+            return Decimal(request.POST.get(key) or '0')
+        except InvalidOperation:
+            return Decimal('0')
+
+    try:
+        member_limit = int(request.POST.get('member_limit') or 0)
+    except (TypeError, ValueError):
+        member_limit = 0
+
+    PackageRequest.objects.create(
+        full_name=full_name, email=email, phone=phone, note=note,
+        member_limit=member_limit,
+        selected_feature_keys=request.POST.getlist('selected_feature_keys'),
+        package_name=request.POST.get('package_name', '').strip(),
+        base_cost=_decimal('base_cost'),
+        feature_total=_decimal('feature_total'),
+        annual_total=_decimal('annual_total'),
+    )
+    messages.success(request, "Thanks! Your package request has been sent — our team will reach out shortly.")
+    return HttpResponseRedirect(reverse('management:pricing'))
+
 
 class About(TemplateView):
     template_name = 'basic/about.html'
@@ -184,6 +276,13 @@ class Terms(TemplateView):
 
 class Pullar(TemplateView):
     template_name = 'basic/pullar.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['play_store_url'] = getattr(settings, 'PLAY_STORE_URL', '')
+        context['app_store_url'] = getattr(settings, 'APP_STORE_URL', '')
+        context['web_dashboard_url'] = getattr(settings, 'WEB_DASHBOARD_URL', '')
+        return context
 
 def logoutUser(request):
     logout(request)

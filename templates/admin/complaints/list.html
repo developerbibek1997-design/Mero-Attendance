@@ -13,11 +13,15 @@
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-3">
       <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-3"><label class="text-xs font-weight-bold">Status</label>
+        <div class="col-md-2"><label class="text-xs font-weight-bold">Status</label>
           <select name="status" class="form-select form-select-sm"><option value="">All</option>{% for val,label in status_choices %}<option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-        <div class="col-md-3"><label class="text-xs font-weight-bold">Priority</label>
+        <div class="col-md-2"><label class="text-xs font-weight-bold">Priority</label>
           <select name="priority" class="form-select form-select-sm"><option value="">All</option>{% for val,label in priority_choices %}<option value="{{ val }}" {% if selected_priority == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-        <div class="col-md-3 d-flex gap-1 align-self-end"><button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-filter me-1"></i>Filter</button><a href="{% url 'schooladmin:complaint_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a></div>
+        <div class="col-md-2"><label class="text-xs font-weight-bold">Branch</label>
+          <select name="branch" class="form-select form-select-sm"><option value="">All Branches</option>{% for b in branches %}<option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="text-xs font-weight-bold">Classification</label>
+          <select name="classification" class="form-select form-select-sm"><option value="">All</option>{% for c in classifications %}<option value="{{ c.id }}" {% if selected_classification == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2 d-flex gap-1 align-self-end"><button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-filter me-1"></i>Filter</button><a href="{% url 'schooladmin:complaint_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a></div>
       </form>
     </div>
   </div>

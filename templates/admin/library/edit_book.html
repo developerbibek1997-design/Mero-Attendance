@@ -1,0 +1,57 @@
+{% extends 'dashboard.html' %}
+{% block title %}Edit Book | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-book text-primary me-2"></i>Edit Book — {{ book.title }}</h6>
+          {% if book.cover_image %}<img src="{{ book.cover_image.url }}" alt="" style="height:48px;border-radius:4px;">{% endif %}
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          {% if form.errors %}<div class="alert alert-danger">Please correct the errors below.</div>{% endif %}
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Book Code *</label>{{ form.book_code }}{{ form.book_code.errors }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">ISBN</label>{{ form.isbn }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Branch</label>{{ form.branch }}</div>
+
+              <div class="col-md-8"><label class="form-label text-xs font-weight-bold">Title *</label>{{ form.title }}{{ form.title.errors }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Subtitle</label>{{ form.subtitle }}</div>
+
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Category</label>{{ form.category }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Subject</label>{{ form.subject }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Author</label>{{ form.author }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Publisher</label>{{ form.publisher }}</div>
+
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Edition</label>{{ form.edition }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Language</label>{{ form.language }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Rack</label>{{ form.rack }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Shelf</label>{{ form.shelf }}</div>
+
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Purchase Date</label>{{ form.purchase_date }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Purchase Price (Rs.)</label>{{ form.purchase_price }}</div>
+              <div class="col-md-3">
+                <label class="form-label text-xs font-weight-bold">Quantity *</label>{{ form.quantity }}{{ form.quantity.errors }}
+                <p class="text-xs text-muted mb-0 mt-1">Available: {{ book.available_quantity }} · Issued: {{ book.issued_quantity }} · Lost: {{ book.lost_quantity }} · Damaged: {{ book.damaged_quantity }}</p>
+              </div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Status</label>{{ form.status }}</div>
+
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Cover Image</label>{{ form.cover_image }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Description</label>{{ form.description }}</div>
+
+              <div class="col-12 d-flex gap-2 mt-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save Changes</button>
+                <a href="{% url 'schooladmin:library_books' %}" class="btn btn-outline-secondary">Cancel</a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

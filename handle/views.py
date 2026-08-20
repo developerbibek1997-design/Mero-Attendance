@@ -1,5 +1,8 @@
 
 import csv
+import re
+import uuid
+import datetime as dt
 from datetime import timedelta
 
 from management.models import CustomUser, Organization
@@ -10,21 +13,29 @@ from .models import (
     Course,
     Device,
     FinancialTransaction,
+    MemberHistory,
     Section,
     Staff,
+    StaffDocument,
     StockCategory,
     StockItem,
     StockMovement,
     TransactionCategory,
     member,
+    resolve_default_shift,
 )
+from .member_archive import archive_member, restore_member
+from .services import provision_staff_account
 from django.contrib import messages
-from django.shortcuts import redirect, render
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import redirect, render, get_object_or_404
 from django.views import View
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db import transaction, IntegrityError
 from django.utils import timezone
 from .forms import (
     BranchForm,
@@ -42,36 +53,7 @@ from .forms import (
 )
 # from zk import ZK
 from django.db.models import Q, Sum
-
-# Helper function to send the welcome email
-def send_staff_welcome_email(user_email, user_name, user_password):
-    subject = 'Welcome to Mero Attendance - Your Dashboard Access'
-    message = f"""Hello {user_name},
-
-                An account has been created for you to access the Mero Attendance Dashboard.
-
-                Here are your login credentials:
-                Email: {user_email}
-                Password: {user_password}
-
-                Please log in to your dashboard here: https://meroattendance.com/login
-
-                We recommend changing your password after your first login.
-
-                Best Regards,
-                The Mero Attendance Team
-                """
-    try:
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL, # Make sure this is set in settings.py
-            [user_email],
-            fail_silently=True, # Set to False during testing if you want to see SMTP errors
-        )
-    except Exception as e:
-        print(f"Failed to send email: {e}")
-
+from school.decorators import perm_required, PermRequiredMixin
 
 def current_org_for_user(user):
     if user.user_type == "2" and hasattr(user, 'schooladmin'):
@@ -80,159 +62,359 @@ def current_org_for_user(user):
         return user.staff.org
     return None
 
-class AddMember(View):
+
+class PremiumNotificationListView(LoginRequiredMixin, View):
+    """Shared notification centre for school admin, staff, teacher and student."""
+    template_name = 'notifications/list.html'
+
+    def get(self, request):
+        from django.core.paginator import Paginator
+        from handle.notifications import notifications_for_user
+
+        org = current_org_for_user(request.user)
+        if org is None:
+            messages.error(request, 'Notifications are not available for this account.')
+            return redirect('management:homepage')
+
+        notifications = notifications_for_user(request.user, org)
+        selected_filter = request.GET.get('filter', 'all')
+        if selected_filter == 'unread':
+            notifications = notifications.filter(is_read=False)
+        elif selected_filter == 'tasks':
+            notifications = notifications.filter(event_type__startswith='task_')
+        elif selected_filter == 'academic':
+            notifications = notifications.exclude(event_type__startswith='task_')
+        else:
+            selected_filter = 'all'
+
+        paginator = Paginator(notifications, 20)
+        return render(request, self.template_name, {
+            'org': org,
+            'notifications': paginator.get_page(request.GET.get('page')),
+            'selected_filter': selected_filter,
+            'unread_total': notifications_for_user(
+                request.user, org,
+            ).filter(is_read=False).count(),
+        })
+
+
+@login_required(login_url='/login/')
+def open_notification(request, pk):
+    """Mark an owned notification read and follow only a safe local action URL."""
+    from django.utils.http import url_has_allowed_host_and_scheme
+    from handle.notifications import mark_read, notifications_for_user
+
+    org = current_org_for_user(request.user)
+    notification = get_object_or_404(
+        notifications_for_user(request.user, org), pk=pk,
+    )
+    mark_read(notification)
+    target = (notification.link_url or '').strip()
+    if (
+        target.startswith('/')
+        and not target.startswith('//')
+        and url_has_allowed_host_and_scheme(
+            target,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        )
+    ):
+        return redirect(target)
+    return redirect('handle:notifications')
+
+
+@login_required(login_url='/login/')
+def mark_all_notifications_read(request):
+    from handle.notifications import notifications_for_user
+
+    if request.method != 'POST':
+        return JsonResponse({'detail': 'Method not allowed.'}, status=405)
+    org = current_org_for_user(request.user)
+    updated = notifications_for_user(
+        request.user, org,
+    ).filter(is_read=False).update(is_read=True, read_at=timezone.now())
+    messages.success(request, f'{updated} notification(s) marked as read.')
+    return redirect('handle:notifications')
+
+
+@login_required(login_url='/login/')
+def save_print_preference(request, report_key):
+    """AJAX: persist one user's print configuration for a given report."""
+    import json
+    from school.print_settings import save_print_preference as _save
+
+    if request.method != 'POST':
+        return JsonResponse({'detail': 'Method not allowed.'}, status=405)
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({'detail': 'Invalid JSON.'}, status=400)
+    saved = _save(request.user, report_key, payload.get('settings'))
+    return JsonResponse({'settings': saved})
+
+
+@login_required(login_url='/login/')
+def save_org_print_default(request, report_key):
+    """AJAX: an admin sets the org-wide default print configuration for a
+    report (Organization Profile's Print Defaults section). Admin-only —
+    unlike save_print_preference, this changes what every user in the org
+    sees on their first visit, not just the caller's own preference."""
+    import json
+    from school.print_settings import save_org_print_default as _save
+
+    if request.method != 'POST':
+        return JsonResponse({'detail': 'Method not allowed.'}, status=405)
+    org = current_org_for_user(request.user)
+    if request.user.user_type != '2' or not org:
+        return JsonResponse({'detail': 'Admins only.'}, status=403)
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({'detail': 'Invalid JSON.'}, status=400)
+    saved = _save(org, report_key, payload.get('settings'))
+    return JsonResponse({'settings': saved})
+
+
+def _authoritative_member_dates(post_data, org):
+    """`date_of_birth`/`admission_date` go through the BS date picker
+    (static/assets/js/global-date-picker.js), which converts BS -> AD
+    client-side for responsiveness. That conversion is only exact within a
+    verified table of recent years; for older dates (routine for a date of
+    birth) it falls back to an approximation. Re-derive the AD value here
+    from the raw BS text using the authoritative `nepali_datetime` library —
+    same pattern as staff/views.py's `_ts_to_ad` for timesheets — so what
+    gets saved is always correct regardless of the browser-side estimate."""
+    if not org.nepali_date:
+        return post_data
+    from school.nepali_utils import from_bs_display
+    corrected = post_data.copy()
+    for field in ('date_of_birth', 'admission_date'):
+        raw_bs = post_data.get(f'{field}_np_display')
+        if raw_bs:
+            ad_date = from_bs_display(raw_bs)
+            if ad_date:
+                corrected[field] = ad_date.isoformat()
+    return corrected
+
+
+class AddMember(PermRequiredMixin, View):
+    required_perm = 'can_add_members'
     form_class = MemberForm
     template_name = 'handle/addMember.html'
+    SESSION_TOKEN_KEY = 'add_member_token'
 
     def get(self, request, *args, **kwargs):
+        from school.hierarchy import get_accessible_branches
         auser = request.user
-        
-        if auser.user_type == "2":
-            org = auser.schooladmin.org
-        else:
-            org = None
-            
-        total_member = member.objects.filter(org=org).count()
-        form = self.form_class(org=org)
-        
+        org = current_org_for_user(auser)
+
+        total_member = member.objects.filter(org=org).exclude(status='dumped').count()
+        form = self.form_class(org=org, user=auser)
+
+        # One-time token: a stale/back-cached copy of this page can never be
+        # resubmitted successfully once the matching session value has moved on.
+        form_token = uuid.uuid4().hex
+        request.session[self.SESSION_TOKEN_KEY] = form_token
+
         dist = {
             'form': form,
             'org': org,
             'classi': Classification.objects.filter(org=org, status='active'),
-            'branches': Branch.objects.filter(org=org, status='active'),
+            'branches': get_accessible_branches(auser, org),
             'sections': Section.objects.filter(org=org, status='active'),
             'courses': Course.objects.filter(org=org, status='active'),
-            'total_member': total_member
+            'total_member': total_member,
+            'form_token': form_token,
         }
         return render(request, self.template_name, dist)
 
     def post(self, request, *args, **kwargs):
         auser = request.user
+        org = current_org_for_user(auser)
 
-        if auser.user_type == "2":
-            org = auser.schooladmin.org
-        else:
-            org = None
-
-        form = self.form_class(request.POST, org=org)
-            
-        if form.is_valid():
-            new_form = form.save(commit=False)
-            
-            # Generate Unique Device ID
-            device_id_candidate = int(member.objects.filter(org=org).count()) + 1
-            while member.objects.filter(org=org, device_id=device_id_candidate).exists():
-                device_id_candidate += 1
-            
-            new_form.device_id = device_id_candidate
-            new_form.org = org
-            
-            # Capture tax percentage (assuming it's in your form/model)
-            new_form.tax_percentage = request.POST.get('tax_percentage', 0)
-            
-            new_form.save()
-            form.save_m2m()
-
-            # =========================================================
-            # STAFF CREATION LOGIC
-            # =========================================================
-            if new_form.make_staff and new_form.email and new_form.phone:
-                if not CustomUser.objects.filter(email=new_form.email).exists():
-                    password = str(new_form.phone)
-                    TypeOne = CustomUser.objects.create_user(first_name=new_form.name, last_name = new_form.name, email = new_form.email, username = new_form.email, password=str(new_form.phone))
-                    Staff.objects.create(member =new_form, admin = TypeOne, org = org, number = new_form.phone)
-                    TypeOne.user_type = "3"
-                    TypeOne.save()
-                                
-                    # SEND EMAIL
-                    send_staff_welcome_email(new_form.email, new_form.name, password)
-                    
-                    messages.success(request, f"Successfully added {new_form.name}, granted dashboard access, and sent login credentials via email.")
-                else:
-                    messages.warning(request, f"Member added, but Staff account wasn't created. The email '{new_form.email}' already exists.")
-            else:
-                messages.success(request, f"Successfully added Member: {new_form.name}.")
-
+        # Consume the token immediately so a double-click or a resubmit from
+        # browser back/forward cache can't create a second member.
+        expected_token = request.session.pop(self.SESSION_TOKEN_KEY, None)
+        submitted_token = request.POST.get('form_token')
+        if not submitted_token or submitted_token != expected_token:
+            messages.warning(request, "This form was already submitted. Check the member list before adding again.")
             return HttpResponseRedirect(reverse('handle:addMember'))
-        else:
+
+        form = self.form_class(_authoritative_member_dates(request.POST, org), request.FILES, org=org, user=auser)
+
+        if not form.is_valid():
             messages.error(request, "Failed adding Member: " + form.errors.as_text())
             return HttpResponseRedirect(reverse('handle:addMember'))
-        
-        
+
+        current_count = member.objects.filter(org=org).exclude(status='dumped').count()
+        if current_count >= org.member_limit:
+            messages.error(request, f"Member limit reached ({org.member_limit}). Upgrade your plan or free up a slot to add more.")
+            return HttpResponseRedirect(reverse('handle:addMember'))
+
+        staff_result = None
+        try:
+            with transaction.atomic():
+                new_form = form.save(commit=False)
+
+                # Generate Unique Device ID
+                device_id_candidate = int(member.objects.filter(org=org).exclude(status='dumped').count()) + 1
+                while member.objects.filter(org=org, device_id=device_id_candidate).exclude(status='dumped').exists():
+                    device_id_candidate += 1
+
+                new_form.device_id = device_id_candidate
+                new_form.org = org
+
+                # Capture tax percentage (assuming it's in your form/model)
+                new_form.tax_percentage = request.POST.get('tax_percentage', 0)
+
+                new_form.save()
+                form.save_m2m()
+
+                # Save uploaded documents (up to 3)
+                for i in ('1', '2', '3'):
+                    doc_file = request.FILES.get(f'doc_file_{i}')
+                    if doc_file:
+                        doc_type = request.POST.get(f'doc_type_{i}', 'other') or 'other'
+                        doc_title = request.POST.get(f'doc_title_{i}', doc_file.name) or doc_file.name
+                        StaffDocument.objects.create(
+                            org=org, member=new_form,
+                            document_type=doc_type, title=doc_title, file=doc_file,
+                        )
+
+                if new_form.make_staff:
+                    staff_result = provision_staff_account(new_form, org)
+        except IntegrityError:
+            messages.error(request, "Couldn't add this member — a record with the same email or card already exists. Please check and try again.")
+            return HttpResponseRedirect(reverse('handle:addMember'))
+
+        # Only email credentials once the transaction above has actually committed.
+        if staff_result is None:
+            messages.success(request, f"Successfully added Member: {new_form.name}.")
+        elif staff_result.status == 'created':
+            from school.email_utils import send_welcome_email
+            send_welcome_email(new_form.email, new_form.name, staff_result.password, org.name, org=org)
+            messages.success(request, f"Successfully added {new_form.name}, granted dashboard access, and sent login credentials via email.")
+        else:
+            messages.warning(request, f"Member added, but dashboard access wasn't granted: {staff_result.message}")
+
+        return HttpResponseRedirect(reverse('handle:addMember'))
+
+
+
+@perm_required('can_edit_members')
 def memberEdit(request, id):
-    mem = member.objects.get(id=id)
+    from school.hierarchy import get_accessible_members, get_accessible_branches
     auser = request.user
-    org = auser.schooladmin.org if auser.user_type == "2" else None
+    org = current_org_for_user(auser)
+    mem = get_object_or_404(get_accessible_members(auser, org), id=id)
 
     if request.method == 'POST':
-        form = MemberForm(request.POST, instance=mem, org=org)
+        previous_email = mem.email
+        form = MemberForm(_authoritative_member_dates(request.POST, org), request.FILES, instance=mem, org=org, user=auser)
         if not form.is_valid():
             messages.error(request, "Failed updating Member: " + form.errors.as_text())
             return HttpResponseRedirect(reverse('handle:memberEdit', args=[mem.id]))
 
-        mem = form.save(commit=False)
-        mem.org = org
-        mem.save()
-        form.save_m2m()
+        staff_result = None
+        email_sync_message = None
+        try:
+            with transaction.atomic():
+                mem = form.save(commit=False)
+                mem.org = org
+                mem.save()
+                form.save_m2m()
 
-        # Handle granting Staff later in edit phase
-        if mem.make_staff and mem.email and mem.phone:
-            # First check if they are already staff
-            if not Staff.objects.filter(member=mem).exists():
-                # Then check if the email is free to use
-                if not CustomUser.objects.filter(email=mem.email).exists():
-                    password = str(mem.phone)
-                    
-                    # Exact working logic from AddMember
-                    TypeOne = CustomUser.objects.create_user(
-                        first_name=mem.name, 
-                        last_name=mem.name, 
-                        email=mem.email, 
-                        username=mem.email, 
-                        password=password
-                    )
-                    
-                    Staff.objects.create(member=mem, admin=TypeOne, org=org, number=mem.phone)
-                    
-                    TypeOne.user_type = "3"
-                    TypeOne.save()
-                    
-                    # SEND EMAIL
-                    send_staff_welcome_email(mem.email, mem.name, password)
-                    
-                    messages.success(request, f"Granted Staff access to {mem.name} and sent credentials to their email.")
-                else:
-                    messages.warning(request, "Failed to grant Staff access: Email already in use.")
+                # Save any newly-uploaded documents (up to 3 per submit, same as AddMember)
+                for i in ('1', '2', '3'):
+                    doc_file = request.FILES.get(f'doc_file_{i}')
+                    if doc_file:
+                        doc_type = request.POST.get(f'doc_type_{i}', 'other') or 'other'
+                        doc_title = request.POST.get(f'doc_title_{i}', doc_file.name) or doc_file.name
+                        StaffDocument.objects.create(
+                            org=org, member=mem,
+                            document_type=doc_type, title=doc_title, file=doc_file,
+                        )
+
+                # If this member already has a linked dashboard account, keep
+                # its login email in sync — otherwise they'd be locked out the
+                # moment their email changes here, since login authenticates
+                # against the User's username/email, not the Member's.
+                if mem.email and mem.email != previous_email:
+                    linked_staff = Staff.objects.filter(member=mem).select_related('admin').first()
+                    if linked_staff:
+                        linked_user = linked_staff.admin
+                        if CustomUser.objects.exclude(pk=linked_user.pk).filter(email=mem.email).exists():
+                            email_sync_message = (
+                                'warning',
+                                f"Member email updated, but the dashboard login still uses '{previous_email}' "
+                                f"— '{mem.email}' is already used by another account.",
+                            )
+                        else:
+                            linked_user.email = mem.email
+                            linked_user.username = mem.email
+                            linked_user.save(update_fields=['email', 'username'])
+                            email_sync_message = ('info', "Dashboard login email updated to match.")
+
+                # Handle granting Staff later in edit phase
+                if mem.make_staff:
+                    staff_result = provision_staff_account(mem, org)
+        except IntegrityError:
+            messages.error(request, "Couldn't save changes — the email or card is already used by another member.")
+            return HttpResponseRedirect(reverse('handle:memberEdit', args=[mem.id]))
+
+        if email_sync_message:
+            level, text = email_sync_message
+            getattr(messages, level)(request, text)
+
+        # Only email credentials once the transaction above has actually committed.
+        if staff_result is not None:
+            if staff_result.status == 'created':
+                from school.email_utils import send_welcome_email
+                send_welcome_email(mem.email, mem.name, staff_result.password, org.name, org=org)
+                messages.success(request, f"Granted Staff access to {mem.name} and sent credentials to their email.")
+            elif staff_result.status == 'already_exists':
+                messages.info(request, staff_result.message)
+            else:
+                messages.warning(request, staff_result.message)
 
         messages.success(request, f"Successfully Updated {mem.name}'s details.")
         return HttpResponseRedirect(reverse('handle:memberEdit', args=[mem.id]))
 
-    form = MemberForm(instance=mem, org=org)
+    form = MemberForm(instance=mem, org=org, user=auser)
     dist ={
         'form': form,
         'mem': mem,
         'classi': Classification.objects.filter(org=org, status='active'),
         'sections': Section.objects.filter(org=org, status='active'),
-        'branches': Branch.objects.filter(org=org, status='active'),
+        'branches': get_accessible_branches(auser, org),
         'courses': Course.objects.filter(org=org, status='active'),
+        'documents': mem.documents.all().order_by('-uploaded_at'),
         'org': org
     }
-    
+
     return render(request, "handle/editMember.html", dist)
 
-class AddClassification(View):
+
+@perm_required('can_edit_members')
+def deleteMemberDocument(request, id):
+    auser = request.user
+    org = current_org_for_user(auser)
+    doc = get_object_or_404(StaffDocument, id=id, org=org)
+    member_id = doc.member_id
+    doc.file.delete(save=False)
+    doc.delete()
+    messages.success(request, "Document deleted.")
+    return HttpResponseRedirect(reverse('handle:memberEdit', args=[member_id]))
+
+class AddClassification(LoginRequiredMixin, PermRequiredMixin, View):
+    required_perm = ('can_manage_branches', 'can_edit_members')
     template_name = "handle/addClassification.html"
     form_class = ClassificationForm
 
     def get(self, request, *args, **kwargs):
-        auser = request.user
-        print("User", auser)
-        if auser.user_type == "2":
-            org =  auser.schooladmin.org
-        else:
-            org = None
+        org = current_org_for_user(request.user)
         form = self.form_class(org=org)
-        clas = Classification.objects.filter(org = org).select_related('branch')
+        clas = Classification.objects.filter(org=org).prefetch_related('branches')
         context = {
             'form': form,
             'branch_form': BranchForm(org=org),
@@ -245,14 +427,9 @@ class AddClassification(View):
             'org': org,
         }
         return render(request, self.template_name, context)
-    
+
     def post(self, request, *args, **kwargs):
-        auser = request.user
-        print("User", auser)
-        if auser.user_type == "2":
-            org =  auser.schooladmin.org
-        else:
-            org = None
+        org = current_org_for_user(request.user)
 
         if 'add_branch' in request.POST:
             form = BranchForm(request.POST, org=org)
@@ -271,7 +448,12 @@ class AddClassification(View):
                 section = form.save(commit=False)
                 section.org = org
                 if not section.branch and section.classification:
-                    section.branch = section.classification.branch
+                    # Only auto-inherit when the classification maps to exactly
+                    # one branch — an org-wide or multi-branch classification
+                    # gives no single unambiguous branch to default to.
+                    classification_branches = list(section.classification.branches.all())
+                    if len(classification_branches) == 1:
+                        section.branch = classification_branches[0]
                 section.save()
                 messages.success(request, "Successfully added Section")
             else:
@@ -279,6 +461,10 @@ class AddClassification(View):
             return HttpResponseRedirect(reverse('handle:addClassification'))
 
         if 'add_course' in request.POST:
+            from school.features import has_feature
+            if not has_feature(org, 'courses'):
+                messages.error(request, "Course Management isn't enabled for this organization.")
+                return HttpResponseRedirect(reverse('handle:addClassification'))
             form = CourseForm(request.POST, org=org)
             if form.is_valid():
                 course = form.save(commit=False)
@@ -295,20 +481,20 @@ class AddClassification(View):
             classi = form.save(commit=False)
             classi.org = org
             classi.save()
+            form.save_m2m()
             messages.success(request, "Successfully added Classification")
             return HttpResponseRedirect(reverse('handle:addClassification'))
         else:
-            messages.error(request, "Fail adding Classification")
+            messages.error(request, "Failed adding Classification: " + form.errors.as_text())
             return HttpResponseRedirect(reverse('handle:addClassification'))
 
-class AddDevice(View):
+class AddDevice(LoginRequiredMixin, View):
     form_class = DeviceForm
     template_name = 'handle/addDevice.html'
 
     def get(self, request, *args, **kwargs):
         form = self.form_class()
-        auser = request.user
-        org =  auser.schooladmin.org
+        org = current_org_for_user(request.user)
         dist = {
             'form':form,
             'org':org
@@ -317,11 +503,7 @@ class AddDevice(View):
 
     def post(self, request, *args, **kwargs):
         auser = request.user
-        print("User", auser)
-        if auser.user_type == "2":
-            org =  auser.schooladmin.org
-        else:
-            org = None
+        org = current_org_for_user(auser)
         form = self.form_class(request.POST)
         if form.is_valid():
             de_f = form.save(commit=False)
@@ -334,23 +516,21 @@ class AddDevice(View):
             return HttpResponseRedirect(reverse('handle:addDevice'))
 
 
+@login_required
 def editDevice(request, id):
     template_name = 'handle/editDevice.html'
-    form = DeviceForm()
-    devi = Device.objects.get(id = id)
-    form.fields['name'].initial = devi.name
-    form.fields['ip_address'].initial = devi.ip_address
-    form.fields['port_no'].initial = devi.port_no
+    org = current_org_for_user(request.user)
+    devi = get_object_or_404(Device, id=id, org=org)
 
     if request.method == "POST":
-        devi.name = request.POST['name']
-        devi.ip_address = request.POST['ip_address']
-        devi.port_no = request.POST['port_no']
-        devi.save()
-        messages.success(request, "Successfully Edited Device")
-        return HttpResponseRedirect(reverse('handle:editDevice', args=[devi.id]))
-    auser = request.user
-    org =  auser.schooladmin.org
+        form = DeviceForm(request.POST, instance=devi)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Successfully Edited Device")
+            return HttpResponseRedirect(reverse('handle:editDevice', args=[devi.id]))
+        messages.error(request, "Please correct the highlighted device fields.")
+    else:
+        form = DeviceForm(instance=devi)
     dist = {
         'form':form,
         'devi':devi,
@@ -359,38 +539,62 @@ def editDevice(request, id):
 
     return render(request, template_name, dist)
 
+@login_required
 def deleteDevice(request, id):
-    devi = Device.objects.get(id = id)
+    if request.method != 'POST':
+        return HttpResponseRedirect(reverse('schooladmin:dashboard'))
+    org = current_org_for_user(request.user)
+    devi = get_object_or_404(Device, id=id, org=org)
     devi.delete()
-    # messages.success(request, "Successfully Deleted Device")
+    messages.success(request, "Successfully Deleted Device")
     return HttpResponseRedirect(reverse('schooladmin:dashboard'))
 
+@perm_required('can_edit_members')
 def deleteMember(request, id):
-    devi = member.objects.get(id = id)
+    from school.hierarchy import get_accessible_members
+    org = current_org_for_user(request.user)
+    devi = get_object_or_404(get_accessible_members(request.user, org), id=id)
     name = devi.name
+    action = request.POST.get('action') or request.GET.get('action') or 'dump'
 
-    try:
-        devi.delete()
-        messages.success(request, "Successfully Deleted Member " +name)
-    except:
-        messages.success(request, "There are attendance records of the user, the system will delete your user after deleting records which can take a while!")
-        
-    
+    if action == 'dump':
+        archive_member(devi, performed_by=request.user, reason=request.POST.get('reason', ''))
+        messages.success(request, "Moved " + name + " to Dumped Members. All their records were archived and can be restored on rejoin.")
+    else:
+        try:
+            devi.delete()
+            messages.success(request, "Successfully Deleted Member " +name)
+        except:
+            messages.success(request, "There are attendance records of the user, the system will delete your user after deleting records which can take a while!")
+
     return HttpResponseRedirect(reverse('handle:memberReport'))
 
+
+@perm_required('can_edit_members')
+def rejoinMember(request, id):
+    from school.hierarchy import get_accessible_members
+    org = current_org_for_user(request.user)
+    devi = get_object_or_404(get_accessible_members(request.user, org).filter(status='dumped'), id=id)
+
+    restore_member(devi, performed_by=request.user)
+    messages.success(request, devi.name + " has been rejoined — all archived records were restored.")
+
+    return HttpResponseRedirect(reverse('handle:memberReport'))
+
+@login_required(login_url='/login/')
+@perm_required(('can_manage_branches', 'can_edit_members'))
 def editClassification(request, id):
-    clas = Classification.objects.get(id=id)
-    auser = request.user
-    org = auser.schooladmin.org if auser.user_type == "2" else None
+    org = current_org_for_user(request.user)
+    clas = get_object_or_404(Classification, id=id, org=org)
 
     # Handle Bulk Transfer
     if request.method == 'POST' and 'transfer_members' in request.POST:
         target_class_id = request.POST.get('target_classification')
         selected_member_ids = request.POST.getlist('member_select')
-        
+
         if target_class_id and selected_member_ids:
-            target_class = Classification.objects.get(id=target_class_id)
-            member.objects.filter(id__in=selected_member_ids).update(classification=target_class)
+            target_class = get_object_or_404(Classification, id=target_class_id, org=org)
+            member.objects.filter(id__in=selected_member_ids, org=org).exclude(status='dumped').update(classification=target_class)
             messages.success(request, f"Successfully transferred {len(selected_member_ids)} members to {target_class.name}")
         return HttpResponseRedirect(reverse('handle:editClassification', args=[clas.id]))
 
@@ -413,35 +617,158 @@ def editClassification(request, id):
         'all_classifications': Classification.objects.filter(org=org).exclude(id=clas.id)
     }
     return render(request, "handle/editClassification.html", dist)
+
+
+@login_required(login_url='/login/')
+@perm_required(('can_manage_branches', 'can_edit_members'))
 def deleteClassification(request, id):
-    clas = Classification.objects.get(id= id)
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    org = current_org_for_user(request.user)
+    clas = get_object_or_404(Classification, id=id, org=org)
     clas.delete()
     messages.success(request, "Successfully deleted classification")
     return HttpResponseRedirect(reverse('handle:addClassification'))
 
 
-def sections_by_classification(request):
-    auser = request.user
-    if auser.user_type == "2":
-        org = auser.schooladmin.org
-    elif auser.user_type == "3":
-        org = auser.staff.org
-    else:
-        org = None
+@login_required(login_url='/login/')
+def default_shift_for_selection(request):
+    """Suggested check-in/out time for a new member given the branch/classification
+    picked so far in the Add Member wizard. See `resolve_default_shift` for priority."""
+    org = current_org_for_user(request.user)
+    branch = Branch.objects.filter(org=org, pk=request.GET.get('branch_id')).first() if request.GET.get('branch_id') else None
+    classification = Classification.objects.filter(org=org, pk=request.GET.get('classification_id')).first() if request.GET.get('classification_id') else None
+    start, end = resolve_default_shift(org, branch=branch, classification=classification)
+    return JsonResponse({'shift_start_time': start.strftime('%H:%M'), 'shift_end_time': end.strftime('%H:%M')})
 
+
+@login_required(login_url='/login/')
+def classifications_by_branch(request):
+    """Branch -> Classification cascade: classifications available to the
+    given branch (or every org-wide + branch-scoped one when no branch is
+    passed), scoped to what the requesting user is allowed to see."""
+    from school.hierarchy import get_accessible_classifications
+
+    org = current_org_for_user(request.user)
+    branch_id = request.GET.get('branch_id')
+    branch = Branch.objects.filter(org=org, pk=branch_id).first() if branch_id else None
+    classifications = get_accessible_classifications(request.user, org, branch=branch)
+
+    data = [{'id': item.id, 'name': item.name} for item in classifications.order_by('name')]
+    return JsonResponse({'classifications': data})
+
+
+@login_required(login_url='/login/')
+def sections_by_classification(request):
+    from school.hierarchy import get_accessible_sections
+
+    org = current_org_for_user(request.user)
     classification_id = request.GET.get('classification_id')
     branch_id = request.GET.get('branch_id')
-    sections = Section.objects.filter(org=org, status='active')
-    if classification_id:
-        sections = sections.filter(classification_id=classification_id)
-    if branch_id:
-        sections = sections.filter(Q(branch_id=branch_id) | Q(branch__isnull=True))
+    classification = Classification.objects.filter(org=org, pk=classification_id).first() if classification_id else None
+    branch = Branch.objects.filter(org=org, pk=branch_id).first() if branch_id else None
+    sections = get_accessible_sections(request.user, org, classification=classification, branch=branch)
 
     data = [{'id': item.id, 'name': item.name} for item in sections.order_by('name')]
     return JsonResponse({'sections': data})
 
 
-class OperationsCenter(View):
+class BranchHierarchyTree(LoginRequiredMixin, PermRequiredMixin, View):
+    """Organization -> Branch -> Classification -> Section -> Member, as an
+    expand-on-demand tree. Each level is fetched lazily via `hierarchy_tree_children`
+    so opening the page never loads the whole member list at once."""
+    required_perm = ('can_manage_branches', 'can_view_branches', 'can_view_members')
+    template_name = 'handle/branch_tree.html'
+
+    def get(self, request, *args, **kwargs):
+        org = current_org_for_user(request.user)
+        return render(request, self.template_name, {'org': org})
+
+
+@login_required(login_url='/login/')
+def hierarchy_tree_children(request):
+    """Single reusable lazy-load endpoint for BranchHierarchyTree — avoids a
+    bespoke AJAX view per level. `level` is the kind of node being expanded
+    (its *children* are returned); `parent_id` is that node's id; `branch_id`
+    carries the ancestor branch context down through classification/section
+    (a classification/section can be shared by many branches, so the branch
+    that was actually expanded to get here has to travel with the request)."""
+    from school.hierarchy import get_accessible_branches, get_accessible_classifications, get_accessible_sections, get_accessible_members
+
+    org = current_org_for_user(request.user)
+    level = request.GET.get('level')
+    parent_id = request.GET.get('parent_id')
+    branch_id = request.GET.get('branch_id')
+    branch = Branch.objects.filter(org=org, pk=branch_id).first() if branch_id else None
+
+    if level == 'branch':
+        nodes = []
+        for b in get_accessible_branches(request.user, org).order_by('name'):
+            nodes.append({
+                'id': b.id, 'type': 'classification', 'name': b.name, 'subtitle': b.code,
+                'status': b.status,
+                'counts': {
+                    'classifications': get_accessible_classifications(request.user, org, branch=b).count(),
+                    'sections': Section.objects.filter(org=org, branch=b, status='active').count(),
+                    'members': member.objects.filter(org=org, branch=b).exclude(status='dumped').count(),
+                },
+                'branch_id': b.id,
+            })
+        return JsonResponse({'nodes': nodes})
+
+    if level == 'classification' and branch:
+        nodes = []
+        for c in get_accessible_classifications(request.user, org, branch=branch).order_by('name'):
+            nodes.append({
+                'id': c.id, 'type': 'section', 'name': c.name,
+                'subtitle': 'All branches' if not c.branches.exists() else None,
+                'status': c.status,
+                'counts': {
+                    'sections': Section.objects.filter(org=org, classification=c, status='active').filter(
+                        Q(branch=branch) | Q(branch__isnull=True)
+                    ).count(),
+                    'members': member.objects.filter(org=org, classification=c, branch=branch).exclude(status='dumped').count(),
+                },
+                'branch_id': branch.id,
+            })
+        return JsonResponse({'nodes': nodes})
+
+    if level == 'section' and parent_id and branch:
+        classification = Classification.objects.filter(org=org, pk=parent_id).first()
+        if not classification:
+            return JsonResponse({'nodes': []})
+        sections = get_accessible_sections(request.user, org, classification=classification, branch=branch)
+        nodes = []
+        for s in sections.order_by('name'):
+            nodes.append({
+                'id': s.id, 'type': 'member', 'name': s.name, 'subtitle': s.code,
+                'status': s.status,
+                'counts': {
+                    'members': member.objects.filter(org=org, section=s, branch=branch).exclude(status='dumped').count(),
+                },
+                'branch_id': branch.id,
+            })
+        return JsonResponse({'nodes': nodes})
+
+    if level == 'member' and parent_id and branch:
+        members = get_accessible_members(request.user, org, branch=branch).filter(
+            section_id=parent_id,
+        ).exclude(status='dumped').order_by('name')
+        total = members.count()
+        page = members[:50]
+        nodes = [{
+            'id': m.id, 'type': None, 'name': m.name,
+            'subtitle': m.designation or m.get_member_type_display(),
+            'status': m.status,
+            'photo_url': m.photo.url if m.photo else None,
+            'detail_url': reverse('handle:memberEdit', args=[m.id]),
+        } for m in page]
+        return JsonResponse({'nodes': nodes, 'total': total, 'truncated': total > 50})
+
+    return JsonResponse({'nodes': []})
+
+
+class OperationsCenter(LoginRequiredMixin, View):
     template_name = "handle/operations.html"
 
     def get(self, request, *args, **kwargs):
@@ -461,6 +788,42 @@ class OperationsCenter(View):
             return HttpResponseRedirect(reverse('handle:operations'))
 
         action = request.POST.get('action')
+
+        if action == 'send_message':
+            subject = request.POST.get('msg_subject', '').strip()
+            body = request.POST.get('msg_body', '').strip()
+            recipient_filter = request.POST.get('msg_recipient', 'all')
+            send_email = request.POST.get('send_email') == 'on'
+            if not subject or not body:
+                messages.error(request, "Subject and message body are required.")
+            elif recipient_filter == 'specific' and not request.POST.get('msg_member_id'):
+                messages.error(request, "Choose a member to send this message to.")
+            else:
+                qs = member.objects.filter(org=org, email__isnull=False).exclude(status='dumped').exclude(email='')
+                if recipient_filter == 'staff':
+                    qs = qs.filter(make_staff=True)
+                elif recipient_filter == 'student':
+                    qs = qs.filter(member_type='student')
+                elif recipient_filter == 'employee':
+                    qs = qs.filter(member_type='employee')
+                elif recipient_filter == 'specific':
+                    qs = qs.filter(pk=request.POST.get('msg_member_id'))
+                if send_email:
+                    email_list = list(qs.values_list('email', flat=True))
+                    if email_list:
+                        from school.email_utils import send_broadcast_message_email
+                        send_broadcast_message_email(email_list, subject, body, org.name, org=org)
+                        messages.success(
+                            request,
+                            f"Message queued for {len(email_list)} member(s) — check Super Admin's Email Logs "
+                            "for delivery status, since sending happens in the background.",
+                        )
+                    else:
+                        messages.warning(request, "No recipients in this group have an email address on file.")
+                else:
+                    messages.success(request, f"Message noted for {qs.count()} member(s) (email delivery was not selected).")
+            return HttpResponseRedirect(reverse('handle:operations') + '?tab=messages')
+
         form_map = {
             'stock_category': StockCategoryForm,
             'stock_item': StockItemForm,
@@ -471,6 +834,12 @@ class OperationsCenter(View):
         form_class = form_map.get(action)
         if not form_class:
             messages.error(request, "Invalid operations action.")
+            return HttpResponseRedirect(reverse('handle:operations'))
+
+        from school.features import has_feature
+        required_feature = 'stock' if action.startswith('stock_') else 'finance'
+        if not has_feature(org, required_feature):
+            messages.error(request, f"The '{required_feature}' module isn't enabled for this organization.")
             return HttpResponseRedirect(reverse('handle:operations'))
 
         if action == 'financial_transaction':
@@ -503,7 +872,7 @@ class OperationsCenter(View):
         stock_items = StockItem.objects.filter(org=org).select_related('branch', 'category')
         movements = StockMovement.objects.filter(org=org).select_related('branch', 'item', 'created_by')
         transactions = FinancialTransaction.objects.filter(org=org).select_related('branch', 'category', 'created_by')
-        birthdays = member.objects.filter(org=org, date_of_birth__isnull=False).select_related('branch', 'classification', 'section')
+        birthdays = member.objects.filter(org=org, date_of_birth__isnull=False).exclude(status='dumped').select_related('branch', 'classification', 'section')
 
         if branch_id:
             stock_items = stock_items.filter(branch_id=branch_id)
@@ -553,6 +922,10 @@ class OperationsCenter(View):
             'net_total': income_total - expense_total,
             'todays_birthdays': todays_birthdays,
             'upcoming_birthdays': upcoming_birthdays[:20],
+            'total_members_count': member.objects.filter(org=org).exclude(status='dumped').count(),
+            'members_with_email': member.objects.filter(org=org, email__isnull=False).exclude(status='dumped').exclude(email='').count(),
+            'staff_user_count': member.objects.filter(org=org, make_staff=True).exclude(status='dumped').count(),
+            'messageable_members': member.objects.filter(org=org, email__isnull=False).exclude(status='dumped').exclude(email='').order_by('name'),
             'filters': {
                 'branch': branch_id,
                 'category': category_id,
@@ -605,7 +978,7 @@ class OperationsCenter(View):
         response['Content-Disposition'] = 'attachment; filename="birthday-report.csv"'
         writer = csv.writer(response)
         writer.writerow(['Name', 'Birthday', 'Branch', 'Classification', 'Section', 'Phone', 'Email'])
-        for item in member.objects.filter(org=org, date_of_birth__isnull=False).select_related('branch', 'classification', 'section'):
+        for item in member.objects.filter(org=org, date_of_birth__isnull=False).exclude(status='dumped').select_related('branch', 'classification', 'section'):
             writer.writerow([
                 item.name, item.date_of_birth, item.branch or '',
                 item.classification or '', item.section or '', item.phone or '', item.email or ''
@@ -614,86 +987,117 @@ class OperationsCenter(View):
 
 
 
-class Search(View):
+class Search(LoginRequiredMixin, View):
     template_name = 'handle/search_result.html'
     model = member
-    
+
     def get(self, request, *args, **kwargs):
-        auser = request.user
-        if auser.user_type == "2":
-            org =  auser.schooladmin.org
-        elif auser.user_type == "3":
-            org =  auser.staff.org
-        else:
-            org = None
-        name = request.GET['member']
-        memb = member.objects.filter(Q(name__icontains=name) | Q(card=name)).filter(org=org)
+        org = current_org_for_user(request.user)
+        name = request.GET.get('member', '')
+        memb = member.objects.filter(Q(name__icontains=name) | Q(card=name)).filter(org=org).exclude(status='dumped')
         dist = {
             'object_list':memb,
             'org':org
         }
         return render(request, self.template_name, dist)
 
-class MemberReport(View):
+
+@login_required
+def member_search_suggestions(request):
+    """Fast organization-scoped member results for the global navbar search."""
+    from school.features import has_perm
+    org = current_org_for_user(request.user)
+    query = request.GET.get('q', '').strip()
+    if not org or len(query) < 2:
+        return JsonResponse({'members': []})
+    qs = member.objects.filter(org=org).exclude(status='dumped').filter(
+        Q(name__icontains=query) | Q(card__icontains=query)
+        | Q(roll_number__icontains=query) | Q(email__icontains=query)
+        | Q(phone__icontains=query)
+    ).select_related('classification', 'section', 'branch').order_by('name')[:8]
+    can_edit = request.user.user_type == '2' or has_perm(request.user, 'can_edit_members')
+    return JsonResponse({'members': [{
+        'id': item.id,
+        'name': item.name,
+        'meta': ' · '.join(filter(None, [
+            item.get_member_type_display(), item.card,
+            item.classification.name if item.classification else None,
+            item.section.name if item.section else None,
+        ])),
+        'profile_url': reverse('schooladmin:member_profile', args=[item.id]),
+        'edit_url': reverse('handle:memberEdit', args=[item.id]) if can_edit else '',
+    } for item in qs]})
+
+class MemberReport(PermRequiredMixin, View):
+    required_perm = 'can_view_members'
     template_name = 'handle/member_Report.html'
 
     def get(self, request, *args, **kwargs):
+        from django.db.models import Prefetch
+        from school.hierarchy import get_accessible_members, get_accessible_branches
         auser = request.user
-        if auser.user_type == "2":
-            org =  auser.schooladmin.org
-        else:
-            org = None
-  
-        memb = member.objects.filter(org=org).order_by('-id')
+        org = current_org_for_user(auser)
+
+        memb = get_accessible_members(auser, org).exclude(status='dumped').select_related(
+            'branch', 'classification', 'section',
+        ).order_by('-id')
+        dumped_members = get_accessible_members(auser, org).filter(status='dumped').order_by('-updated_date').prefetch_related(
+            Prefetch('change_history', queryset=MemberHistory.objects.select_related('changed_by')),
+        )
 
         dist = {
             'mem':memb,
             'clas':Classification.objects.filter(org=org, status='active'),
-            'branches': Branch.objects.filter(org=org, status='active'),
+            'branches': get_accessible_branches(auser, org),
             'sections': Section.objects.filter(org=org, status='active'),
             'thisone':'All',
             'selected_branch': 'All',
             'selected_section': 'All',
+            'dumped_members': dumped_members,
             'org':org
         }
         return render(request, self.template_name, dist)
 
     def post(self, request, *agrs, **kwargs):
+        from school.hierarchy import get_accessible_members, get_accessible_branches
         clas = request.POST.get('classification', 'All')
         branch = request.POST.get('branch', 'All')
         section = request.POST.get('section', 'All')
-        print('class', clas)
         auser = request.user
-        if auser.user_type == "2":
-            org =  auser.schooladmin.org
-        elif auser.user_type == "3":
-            org =  auser.staff.org
-      
+        org = current_org_for_user(auser)
+
+        from django.db.models import Prefetch
         cl=Classification.objects.filter(org=org, status='active')
-        mem = member.objects.filter(org=org)
+        mem = get_accessible_members(auser, org).exclude(status='dumped').select_related(
+            'branch', 'classification', 'section',
+        )
         if branch != 'All':
             mem = mem.filter(branch_id=branch)
         if section != 'All':
             mem = mem.filter(section_id=section)
         if clas == 'All':
-            th = 'All' 
+            th = 'All'
         else:
             mem = mem.filter(classification=clas)
-            th = Classification.objects.get(id = clas).name
+            th = Classification.objects.filter(id=clas, org=org).values_list('name', flat=True).first() or 'Unknown'
         dist = {
             'mem':mem,
             'clas':cl,
-            'branches': Branch.objects.filter(org=org, status='active'),
+            'branches': get_accessible_branches(auser, org),
             'sections': Section.objects.filter(org=org, status='active'),
             'thisone': th,
             'selected_branch': branch,
             'selected_section': section,
+            'dumped_members': get_accessible_members(auser, org).filter(status='dumped').order_by('-updated_date').prefetch_related(
+                Prefetch('change_history', queryset=MemberHistory.objects.select_related('changed_by')),
+            ),
             'org':org
         }
         return render(request, self.template_name, dist)
     
 from django.contrib.auth import update_session_auth_hash
 
+@login_required(login_url='/')
 def changePassword(request):
     if request.method == 'POST':
         form = FormChangePassword(request.user, request.POST)
@@ -709,3 +1113,302 @@ def changePassword(request):
     return render(request, 'handle/changePassword.html', {
         'form': form,
     })
+
+
+# ─── Bulk Member Import (Excel / CSV) ────────────────────────────────────────────
+
+MEMBER_IMPORT_HEADERS = [
+    'name', 'member_type', 'gender', 'phone', 'email', 'address',
+    'card', 'roll_number', 'designation', 'admission_date', 'salary_type', 'salary_amount',
+    'branch', 'classification', 'section', 'dashboard_access',
+]
+
+
+MEMBER_IMPORT_DISPLAY_HEADERS = [
+    'Name', 'Member Type', 'Gender', 'Phone', 'Email', 'Address',
+    'Card / RFID', 'Roll Number', 'Designation', 'Joining Date', 'Salary Type', 'Salary Amount',
+    'Branch', 'Classification', 'Section', 'Dashboard Access',
+]
+
+MEMBER_TYPE_OPTIONS = 'student / employee / staff / intern / trainee / teacher / worker / member'
+SALARY_TYPE_OPTIONS = 'monthly / daily / hourly / weekly'
+
+# Column headers are matched after stripping everything but letters/digits
+# (so "Card / RFID", "card-rfid", "Card_RFID" etc. all normalize the same
+# way) and then resolved through this alias table onto the canonical field
+# name the importer actually understands. This is what makes the downloaded
+# sample template (which shows the friendly display headers, not the raw
+# field names) — and hand-edited variants of it — parse correctly instead of
+# silently dropping columns like "Card / RFID" into a key nothing matches.
+MEMBER_IMPORT_HEADER_ALIASES = {
+    'card_rfid': 'card', 'rfid': 'card', 'card_number': 'card', 'card_no': 'card', 'card_id': 'card',
+    'employee_id': 'roll_number', 'emp_id': 'roll_number', 'staff_id': 'roll_number',
+    'joining_date': 'admission_date', 'join_date': 'admission_date', 'date_of_joining': 'admission_date',
+    'member_type': 'member_type', 'type': 'member_type',
+    'dashboard_access': 'dashboard_access', 'portal_access': 'dashboard_access', 'login_access': 'dashboard_access',
+}
+
+
+def _normalize_import_header(raw):
+    key = re.sub(r'[^a-z0-9]+', '_', str(raw or '').strip().lower()).strip('_')
+    return MEMBER_IMPORT_HEADER_ALIASES.get(key, key)
+
+
+def _parse_import_date(val):
+    if val in (None, ''):
+        return None
+    if isinstance(val, dt.datetime):
+        return val.date()
+    if isinstance(val, dt.date):
+        return val
+    text = str(val).strip()
+    for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y'):
+        try:
+            return dt.datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _parse_import_bool(val):
+    return str(val or '').strip().lower() in ('yes', 'y', 'true', '1')
+
+
+class MemberImportDuplicateRow(Exception):
+    """Raised for a row that collides with an existing member (card/email) —
+    reported to the user as a distinct 'duplicate' bucket, not a generic error."""
+
+
+def member_import_sample(request):
+    """Download a styled Excel template with column titles, hints row, and one example row."""
+    import openpyxl
+    from openpyxl import Workbook
+    from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Members'
+
+    # Row 1: column titles (display names, Title Case) — these are what the parser reads
+    header_row = ws.append(MEMBER_IMPORT_HEADERS)  # parser needs lowercase/underscore names
+    header_fill = PatternFill('solid', fgColor='1E40AF')
+    header_font = Font(bold=True, color='FFFFFF', size=11)
+    for col_idx in range(1, len(MEMBER_IMPORT_HEADERS) + 1):
+        cell = ws.cell(row=1, column=col_idx)
+        # show friendly display name to user but keep raw header value for parser
+        cell.value = MEMBER_IMPORT_DISPLAY_HEADERS[col_idx - 1]
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+
+    # Row 2: hint / allowed-values row
+    hints = [
+        'Required', MEMBER_TYPE_OPTIONS, 'Male / Female',
+        'Numbers only', 'Email address', 'City or full address',
+        'Card / RFID ID (unique in org)', 'Roll / registration no.', 'Job title / role', 'YYYY-MM-DD (optional)',
+        SALARY_TYPE_OPTIONS, 'Number (e.g. 30000)',
+        'Branch name (optional)', 'Class / Dept name', 'Section (optional)',
+        'Yes / No — creates login + emails credentials (needs Email + Phone)',
+    ]
+    ws.append(hints)
+    hint_fill = PatternFill('solid', fgColor='DBEAFE')
+    hint_font = Font(italic=True, color='1E3A8A', size=9)
+    for col_idx in range(1, len(hints) + 1):
+        cell = ws.cell(row=2, column=col_idx)
+        cell.fill = hint_fill
+        cell.font = hint_font
+        cell.alignment = Alignment(horizontal='center', wrap_text=True)
+
+    # Row 3: example data
+    ws.append([
+        'John Doe', 'staff', 'Male', '9800000000', 'john@example.com', 'Kathmandu',
+        'CARD-001', 'R-001', 'Cashier', '2024-01-15', 'monthly', '30000', '', '', '', 'No',
+    ])
+    example_font = Font(color='374151', size=10)
+    for col_idx in range(1, len(MEMBER_IMPORT_HEADERS) + 1):
+        cell = ws.cell(row=3, column=col_idx)
+        cell.font = example_font
+
+    # Column widths
+    col_widths = [18, 24, 12, 16, 24, 20, 16, 14, 16, 16, 16, 16, 16, 20, 14, 16]
+    for i, width in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+    ws.row_dimensions[1].height = 28
+    ws.row_dimensions[2].height = 40
+
+    ws.freeze_panes = 'A3'
+
+    resp = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = 'attachment; filename="member_import_sample.xlsx"'
+    wb.save(resp)
+    return resp
+
+
+class MemberImport(View):
+    template_name = 'handle/member_import.html'
+
+    def _org(self, request):
+        if request.user.user_type == '2' and hasattr(request.user, 'schooladmin'):
+            return request.user.schooladmin.org
+        return None
+
+    def get(self, request, *args, **kwargs):
+        org = self._org(request)
+        total_member = member.objects.filter(org=org).exclude(status='dumped').count() if org else 0
+        return render(request, self.template_name, {
+            'org': org, 'headers': MEMBER_IMPORT_HEADERS, 'total_member': total_member,
+        })
+
+    def post(self, request, *args, **kwargs):
+        org = self._org(request)
+        if org is None:
+            messages.error(request, "Only organization admins can import members.")
+            return redirect('handle:addMember')
+
+        f = request.FILES.get('file')
+        if not f:
+            messages.error(request, "Please choose a file to upload.")
+            return redirect('handle:member_import')
+
+        # Parse rows into list of dicts keyed by canonical header (see
+        # _normalize_import_header — resolves display-header variants like
+        # "Card / RFID" back onto the field name the importer understands).
+        rows = []
+        fname = f.name.lower()
+        try:
+            if fname.endswith('.csv'):
+                import io
+                text = io.TextIOWrapper(f.file, encoding='utf-8', errors='ignore')
+                reader = csv.DictReader(text)
+                for r in reader:
+                    rows.append({_normalize_import_header(k): v for k, v in r.items()})
+            else:
+                import openpyxl
+                wb = openpyxl.load_workbook(f, data_only=True, read_only=True)
+                ws = wb.active
+                it = ws.iter_rows(values_only=True)
+                headers = [_normalize_import_header(h) if h is not None else '' for h in next(it)]
+                # auto-skip the hints row (first cell == "Required") from the sample template
+                first_data = next(it, None)
+                if first_data and str(first_data[0] or '').strip().lower() == 'required':
+                    first_data = next(it, None)  # consume hint row, advance to real data
+                if first_data is not None:
+                    rows.append({headers[i]: first_data[i] for i in range(min(len(headers), len(first_data)))})
+                for raw in it:
+                    if raw is None:
+                        continue
+                    row = {headers[i]: raw[i] for i in range(min(len(headers), len(raw)))}
+                    rows.append(row)
+        except Exception as e:
+            messages.error(request, f"Could not read the file: {e}")
+            return redirect('handle:member_import')
+
+        valid_types = {c[0] for c in member.MEMBER_TYPE_CHOICES}
+        valid_salary = {c[0] for c in member.SALARY_CHOICES}
+        created, duplicates, invalid, skipped_for_limit, accounts_created = 0, [], [], 0, 0
+        current_count = member.objects.filter(org=org).exclude(status='dumped').count()
+
+        def lookup(model, name_val):
+            if not name_val:
+                return None
+            return model.objects.filter(org=org, name__iexact=str(name_val).strip()).first()
+
+        for i, row in enumerate(rows, start=2):
+            name = (str(row.get('name') or '')).strip()
+            if not name:
+                continue  # skip blank lines
+            if current_count + created >= org.member_limit:
+                skipped_for_limit += 1
+                continue
+            try:
+                mtype = (str(row.get('member_type') or 'member')).strip().lower()
+                if mtype not in valid_types:
+                    mtype = 'member'
+                gender = (str(row.get('gender') or 'Male')).strip().title()
+                if gender not in ('Male', 'Female'):
+                    gender = 'Male'
+                stype = (str(row.get('salary_type') or 'monthly')).strip().lower()
+                if stype not in valid_salary:
+                    stype = 'monthly'
+
+                salary_amount = row.get('salary_amount')
+                try:
+                    salary_amount = float(salary_amount) if salary_amount not in (None, '') else 0
+                except (TypeError, ValueError):
+                    salary_amount = 0
+
+                raw_phone = row.get('phone')
+                phone = None
+                if raw_phone not in (None, ''):
+                    digits = ''.join(ch for ch in str(raw_phone) if ch.isdigit())
+                    phone = int(digits) if digits else None
+
+                device_id = int(member.objects.filter(org=org).exclude(status='dumped').count()) + 1 + created
+                while member.objects.filter(org=org, device_id=device_id).exclude(status='dumped').exists():
+                    device_id += 1
+
+                card = str(row.get('card') or '').strip() or None
+                if card and member.objects.filter(org=org, card=card).exclude(status='dumped').exists():
+                    raise MemberImportDuplicateRow(f"Card / RFID '{card}' is already assigned in this organization")
+
+                email_val = str(row.get('email')).strip() if row.get('email') else None
+                if email_val and member.objects.filter(email=email_val).exists():
+                    raise MemberImportDuplicateRow(f"Email '{email_val}' is already in use")
+
+                resolved_branch = lookup(Branch, row.get('branch'))
+                resolved_classification = lookup(Classification, row.get('classification'))
+                shift_start, shift_end = resolve_default_shift(org, branch=resolved_branch, classification=resolved_classification)
+
+                with transaction.atomic():
+                    new_member = member.objects.create(
+                        org=org, name=name, member_type=mtype, gender=gender,
+                        status='active', device_id=device_id,
+                        card=card,
+                        phone=phone,
+                        email=email_val,
+                        address=(str(row.get('address')).strip() if row.get('address') else ''),
+                        roll_number=(str(row.get('roll_number')).strip() if row.get('roll_number') else None),
+                        designation=(str(row.get('designation')).strip() if row.get('designation') else None),
+                        admission_date=_parse_import_date(row.get('admission_date')),
+                        salary_type=stype, salary_amount=salary_amount,
+                        branch=resolved_branch,
+                        classification=resolved_classification,
+                        section=lookup(Section, row.get('section')),
+                        shift_start_time=shift_start,
+                        shift_end_time=shift_end,
+                    )
+                    created += 1
+
+                    staff_result = None
+                    if _parse_import_bool(row.get('dashboard_access')):
+                        staff_result = provision_staff_account(new_member, org)
+
+                if staff_result is not None:
+                    if staff_result.status == 'created':
+                        from school.email_utils import send_welcome_email
+                        send_welcome_email(new_member.email, new_member.name, staff_result.password, org.name, org=org)
+                        accounts_created += 1
+                    else:
+                        invalid.append(f"Row {i} ({name}): imported, but dashboard access wasn't granted — {staff_result.message}")
+            except MemberImportDuplicateRow as e:
+                duplicates.append(f"Row {i} ({name}): {e}")
+            except IntegrityError as e:
+                duplicates.append(f"Row {i} ({name}): {e}")
+            except Exception as e:
+                invalid.append(f"Row {i} ({name}): {e}")
+
+        if created:
+            msg = f"Imported {created} member{'s' if created != 1 else ''} successfully."
+            if accounts_created:
+                msg += f" {accounts_created} dashboard account{'s' if accounts_created != 1 else ''} created and emailed."
+            messages.success(request, msg)
+        if duplicates:
+            messages.warning(request, f"{len(duplicates)} row(s) skipped as duplicates: " + " | ".join(duplicates[:8]))
+        if invalid:
+            messages.error(request, f"{len(invalid)} row(s) invalid: " + " | ".join(invalid[:8]))
+        if skipped_for_limit:
+            messages.error(request, f"{skipped_for_limit} row(s) were not imported — organization member limit ({org.member_limit}) reached.")
+        if not created and not duplicates and not invalid and not skipped_for_limit:
+            messages.error(request, "No valid rows found. Make sure the 'name' column is filled.")
+        return redirect('handle:member_import')

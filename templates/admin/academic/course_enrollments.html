@@ -1,0 +1,89 @@
+{% extends 'dashboard.html' %}
+{% block title %}Course Enrollments — {{ course.name }} | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="font-weight-bolder mb-1">Student Course Enrollments</h4>
+      <p class="text-sm text-muted mb-0">{{ course.name }}{% if course.branch %} → {{ course.branch.name }}{% endif %}</p>
+    </div>
+    <a href="{% url 'schooladmin:course_list' %}" class="btn btn-outline-secondary btn-sm">Back to Courses</a>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <div class="alert alert-info border-0 text-sm">
+    These dated records preserve a student's academic history. Active records also synchronize the existing current course, classification, and section fields.
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white py-3"><h6 class="mb-0">{% if form.instance.pk %}Edit Enrollment{% else %}Add Enrollment{% endif %}</h6></div>
+    <div class="card-body">
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+      <form method="post" class="row g-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{% if form.instance.pk %}edit{% else %}add{% endif %}">
+        {% if form.instance.pk %}<input type="hidden" name="item_id" value="{{ form.instance.pk }}">{% endif %}
+        {% for field in form %}
+        <div class="{% if field.name == 'notes' %}col-12{% else %}col-md-3{% endif %}">
+          <label class="form-label text-xs font-weight-bold">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}<div class="text-danger text-xs mt-1">{{ error }}</div>{% endfor %}
+        </div>
+        {% endfor %}
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-save me-1"></i>Save Enrollment</button>
+          {% if form.instance.pk %}<a href="{% url 'schooladmin:course_enrollments' course.pk %}" class="btn btn-outline-secondary btn-sm">Cancel Edit</a>{% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body border-bottom">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3"><label class="form-label text-xs">Search</label><input class="form-control" name="search" value="{{ search }}" placeholder="Student, card or roll number"></div>
+        <div class="col-md-2"><label class="form-label text-xs">Academic Year</label><select class="form-select" name="academic_year"><option value="">All</option>{% for y in academic_years %}<option value="{{ y.pk }}" {% if selected_academic_year == y.pk|stringformat:'s' %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label text-xs">Classification</label><select class="form-select" name="classification"><option value="">All</option>{% for c in classifications %}<option value="{{ c.pk }}" {% if selected_classification == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label text-xs">Section</label><select class="form-select" name="section"><option value="">All</option>{% for s in sections %}<option value="{{ s.pk }}" {% if selected_section == s.pk|stringformat:'s' %}selected{% endif %}>{{ s.classification.name }} / {{ s.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label text-xs">Status</label><select class="form-select" name="status"><option value="">All</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-1"><button class="btn btn-outline-primary btn-sm w-100">Filter</button></div>
+      </form>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th>Student</th><th>Academic Scope</th><th>Dates</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+        <tbody>
+          {% for enrollment in enrollments %}
+          <tr>
+            <td><div class="text-sm font-weight-bold">{{ enrollment.student.name }}</div><div class="text-xs text-muted">{{ enrollment.student.roll_number|default:enrollment.student.card|default:"-" }}</div></td>
+            <td class="text-sm">{{ course.name }} → {{ enrollment.classification.name }}{% if enrollment.section %} → {{ enrollment.section.name }}{% endif %}<div class="text-xs text-muted">{{ enrollment.academic_year|default:"No academic year" }}</div></td>
+            <td class="text-sm">{{ enrollment.start_date }} → {{ enrollment.end_date|default:"Ongoing" }}</td>
+            <td><span class="badge {% if enrollment.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">{{ enrollment.get_status_display }}</span></td>
+            <td class="text-end">
+              <a href="?edit={{ enrollment.pk }}" class="btn btn-xs btn-outline-primary"><i class="fas fa-pen"></i></a>
+              {% if enrollment.status == 'active' %}
+              <form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="close"><input type="hidden" name="item_id" value="{{ enrollment.pk }}"><button class="btn btn-xs btn-outline-warning" title="Close enrollment"><i class="fas fa-circle-stop"></i></button></form>
+              {% endif %}
+              <form method="post" class="d-inline" onsubmit="return confirm('Delete this unused enrollment?')">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="item_id" value="{{ enrollment.pk }}"><button class="btn btn-xs btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No enrollments match these filters.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="card-footer bg-white d-flex justify-content-between">
+      <span class="text-xs">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      <div>{% if page_obj.has_previous %}<a class="btn btn-xs btn-outline-secondary" href="?page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}{% if page_obj.has_next %}<a class="btn btn-xs btn-outline-secondary" href="?page={{ page_obj.next_page_number }}">Next</a>{% endif %}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

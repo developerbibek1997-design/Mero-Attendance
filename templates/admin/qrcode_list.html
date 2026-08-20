@@ -38,10 +38,13 @@
             <a href="{% url 'schooladmin:qrcode_edit' code.id %}" class="btn btn-outline-primary btn-sm shadow-sm" title="Edit">
               <i class="bi bi-pencil-square"></i> Edit
             </a>
-            <a href="{% url 'schooladmin:qrcode_delete' code.id %}" class="btn btn-outline-danger btn-sm shadow-sm" title="Delete"
-            onclick="return confirm('Are you sure you want to delete this QR Code?');">
-              <i class="bi bi-trash"></i> Delete
-            </a>
+            <form method="post" action="{% url 'schooladmin:qrcode_delete' code.id %}" class="d-inline"
+                  onsubmit="return confirm('Are you sure you want to delete this QR Code?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-danger btn-sm shadow-sm" title="Delete">
+                <i class="bi bi-trash"></i> Delete
+              </button>
+            </form>
           </div>
         </div>
       </div>

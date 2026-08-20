@@ -1,0 +1,132 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Movement Report — {{ memb.name }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  .stat-tile { border:none; border-radius:16px; transition:.2s; }
+  .stat-tile:hover { transform:translateY(-4px); box-shadow:0 14px 30px rgba(0,0,0,.1); }
+  .stat-ic { width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem; }
+  .back-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:10px;
+    background:#f1f5f9;color:#334155;font-weight:600;font-size:.85rem;text-decoration:none;border:1px solid #e2e8f0;transition:.18s;}
+  .back-btn:hover{background:#e2e8f0;color:#0f172a;transform:translateX(-2px);}
+</style>
+
+<div class="container-fluid py-4">
+  <a href="{% url 'schooladmin:live_tracking' %}" class="back-btn mb-3"><i class="fas fa-arrow-left"></i> Back to Live Tracking</a>
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-route text-primary me-2"></i>Movement Report</h4>
+      <p class="text-xs text-muted mb-0">Full travel details for a member on a chosen date.</p>
+    </div>
+    <form method="get" class="ms-auto d-flex gap-2 mb-0">
+      <input type="date" name="date" value="{{ date }}" class="form-control form-control-sm" style="max-width:180px;">
+      <button class="btn btn-primary btn-sm mb-0">View</button>
+    </form>
+  </div>
+
+  {% if date and point_count %}
+  <div class="alert {% if attendance_covered %}alert-success{% else %}alert-warning{% endif %} border-0 shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div><strong>{% if attendance_covered %}Attendance already covered{% else %}Tracked outside work is not yet attendance{% endif %}</strong><div class="text-xs">{{ point_count }} verified GPS points on {{ date }}. Approval uses the first and last real ping times and keeps the tracking audit.</div></div>
+    {% if not attendance_covered %}<form method="post" action="{% url 'schooladmin:live_tracking_mark_attendance' memb.id %}" onsubmit="return confirm('Approve this verified GPS trail as outside-work attendance?');">{% csrf_token %}<input type="hidden" name="date" value="{{ date }}"><button class="btn btn-warning btn-sm mb-0"><i class="fas fa-user-check me-1"></i>Mark Outside-Work Attendance</button></form>{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="row g-3 mb-2">
+    <!-- User details -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius:16px;">
+        <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 font-weight-bolder"><i class="fas fa-user text-info me-2"></i>User Details</h6></div>
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="stat-ic bg-gradient-primary text-white" style="width:56px;height:56px;font-size:1.5rem;">{{ memb.name|slice:":1"|upper }}</div>
+            <div>
+              <div class="h6 mb-0 font-weight-bolder">{{ memb.name }}</div>
+              <span class="badge bg-light text-dark">{{ memb.get_member_type_display }}</span>
+            </div>
+          </div>
+          <ul class="list-unstyled text-sm mb-0">
+            <li class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">Phone</span><span class="font-weight-bold">{{ memb.phone|default:"—" }}</span></li>
+            <li class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">Branch</span><span class="font-weight-bold">{{ memb.branch.name|default:"—" }}</span></li>
+            <li class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">Shifts</span><span class="font-weight-bold">{{ memb.shifts_display }}</span></li>
+            <li class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">Tracking</span>{% if memb.live_tracking_enabled %}<span class="badge bg-success">Enabled</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</li>
+            <li class="d-flex justify-content-between py-1"><span class="text-muted">Active window</span><span class="font-weight-bold">{{ first_time }} – {{ last_time }}</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="col-lg-8">
+      <div class="row g-3">
+        <div class="col-6 col-md-3">
+          <div class="card stat-tile shadow-sm text-center p-3 h-100">
+            <div class="stat-ic bg-gradient-danger text-white mx-auto mb-2"><i class="fas fa-person-walking"></i></div>
+            <div class="h5 mb-0 font-weight-bolder">{% if total_km >= 1 %}{{ total_km }} km{% else %}{{ total_m }} m{% endif %}</div>
+            <div class="text-xs text-uppercase text-muted">Distance Covered</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-tile shadow-sm text-center p-3 h-100">
+            <div class="stat-ic bg-gradient-info text-white mx-auto mb-2"><i class="fas fa-vector-square"></i></div>
+            <div class="h5 mb-0 font-weight-bolder">{{ area_km2 }}</div>
+            <div class="text-xs text-uppercase text-muted">Area Covered (km²)</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-tile shadow-sm text-center p-3 h-100">
+            <div class="stat-ic bg-gradient-warning text-white mx-auto mb-2"><i class="fas fa-stopwatch"></i></div>
+            <div class="h5 mb-0 font-weight-bolder">{{ duration_str }}</div>
+            <div class="text-xs text-uppercase text-muted">Tracking Duration</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-tile shadow-sm text-center p-3 h-100">
+            <div class="stat-ic bg-gradient-success text-white mx-auto mb-2"><i class="fas fa-briefcase"></i></div>
+            <div class="h5 mb-0 font-weight-bolder">{{ work_str }}</div>
+            <div class="text-xs text-uppercase text-muted">Total Work</div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="card stat-tile shadow-sm p-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-sm"><i class="fas fa-location-dot text-primary me-2"></i>Points recorded</span>
+              <span class="h6 mb-0 font-weight-bolder">{{ point_count }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div class="card border-0 shadow-sm mt-2" style="border-radius:16px;">
+    <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 font-weight-bolder"><i class="fas fa-map-location-dot text-danger me-2"></i>Travel Trail{% if date %} · {{ date }}{% endif %}</h6></div>
+    <div class="card-body p-2">
+      <div id="map" style="height:480px;border-radius:12px;"></div>
+      <div id="noData" class="text-center text-muted small mt-2 {% if points %}d-none{% endif %}"><i class="fas fa-circle-info me-1"></i>No location trail recorded for this date.</div>
+    </div>
+  </div>
+</div>
+
+{{ points|json_script:"pts-data" }}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const pts = JSON.parse(document.getElementById('pts-data').textContent);
+// Always show a map. Default view = Kathmandu if there are no points yet.
+const map = L.map('map').setView(pts.length ? [pts[0].lat, pts[0].lng] : [27.7172, 85.3240], pts.length ? 16 : 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+
+if (pts.length) {
+  const latlngs = pts.map(p => [p.lat, p.lng]);
+  const line = L.polyline(latlngs, { color: '#e11d48', weight: 4, opacity: 0.85 }).addTo(map);
+  for (let i = 1; i < pts.length - 1; i++) {
+    L.circleMarker([pts[i].lat, pts[i].lng], { radius: 5, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.9, weight: 1 })
+      .bindPopup('Point ' + (i + 1) + ' · ' + pts[i].time).addTo(map);
+  }
+  L.circleMarker(latlngs[0], { radius: 9, color: '#16a34a', fillColor: '#16a34a', fillOpacity: 1 }).bindPopup('Start · ' + pts[0].time).addTo(map);
+  L.circleMarker(latlngs[latlngs.length - 1], { radius: 10, color: '#e11d48', fillColor: '#e11d48', fillOpacity: 1 }).bindPopup('End · ' + pts[pts.length - 1].time).addTo(map);
+  if (pts.length > 1) map.fitBounds(line.getBounds(), { padding: [30, 30] });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Payment Receipt{% endblock %}
+{% block content %}
+<p class="greeting">Dear <strong>{{ name }}</strong>,</p>
+<p class="message-text">We've received your payment for invoice <strong>{{ invoice_number }}</strong>. Thank you!</p>
+<table class="data">
+  <tr><td class="label">Invoice No.</td><td><strong>{{ invoice_number }}</strong></td></tr>
+  <tr><td class="label">Amount Paid</td><td><strong style="color:#16a34a;">Rs. {{ amount_paid }}</strong></td></tr>
+  <tr><td class="label">Balance Due</td><td>Rs. {{ balance_due }}</td></tr>
+</table>
+{% endblock %}

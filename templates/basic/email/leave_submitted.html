@@ -1,0 +1,13 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}New Leave Request{% endblock %}
+{% block content %}
+<p class="greeting">A new leave request needs your review.</p>
+<table class="data">
+  <tr><td class="label">Member</td><td><strong>{{ member_name }}</strong></td></tr>
+  <tr><td class="label">Leave Type</td><td>{{ leave_type }}</td></tr>
+  <tr><td class="label">From</td><td>{{ start }}</td></tr>
+  <tr><td class="label">To</td><td>{{ end }}</td></tr>
+  {% if reason %}<tr><td class="label">Reason</td><td>{{ reason }}</td></tr>{% endif %}
+</table>
+<p class="message-text">Log in to your admin dashboard to approve or reject this request.</p>
+{% endblock %}

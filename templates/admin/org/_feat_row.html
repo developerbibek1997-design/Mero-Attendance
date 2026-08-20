@@ -1,13 +1,23 @@
-{% load schooladmin_extras %}{% with is_on=org|feat_field:field %}
-<div class="feat-card {% if is_on %}feat-enabled{% else %}feat-disabled{% endif %}">
+{% load schooladmin_extras %}{% with is_on=org|feat_field:field is_allowed=org|feat_allowed:field is_free=field|feat_is_free price=field|feat_price %}
+<div class="feat-card {% if is_on %}feat-enabled{% else %}feat-disabled{% endif %}{% if not is_allowed %} feat-locked{% endif %}">
   <div class="feat-card-icon"><i class="fas {{ icon }}"></i></div>
   <div class="feat-card-body">
-    <p class="feat-card-label">{{ label }}</p>
+    <p class="feat-card-label">
+      {{ label }}
+      {% if is_free %}
+        <span class="feat-price-badge feat-price-free">FREE</span>
+      {% else %}
+        <span class="feat-price-badge feat-price-paid">Rs {{ price }}/yr</span>
+      {% endif %}
+    </p>
     <p class="feat-card-desc">{{ desc }}</p>
+    {% if not is_allowed %}
+    <p class="feat-locked-note"><i class="fas fa-lock me-1"></i>Paid add-on &mdash; Rs {{ price }}/year. Contact your platform administrator to enable.</p>
+    {% endif %}
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
     <label class="feat-toggle">
-      <input type="checkbox" name="{{ field }}" value="1" {% if is_on %}checked{% endif %}>
+      <input type="checkbox" name="{{ field }}" value="1" {% if is_on %}checked{% endif %} {% if not is_allowed %}disabled{% endif %}>
       <span class="feat-slider"></span>
     </label>
     <span class="feat-status-badge {% if is_on %}feat-badge-on{% else %}feat-badge-off{% endif %}">

@@ -8,6 +8,7 @@ urlpatterns = [
     path('', views.Homepage.as_view(), name="homepage"),
     path("password_reset", views.password_reset_request, name="password_reset"),
     path('pricing', views.PricingView.as_view(), name="pricing"),
+    path('pricing/request-package', views.RequestPackage, name="request_package"),
     path('documentation', views.Documentation.as_view(), name="document"),
     path('download-pullar', views.Pullar.as_view(), name="pullar"),
     path('about-mero-attendance-attendance-system-nepal', views.About.as_view(), name="about"),

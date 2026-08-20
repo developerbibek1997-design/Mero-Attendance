@@ -21,6 +21,7 @@
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <a class="btn btn-light btn-sm" href="{% url 'schooladmin:student_edit' mem.id %}">Edit</a>
+      <a class="btn btn-outline-light btn-sm" href="{% url 'schooladmin:member_profile' mem.id %}">Complete Profile</a>
       {% if mem.classification_id %}<a class="btn btn-outline-light btn-sm" href="{% url 'schooladmin:classification_detail' mem.classification_id %}?tab=students">Class Hub</a>{% endif %}
       <a class="btn btn-outline-light btn-sm" href="{% url 'schooladmin:bulk_bill_send' %}?classification={{ mem.classification_id|default:'' }}">Send Bill</a>
     </div>

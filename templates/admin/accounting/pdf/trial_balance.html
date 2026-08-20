@@ -1,0 +1,33 @@
+<html>
+<head>
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; color: #111827; font-size: 11px; }
+  h1 { font-size: 17px; margin-bottom: 2px; }
+  .muted { color: #6b7280; margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  th { background: #0f766e; color: #fff; text-align: left; padding: 6px 8px; }
+  td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; }
+  .num { text-align: right; }
+  .total { font-weight: bold; background: #f1f5f9; }
+</style>
+</head>
+<body>
+  <h1>{{ org.name }}</h1>
+  <p class="muted">Trial Balance &mdash; as of {{ as_of_date }}</p>
+  <table>
+    <tr><th>Account</th><th class="num">Debit</th><th class="num">Credit</th></tr>
+    {% for row in tb.rows %}
+    <tr>
+      <td>{{ row.account.full_path }}</td>
+      <td class="num">{{ row.debit_total|floatformat:2 }}</td>
+      <td class="num">{{ row.credit_total|floatformat:2 }}</td>
+    </tr>
+    {% endfor %}
+    <tr class="total">
+      <td>Total</td>
+      <td class="num">{{ tb.total_debit|floatformat:2 }}</td>
+      <td class="num">{{ tb.total_credit|floatformat:2 }}</td>
+    </tr>
+  </table>
+</body>
+</html>

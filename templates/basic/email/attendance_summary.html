@@ -1,0 +1,12 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Attendance Summary — {{ period_label }}{% endblock %}
+{% block content %}
+<p class="greeting">Hi <strong>{{ name }}</strong>,</p>
+<p class="message-text">Here's your attendance summary for <strong>{{ period_label }}</strong>.</p>
+<table class="data">
+  <tr><td class="label">Total Days</td><td>{{ summary.total_days }}</td></tr>
+  <tr><td class="label">Present</td><td style="color:#16a34a;font-weight:700;">{{ summary.present }}</td></tr>
+  <tr><td class="label">Absent</td><td style="color:#dc2626;font-weight:700;">{{ summary.absent }}</td></tr>
+  <tr><td class="label">On Leave</td><td>{{ summary.leave }}</td></tr>
+</table>
+{% endblock %}

@@ -17,48 +17,85 @@
   <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
   {% endfor %}
 
-  <!-- Filter Bar -->
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body py-3">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-3 col-6">
-          <label class="text-xs font-weight-bold">Staff Member</label>
-          <select name="member" class="form-select form-select-sm">
-            <option value="">All Members</option>
-            {% for m in members %}<option value="{{ m.id }}" {% if filters.member == m.id|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
-          </select>
+      <form method="get">
+        <!-- Row 1: Staff Member, Status, Priority, Type (3-3-3-3) -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-3 col-6">
+            <label class="text-xs text-uppercase fw-bold d-block mb-1">Staff Member</label>
+            <select name="member" class="form-select form-select-sm w-100">
+              <option value="">All Members</option>
+              {% for m in members %}
+                <option value="{{ m.id }}" {% if filters.member == m.id|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="col-md-3 col-6">
+            <label class="text-xs text-uppercase fw-bold d-block mb-1">Status</label>
+            <select name="status" class="form-select form-select-sm w-100">
+              <option value="">All</option>
+              {% for val, label in status_choices %}
+                <option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="col-md-3 col-6">
+            <label class="text-xs text-uppercase fw-bold d-block mb-1">Priority</label>
+            <select name="priority" class="form-select form-select-sm w-100">
+              <option value="">All</option>
+              {% for val, label in priority_choices %}
+                <option value="{{ val }}" {% if filters.priority == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="col-md-3 col-6">
+            <label class="text-xs text-uppercase fw-bold d-block mb-1">Type</label>
+            <select name="task_type" class="form-select form-select-sm w-100">
+              <option value="">All</option>
+              {% for val, label in type_choices %}
+                <option value="{{ val }}" {% if filters.task_type == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
         </div>
-        <div class="col-md-2 col-6">
-          <label class="text-xs font-weight-bold">Status</label>
-          <select name="status" class="form-select form-select-sm">
-            <option value="">All</option>
-            {% for val, label in status_choices %}<option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2 col-6">
-          <label class="text-xs font-weight-bold">Priority</label>
-          <select name="priority" class="form-select form-select-sm">
-            <option value="">All</option>
-            {% for val, label in priority_choices %}<option value="{{ val }}" {% if filters.priority == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2 col-6">
-          <label class="text-xs font-weight-bold">Type</label>
-          <select name="task_type" class="form-select form-select-sm">
-            <option value="">All</option>
-            {% for val, label in type_choices %}<option value="{{ val }}" {% if filters.task_type == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="col-md-1 col-6">
-          <label class="text-xs font-weight-bold">From</label>
-          <input type="date" name="from_date" class="form-control form-control-sm" value="{{ filters.from_date }}">
-        </div>
-        <div class="col-md-1 col-6">
-          <label class="text-xs font-weight-bold">To</label>
-          <input type="date" name="to_date" class="form-control form-control-sm" value="{{ filters.to_date }}">
-        </div>
-        <div class="col-md-1">
-          <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+        
+        <!-- Row 2: From Date, To Date, Filter, Clear (4-4-4) -->
+        <div class="row g-3">
+          <div class="col-md-4 col-6">
+            <label class="text-xs text-uppercase fw-bold d-block mb-1">From Date</label>
+            {% if nepali_enabled %}
+            <input type="text" class="form-control form-control-sm w-100 nepali-cal" name="from_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+            <input type="date" class="hidden-date-input" name="from_date" value="{{ filters.from_date }}">
+            {% else %}
+            <input type="date" name="from_date" class="form-control form-control-sm w-100" value="{{ filters.from_date }}">
+            {% endif %}
+          </div>
+
+          <div class="col-md-4 col-6">
+            <label class="text-xs text-uppercase fw-bold d-block mb-1">To Date</label>
+            {% if nepali_enabled %}
+            <input type="text" class="form-control form-control-sm w-100 nepali-cal" name="to_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+            <input type="date" class="hidden-date-input" name="to_date" value="{{ filters.to_date }}">
+            {% else %}
+            <input type="date" name="to_date" class="form-control form-control-sm w-100" value="{{ filters.to_date }}">
+            {% endif %}
+          </div>
+          
+          <div class="col-md-4 col-12">
+            <label class="text-xs text-uppercase fw-bold d-block mb-1" style="visibility: hidden;">Actions</label>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary btn-sm flex-fill">
+                <i class="fas fa-filter me-1"></i>Filter
+              </button>
+              <a href="{% url 'schooladmin:task_dashboard' %}" class="btn btn-outline-secondary btn-sm flex-fill">
+                <i class="fas fa-times me-1"></i>Clear
+              </a>
+            </div>
+          </div>
         </div>
       </form>
     </div>

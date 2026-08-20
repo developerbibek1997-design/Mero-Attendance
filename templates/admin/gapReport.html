@@ -71,15 +71,19 @@
     }
 </style>
 
+{% include 'components/report_print_pagination.html' %}
+
 <div class="card filter-card no-print mt-3">
   <div class="card-body p-4">
     <form action="" method="post" id="reportFilterForm">
       {% csrf_token %}
+      
+      <!-- Row 1: Date Filters, Classification, Branch -->
       <div class="row g-3">
-        
-        <div class="col-md-3">
+        <!-- From Date -->
+        <div class="col-md-3 col-6">
           <label class="form-label" style="font-weight: 600; color: #475569;">
-             <i class="fas fa-calendar-alt text-success me-1"></i> From
+            <i class="fas fa-calendar-alt text-success me-1"></i> From
           </label>
           {% if nepali_enabled %}
             <input type="text" class="form-control custom-input w-100 nepali-cal" name="first_date_np" id="first-np" value="{{ first_date_np }}" placeholder="YYYY-MM-DD (BS)" autocomplete="off" onchange="checkBtn()" required>
@@ -89,9 +93,10 @@
           {% endif %}
         </div>
 
-        <div class="col-md-3">
+        <!-- To Date -->
+        <div class="col-md-3 col-6">
           <label class="form-label" style="font-weight: 600; color: #475569;">
-             <i class="fas fa-calendar-check text-danger me-1"></i> To
+            <i class="fas fa-calendar-check text-danger me-1"></i> To
           </label>
           {% if nepali_enabled %}
             <input type="text" class="form-control custom-input w-100 nepali-cal" name="last_date_np" id="last-np" value="{{ last_date_np }}" placeholder="YYYY-MM-DD (BS)" autocomplete="off" onchange="checkBtn()" required>
@@ -101,38 +106,66 @@
           {% endif %}
         </div>
 
-        <div class="col-md-3">
+        <!-- Classification -->
+        <div class="col-md-3 col-6">
           <label class="form-label" style="font-weight: 600; color: #475569;">
-              <i class="fas fa-users text-info me-1"></i> Department
+            <i class="fas fa-users text-info me-1"></i> Classification
           </label>
           <select name="classification" class="form-select custom-input w-100">
-            <option {% if 'All' == thisone %} selected {%endif%} value="All">🌐 All Groups</option>
+            <option {% if 'All' == thisone %}selected{% endif %} value="All">All Groups</option>
             {% for c in clas %}
-              <option {% if thisone == c.name  %} selected {%endif%} value="{{c.id}}" >{{c.name}}</option>
+              <option {% if thisone == c.name %}selected{% endif %} value="{{c.id}}">{{c.name}}</option>
             {% endfor %}
           </select>
         </div>
 
-        <div class="col-md-3">
+        <!-- Branch -->
+        <div class="col-md-3 col-6">
+          <label class="form-label" style="font-weight: 600; color: #475569;">
+            <i class="fas fa-code-branch text-warning me-1"></i> Branch
+          </label>
+          <select name="branch" class="form-select custom-input w-100">
+            <option value="All" {% if selected_branch == 'All' or not selected_branch %}selected{% endif %}>All Branches</option>
+            {% for b in branches %}
+              <option value="{{ b.id }}" {% if selected_branch|stringformat:"s" == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Row 2: Action Buttons -->
+      <div class="row g-3 mt-2">
+        <!-- Filter Button -->
+        <div class="col-md-3 col-6">
           <label class="form-label d-none d-md-block" style="visibility: hidden;">&nbsp;</label>
-          <div class="d-flex gap-2 flex-wrap">
-            <button class="btn btn-premium btn-premium-warning flex-fill" type="submit" id="filterBtn">
-              <i class="fas fa-filter"></i> Filter
-            </button>
-            {% if tm %}
-            <button type="button" class="btn btn-premium btn-outline-primary flex-fill" onclick="printData('printarea')">
-              <i class="fas fa-print"></i> Print
-            </button>
-            {% endif %}
-            <a href="{% url 'schooladmin:export_attendance' %}?fmt=excel{% if request.GET.from_date %}&from_date={{ request.GET.from_date }}{% endif %}{% if request.GET.to_date %}&to_date={{ request.GET.to_date }}{% endif %}" class="btn btn-success btn-sm flex-fill" style="height:50px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-weight:600;" title="Export Attendance Excel">
-              <i class="fas fa-file-excel me-1"></i>Excel
-            </a>
-            <a href="{% url 'schooladmin:export_attendance' %}?fmt=csv" class="btn btn-outline-success btn-sm flex-fill" style="height:50px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-weight:600;" title="Export CSV">
-              <i class="fas fa-file-csv me-1"></i>CSV
-            </a>
-          </div>
+          <button class="btn btn-premium btn-premium-warning w-100" type="submit" id="filterBtn" style="height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-weight: 600;">
+            <i class="fas fa-filter me-1"></i> Filter
+          </button>
         </div>
 
+        <!-- Print Button -->
+        <div class="col-md-3 col-6">
+          <label class="form-label d-none d-md-block" style="visibility: hidden;">&nbsp;</label>
+          <button type="button" class="btn btn-premium btn-outline-primary w-100" onclick="printData('printarea')" style="height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-weight: 600;">
+            <i class="fas fa-print me-1"></i> Print
+          </button>
+        </div>
+
+        <!-- Excel Export -->
+        <div class="col-md-3 col-6">
+          <label class="form-label d-none d-md-block" style="visibility: hidden;">&nbsp;</label>
+          <a href="{% url 'schooladmin:export_attendance' %}?fmt=excel{% if request.GET.from_date %}&from_date={{ request.GET.from_date }}{% endif %}{% if request.GET.to_date %}&to_date={{ request.GET.to_date }}{% endif %}" class="btn btn-success w-100" style="height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-weight: 600;" title="Export Attendance Excel">
+            <i class="fas fa-file-excel me-1"></i> Excel
+          </a>
+        </div>
+
+        <!-- CSV Export -->
+        <div class="col-md-3 col-6">
+          <label class="form-label d-none d-md-block" style="visibility: hidden;">&nbsp;</label>
+          <a href="{% url 'schooladmin:export_attendance' %}?fmt=csv" class="btn btn-outline-success w-100" style="height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-weight: 600;" title="Export CSV">
+            <i class="fas fa-file-csv me-1"></i> CSV
+          </a>
+        </div>
       </div>
     </form>
   </div>

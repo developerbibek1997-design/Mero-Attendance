@@ -1,0 +1,65 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}New Timesheet{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:600px;">
+  <div class="mb-4">
+    <a href="{% url 'staff:timesheet_list' %}" class="text-muted text-decoration-none small">
+      <i class="fas fa-arrow-left me-1"></i>Back to Timesheets
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show mb-3">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card border-0 shadow-sm" style="border-radius:18px;">
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);
+             display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+          <i class="fas fa-calendar-plus text-white" style="font-size:1.4rem;"></i>
+        </div>
+        <h5 class="fw-bold mb-1" style="color:#1e293b;">New Timesheet</h5>
+        <p class="text-muted small mb-0">Define the date you want to log hours for</p>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Title <span class="text-muted fw-normal">(optional)</span></label>
+          <input type="text" name="title" class="form-control" placeholder="e.g. Client site visit" maxlength="200">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">
+            Date{% if nepali_enabled %} <span class="badge bg-warning-subtle text-warning-emphasis ms-1">BS</span>{% endif %}
+          </label>
+          {% if nepali_enabled %}
+          <input type="text" name="date" class="form-control nepali-cal" placeholder="YYYY-MM-DD (BS)" autocomplete="off" required>
+          {% else %}
+          <input type="date" name="date" class="form-control" required>
+          {% endif %}
+        </div>
+
+        <p class="text-muted small mb-4">
+          <i class="fas fa-info-circle me-1"></i>
+          After creating the timesheet you can add task entries for the day.
+        </p>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary fw-semibold flex-grow-1">
+            <i class="fas fa-arrow-right me-2"></i>Create &amp; Add Entries
+          </button>
+          <a href="{% url 'staff:timesheet_list' %}" class="btn btn-outline-secondary fw-semibold px-4">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

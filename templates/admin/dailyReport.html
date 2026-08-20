@@ -1,220 +1,1078 @@
 {% extends 'dashboard.html' %}
 {% load static %}
+{% load schooladmin_extras %}
+
 {% block title %}
-    Daily Present Report 
+    Daily Attendance Report
 {% endblock title %}
 
 {% block content %}
-<link rel="stylesheet" href="https://unpkg.com/nepali-date-picker@2.0.1/dist/nepaliDatePicker.min.css" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
 
 <style>
-    @media print {
-        .no-print { display: none !important; }
-        .card { border: none !important; box-shadow: none !important; }
-        table { page-break-after:auto }
-        tr, td { page-break-inside:avoid; page-break-after:auto }
+    :root {
+        --report-border: #e2e8f0;
+        --report-muted: #64748b;
+        --report-dark: #0f172a;
+        --report-bg: #f8fafc;
     }
-    .hidden-date-input { display: none !important; }
-    
-    /* 🎨 BEAUTIFUL UI CUSTOMIZATIONS */
-    .filter-card { border-radius: 16px; border: none; background: #ffffff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); margin-bottom: 25px; }
-    .custom-input { border-radius: 10px; border: 1.5px solid #e2e8f0; padding: 12px 18px; font-size: 1rem; font-weight: 500; color: #334155; transition: all 0.3s ease; background-color: #f8fafc; height: 50px; }
-    .custom-input:focus { border-color: #f5a623; background-color: #ffffff; box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.1); outline: none; }
-    .btn-premium { border-radius: 10px; height: 50px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; font-size: 0.9rem; transition: all 0.3s ease; }
-    .btn-premium-success { background: linear-gradient(135deg, #20c997 0%, #10b981 100%); border: none; color: white; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
-    .btn-premium-success:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); color: white; }
-    .table-premium th { background-color: #f8fafc; color: #64748b; font-size: 0.75rem; letter-spacing: 1px; padding: 15px; border-bottom: 2px solid #e2e8f0; }
-    .table-premium td { vertical-align: middle; padding: 15px; border-bottom: 1px solid #f1f5f9; }
-    
-    /* Force Nepali Calendar above everything */
-    #ndp-nepali-box { z-index: 9999999 !important; }
+
+    .hidden-date-input {
+        display: none !important;
+    }
+
+    .filter-card {
+        border: 0;
+        border-radius: 14px;
+        background: #ffffff;
+        box-shadow: 0 8px 26px rgba(15, 23, 42, 0.06);
+    }
+
+    .custom-input {
+        width: 100%;
+        height: 46px;
+        padding: 10px 15px;
+        border: 1.5px solid var(--report-border);
+        border-radius: 9px;
+        background: #f8fafc;
+        color: #334155;
+        font-size: 0.92rem;
+        font-weight: 500;
+        transition: 0.2s ease;
+    }
+
+    .custom-input:focus {
+        border-color: #10b981;
+        outline: none;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.10);
+    }
+
+    .btn-report {
+        height: 46px;
+        border-radius: 9px;
+        font-size: 0.84rem;
+        font-weight: 700;
+    }
+
+    .btn-filter {
+        border: 0;
+        color: #ffffff;
+        background: linear-gradient(135deg, #10b981, #059669);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.22);
+    }
+
+    .btn-filter:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .summary-tabs-wrapper {
+        overflow-x: auto;
+        padding-bottom: 3px;
+        scrollbar-width: thin;
+    }
+
+    .summary-tabs {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(145px, 1fr));
+        gap: 8px;
+        min-width: 760px;
+    }
+
+    .summary-tab {
+        display: flex;
+        min-height: 67px;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--report-border);
+        border-radius: 11px;
+        background: #ffffff;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .summary-tab-icon {
+        display: flex;
+        width: 37px;
+        height: 37px;
+        flex: 0 0 37px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        font-size: 0.9rem;
+    }
+
+    .summary-tab-content {
+        min-width: 0;
+    }
+
+    .summary-tab-label {
+        display: block;
+        margin-bottom: 1px;
+        color: var(--report-muted);
+        font-size: 0.67rem;
+        font-weight: 800;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .summary-tab-value {
+        margin: 0;
+        color: var(--report-dark);
+        font-size: 1.25rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .summary-tab-note {
+        display: block;
+        overflow: hidden;
+        margin-top: 2px;
+        color: #94a3b8;
+        font-size: 0.66rem;
+        line-height: 1;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .summary-total .summary-tab-icon {
+        color: #2563eb;
+        background: #dbeafe;
+    }
+
+    .summary-present .summary-tab-icon {
+        color: #059669;
+        background: #d1fae5;
+    }
+
+    .summary-absent .summary-tab-icon {
+        color: #dc2626;
+        background: #fee2e2;
+    }
+
+    .summary-late .summary-tab-icon {
+        color: #d97706;
+        background: #fef3c7;
+    }
+
+    .summary-early .summary-tab-icon {
+        color: #7c3aed;
+        background: #ede9fe;
+    }
+
+    .issue-card-subtitle {
+        margin: 1px 0 0;
+        color: #94a3b8;
+        font-size: 0.69rem;
+    }
+
+    .issue-table {
+        margin-bottom: 0;
+    }
+
+    .issue-table th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--report-border);
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.64rem;
+        font-weight: 800;
+        letter-spacing: 0.45px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .issue-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        font-size: 0.77rem;
+    }
+
+    .issue-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .member-mini-avatar {
+        display: flex;
+        width: 29px;
+        height: 29px;
+        flex: 0 0 29px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        color: #1d4ed8;
+        background: #dbeafe;
+        font-size: 0.7rem;
+        font-weight: 800;
+    }
+
+    .member-mini-avatar-absent {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .issue-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 4px 7px;
+        border-radius: 6px;
+        font-size: 0.64rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .issue-absent {
+        color: #b91c1c;
+        background: #fee2e2;
+    }
+
+    .issue-late {
+        color: #92400e;
+        background: #fef3c7;
+    }
+
+    .issue-early {
+        color: #6d28d9;
+        background: #ede9fe;
+    }
+
+    .report-card {
+        overflow: hidden;
+        border: 0;
+        border-radius: 14px;
+        background: #ffffff;
+        box-shadow: 0 8px 26px rgba(15, 23, 42, 0.06);
+    }
+
+    .report-header {
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--report-border);
+        background: #ffffff;
+    }
+
+    .table-premium th {
+        padding: 12px 13px;
+        border-bottom: 2px solid var(--report-border);
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .table-premium td {
+        padding: 12px 13px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .table-premium tbody tr:hover {
+        background: #fbfdff;
+    }
+
+    /* Row highlighting for absent members */
+    .row-absent {
+        background-color: #fef2f2 !important;
+    }
+
+    .row-absent:hover {
+        background-color: #fee2e2 !important;
+    }
+
+    .row-present {
+        background-color: #ffffff;
+    }
+
+    .row-present:hover {
+        background-color: #f0fdf4;
+    }
+
+    .member-name {
+        color: #2563eb;
+        font-size: 0.87rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .member-name-absent {
+        color: #dc2626;
+        font-size: 0.87rem;
+        font-weight: 700;
+    }
+
+    .shift-text {
+        color: #94a3b8;
+        font-size: 0.68rem;
+    }
+
+    .metric-time {
+        margin-bottom: 3px;
+        color: #1e293b;
+        font-size: 0.83rem;
+        font-weight: 700;
+    }
+
+    .metric-time-absent {
+        color: #94a3b8;
+        font-size: 0.83rem;
+        font-weight: 700;
+    }
+
+    .metric-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 7px;
+        border-radius: 6px;
+        font-size: 0.64rem;
+        font-weight: 700;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        min-width: 78px;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 6px 9px;
+        border-radius: 7px;
+        font-size: 0.69rem;
+        font-weight: 800;
+    }
+
+    .status-present {
+        color: #047857;
+        background: #d1fae5;
+    }
+
+    .status-absent {
+        color: #b91c1c;
+        background: #fee2e2;
+    }
+
+    .btn-export-excel {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+        color: white;
+        border: none;
+        border-radius: 9px;
+        padding: 8px 16px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-export-excel:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-export-csv {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        border: none;
+        border-radius: 9px;
+        padding: 8px 16px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(23, 162, 184, 0.2);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-export-csv:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(23, 162, 184, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    #ndp-nepali-box {
+        z-index: 9999999 !important;
+    }
+
+    @page {
+        size: A4 portrait;
+        margin: 10mm;
+    }
+
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+
+        .filter-card,
+        .report-card {
+            border: 1px solid #d1d5db !important;
+            box-shadow: none !important;
+            /* .report-card's base rule (see .report-card above) sets
+               overflow:hidden to clip the table's square corners to the
+               card's rounded border on screen. Left in effect at print time,
+               it clips the table itself once printed content needs to flow
+               past whatever height the box's first layout pass produced -
+               with 100 members' worth of rows, only the ones that "fit" in
+               that initial box got printed and the rest were silently cut
+               off, regardless of how many physical pages should follow. */
+            overflow: visible !important;
+        }
+
+        table {
+            page-break-after: auto;
+        }
+
+        tr,
+        td {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+
+        /* Compact the main table so a normal day's headcount fits one page -
+           the Attendance Issues panel (now a modal, see .no-print above) and
+           the on-screen summary tiles no longer take up print space, and
+           this print-only header carries their key numbers instead. */
+        .report-card table th,
+        .report-card table td {
+            padding: 5px 8px !important;
+            font-size: 10.5px !important;
+        }
+
+        .shift-text,
+        .metric-badge {
+            font-size: 9.5px !important;
+        }
+
+        .row-absent {
+            background-color: #fef2f2 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .row-present {
+            background-color: #ffffff !important;
+        }
+
+        .status-present {
+            background: #d1fae5 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .status-absent {
+            background: #fee2e2 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+    }
 </style>
 
-<div class="card filter-card no-print mt-3">
-  <div class="card-body p-4">
-    <form action="" method="post" id="reportFilterForm">
-      {% csrf_token %}
-      <div class="row g-3"> 
-        <div class="col-md-5">
-          <label class="form-label" style="font-weight: 600; color: #475569;">
-             <i class="fas fa-calendar-alt text-success me-1"></i> Select Date
-          </label>
-          
-          {% if nepali_enabled %}
-            <input type="text" class="form-control custom-input w-100" name="date_np" id="force-nepali-cal" value="{{ date_np }}" placeholder="📅 YYYY-MM-DD (BS)" autocomplete="off" required>
-            <input type="date" class="hidden-date-input" name="date" value="{{ date|date:'Y-m-d' }}">
-          {% else %}
-            <input type="text" class="form-control custom-input w-100" name="date" id="english-datepicker" value="{{ date|date:'Y-m-d' }}" placeholder="📅 Select Date (AD)" autocomplete="off" required>
-          {% endif %}
-        </div>
+{% include 'components/report_print_pagination.html' %}
 
-        <div class="col-md-4">
-          <label class="form-label" style="font-weight: 600; color: #475569;">
-              <i class="fas fa-users text-info me-1"></i> Department / Class
-          </label>
-          <select name="filter" class="form-select custom-input w-100">
-            <option {% if 'All' == thisone %} selected {%endif%} value="All">🌐 All Classifications</option>
-            {% for c in clas %}
-              <option {% if thisone == c.name  %} selected {%endif%} value="{{c.id}}" >{{c.name}}</option>
-            {% endfor %}
-          </select>
-        </div>
+<!-- Filter -->
+<div class="card filter-card no-print mt-3 mb-3">
+    <div class="card-body p-3">
+        <form
+            action=""
+            method="post"
+            id="reportFilterForm"
+        >
+            {% csrf_token %}
 
-        <div class="col-md-3">
-          <label class="form-label d-none d-md-block" style="visibility: hidden;">&nbsp;</label>
-          <div class="d-flex gap-2 flex-wrap">
-            <button class="btn btn-premium btn-premium-success flex-fill" type="submit">
-              <i class="fas fa-filter"></i> Filter
-            </button>
-            <button type="button" class="btn btn-premium btn-outline-primary flex-fill" onclick="window.print()">
-              <i class="fas fa-print"></i> Print
-            </button>
-            <a href="{% url 'schooladmin:export_attendance' %}?fmt=excel{% if request.GET.from_date %}&from_date={{ request.GET.from_date }}{% endif %}{% if request.GET.to_date %}&to_date={{ request.GET.to_date }}{% endif %}" class="btn btn-success btn-sm flex-fill" style="height:50px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-weight:600;">
-              <i class="fas fa-file-excel me-1"></i>Excel
-            </a>
-            <a href="{% url 'schooladmin:export_attendance' %}?fmt=csv{% if request.GET.from_date %}&from_date={{ request.GET.from_date }}{% endif %}{% if request.GET.to_date %}&to_date={{ request.GET.to_date }}{% endif %}" class="btn btn-outline-success btn-sm flex-fill" style="height:50px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-weight:600;">
-              <i class="fas fa-file-csv me-1"></i>CSV
-            </a>
-          </div>
-        </div>
-      </div>
-    </form>
-  </div>
+            <div class="row g-2 align-items-end">
+                <div class="col-lg-4 col-md-4">
+                    <label class="form-label small fw-bold text-secondary">
+                        <i class="fas fa-calendar-alt text-success me-1"></i>
+                        Select Date
+                    </label>
+
+                    {% if nepali_enabled %}
+                        <input
+                            type="text"
+                            class="form-control custom-input"
+                            name="date_np"
+                            id="force-nepali-cal"
+                            value="{{ date_np }}"
+                            placeholder="YYYY-MM-DD (BS)"
+                            autocomplete="off"
+                            required
+                        >
+
+                        <input
+                            type="date"
+                            class="hidden-date-input"
+                            name="date"
+                            value="{{ date|date:'Y-m-d' }}"
+                        >
+                    {% else %}
+                        <input
+                            type="text"
+                            class="form-control custom-input"
+                            name="date"
+                            id="english-datepicker"
+                            value="{{ date|date:'Y-m-d' }}"
+                            placeholder="Select Date"
+                            autocomplete="off"
+                            required
+                        >
+                    {% endif %}
+                </div>
+
+                <div class="col-lg-4 col-md-4">
+                    <label class="form-label small fw-bold text-secondary">
+                        <i class="fas fa-users text-info me-1"></i>
+                        Classification
+                    </label>
+                    <select name="filter" class="form-select custom-input">
+                        <option value="All" {% if selected_filter == 'All' %}selected{% endif %}>All</option>
+                        {% for c in clas %}
+                            <option value="{{ c.id }}" {% if selected_filter|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-lg-4 col-md-4">
+                    <label class="form-label small fw-bold text-secondary">
+                        <i class="fas fa-code-branch text-warning me-1"></i>
+                        Branch
+                    </label>
+                    <select name="branch" class="form-select custom-input">
+                        <option value="All" {% if selected_branch == 'All' or not selected_branch %}selected{% endif %}>All Branches</option>
+                        {% for b in branches %}
+                            <option value="{{ b.id }}" {% if selected_branch|stringformat:"s" == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                 <div class="col-lg-12 col-md-12">
+                    <label class="form-label small fw-bold text-secondary d-none d-lg-block">
+                        &nbsp;
+                    </label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button
+                            class="btn btn-report btn-filter flex-fill"
+                            type="submit"
+                        >
+                            <i class="fas fa-filter me-1"></i>
+                            Filter
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-report btn-outline-primary flex-fill"
+                            onclick="window.print()"
+                        >
+                            <i class="fas fa-print me-1"></i>
+                            Print
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-report btn-outline-warning flex-fill no-print"
+                            data-bs-toggle="modal"
+                            data-bs-target="#attendanceIssuesModal"
+                        >
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Issues
+                            <span class="badge bg-danger ms-1">{{ issue_count }}</span>
+                        </button>
+
+                        <!-- Export Buttons -->
+                        <a  href="{% url 'schooladmin:export_present_attendance' %}?date={{ date|date:'Y-m-d' }}&fmt=excel" class="btn-export-excel no-print text-white">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </a>
+                        <a href="{% url 'schooladmin:export_present_attendance' %}?date={{ date|date:'Y-m-d' }}&fmt=csv" class="btn-export-csv no-print text-white">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </a>
+                    </div>
+                </div>
+
+               
+            </div>
+        </form>
+    </div>
 </div>
 
-<div class="card filter-card">
-  <div class="card-header bg-white p-4 border-bottom" style="border-radius: 16px 16px 0 0;">
-    <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <h5 class="mb-1" style="font-weight: 700; color: #1e293b;">Daily Present Report</h5>
-        <span class="text-muted" style="font-weight: 500;">{{org}} &bull; {{thisone}}</span>
-      </div>
-      <div class="text-end">
-        <h6 class="mb-1">
-            {% if nepali_enabled %}
-                <span class="badge bg-danger px-3 py-2" style="font-size: 0.8rem;">BS: {{ date_np }}</span>
-            {% endif %}
-            <span class="badge bg-dark px-3 py-2" style="font-size: 0.8rem;">AD: {{ date|date:'Y-m-d' }}</span>
-        </h6>
-        <small class="text-muted" style="font-weight: 600;">{{date|date:'l'}}</small>
-      </div>
-    </div>
-  </div>
- 
-  <div class="card-body px-0 pt-0 pb-2">
-    <div class="table-responsive" id="printarea">
-      <div class="d-none d-print-block text-center mb-4 mt-4">
-          <h4>{{org}} - Present Report</h4>
-          <p>Date: {% if nepali_enabled %}{{date_np}} (BS) / {% endif %}{{date|date:'Y-m-d'}} (AD) | Dept: {{thisone}}</p>
-      </div>
+<!-- Summary Statistics -->
+<div class="summary-tabs-wrapper mb-3 no-print">
+    <div class="summary-tabs">
+        <div class="summary-tab summary-total">
+            <div class="summary-tab-icon">
+                <i class="fas fa-users"></i>
+            </div>
 
-      <table class="table table-premium table-hover align-items-center mb-0">
-        <thead>
-          <tr>
-            <th class="text-uppercase font-weight-bolder">Member Details</th>
-            <th class="text-uppercase font-weight-bolder">Punch In Metrics</th>
-            <th class="text-center text-uppercase font-weight-bolder">Punch Out Metrics</th>
-            <th class="text-center text-uppercase font-weight-bolder">Total Hours</th>
-            <th class="text-center text-uppercase font-weight-bolder">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for i in tm %}
-            <tr>
-                <td>
-                  <div class="d-flex px-3 py-1">
-                    <div class="d-flex flex-column justify-content-center">
-                      <h6 class="mb-0 text-sm" data-bs-toggle="modal" data-bs-target="#exampleModal{{i.id}}" style="cursor:pointer; color: #2563eb; font-weight: 600;">
-                          {{i.name}}
-                      </h6>
-                      {% if 'All' == thisone %}
-                        <p class="text-xs text-secondary mb-0">{{i.classification}}</p>
-                      {% endif %}
-                      <p class="text-xxs text-muted mb-0 mt-1"><i class="fas fa-clock me-1"></i>Shift: {{ i.shift_start_time|time:"g:i A" }} - {{ i.shift_end_time|time:"g:i A" }}</p>
-                      
-                      <div class="modal fade no-print" id="exampleModal{{i.id}}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                          <div class="modal-content" style="border-radius: 12px; border: none;">
-                            <div class="modal-header bg-light">
-                              <h5 class="modal-title" style="font-weight: 700;">{{i.name}} - Timeline</h5>
-                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body p-0">
-                                <div class="row m-0 bg-dark text-white p-2" style="font-weight: bold;">
-                                  <div class="col-12 text-center">Scan Logs</div>
-                                </div>
-                                <div class="row m-0 p-3">
-                                    {% for j in i.alldataofdaily.all %}
-                                    <div class="col-6 text-center p-2" style="border-bottom: 1px solid #eee;">
-                                        {{j.scanned_time.time}}
+            <div class="summary-tab-content">
+                <span class="summary-tab-label">Total Staff</span>
+                <h4 class="summary-tab-value">
+                    {{ total_members }}
+                </h4>
+                <span class="summary-tab-note">
+                    All members
+                </span>
+            </div>
+        </div>
+
+        <div class="summary-tab summary-present">
+            <div class="summary-tab-icon">
+                <i class="fas fa-user-check"></i>
+            </div>
+
+            <div class="summary-tab-content">
+                <span class="summary-tab-label">Present</span>
+                <h4 class="summary-tab-value">
+                    {{ present_count }}
+                </h4>
+                <span class="summary-tab-note">
+                    {{ attendance_percentage }}% attendance
+                </span>
+            </div>
+        </div>
+
+        <div class="summary-tab summary-absent">
+            <div class="summary-tab-icon">
+                <i class="fas fa-user-times"></i>
+            </div>
+
+            <div class="summary-tab-content">
+                <span class="summary-tab-label">Absent</span>
+                <h4 class="summary-tab-value">
+                    {{ absent_count }}
+                </h4>
+                <span class="summary-tab-note">
+                    No scan found
+                </span>
+            </div>
+        </div>
+
+        <div class="summary-tab summary-late">
+            <div class="summary-tab-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+
+            <div class="summary-tab-content">
+                <span class="summary-tab-label">Late In</span>
+                <h4 class="summary-tab-value">
+                    {{ late_in_count }}
+                </h4>
+                <span class="summary-tab-note">
+                    After shift start
+                </span>
+            </div>
+        </div>
+
+        <div class="summary-tab summary-early">
+            <div class="summary-tab-icon">
+                <i class="fas fa-sign-out-alt"></i>
+            </div>
+
+            <div class="summary-tab-content">
+                <span class="summary-tab-label">Early Out</span>
+                <h4 class="summary-tab-value">
+                    {{ early_out_count }}
+                </h4>
+                <span class="summary-tab-note">
+                    Before shift end
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Issues (modal, triggered by the "Issues" button above) -->
+<div class="modal fade no-print" id="attendanceIssuesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 rounded-3">
+            <div class="modal-header bg-light">
+                <div>
+                    <h5 class="modal-title fw-bold mb-0">
+                        <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                        Attendance Issues
+                    </h5>
+                    <p class="issue-card-subtitle mb-0">
+                        Absent, late-in and early-out members
+                    </p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table issue-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Member</th>
+                                <th>Shift</th>
+                                <th class="text-center">In</th>
+                                <th class="text-center">Out</th>
+                                <th>Issue</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for i in issue_members %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="member-mini-avatar {% if i.report_is_absent %}member-mini-avatar-absent{% endif %}" style="overflow:hidden;">
+                                                {% if i.photo %}<img src="{{ i.photo.url }}" alt="{{ i.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
+                                                {% else %}{{ i.name|slice:":1"|upper }}{% endif %}
+                                            </div>
+
+                                            <div>
+                                                <div class="fw-bold {% if i.report_is_absent %}text-danger{% else %}text-dark{% endif %}">
+                                                    <a href="{% url 'handle:memberEdit' i.id %}" class="{% if i.report_is_absent %}text-danger{% else %}text-dark{% endif %}">{{ i.name }}</a>
+                                                </div>
+
+                                                <small class="text-muted">
+                                                    {{ i.classification }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td class="text-nowrap">
+                                        {{ i.shift_start_time|time:"g:i A" }}
+                                        -
+                                        {{ i.shift_end_time|time:"g:i A" }}
+                                    </td>
+
+                                    <td class="text-center text-nowrap">
+                                        {% if i.report_first_time %}
+                                            {{ i.report_first_time|time:"g:i A" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
+                                    <td class="text-center text-nowrap">
+                                        {% if i.report_last_time %}
+                                            {{ i.report_last_time|time:"g:i A" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% if i.report_is_absent %}
+                                                <span class="issue-badge issue-absent">
+                                                    <i class="fas fa-user-times"></i>
+                                                    Absent
+                                                </span>
+                                            {% endif %}
+
+                                            {% if i.report_is_late_in %}
+                                                <span class="issue-badge issue-late">
+                                                    <i class="fas fa-clock"></i>
+                                                    Late {{ i.report_late_in }}
+                                                </span>
+                                            {% endif %}
+
+                                            {% if i.report_is_early_out %}
+                                                <span class="issue-badge issue-early">
+                                                    <i class="fas fa-sign-out-alt"></i>
+                                                    Early {{ i.report_early_out }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-3 text-muted">
+                                        <i class="fas fa-check-circle text-success me-1"></i>
+                                        No attendance issues found.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Report - Shows ALL Members (Present + Absent) -->
+<div class="card report-card">
+    <div class="report-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h5 class="mb-1 fw-bold text-dark">
+                    Daily Attendance Report
+                </h5>
+
+                <span class="text-muted small">
+                    {{ org }} &bull; {{ thisone }}
+                </span>
+            </div>
+
+            <div class="text-end">
+                {% if nepali_enabled %}
+                    <span class="badge bg-danger me-1">
+                        BS: {{ date_np }}
+                    </span>
+                {% endif %}
+
+                <span class="badge bg-dark">
+                    AD: {{ date|date:'Y-m-d' }}
+                </span>
+
+                <div class="small text-muted fw-bold mt-1">
+                    {{ date|date:'l' }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive" id="printarea">
+            <div class="d-none d-print-block text-center my-4">
+                <h4>
+                    {{ org }} - Daily Attendance Report
+                </h4>
+
+                <p>
+                    Date:
+                    {% if nepali_enabled %}
+                        {{ date_np }} (BS) /
+                    {% endif %}
+
+                    {{ date|date:'Y-m-d' }} (AD)
+                    |
+                    Department: {{ thisone }}
+                </p>
+                <p>
+                    <strong>Present:</strong> {{ present_count }} |
+                    <strong>Absent:</strong> {{ absent_count }} |
+                    <strong>Late In:</strong> {{ late_in_count }} |
+                    <strong>Early Out:</strong> {{ early_out_count }} |
+                    <strong>Total:</strong> {{ total_members }}
+                </p>
+            </div>
+
+            <table class="table table-premium table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Member Details</th>
+                        <th>Punch In</th>
+                        <th class="text-center">Punch Out</th>
+                        <th class="text-center">Total Hours</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for i in tm %}
+                        <tr class="{% if i.report_is_absent %}row-absent{% else %}row-present{% endif %}">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    {{ i|member_avatar }}
+                                    <div>
+                                    <div
+                                        class="{% if i.report_is_absent %}member-name-absent{% else %}member-name{% endif %}"
+                                        {% if not i.report_is_absent %}
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#memberTimeline{{ i.id }}"
+                                        {% endif %}
+                                    >
+                                        {{ i.name }}
+                                        {% if i.report_is_absent %}
+                                            <i class="fas fa-user-times text-danger ms-1"></i>
+                                        {% endif %}
                                     </div>
-                                    {% endfor %}
+
+                                    {% if thisone == 'All' %}
+                                        <div class="small text-secondary">
+                                            {{ i.classification }}
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="shift-text mt-1">
+                                        <i class="fas fa-clock me-1"></i>
+                                        Shift:
+                                        {{ i.shift_start_time|time:"g:i A" }}
+                                        -
+                                        {{ i.shift_end_time|time:"g:i A" }}
+                                    </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="modal-footer border-0">
-                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                    </div>
-                  </div>
-                </td>
-                
-                <td>
-                    <p class="text-sm font-weight-bold mb-0 px-3 text-dark">{{i.first_daily_time|default:"-"}}</p>
-                    <div class="px-3 mt-1">
-                        {% if i.late_in %}
-                          <span class="badge bg-gradient-danger text-xxs px-2 py-1"><i class="fas fa-arrow-up me-1"></i>Late: {{ i.late_in }}</span>
-                        {% elif i.early_in %}
-                          <span class="badge bg-gradient-info text-xxs px-2 py-1"><i class="fas fa-arrow-down me-1"></i>Early: {{ i.early_in }}</span>
-                        {% endif %}
-                    </div>
-                </td>
-                
-                <td class="text-center">
-                    <p class="text-sm font-weight-bold mb-0 text-dark text-center">{{i.last_daily_time|default:"-"}}</p>
-                    <div class="mt-1">
-                        {% if i.early_out %}
-                          <span class="badge bg-gradient-warning text-xxs px-2 py-1"><i class="fas fa-arrow-down me-1"></i>Early Out: {{ i.early_out }}</span>
-                        {% elif i.late_out %}
-                          <span class="badge bg-gradient-primary text-xxs px-2 py-1"><i class="fas fa-arrow-up me-1"></i>Overtime: {{ i.late_out }}</span>
-                        {% endif %}
-                    </div>
-                </td>
-                
-                <td class="align-middle text-center text-sm">
-                  <span class="badge bg-light text-dark border" style="font-size: 0.8rem;">{{i.hour_inside|default:"0:00:00"}}</span>
-                </td>
-                
-                <td class="text-center">
-                    <span class="badge bg-gradient-success px-3 py-2">Present</span>
-                </td>
-            </tr>
-          {% empty %}
-            <tr>
-                <td colspan="5" class="text-center py-5 text-muted">
-                    <i class="fas fa-check-circle fa-3x mb-3 text-light"></i>
-                    <h5>No present records found</h5>
-                </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+
+                                <!-- Member scan timeline modal (only for present members) -->
+                                {% if not i.report_is_absent %}
+                                    <div
+                                        class="modal fade no-print"
+                                        id="memberTimeline{{ i.id }}"
+                                        tabindex="-1"
+                                        aria-hidden="true"
+                                    >
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content border-0 rounded-3">
+                                                <div class="modal-header bg-light">
+                                                    <h5 class="modal-title fw-bold">
+                                                        {{ i.name }} - Timeline
+                                                    </h5>
+
+                                                    <button
+                                                        type="button"
+                                                        class="btn-close"
+                                                        data-bs-dismiss="modal"
+                                                        aria-label="Close"
+                                                    ></button>
+                                                </div>
+
+                                                <div class="modal-body p-0">
+                                                    <div class="bg-dark text-white text-center p-2 fw-bold">
+                                                        Scan Logs for
+                                                        {{ date|date:'Y-m-d' }}
+                                                    </div>
+
+                                                    <div class="row g-0 p-3">
+                                                        {% for scan in i.report_scans %}
+                                                            <div class="col-6 text-center p-2 border-bottom">
+                                                                <i class="fas fa-clock text-success me-1"></i>
+                                                                {{ scan.scanned_time|time:"g:i:s A" }}
+                                                            </div>
+                                                        {% empty %}
+                                                            <div class="col-12 text-center text-muted py-4">
+                                                                No scan logs found.
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+
+                                                <div class="modal-footer border-0">
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-secondary"
+                                                        data-bs-dismiss="modal"
+                                                    >
+                                                        Close
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if i.report_is_absent %}
+                                    <div class="metric-time-absent">
+                                        <i class="fas fa-minus-circle text-danger me-1"></i>
+                                        No Scan
+                                    </div>
+                                {% else %}
+                                    <div class="metric-time">
+                                        {% if i.report_first_time %}
+                                            {{ i.report_first_time|time:"g:i A" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </div>
+
+                                    {% if i.report_late_in %}
+                                        <span class="metric-badge bg-danger text-white">
+                                            <i class="fas fa-arrow-up me-1"></i>
+                                            Late: {{ i.report_late_in }}
+                                        </span>
+                                    {% elif i.report_early_in %}
+                                        <span class="metric-badge bg-info text-dark">
+                                            <i class="fas fa-arrow-down me-1"></i>
+                                            Early: {{ i.report_early_in }}
+                                        </span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+
+                            <td class="text-center">
+                                {% if i.report_is_absent %}
+                                    <div class="metric-time-absent">
+                                        -
+                                    </div>
+                                {% else %}
+                                    <div class="metric-time">
+                                        {% if i.report_last_time %}
+                                            {{ i.report_last_time|time:"g:i A" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </div>
+
+                                    {% if i.report_early_out %}
+                                        <span class="metric-badge bg-warning text-dark">
+                                            <i class="fas fa-arrow-down me-1"></i>
+                                            Early Out:
+                                            {{ i.report_early_out }}
+                                        </span>
+                                    {% elif i.report_late_out %}
+                                        <span class="metric-badge bg-primary text-white">
+                                            <i class="fas fa-arrow-up me-1"></i>
+                                            Overtime:
+                                            {{ i.report_late_out }}
+                                        </span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+
+                            <td class="text-center">
+                                {% if i.report_is_absent %}
+                                    <span class="badge bg-light text-muted border">
+                                        -
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark border">
+                                        {{ i.report_total_hours|default:"0:00:00" }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td class="text-center">
+                                {% if i.report_is_absent %}
+                                    <span class="status-badge status-absent">
+                                        <i class="fas fa-times-circle"></i>
+                                        Absent
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-present">
+                                        <i class="fas fa-check-circle"></i>
+                                        Present
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td
+                                colspan="5"
+                                class="text-center py-5 text-muted"
+                            >
+                                <i class="fas fa-users fa-2x mb-2"></i>
+                                <h6>No members found.</h6>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-  </div>
 </div>
 
-<script>
-  function printData(tId) {
-      window.print();
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-      if (window.initGlobalDatePickers) initGlobalDatePickers(document);
-  });
-</script>
 {% endblock content %}

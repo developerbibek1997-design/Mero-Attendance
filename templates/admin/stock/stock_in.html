@@ -19,8 +19,32 @@
               </select></div>
             <div class="mb-3"><label class="form-label text-xs font-weight-bold">Quantity *</label><input type="number" step="0.01" name="quantity" class="form-control" required min="0.01"></div>
             <div class="mb-3"><label class="form-label text-xs font-weight-bold">Unit Cost (Rs.)</label><input type="number" step="0.01" name="unit_cost" class="form-control" value="0"></div>
-            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Date</label><input type="date" name="movement_date" class="form-control" value="{{ today }}"></div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Date</label>
+              {% if nepali_enabled %}
+              <input type="text" class="form-control nepali-cal" name="movement_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+              <input type="date" class="hidden-date-input" name="movement_date" value="{{ today }}">
+              {% else %}
+              <input type="date" name="movement_date" class="form-control" value="{{ today }}">
+              {% endif %}
+            </div>
             <div class="mb-3"><label class="form-label text-xs font-weight-bold">Note</label><input type="text" name="note" class="form-control" placeholder="e.g. Purchased from supplier"></div>
+            {% if features.accounting %}
+            <div class="mb-3 p-3 rounded-3" style="background:#eff6ff;border:1px solid #bfdbfe;">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="add_as_expense" id="addExpense" checked>
+                <label class="form-check-label fw-bold text-primary" for="addExpense">
+                  <i class="fas fa-link me-1"></i> Also post to Accounting
+                </label>
+              </div>
+              <small class="text-muted d-block mt-1">If a unit cost is entered, a real journal entry is posted (Debit Inventory / Credit the payment account below).</small>
+              <div class="mt-2"><label class="form-label text-xs font-weight-bold">Payment Method</label>
+                <select name="payment_method" class="form-select form-select-sm">
+                  <option value="cash">Cash</option>
+                  <option value="bank">Bank</option>
+                </select>
+              </div>
+            </div>
+            {% else %}
             <div class="mb-3 p-3 rounded-3" style="background:#f0fdf4;border:1px solid #bbf7d0;">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="add_as_expense" id="addExpense" checked>
@@ -30,6 +54,7 @@
               </div>
               <small class="text-muted d-block mt-1">If unit cost is entered, a matching expense will be auto-created in your Finance ledger (Qty × Unit Cost).</small>
             </div>
+            {% endif %}
             <div class="d-flex gap-2">
               <button type="submit" class="btn btn-success"><i class="fas fa-save me-1"></i>Record Stock In</button>
               <a href="{% url 'schooladmin:stock_items' %}" class="btn btn-outline-secondary">Cancel</a>

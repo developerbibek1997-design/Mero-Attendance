@@ -1,0 +1,247 @@
+{% extends 'dashboard.html' %}
+{% block title %}Send My Location | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+
+            {% for msg in messages %}
+            <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+            {% endfor %}
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom p-4 text-center">
+                    <div class="icon icon-shape bg-gradient-info shadow text-center border-radius-md mx-auto mb-3" style="width: 60px; height: 60px;">
+                        <i class="fas fa-location-arrow text-white text-2xl" style="line-height: 60px;"></i>
+                    </div>
+                    <h4 class="mb-0">Send My Location</h4>
+                    <p class="text-sm text-muted">Share where you are, then attach a visit report or a client follow-up.</p>
+                </div>
+
+                <div class="card-body p-4">
+
+                    <div id="statusBox" class="p-3 mb-4 rounded bg-light border text-center">
+                        <i class="fas fa-satellite-dish text-secondary mb-2 text-lg" id="statusIcon"></i>
+                        <h6 class="mb-0" id="statusText">Ready to capture location...</h6>
+                        <small id="statusDetail" class="text-muted">Click the button below to start.</small>
+                    </div>
+
+                    <form method="post" id="sendForm" class="d-none text-start" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="latitude" id="latInput">
+                        <input type="hidden" name="longitude" id="lngInput">
+                        <input type="hidden" name="accuracy" id="accInput">
+                        <input type="hidden" name="area_name" id="areaInput">
+
+                        <!-- Captured location summary -->
+                        <div class="mb-3 p-3 rounded border bg-light">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-map-marker-alt text-danger me-2 mt-1"></i>
+                                <div class="w-100">
+                                    <div class="text-xs font-weight-bold text-uppercase text-muted">Area / Address</div>
+                                    <div id="areaDisplay" class="text-sm">Detecting area name…</div>
+                                    <div id="coordDisplay" class="text-xs text-muted mt-1"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-xs font-weight-bold">Visit Report (optional)</label>
+                            <textarea name="note" class="form-control" rows="2" placeholder="What did you observe / do on this visit?"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-xs font-weight-bold">Attachment (optional)</label>
+                            <input type="file" name="attachment" class="form-control">
+                        </div>
+
+                        {% if clients or can_manage_clients %}
+                        <!-- Client and optional follow-up -->
+                        <div class="border-top pt-3 mt-2">
+                            <label class="text-xs font-weight-bold text-uppercase text-info d-block mb-2">
+                                <i class="fas fa-handshake me-1"></i> Client Visit (optional)
+                            </label>
+                            <div class="mb-3">
+                                <label class="text-xs font-weight-bold">Client</label>
+                                <select name="client_id" id="clientSelect" class="form-select">
+                                    <option value="">— No client attached —</option>
+                                    {% for c in clients %}
+                                    <option value="{{ c.id }}">{{ c.client_number }} — {{ c.client_org_name }} ({{ c.get_priority_display }})</option>
+                                    {% endfor %}
+                                    {% if can_manage_clients %}<option value="new">＋ Add a new client at this location</option>{% endif %}
+                                </select>
+                            </div>
+                            {% if can_manage_clients %}
+                            <div id="newClientFields" class="d-none p-3 rounded mb-3" style="background:#f8fafc;border:1px solid #e2e8f0;">
+                                <div class="row">
+                                    <div class="col-md-8 mb-3">
+                                        <label class="text-xs font-weight-bold">Client / Company Name *</label>
+                                        <input type="text" name="client_org_name" class="form-control" placeholder="Client organization">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="text-xs font-weight-bold">Priority</label>
+                                        <select name="client_priority" class="form-select">
+                                            {% for value,label in client_priority_choices %}<option value="{{ value }}"{% if value == 'medium' %} selected{% endif %}>{{ label }}</option>{% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-2"><input type="text" name="client_number" class="form-control" placeholder="Client # (auto)"></div>
+                                    <div class="col-md-4 mb-2"><input type="text" name="contact_person" class="form-control" placeholder="Contact person"></div>
+                                    <div class="col-md-4 mb-2"><input type="tel" name="client_phone" class="form-control" placeholder="Phone"></div>
+                                </div>
+                                <input type="text" name="client_address" class="form-control" placeholder="Address (optional)">
+                            </div>
+
+                            <div id="followupChoice" class="d-none mb-3">
+                                <div class="form-check form-switch p-3 rounded" style="background:#eff6ff;">
+                                    <input class="form-check-input" type="checkbox" name="log_follow_up" id="logFollowUp">
+                                    <label class="form-check-label text-sm font-weight-bold" for="logFollowUp">Add a follow-up for this visit</label>
+                                    <div class="text-xs text-muted">Leave this off to attach the client and skip today’s follow-up.</div>
+                                </div>
+                            </div>
+                            <div id="followupFields" class="d-none">
+                                <div class="mb-3">
+                                    <label class="text-xs font-weight-bold">Feedback</label>
+                                    <textarea name="feedback" class="form-control" rows="2" placeholder="Discussion, outcome, next steps…"></textarea>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="text-xs font-weight-bold">Priority</label>
+                                        <select name="follow_up_priority" class="form-select">
+                                            {% for value,label in client_priority_choices %}<option value="{{ value }}"{% if value == 'medium' %} selected{% endif %}>{{ label }}</option>{% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="text-xs font-weight-bold">Follow-up Date</label>
+                                        <input type="date" name="follow_up_date" class="form-control" value="{% now 'Y-m-d' %}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="text-xs font-weight-bold">Next Follow-up</label>
+                                        <input type="date" name="next_follow_up_date" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <button type="submit" class="btn bg-gradient-success btn-lg w-100 mb-2">
+                            <i class="fas fa-paper-plane me-2"></i> Send Location
+                        </button>
+                    </form>
+
+                    <button type="button" id="scanBtn" class="btn bg-gradient-info btn-lg w-100" onclick="getLocation()">
+                        <i class="fas fa-crosshairs me-2"></i> Get My Location
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getLocation() {
+        const statusBox = document.getElementById("statusBox");
+        const statusText = document.getElementById("statusText");
+        const statusDetail = document.getElementById("statusDetail");
+        const scanBtn = document.getElementById("scanBtn");
+
+        statusBox.className = "p-3 mb-4 rounded bg-info text-white text-center";
+        statusText.innerText = "Locating GPS...";
+        statusDetail.innerText = "Please wait, acquiring high-accuracy signal.";
+        statusDetail.className = "text-white opacity-8";
+        scanBtn.disabled = true;
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(onLocated, showError, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            });
+        } else {
+            showError({message: "Geolocation is not supported by this browser."});
+        }
+    }
+
+    function onLocated(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+
+        document.getElementById("latInput").value = userLat;
+        document.getElementById("lngInput").value = userLng;
+        document.getElementById("accInput").value = accuracy;
+
+        const statusBox = document.getElementById("statusBox");
+        const statusText = document.getElementById("statusText");
+        const statusDetail = document.getElementById("statusDetail");
+
+        statusBox.className = "p-3 mb-4 rounded bg-success text-white shadow-sm text-center";
+        statusText.innerText = "Location Captured!";
+        statusDetail.innerText = `Accuracy: ${Math.round(accuracy)}m.`;
+
+        document.getElementById("coordDisplay").innerText =
+            `${userLat.toFixed(6)}, ${userLng.toFixed(6)}  (±${Math.round(accuracy)}m)`;
+
+        document.getElementById("scanBtn").classList.add("d-none");
+        document.getElementById("sendForm").classList.remove("d-none");
+
+        reverseGeocode(userLat, userLng);
+    }
+
+    function reverseGeocode(lat, lng) {
+        const areaDisplay = document.getElementById("areaDisplay");
+        const areaInput = document.getElementById("areaInput");
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`;
+
+        fetch(url, { headers: { 'Accept': 'application/json' } })
+            .then(r => r.ok ? r.json() : Promise.reject(r.status))
+            .then(data => {
+                const name = (data && data.display_name) ? data.display_name : "";
+                if (name) {
+                    areaInput.value = name;
+                    areaDisplay.innerText = name;
+                } else {
+                    areaDisplay.innerHTML = '<span class="text-muted">Area name unavailable — coordinates will still be sent.</span>';
+                }
+            })
+            .catch(() => {
+                areaDisplay.innerHTML = '<span class="text-muted">Area name unavailable — coordinates will still be sent.</span>';
+            });
+    }
+
+    function showError(error) {
+        const statusBox = document.getElementById("statusBox");
+        const statusText = document.getElementById("statusText");
+        statusBox.className = "p-3 mb-4 rounded bg-warning text-white shadow-sm text-center";
+        statusText.innerText = "GPS Error";
+        document.getElementById("statusDetail").innerText = error.message || "Ensure location permissions are granted in your browser.";
+        document.getElementById("scanBtn").disabled = false;
+        document.getElementById("scanBtn").innerText = "Retry";
+    }
+
+    // A client can be attached without forcing a follow-up. New client data and
+    // follow-up details are deliberately separate choices.
+    document.addEventListener("DOMContentLoaded", function () {
+        const sel = document.getElementById("clientSelect");
+        const choice = document.getElementById("followupChoice");
+        const newFields = document.getElementById("newClientFields");
+        const checkbox = document.getElementById("logFollowUp");
+        const followupFields = document.getElementById("followupFields");
+        if (sel) {
+            const refresh = function () {
+                const hasClient = !!sel.value;
+                if (newFields) newFields.classList.toggle("d-none", sel.value !== "new");
+                if (choice) choice.classList.toggle("d-none", !hasClient);
+                if (!hasClient && checkbox) checkbox.checked = false;
+                if (followupFields) followupFields.classList.toggle("d-none", !checkbox || !checkbox.checked || !hasClient);
+            };
+            sel.addEventListener("change", refresh);
+            if (checkbox) checkbox.addEventListener("change", refresh);
+            refresh();
+        }
+    });
+</script>
+{% endblock content %}

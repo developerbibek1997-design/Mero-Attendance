@@ -1,0 +1,65 @@
+{% extends 'dashboard.html' %}
+{% block title %}Book Issue History | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0">Book Issue History</h4>
+    <div>
+      <a href="{% url 'schooladmin:library_issue' %}" class="btn btn-success btn-sm"><i class="fas fa-right-from-bracket me-1"></i>Issue Book</a>
+    </div>
+  </div>
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3 col-6"><label class="text-xs font-weight-bold">Book</label>
+          <select name="book" class="form-select form-select-sm"><option value="">All Books</option>{% for b in books %}<option value="{{ b.id }}" {% if selected_book == b.id|stringformat:"s" %}selected{% endif %}>{{ b.title }}</option>{% endfor %}</select></div>
+        <div class="col-md-3 col-6"><label class="text-xs font-weight-bold">Status</label>
+          <select name="status" class="form-select form-select-sm"><option value="">All</option><option value="issued" {% if selected_status == 'issued' %}selected{% endif %}>Issued</option><option value="returned" {% if selected_status == 'returned' %}selected{% endif %}>Returned</option><option value="lost" {% if selected_status == 'lost' %}selected{% endif %}>Lost</option></select></div>
+        <div class="col-md-3 col-6"><label class="text-xs font-weight-bold">From</label><input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from|default:'' }}"></div>
+        <div class="col-md-3 col-6"><label class="text-xs font-weight-bold">To</label><input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to|default:'' }}"></div>
+        <div class="col-12 d-flex gap-1 flex-wrap">
+          <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-filter me-1"></i>Filter</button>
+          <a href="{% url 'schooladmin:library_issues' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+          <a href="{% url 'schooladmin:export_library' %}?fmt=excel&type=issues" class="btn btn-success btn-sm" title="Export Excel"><i class="fas fa-file-excel"></i></a>
+          <a href="{% url 'schooladmin:export_library' %}?fmt=csv&type=issues" class="btn btn-outline-success btn-sm" title="Export CSV"><i class="fas fa-file-csv"></i></a>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th class="text-xs">#</th><th class="text-xs">Book</th><th class="text-xs">Member</th><th class="text-xs">Issued</th><th class="text-xs">Due</th><th class="text-xs">Returned</th><th class="text-xs">Fine</th><th class="text-xs">Status</th><th class="text-xs text-center">Action</th></tr>
+        </thead>
+        <tbody>
+          {% for i in issues %}
+          <tr>
+            <td class="text-xs text-muted">{{ forloop.counter }}</td>
+            <td class="text-sm font-weight-bold">{{ i.book.title }}</td>
+            <td class="text-sm">{{ i.member.name }} <span class="text-xs text-muted">({{ i.member.get_member_type_display }})</span></td>
+            <td class="text-sm">{{ i.issue_date }}</td>
+            <td class="text-sm">{{ i.due_date }}</td>
+            <td class="text-sm">{{ i.return_date|default:"-" }}</td>
+            <td class="text-sm">{% if i.fine %}Rs. {{ i.fine }}{% if i.fine_paid %} <span class="text-xs text-success">(paid Rs. {{ i.fine_paid }})</span>{% endif %}{% else %}-{% endif %}</td>
+            <td>
+              {% if i.status == 'returned' %}<span class="badge bg-info">Returned</span>
+              {% elif i.status == 'lost' %}<span class="badge bg-secondary">Lost</span>
+              {% elif i.due_date < today %}<span class="badge bg-danger">Overdue</span>
+              {% else %}<span class="badge bg-warning text-dark">Issued</span>{% endif %}
+            </td>
+            <td class="text-center">
+              {% if i.status == 'issued' or i.status == 'overdue' %}
+              <a href="{% url 'schooladmin:library_return' i.pk %}" class="btn btn-xs btn-outline-success"><i class="fas fa-right-to-bracket me-1"></i>Return</a>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" class="text-center text-muted py-5"><i class="fas fa-history fa-2x mb-2 d-block"></i>No issue records found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

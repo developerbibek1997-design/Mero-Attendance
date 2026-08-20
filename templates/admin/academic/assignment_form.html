@@ -1,0 +1,54 @@
+{% extends 'dashboard.html' %}
+{% block title %}{% if mode == 'edit' %}Edit{% else %}New{% endif %} Assignment | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-file-pen text-primary me-2"></i>{% if mode == 'edit' %}Edit Assignment{% else %}New Assignment{% endif %}</h6>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          {% if form.errors %}<div class="alert alert-danger">Please correct the errors below.</div>{% endif %}
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-8"><label class="form-label text-xs font-weight-bold">Title *</label>{{ form.title }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Status</label>{{ form.status }}</div>
+
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Class *</label>{{ form.classification }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Section</label>{{ form.section }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Subject *</label>{{ form.subject }}</div>
+
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Course</label>{{ form.course }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Semester</label>{{ form.semester }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Visibility</label>{{ form.visibility }}</div>
+
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Description</label>{{ form.description }}</div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Instructions</label>{{ form.instructions }}</div>
+
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Start Date</label>{{ form.start_date }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Due Date *</label>{{ form.due_date }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Total Marks</label>{{ form.total_marks }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Passing Marks</label>{{ form.passing_marks }}</div>
+
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Attachments (multiple)</label><input type="file" name="attachments" class="form-control" multiple></div>
+              {% if assignment and assignment.attachments.all %}
+              <div class="col-12"><p class="text-xs text-muted mb-1">Existing:</p>
+                {% for att in assignment.attachments.all %}<a href="{{ att.file.url }}" target="_blank" class="badge bg-light text-dark text-decoration-none me-1">{{ att.file.name|slice:"-20:" }}</a>{% endfor %}
+              </div>
+              {% endif %}
+
+              <div class="col-12 d-flex gap-2 mt-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+                <a href="{% url 'schooladmin:assignment_list' %}" class="btn btn-outline-secondary">Cancel</a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

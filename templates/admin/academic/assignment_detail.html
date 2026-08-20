@@ -1,0 +1,71 @@
+{% extends 'dashboard.html' %}
+{% block title %}{{ assignment.title }} | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="font-weight-bolder mb-0">{{ assignment.title }}</h4>
+    <div>
+      <a href="{% url 'schooladmin:edit_assignment' assignment.pk %}" class="btn btn-outline-primary btn-sm me-1"><i class="fas fa-edit me-1"></i>Edit</a>
+      <form method="post" action="{% url 'schooladmin:delete_assignment' assignment.pk %}" class="d-inline" onsubmit="return confirm('Delete this assignment?')">{% csrf_token %}<button class="btn btn-outline-danger btn-sm"><i class="fas fa-trash me-1"></i>Delete</button></form>
+    </div>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body p-4">
+      <div class="row g-2 mb-3">
+        <div class="col-md-3"><p class="text-xs text-muted mb-0">Class</p><p class="text-sm font-weight-bold">{{ assignment.classification }}{% if assignment.section %} / {{ assignment.section }}{% endif %}</p></div>
+        <div class="col-md-3"><p class="text-xs text-muted mb-0">Subject</p><p class="text-sm font-weight-bold">{{ assignment.subject.name }}</p></div>
+        <div class="col-md-3"><p class="text-xs text-muted mb-0">Due Date</p><p class="text-sm font-weight-bold">{{ assignment.due_date }}</p></div>
+        <div class="col-md-3"><p class="text-xs text-muted mb-0">Marks</p><p class="text-sm font-weight-bold">{{ assignment.total_marks }} (pass {{ assignment.passing_marks }})</p></div>
+      </div>
+      <p class="text-sm">{{ assignment.description|default:"" }}</p>
+      {% if assignment.instructions %}<p class="text-sm text-muted"><b>Instructions:</b> {{ assignment.instructions }}</p>{% endif %}
+      {% if attachments %}
+      <div class="mt-2">
+        {% for att in attachments %}<a href="{{ att.file.url }}" target="_blank" class="badge bg-light text-dark text-decoration-none me-1"><i class="fas fa-paperclip me-1"></i>{{ att.file.name|slice:"-25:" }}</a>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 font-weight-bolder">Submissions ({{ submissions.count }})</h6></div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th class="text-xs">Student</th><th class="text-xs">Submitted</th><th class="text-xs">Late</th><th class="text-xs">Status</th><th class="text-xs">Marks</th><th class="text-xs">Grade</th></tr></thead>
+        <tbody>
+          {% for s in submissions %}
+          <tr>
+            <td class="text-sm font-weight-bold">{{ s.student.name }}</td>
+            <td class="text-sm">{{ s.submitted_at|date:"Y-m-d H:i"|default:"Not submitted" }}</td>
+            <td>{% if s.is_late %}<span class="badge bg-danger">Late</span>{% elif s.submitted_at %}<span class="badge bg-success">On time</span>{% endif %}</td>
+            <td>
+              {% if s.status == 'graded' %}<span class="badge bg-success">Graded</span>
+              {% elif s.status == 'resubmission_requested' %}<span class="badge bg-warning text-dark">Resubmit</span>
+              {% else %}<span class="badge bg-secondary">{{ s.get_status_display }}</span>{% endif %}
+            </td>
+            <td class="text-sm">{{ s.obtained_marks|default:"-" }}</td>
+            <td>
+              <form method="post" class="d-flex gap-1 align-items-center">
+                {% csrf_token %}<input type="hidden" name="submission_id" value="{{ s.id }}">
+                <input type="number" step="0.01" name="obtained_marks" class="form-control form-control-sm" style="width:70px;" value="{{ s.obtained_marks|default:'' }}" placeholder="Marks">
+                <select name="status" class="form-select form-select-sm" style="width:120px;">
+                  <option value="reviewed" {% if s.status == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                  <option value="graded" {% if s.status == 'graded' %}selected{% endif %}>Graded</option>
+                  <option value="returned" {% if s.status == 'returned' %}selected{% endif %}>Returned</option>
+                  <option value="resubmission_requested" {% if s.status == 'resubmission_requested' %}selected{% endif %}>Request Resubmit</option>
+                </select>
+                <button type="submit" class="btn btn-xs btn-primary">Save</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No submissions yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

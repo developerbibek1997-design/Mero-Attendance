@@ -23,7 +23,12 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label text-xs font-weight-bold">Due Date *</label>
+                {% if nepali_enabled %}
+                <input type="text" class="form-control nepali-cal" name="due_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off" required>
+                <input type="date" class="hidden-date-input" name="due_date" value="">
+                {% else %}
                 <input type="date" name="due_date" class="form-control" required>
+                {% endif %}
               </div>
             </div>
 

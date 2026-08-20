@@ -1,0 +1,20 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<p class="greeting">Notice from <strong>{{ org_name }}</strong></p>
+<p class="message-text">
+  <span class="badge" style="background:{% if priority == 'urgent' %}#dc2626{% elif priority == 'high' %}#f59e0b{% elif priority == 'low' %}#64748b{% else %}#2563eb{% endif %};">{{ priority_label }}</span>
+</p>
+{% comment %}
+The shared base turns autoescape off, so escape the admin-authored title and
+body explicitly — otherwise pasted markup would render as live HTML in every
+recipient's inbox. force_escape must run before linebreaks.
+{% endcomment %}
+<h2 style="font-size:18px;color:#0f172a;margin:16px 0 8px;">{{ title|force_escape }}</h2>
+<div style="font-size:14px;color:#334155;line-height:1.6;">{{ body|force_escape|linebreaks }}</div>
+{% if published_on %}
+<table class="data">
+  <tr><td class="label">Published</td><td><strong>{{ published_on }}</strong></td></tr>
+</table>
+{% endif %}
+{% endblock %}

@@ -20,11 +20,21 @@
       <form method="get" class="row g-2 align-items-end">
         <div class="col-md-2 col-6">
           <label class="text-xs font-weight-bold">From Date</label>
+          {% if nepali_enabled %}
+          <input type="text" class="form-control form-control-sm nepali-cal" name="from_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+          <input type="date" class="hidden-date-input" name="from_date" value="{{ filters.from_date }}">
+          {% else %}
           <input type="date" name="from_date" class="form-control form-control-sm" value="{{ filters.from_date }}">
+          {% endif %}
         </div>
         <div class="col-md-2 col-6">
           <label class="text-xs font-weight-bold">To Date</label>
+          {% if nepali_enabled %}
+          <input type="text" class="form-control form-control-sm nepali-cal" name="to_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+          <input type="date" class="hidden-date-input" name="to_date" value="{{ filters.to_date }}">
+          {% else %}
           <input type="date" name="to_date" class="form-control form-control-sm" value="{{ filters.to_date }}">
+          {% endif %}
         </div>
         <div class="col-md-2 col-6">
           <label class="text-xs font-weight-bold">Staff Member</label>

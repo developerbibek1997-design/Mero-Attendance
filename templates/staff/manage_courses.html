@@ -1,0 +1,85 @@
+{% extends 'dashboard.html' %}
+{% block title %}Manage Courses | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="fw-bold mb-4" style="color:#1e293b;">Manage Courses</h4>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius:12px;">
+    <h6 class="fw-bold mb-3">Create Course</h6>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-bold">Name</label>
+          <input type="text" name="name" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-bold">Code</label>
+          <input type="text" name="code" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-bold">Branch</label>
+          <select name="branch" class="form-select">
+            <option value="">—</option>
+            {% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-bold">Teacher</label>
+          <select name="teacher" class="form-select">
+            <option value="">—</option>
+            {% for s in staff_list %}<option value="{{ s.admin.id }}">{{ s.admin.get_full_name|default:s.admin.username }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-bold">Classifications</label>
+          <select name="classifications" class="form-select" multiple>
+            {% for c in classifications %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-bold">Sections</label>
+          <select name="sections" class="form-select" multiple>
+            {% for s in sections %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label small fw-bold">Description</label>
+          <textarea name="description" class="form-control" rows="2"></textarea>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Create Course</button>
+    </form>
+  </div>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 fw-bold">My Courses (edit)</h6></div>
+    <div class="card-body">
+      {% for c in my_courses %}
+      <form method="post" class="row g-2 align-items-center border-bottom py-2">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="edit">
+        <input type="hidden" name="course_id" value="{{ c.id }}">
+        <div class="col-md-3"><input type="text" name="name" class="form-control form-control-sm" value="{{ c.name }}"></div>
+        <div class="col-md-4"><input type="text" name="description" class="form-control form-control-sm" value="{{ c.description }}" placeholder="Description"></div>
+        <div class="col-md-3">
+          <select name="status" class="form-select form-select-sm">
+            <option value="active" {% if c.status == 'active' %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if c.status == 'inactive' %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+        <div class="col-md-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Save</button></div>
+      </form>
+      {% empty %}
+      <div class="text-center py-3 text-muted">No courses assigned to you yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock content %}

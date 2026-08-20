@@ -1,0 +1,41 @@
+{% comment %}
+Central staff-portal navigation. The context processor has already applied
+organisation feature gates and staff role permissions to every link.
+{% endcomment %}
+<li class="nav-item px-3 pt-2 pb-3">
+  <div class="mero-portal-identity">
+    <span class="mero-portal-identity__icon">
+      {% if portal_role == "student" %}
+      <i class="fas fa-user-graduate"></i>
+      {% elif portal_role == "teacher" %}
+      <i class="fas fa-chalkboard-teacher"></i>
+      {% else %}
+      <i class="fas fa-briefcase"></i>
+      {% endif %}
+    </span>
+    <span>
+      <strong>{{ portal_role_label }}</strong>
+      <small>{{ org.name|default:"Mero Attendance" }}</small>
+    </span>
+  </div>
+</li>
+
+{% for section in portal_navigation %}
+<li class="nav-item mt-2">
+  <h6 class="mero-nav-section">
+    <i class="fas {{ section.icon }}"></i>
+    <span>{{ section.label }}</span>
+  </h6>
+</li>
+{% for item in section.links %}
+<li class="nav-item">
+  <a class="nav-link mero-role-nav-link {% if item.exact and request.path == item.match %}active{% elif not item.exact and item.match and item.match in request.path %}active{% endif %}"
+     href="{{ item.url }}"
+     {% if item.label == "Log out" %}data-hx-skip="true"{% endif %}>
+    <span class="mero-role-nav-icon"><i class="fas {{ item.icon }}"></i></span>
+    <span class="nav-link-text">{{ item.label }}</span>
+    <i class="fas fa-chevron-right mero-role-nav-chevron"></i>
+  </a>
+</li>
+{% endfor %}
+{% endfor %}

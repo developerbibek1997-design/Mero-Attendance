@@ -1,0 +1,71 @@
+{% extends 'agent/base.html' %}
+{% block title %}Edit {{ org.name }}{% endblock %}
+{% block page_title %}Edit Organization{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="table-card">
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="{% url 'agent:org_detail' org.id %}" class="btn btn-sm btn-outline-secondary">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+          <h5 class="fw-bold mb-0" style="color:#1e293b;">Edit: {{ org.name }}</h5>
+          <p class="text-muted small mb-0">Update organization details</p>
+        </div>
+      </div>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label class="form-label fw-semibold small">Organization Name *</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">Category</label>
+            {{ form.category }}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold small">Address</label>
+            {{ form.address }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Member Limit</label>
+            {{ form.member_limit }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">Expire On</label>
+            {{ form.expire_on }}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold small">Logo</label>
+            {{ form.image }}
+            {% if org.image %}
+            <div class="mt-2">
+              <img src="{{ org.image.url }}" style="height:48px;border-radius:8px;">
+              <span class="text-muted small ms-2">Current logo</span>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              {{ form.activate }}
+              <label class="form-check-label fw-semibold small">Organization Active</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 mt-4">
+          <button type="submit" class="btn btn-primary px-5 fw-semibold">
+            <i class="fas fa-save me-2"></i>Save Changes
+          </button>
+          <a href="{% url 'agent:org_detail' org.id %}" class="btn btn-outline-secondary px-4">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

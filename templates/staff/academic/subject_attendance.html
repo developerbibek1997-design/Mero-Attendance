@@ -1,0 +1,49 @@
+{% extends 'dashboard.html' %}
+{% block title %}My Subject Attendance | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div><h4 class="font-weight-bolder mb-1">My Subject Attendance</h4><p class="text-sm text-muted mb-0">Daily presence and each subject period are separate records.</p></div>
+    <a href="{% url 'staff:dashboard' %}" class="btn btn-outline-secondary btn-sm">Dashboard</a>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md"><div class="card border-0 shadow-sm p-3"><div class="text-xs text-muted">Present</div><div class="h4 mb-0 text-success">{{ counts.present|default:0 }}</div></div></div>
+    <div class="col-6 col-md"><div class="card border-0 shadow-sm p-3"><div class="text-xs text-muted">Absent</div><div class="h4 mb-0 text-danger">{{ counts.absent|default:0 }}</div></div></div>
+    <div class="col-6 col-md"><div class="card border-0 shadow-sm p-3"><div class="text-xs text-muted">Late</div><div class="h4 mb-0 text-warning">{{ counts.late|default:0 }}</div></div></div>
+    <div class="col-6 col-md"><div class="card border-0 shadow-sm p-3"><div class="text-xs text-muted">Excused / Leave</div><div class="h4 mb-0">{{ counts.excused|default:0 }} / {{ counts.leave|default:0 }}</div></div></div>
+    <div class="col-6 col-md"><div class="card border-0 shadow-sm p-3"><div class="text-xs text-muted">Attendance %</div><div class="h4 mb-0 text-primary">{{ percentage }}%</div></div></div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body border-bottom">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2"><label class="form-label text-xs">From</label><input type="date" class="form-control" name="date_from" value="{{ date_from|date:'Y-m-d' }}"></div>
+        <div class="col-md-2"><label class="form-label text-xs">To</label><input type="date" class="form-control" name="date_to" value="{{ date_to|date:'Y-m-d' }}"></div>
+        <div class="col-md-3"><label class="form-label text-xs">Course</label><select name="course" class="form-select"><option value="">All</option>{% for course in courses %}<option value="{{ course.pk }}" {% if selected_course == course.pk|stringformat:'s' %}selected{% endif %}>{{ course.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-3"><label class="form-label text-xs">Subject</label><select name="subject" class="form-select"><option value="">All</option>{% for subject in subjects %}<option value="{{ subject.pk }}" {% if selected_subject == subject.pk|stringformat:'s' %}selected{% endif %}>{{ subject.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-1"><label class="form-label text-xs">Status</label><select name="status" class="form-select"><option value="">All</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-1"><button class="btn btn-primary btn-sm w-100">Filter</button></div>
+      </form>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th>Date</th><th>Course / Class</th><th>Subject</th><th>Period</th><th>Teacher</th><th>Status</th><th>Remarks</th></tr></thead>
+        <tbody>
+          {% for record in records %}
+          <tr>
+            <td>{{ record.teaching_log.date }}</td>
+            <td>{% if record.teaching_log.course %}{{ record.teaching_log.course.name }} / {% endif %}{{ record.teaching_log.classification.name }}{% if record.teaching_log.section %} / {{ record.teaching_log.section.name }}{% endif %}</td>
+            <td>{{ record.teaching_log.subject.name }}</td>
+            <td>{{ record.teaching_log.period|default:"-" }}</td>
+            <td>{{ record.teaching_log.teacher.get_full_name|default:record.teaching_log.teacher.email }}</td>
+            <td><span class="badge {% if record.status == 'present' %}bg-success{% elif record.status == 'absent' %}bg-danger{% elif record.status == 'late' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ record.get_status_display }}</span></td>
+            <td>{{ record.remarks|default:"-" }}</td>
+          </tr>
+          {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">No subject attendance in this range.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

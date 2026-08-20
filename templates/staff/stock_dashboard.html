@@ -1,0 +1,32 @@
+{% extends 'dashboard.html' %}
+{% block title %}Stock Overview | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="fw-bold mb-4" style="color:#1e293b;">Stock Overview</h4>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="card border-0 shadow-sm text-center p-3"><small class="text-muted">Total Items</small><h4 class="mb-0">{{ total_items }}</h4></div></div>
+    <div class="col-6 col-md-3"><div class="card border-0 shadow-sm text-center p-3"><small class="text-danger">Low Stock</small><h4 class="mb-0 text-danger">{{ low_stock_count }}</h4></div></div>
+    <div class="col-6 col-md-3"><div class="card border-0 shadow-sm text-center p-3"><small class="text-muted">Stock Value</small><h4 class="mb-0">Rs. {{ total_value|floatformat:0 }}</h4></div></div>
+  </div>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 fw-bold">Recent Movements</h6></div>
+    <div class="card-body p-0">
+      <table class="table mb-0 align-items-center">
+        <tbody>
+          {% for m in recent_movements %}
+          <tr>
+            <td class="ps-4 text-sm"><strong>{{ m.item.name }}</strong><div class="text-xs text-muted">{{ m.movement_date }}</div></td>
+            <td class="text-sm text-end pe-4"><span class="badge bg-{% if m.movement_type == 'in' %}success{% else %}danger{% endif %}">{{ m.movement_type|upper }} {{ m.quantity }}</span></td>
+          </tr>
+          {% empty %}
+          <tr><td class="text-center py-4 text-muted">No movements yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

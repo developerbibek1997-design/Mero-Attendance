@@ -1,0 +1,133 @@
+<li class="nav-item dropdown pe-3 d-flex align-items-center">
+  <a href="javascript:;"
+     class="nav-link text-body p-0 position-relative mero-notification-bell"
+     id="notifBellDropdown"
+     data-bs-toggle="dropdown"
+     aria-expanded="false"
+     aria-label="Open notifications{% if dash_unread_notifications %}, {{ dash_unread_notifications }} unread{% endif %}">
+    <i class="fas fa-bell"></i>
+    {% if dash_unread_notifications %}
+    <span class="mero-notification-badge">
+      {% if dash_unread_notifications > 99 %}99+{% else %}{{ dash_unread_notifications }}{% endif %}
+    </span>
+    {% endif %}
+  </a>
+  <ul class="dropdown-menu dropdown-menu-end mero-notification-menu" aria-labelledby="notifBellDropdown">
+    <li class="mero-notification-head">
+      <div>
+        <span class="text-xs text-uppercase text-muted font-weight-bold">Activity centre</span>
+        <h6 class="mb-0 text-dark">Notifications</h6>
+      </div>
+      {% if dash_unread_notifications %}
+      <span class="badge bg-gradient-danger">{{ dash_unread_notifications }} unread</span>
+      {% endif %}
+    </li>
+    <li><div class="mero-notification-scroll">
+      {% for n in dash_notifications %}
+      <a class="mero-notification-item {% if not n.is_read %}is-unread{% endif %}"
+         href="{% url 'handle:open_notification' n.pk %}">
+        <span class="mero-notification-icon text-{{ n.tone }} bg-{{ n.tone }}-soft">
+          <i class="fas {{ n.icon_class }}"></i>
+        </span>
+        <span class="min-width-0 flex-grow-1">
+          <span class="d-flex justify-content-between align-items-start gap-2">
+            <span class="text-sm font-weight-bold text-dark text-wrap">{{ n.title|truncatechars:65 }}</span>
+            {% if not n.is_read %}<span class="mero-unread-dot"></span>{% endif %}
+          </span>
+          {% if n.body %}<span class="d-block text-xs text-muted text-wrap mt-1">{{ n.body|truncatechars:95 }}</span>{% endif %}
+          <span class="d-block text-xs text-secondary mt-1">{{ n.created_at|timesince }} ago</span>
+        </span>
+      </a>
+      {% empty %}
+      <div class="mero-notification-empty">
+        <span><i class="fas fa-bell-slash"></i></span>
+        <strong>You're all caught up</strong>
+        <small>New task and academic updates will appear here.</small>
+      </div>
+      {% endfor %}
+    </div></li>
+    <li class="mero-notification-footer">
+      <a href="{% url 'handle:notifications' %}">Open notification centre <i class="fas fa-arrow-right ms-1"></i></a>
+    </li>
+  </ul>
+</li>
+
+<style>
+  .mero-notification-bell {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    color: #475569 !important;
+    background: #f8fafc;
+    transition: .2s ease;
+  }
+  .mero-notification-bell:hover { color: #4f46e5 !important; background: #eef2ff; transform: translateY(-1px); }
+  .mero-notification-badge {
+    position: absolute;
+    top: -7px;
+    right: -8px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    display: grid;
+    place-items: center;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    color: #fff;
+    background: linear-gradient(135deg, #f43f5e, #be123c);
+    font-size: .6rem;
+    font-weight: 800;
+    box-shadow: 0 5px 12px rgba(225, 29, 72, .3);
+  }
+  .mero-notification-menu {
+    width: min(390px, calc(100vw - 1.5rem));
+    margin-top: .7rem !important;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid rgba(15, 23, 42, .08);
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .2);
+  }
+  .mero-notification-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.05rem .85rem;
+    border-bottom: 1px solid #eef2f7;
+    background: linear-gradient(135deg, #fff, #f8fafc);
+  }
+  .mero-notification-scroll { max-height: 390px; overflow-y: auto; }
+  .mero-notification-item {
+    display: flex;
+    gap: .8rem;
+    padding: .9rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: inherit;
+    text-decoration: none;
+    transition: .18s ease;
+  }
+  .mero-notification-item:hover { background: #f8fafc; }
+  .mero-notification-item.is-unread { background: linear-gradient(90deg, #eef2ff, #fff 75%); }
+  .mero-notification-icon {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+  }
+  .bg-primary-soft { background: #eef2ff; }
+  .bg-success-soft { background: #ecfdf5; }
+  .bg-warning-soft { background: #fffbeb; }
+  .bg-danger-soft { background: #fff1f2; }
+  .mero-unread-dot { flex: 0 0 auto; width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: #4f46e5; box-shadow: 0 0 0 4px #e0e7ff; }
+  .mero-notification-empty { display: grid; justify-items: center; gap: .4rem; padding: 2.3rem 1rem; color: #64748b; text-align: center; }
+  .mero-notification-empty > span { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 15px; color: #6366f1; background: #eef2ff; font-size: 1.1rem; }
+  .mero-notification-empty small { max-width: 240px; }
+  .mero-notification-footer { padding: .75rem 1rem; text-align: center; background: #f8fafc; }
+  .mero-notification-footer a { color: #4f46e5; font-size: .78rem; font-weight: 800; }
+  .min-width-0 { min-width: 0; }
+</style>

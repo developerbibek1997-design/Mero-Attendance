@@ -1,0 +1,20 @@
+{% for account in accounts %}
+<tr {% if not account.is_active %}class="table-secondary"{% endif %}>
+  <td class="text-sm" style="padding-left:{{ depth|add:1|add:depth }}0px;">
+    {% if account.is_group %}<i class="fas fa-folder text-warning me-1"></i>{% else %}<i class="fas fa-file-invoice-dollar text-muted me-1"></i>{% endif %}
+    <span class="{% if account.is_group %}font-weight-bold{% endif %}">{{ account.name }}</span>
+    {% if account.code %}<span class="text-xs text-muted ms-1">({{ account.code }})</span>{% endif %}
+    {% if account.is_system %}<span class="badge bg-light text-dark ms-1" style="font-size:.6rem;">system</span>{% endif %}
+  </td>
+  <td class="text-xs text-capitalize">{{ account.get_account_type_display }}</td>
+  <td class="text-sm">{% if not account.is_group %}Rs. {{ account.opening_balance|floatformat:2 }}{% else %}&mdash;{% endif %}</td>
+  <td><span class="badge {% if account.is_active %}bg-success{% else %}bg-secondary{% endif %}">{% if account.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+  <td class="text-center">
+    <a href="{% url 'schooladmin:edit_account' account.pk %}" class="btn btn-xs btn-outline-primary mb-0"><i class="fas fa-edit"></i></a>
+    <form method="post" action="{% url 'schooladmin:delete_account' account.pk %}" class="d-inline" onsubmit="return confirm('Delete this account?')">{% csrf_token %}<button type="submit" class="btn btn-xs btn-outline-danger mb-0"><i class="fas fa-trash"></i></button></form>
+  </td>
+</tr>
+{% if account.children.all %}
+{% include 'admin/accounting/_account_tree_row.html' with accounts=account.children.all depth=depth|add:1 %}
+{% endif %}
+{% endfor %}

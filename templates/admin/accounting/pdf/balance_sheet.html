@@ -1,0 +1,48 @@
+<html>
+<head>
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; color: #111827; font-size: 11px; }
+  h1 { font-size: 17px; margin-bottom: 2px; }
+  .muted { color: #6b7280; margin-top: 0; }
+  h3 { font-size: 12px; margin: 14px 0 4px; color: #0f766e; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; }
+  .label { width: 65%; }
+  .num { text-align: right; }
+  .total { font-weight: bold; background: #f1f5f9; }
+</style>
+</head>
+<body>
+  <h1>{{ org.name }}</h1>
+  <p class="muted">Balance Sheet &mdash; as of {{ as_of_date }}</p>
+
+  <h3>Assets</h3>
+  <table>
+    {% for a in bs.assets %}
+    <tr><td class="label">{{ a.account.full_path }}</td><td class="num">{{ a.balance|floatformat:2 }}</td></tr>
+    {% endfor %}
+    <tr class="total"><td class="label">Total Assets</td><td class="num">{{ bs.total_assets|floatformat:2 }}</td></tr>
+  </table>
+
+  <h3>Liabilities</h3>
+  <table>
+    {% for l in bs.liabilities %}
+    <tr><td class="label">{{ l.account.full_path }}</td><td class="num">{{ l.balance|floatformat:2 }}</td></tr>
+    {% endfor %}
+    <tr class="total"><td class="label">Total Liabilities</td><td class="num">{{ bs.total_liabilities|floatformat:2 }}</td></tr>
+  </table>
+
+  <h3>Equity</h3>
+  <table>
+    {% for e in bs.equity %}
+    <tr><td class="label">{{ e.account.full_path }}</td><td class="num">{{ e.balance|floatformat:2 }}</td></tr>
+    {% endfor %}
+    <tr><td class="label">Retained Earnings (current)</td><td class="num">{{ bs.retained_earnings_current|floatformat:2 }}</td></tr>
+    <tr class="total"><td class="label">Total Equity</td><td class="num">{{ bs.total_equity|floatformat:2 }}</td></tr>
+  </table>
+
+  <table>
+    <tr class="total"><td class="label">Total Liabilities + Equity</td><td class="num">{{ bs.total_liab_equity|floatformat:2 }}</td></tr>
+  </table>
+</body>
+</html>

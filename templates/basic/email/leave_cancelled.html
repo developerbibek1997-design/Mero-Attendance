@@ -1,0 +1,11 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Leave Request Cancelled{% endblock %}
+{% block content %}
+<p class="greeting">Hi <strong>{{ name }}</strong>,</p>
+<p class="message-text">Your {{ leave_type }} leave request has been <span class="badge" style="background:#64748b;">Cancelled</span></p>
+<table class="data">
+  <tr><td class="label">Leave Type</td><td>{{ leave_type }}</td></tr>
+  <tr><td class="label">From</td><td>{{ start }}</td></tr>
+  <tr><td class="label">To</td><td>{{ end }}</td></tr>
+</table>
+{% endblock %}

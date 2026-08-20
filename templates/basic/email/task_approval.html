@@ -1,0 +1,10 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Task {{ approval_status|title }}{% endblock %}
+{% block content %}
+<p class="greeting">Hi <strong>{{ name }}</strong>,</p>
+<p class="message-text">Your completed task <em>"{{ task_title }}"</em> has been
+  <span class="badge" style="background:{% if approval_status == 'approved' %}#16a34a{% else %}#ef4444{% endif %};">{{ approval_status|title }}</span>
+</p>
+{% if reason %}<table class="data"><tr><td class="label">Reason</td><td>{{ reason }}</td></tr></table>{% endif %}
+{% if approval_status == 'rejected' %}<p class="message-text" style="color:#ef4444;">The task has been returned to rework-required status.</p>{% endif %}
+{% endblock %}

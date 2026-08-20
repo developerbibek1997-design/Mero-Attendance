@@ -107,8 +107,22 @@
             <div class="col-md-6"><label class="f-label">Status</label>
               <select name="status" class="f-input"><option value="draft">Draft</option><option value="marks_entry">Marks Entry</option><option value="published">Published</option></select>
             </div>
-            <div class="col-md-6"><label class="f-label">Start Date</label><input type="date" name="start_date" class="f-input"></div>
-            <div class="col-md-6"><label class="f-label">End Date</label><input type="date" name="end_date" class="f-input"></div>
+            <div class="col-md-6"><label class="f-label">Start Date</label>
+              {% if nepali_enabled %}
+              <input type="text" class="f-input nepali-cal" name="start_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off" data-no-autoseed>
+              <input type="date" class="hidden-date-input" name="start_date" value="">
+              {% else %}
+              <input type="date" name="start_date" class="f-input">
+              {% endif %}
+            </div>
+            <div class="col-md-6"><label class="f-label">End Date</label>
+              {% if nepali_enabled %}
+              <input type="text" class="f-input nepali-cal" name="end_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off" data-no-autoseed>
+              <input type="date" class="hidden-date-input" name="end_date" value="">
+              {% else %}
+              <input type="date" name="end_date" class="f-input">
+              {% endif %}
+            </div>
           </div>
         </div>
         <div class="modal-footer border-0 pt-0"><button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i>Create Exam</button></div>

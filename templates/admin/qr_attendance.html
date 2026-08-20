@@ -1,0 +1,709 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}QR Attendance | Admin{% endblock %}
+
+{% block content %}
+<style>
+  .qr-card {
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.08); padding: 28px;
+    border: 1px solid #f1f5f9;
+  }
+  .qr-display {
+    width: 260px; height: 260px;
+    border: 3px dashed #e2e8f0; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto; background: #f8fafc; transition: all .3s;
+  }
+  .qr-display.active { border-color: #4f46e5; border-style: solid; background: #fff; }
+  .qr-display.expired { border-color: #ef4444; opacity: .6; }
+  #qr-canvas { border-radius: 12px; }
+  .countdown-ring { position: relative; width: 80px; height: 80px; margin: 0 auto; }
+  .countdown-ring svg { transform: rotate(-90deg); }
+  .countdown-ring circle { fill: none; stroke-width: 5; }
+  .countdown-ring .track { stroke: #e2e8f0; }
+  .countdown-ring .progress { stroke: #4f46e5; stroke-linecap: round; transition: stroke-dashoffset .5s linear; }
+  .countdown-ring .time-text {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 1rem; font-weight: 700; color: #1e293b;
+  }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px; font-size: .78rem; font-weight: 600;
+  }
+  .scan-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+  .scan-avatar {
+    width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: .82rem; flex-shrink: 0;
+  }
+  .pulse-dot {
+    width: 10px; height: 10px; border-radius: 50%; background: #22c55e;
+    animation: pulse-dot 1.5s infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .4; transform: scale(1.4); }
+  }
+  .saved-qr-section {
+    margin-top: 1.5rem; padding: 26px; border-radius: 16px;
+    background: #fff; border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 24px rgba(15,23,42,.06);
+  }
+  .saved-qr-grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .saved-qr-card {
+    display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 18px;
+    align-items: center; padding: 18px; border: 1px solid #e2e8f0;
+    border-radius: 14px; background: linear-gradient(145deg, #fff, #f8fafc);
+    position: relative; overflow: hidden;
+  }
+  .saved-qr-card::before {
+    content: ""; position: absolute; inset: 0 auto 0 0; width: 4px;
+    background: #94a3b8;
+  }
+  .saved-qr-card.is-active::before { background: #16a34a; }
+  .saved-qr-image {
+    width: 148px; height: 148px; object-fit: contain; padding: 8px;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+  }
+  .saved-qr-title { color: #0f172a; font-size: .95rem; font-weight: 850; margin: 0; }
+  .saved-qr-meta { display: grid; gap: 7px; margin-top: 10px; }
+  .saved-qr-meta-row {
+    display: flex; gap: 8px; align-items: flex-start; color: #64748b;
+    font-size: .76rem; line-height: 1.45;
+  }
+  .saved-qr-meta-row i { width: 14px; color: #4f46e5; margin-top: 2px; }
+  .saved-qr-coordinates { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .saved-qr-status {
+    display: inline-flex; align-items: center; gap: 5px; border-radius: 999px;
+    padding: 4px 9px; font-size: .67rem; font-weight: 800;
+  }
+  .saved-qr-status.active { background: #dcfce7; color: #15803d; }
+  .saved-qr-status.archived { background: #f1f5f9; color: #475569; }
+  .saved-qr-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 12px; }
+  .saved-qr-print-head { display: none; }
+  @media (max-width: 1199px) {
+    .saved-qr-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 575px) {
+    .saved-qr-section { padding: 18px 14px; }
+    .saved-qr-card { grid-template-columns: 94px minmax(0, 1fr); gap: 12px; padding: 13px; }
+    .saved-qr-image { width: 94px; height: 94px; padding: 5px; }
+    .saved-qr-title { font-size: .84rem; }
+    .saved-qr-meta-row { font-size: .7rem; }
+  }
+  @media print {
+    @page { size: A4 portrait; margin: 11mm; }
+    body.qr-history-print .qr-screen-only,
+    body.qr-history-print .saved-qr-actions,
+    body.qr-history-print .saved-qr-pagination,
+    body.qr-history-print .saved-qr-screen-head { display: none !important; }
+    body.qr-history-print .saved-qr-section {
+      display: block !important; margin: 0; padding: 0; border: 0; box-shadow: none;
+    }
+    body.qr-history-print .saved-qr-print-head {
+      display: block; text-align: center; margin-bottom: 9mm;
+    }
+    body.qr-history-print .saved-qr-print-head h1 { font-size: 20pt; margin: 0 0 2mm; color: #0f172a; }
+    body.qr-history-print .saved-qr-print-head p { font-size: 9pt; color: #475569; margin: 0; }
+    body.qr-history-print .saved-qr-grid { grid-template-columns: 1fr 1fr; gap: 5mm; }
+    body.qr-history-print .saved-qr-card {
+      grid-template-columns: 42mm minmax(0, 1fr); gap: 4mm; padding: 4mm;
+      border: 1px solid #cbd5e1; box-shadow: none; break-inside: avoid;
+    }
+    body.qr-history-print .saved-qr-image { width: 42mm; height: 42mm; padding: 2mm; }
+    body.qr-history-print .saved-qr-title { font-size: 10pt; }
+    body.qr-history-print .saved-qr-meta-row { font-size: 7.5pt; }
+  }
+</style>
+
+<div class="container-fluid py-4">
+  <div class="qr-screen-only">
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h4 class="fw-bold mb-1" style="color:#1e293b;">QR Attendance</h4>
+      <p class="text-muted mb-0 small">Generate a time-limited QR for instant attendance marking</p>
+    </div>
+    {% if active_session %}
+    <div class="d-flex align-items-center gap-2">
+      <div class="pulse-dot"></div>
+      <span class="fw-semibold small" style="color:#22c55e;">Active Session</span>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show mb-4">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="qr-card mb-4">
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-7">
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <div class="rounded-3 p-3" style="background:#ecfdf5;color:#047857;">
+            <i class="fas fa-print fa-xl"></i>
+          </div>
+          <div>
+            <h6 class="fw-bold mb-1">Permanent geofenced QR</h6>
+            <p class="text-muted small mb-0">
+              Generate once and print it. A scan succeeds only for a signed-in
+              member of this organisation who is physically inside the selected location.
+            </p>
+          </div>
+        </div>
+        <div class="row g-2">
+          {% if branches %}
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Branch</label>
+            <select class="form-select" id="permanent-branch">
+              <option value="">All branches</option>
+              {% for branch in branches %}
+              <option value="{{ branch.id }}">{{ branch.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Attendance location</label>
+            <select class="form-select" id="permanent-location">
+              <option value="">Use my current GPS location</option>
+              {% for location in locations %}
+              <option value="{{ location.id }}">{{ location.name }} ({{ location.radius|floatformat:0 }}m)</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Location name</label>
+            <input class="form-control" id="permanent-location-name" value="Organisation premises">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Radius in metres</label>
+            <input class="form-control" id="permanent-radius" type="number" min="20" max="2000" value="100">
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+          <button class="btn btn-success" type="button" onclick="generatePermanentQR()">
+            <i class="fas fa-location-crosshairs me-2"></i>
+            {% if permanent_session %}Replace Permanent QR{% else %}Generate Permanent QR{% endif %}
+          </button>
+          <button class="btn btn-outline-dark" type="button" id="print-permanent"
+                  onclick="printPermanentQR()" {% if not permanent_session %}style="display:none"{% endif %}>
+            <i class="fas fa-print me-2"></i>Print
+          </button>
+          <button class="btn btn-outline-primary" type="button" id="download-permanent" onclick="downloadPermanentQR()" {% if not permanent_session %}style="display:none"{% endif %}><i class="fas fa-download me-2"></i>Download QR</button>
+        </div>
+        <div class="small text-muted mt-2" id="permanent-info">
+          {% if permanent_session %}
+            Active at {{ permanent_session.location_name }} within {{ permanent_session.radius_meters }} metres.<br>
+            Latitude {{ permanent_session.latitude|floatformat:6 }} · Longitude {{ permanent_session.longitude|floatformat:6 }}
+          {% else %}
+            GPS permission is used only while capturing this attendance point.
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-lg-5 text-center">
+        <div id="permanent-qr" class="d-inline-block bg-white p-3 border rounded-4"></div>
+        <div class="fw-bold mt-2" id="permanent-title">
+          {% if permanent_session %}{{ org.name }} Attendance{% else %}No permanent QR yet{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- QR Generator -->
+    <div class="col-lg-5">
+      <div class="qr-card text-center">
+        <h6 class="fw-bold mb-4 text-start" style="color:#1e293b;">
+          <i class="fas fa-qrcode me-2 text-primary"></i>Generate Attendance QR
+        </h6>
+
+        <!-- QR display area -->
+        <div class="qr-display mb-3" id="qr-display-box">
+          <div id="qr-placeholder">
+            <i class="fas fa-qrcode fa-4x text-muted mb-2"></i>
+            <p class="text-muted small mb-0">Click "Generate QR" to start</p>
+          </div>
+          <canvas id="qr-canvas" style="display:none;border-radius:12px;"></canvas>
+        </div>
+
+        <!-- Countdown -->
+        <div class="countdown-ring mb-3" id="countdown-ring" style="display:none;">
+          <svg viewBox="0 0 80 80" width="80" height="80">
+            <circle class="track" cx="40" cy="40" r="35"/>
+            <circle class="progress" id="ring-progress" cx="40" cy="40" r="35"
+              stroke-dasharray="220" stroke-dashoffset="0"/>
+          </svg>
+          <div class="time-text" id="countdown-text">--</div>
+        </div>
+        <div id="session-status-label" class="mb-3"></div>
+
+        <!-- Options -->
+        <div class="d-flex gap-2 justify-content-center mb-3 flex-wrap" id="options-row">
+          {% if branches %}
+          <select class="form-select form-select-sm" id="branch-select" style="max-width:180px;">
+            <option value="">All Branches</option>
+            {% for b in branches %}
+            <option value="{{ b.id }}">{{ b.name }}</option>
+            {% endfor %}
+          </select>
+          {% endif %}
+          <select class="form-select form-select-sm" id="expiry-select" style="max-width:140px;">
+            <option value="1">1 minute</option>
+            <option value="2" selected>2 minutes</option>
+            <option value="5">5 minutes</option>
+            <option value="10">10 minutes</option>
+          </select>
+        </div>
+
+        <!-- Controls -->
+        <div class="d-flex gap-2 justify-content-center">
+          <button class="btn btn-primary fw-semibold px-4" id="btn-generate" onclick="generateQR()">
+            <i class="fas fa-plus-circle me-2"></i>Generate QR
+          </button>
+          <button class="btn btn-outline-warning fw-semibold px-3" id="btn-regen"
+            onclick="generateQR()" style="display:none;">
+            <i class="fas fa-rotate-right me-2"></i>Regenerate
+          </button>
+          <button class="btn btn-outline-danger fw-semibold px-3" id="btn-close"
+            onclick="closeSession()" style="display:none;">
+            <i class="fas fa-times-circle me-2"></i>Close
+          </button>
+        </div>
+
+        <!-- QR info -->
+        <div id="qr-info" class="mt-3 text-muted small" style="display:none;">
+          <i class="fas fa-info-circle me-1"></i>
+          Ask staff/students to open their dashboard and click <strong>Scan QR Attendance</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live scan log -->
+    <div class="col-lg-7">
+      <div class="qr-card h-100">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <h6 class="fw-bold mb-0" style="color:#1e293b;">
+            <i class="fas fa-users-check me-2 text-success"></i>Live Scan Results
+          </h6>
+          <div class="d-flex gap-3">
+            <div class="text-center">
+              <div class="fs-5 fw-bold" id="stat-total" style="color:#4f46e5;">0</div>
+              <div class="text-muted" style="font-size:.7rem;">Total Scans</div>
+            </div>
+            <div class="text-center">
+              <div class="fs-5 fw-bold" id="stat-success" style="color:#22c55e;">0</div>
+              <div class="text-muted" style="font-size:.7rem;">Successful</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="scan-list">
+          <div class="text-center py-5" id="scan-placeholder">
+            <i class="fas fa-mobile-screen fa-3x text-muted mb-3"></i>
+            <p class="text-muted mb-0">Scans will appear here in real time</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <section class="saved-qr-section" id="saved-qr-history" aria-labelledby="saved-qr-title">
+    <div class="saved-qr-print-head">
+      <h1>Mero Attendance</h1>
+      <p>{{ org.name }} · Permanent geofenced QR list · Printed {% now "F j, Y" %}</p>
+    </div>
+
+    <div class="saved-qr-screen-head d-flex align-items-start justify-content-between gap-3 flex-wrap mb-4">
+      <div>
+        <div class="text-uppercase fw-bold text-primary mb-1" style="font-size:.68rem;letter-spacing:.08em;">Saved QR Library</div>
+        <h5 class="fw-bold mb-1" id="saved-qr-title" style="color:#0f172a;">Previously Generated Permanent QR Codes</h5>
+        <p class="text-muted small mb-0">
+          Location, radius and generation details are preserved. Only a QR marked <strong>Active</strong> can record attendance.
+        </p>
+      </div>
+      {% if permanent_sessions %}
+      <button class="btn btn-outline-dark btn-sm mb-0" type="button" onclick="printSavedQRList()">
+        <i class="fas fa-print me-2"></i>Print Visible List
+      </button>
+      {% endif %}
+    </div>
+
+    {% if permanent_sessions %}
+    <div class="saved-qr-grid">
+      {% for saved_qr in permanent_sessions %}
+      <article class="saved-qr-card {% if saved_qr.status == 'active' %}is-active{% endif %}">
+        <img class="saved-qr-image" src="{{ saved_qr.qr_data_uri }}"
+             alt="Permanent attendance QR for {{ saved_qr.location_name }}">
+        <div>
+          <div class="d-flex align-items-center justify-content-between gap-2">
+            <h6 class="saved-qr-title">{{ saved_qr.location_name|default:"Organisation premises" }}</h6>
+            {% if saved_qr.status == 'active' %}
+            <span class="saved-qr-status active"><i class="fas fa-circle-check"></i>Active</span>
+            {% else %}
+            <span class="saved-qr-status archived"><i class="fas fa-box-archive"></i>{{ saved_qr.get_status_display }}</span>
+            {% endif %}
+          </div>
+          <div class="saved-qr-meta">
+            <div class="saved-qr-meta-row">
+              <i class="fas fa-location-dot"></i>
+              <span class="saved-qr-coordinates">{{ saved_qr.latitude|floatformat:6 }}, {{ saved_qr.longitude|floatformat:6 }}</span>
+            </div>
+            <div class="saved-qr-meta-row">
+              <i class="fas fa-bullseye"></i>
+              <span>{{ saved_qr.radius_meters }} metre geofence{% if saved_qr.branch %} · {{ saved_qr.branch.name }}{% else %} · All branches{% endif %}</span>
+            </div>
+            <div class="saved-qr-meta-row">
+              <i class="fas fa-calendar"></i>
+              <span>{{ saved_qr.created_at|date:"M d, Y · h:i A" }} · {{ saved_qr.successful_scans }} successful scan{{ saved_qr.successful_scans|pluralize }}</span>
+            </div>
+          </div>
+          <div class="saved-qr-actions">
+            <a class="btn btn-sm btn-primary mb-0"
+               href="{% url 'schooladmin:qr_permanent_print' saved_qr.id %}" target="_blank" rel="noopener">
+              <i class="fas fa-file-pdf me-1"></i>A4 Print View
+            </a>
+            <a class="btn btn-sm btn-outline-secondary mb-0"
+               href="https://www.google.com/maps?q={{ saved_qr.latitude }},{{ saved_qr.longitude }}"
+               target="_blank" rel="noopener">
+              <i class="fas fa-map-location-dot me-1"></i>Map
+            </a>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    {% if permanent_sessions.has_other_pages %}
+    <nav class="saved-qr-pagination mt-4" aria-label="Saved QR pages">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if permanent_sessions.has_previous %}
+        <li class="page-item"><a class="page-link" href="?qr_page={{ permanent_sessions.previous_page_number }}#saved-qr-history">Previous</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Page {{ permanent_sessions.number }} of {{ permanent_sessions.paginator.num_pages }}</span></li>
+        {% if permanent_sessions.has_next %}
+        <li class="page-item"><a class="page-link" href="?qr_page={{ permanent_sessions.next_page_number }}#saved-qr-history">Next</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="text-center py-5">
+      <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:64px;height:64px;background:#f1f5f9;color:#64748b;">
+        <i class="fas fa-qrcode fa-xl"></i>
+      </div>
+      <h6 class="fw-bold mb-1">No saved permanent QR codes</h6>
+      <p class="text-muted small mb-0">Generate your first geofenced QR above. It will appear here with its location.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+<!-- qrcode.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const GENERATE_URL = "{% url 'schooladmin:qr_generate' %}";
+const PERMANENT_GENERATE_URL = "{% url 'schooladmin:qr_permanent_generate' %}";
+const CSRF_TOKEN   = "{{ csrf_token }}";
+let permanentToken = "{{ permanent_session.token|default:''|escapejs }}";
+let permanentLatitude = "{{ permanent_session.latitude|default:''|escapejs }}";
+let permanentLongitude = "{{ permanent_session.longitude|default:''|escapejs }}";
+
+let currentSessionId = null;
+let pollInterval     = null;
+let countdownInterval= null;
+let expiresAtMs      = null;
+let totalDurationMs  = null;
+
+function renderPermanentQR(token) {
+  permanentToken = token;
+  const container = document.getElementById('permanent-qr');
+  container.innerHTML = '';
+  if (!token) return;
+  new QRCode(container, {
+    text: token, width: 220, height: 220,
+    colorDark: '#0f172a', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H,
+  });
+  document.getElementById('print-permanent').style.display = '';
+  document.getElementById('download-permanent').style.display = '';
+  document.getElementById('permanent-title').textContent = '{{ org.name|escapejs }} Attendance';
+}
+
+function generatePermanentQR() {
+  const locationId = document.getElementById('permanent-location').value;
+  const branchEl = document.getElementById('permanent-branch');
+  const submit = (latitude='', longitude='') => {
+    const body = new URLSearchParams({
+      location_id: locationId,
+      branch_id: branchEl ? branchEl.value : '',
+      location_name: document.getElementById('permanent-location-name').value,
+      radius_meters: document.getElementById('permanent-radius').value,
+      latitude, longitude,
+    });
+    fetch(PERMANENT_GENERATE_URL, {
+      method: 'POST',
+      headers: {'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/x-www-form-urlencoded'},
+      body,
+    }).then(async response => {
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not generate QR.');
+      renderPermanentQR(data.token);
+      permanentLatitude = String(data.latitude);
+      permanentLongitude = String(data.longitude);
+      document.getElementById('permanent-info').textContent =
+        `Active at ${data.location_name} within ${data.radius_meters} metres. Latitude ${Number(data.latitude).toFixed(6)} · Longitude ${Number(data.longitude).toFixed(6)}`;
+      window.setTimeout(() => {
+        window.location.assign("{% url 'schooladmin:qr_attendance' %}#saved-qr-history");
+      }, 650);
+    }).catch(error => alert(error.message));
+  };
+  if (locationId) {
+    submit();
+    return;
+  }
+  if (!navigator.geolocation) {
+    alert('This browser cannot share a GPS location. Choose a saved attendance location.');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    position => submit(position.coords.latitude, position.coords.longitude),
+    () => alert('Allow location access or choose a saved attendance location.'),
+    {enableHighAccuracy:true, timeout:15000, maximumAge:0},
+  );
+}
+
+function printPermanentQR() {
+  const source = document.querySelector('#permanent-qr canvas') || document.querySelector('#permanent-qr img');
+  if (!source) return;
+  const qrUrl = source.tagName === 'CANVAS' ? source.toDataURL('image/png') : source.src;
+  const info = document.getElementById('permanent-info').textContent;
+  const popup = window.open('', '_blank', 'width=640,height=760');
+  popup.document.write(`<html><head><title>Mero Attendance QR</title>
+    <style>@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#eef2ff}.page{width:210mm;min-height:297mm;margin:auto;padding:24mm 18mm;text-align:center;background:#fff;position:relative;overflow:hidden}.brand{color:#4f46e5;font-size:20px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.org{font-size:34px;font-weight:900;color:#0f172a;margin:16px 0 5px}.lead{font-size:25px;font-weight:800;color:#334155;margin:0 0 28px}.qr{display:inline-block;padding:28px;border:4px solid #4f46e5;border-radius:28px;box-shadow:0 20px 55px rgba(79,70,229,.18)}.qr img,.qr canvas{width:105mm!important;height:105mm!important}.instruction{font-size:19px;font-weight:800;color:#111827;margin:28px 0 8px}.info{color:#475569;font-size:14px;line-height:1.7}.site{position:absolute;bottom:18mm;left:0;right:0;font-size:17px;font-weight:800;color:#4f46e5}@media print{body{background:#fff}.page{margin:0}}</style></head><body><main class="page">
+    <div class="brand">Mero Attendance</div><div class="org">{{ org.name|escapejs }}</div><div class="lead">Scan A QR do attendance</div>
+    <div class="qr"><img src="${qrUrl}" alt="Permanent attendance QR"></div><div class="instruction">Open Mero Attendance and scan this QR</div><div class="info">${info}<br>Location permission is required. Attendance succeeds only inside the approved geofence.</div>
+    <div class="site">meroattendance.com</div></main>
+    </body></html>`);
+  popup.document.close();
+  setTimeout(() => popup.print(), 350);
+}
+
+function downloadPermanentQR() {
+  const source = document.querySelector('#permanent-qr canvas') || document.querySelector('#permanent-qr img');
+  if (!source) return;
+  const url = source.tagName === 'CANVAS' ? source.toDataURL('image/png') : source.src;
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'mero-attendance-permanent-qr.png';
+  link.click();
+}
+
+function printSavedQRList() {
+  document.body.classList.add('qr-history-print');
+  const cleanup = () => document.body.classList.remove('qr-history-print');
+  window.addEventListener('afterprint', cleanup, {once: true});
+  window.setTimeout(() => window.print(), 80);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (permanentToken) renderPermanentQR(permanentToken);
+});
+
+function generateQR() {
+  const expiryMinutes = document.getElementById('expiry-select').value;
+  const branchEl = document.getElementById('branch-select');
+  const branchId = branchEl ? branchEl.value : '';
+
+  fetch(GENERATE_URL, {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: `expiry_minutes=${expiryMinutes}&branch_id=${branchId}`,
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) { alert(data.error); return; }
+    currentSessionId = data.session_id;
+    expiresAtMs      = data.expires_at_ts;
+    totalDurationMs  = expiryMinutes * 60 * 1000;
+    renderQR(data.token);
+    startCountdown();
+    startPolling();
+    document.getElementById('btn-generate').style.display = 'none';
+    document.getElementById('btn-regen').style.display    = '';
+    document.getElementById('btn-close').style.display    = '';
+    document.getElementById('qr-info').style.display      = '';
+    document.getElementById('countdown-ring').style.display = '';
+    setStatusLabel('active');
+  })
+  .catch(e => alert('Error generating QR: ' + e));
+}
+
+function renderQR(token) {
+  const canvas = document.getElementById('qr-canvas');
+  const box    = document.getElementById('qr-display-box');
+  document.getElementById('qr-placeholder').style.display = 'none';
+  canvas.style.display = '';
+  box.className = 'qr-display active mb-3';
+  // qrcode.js requires a real DOM element to attach its generated img/canvas
+  // to (it cannot take null) - build one off-screen, read the result, discard it.
+  const container = document.createElement('div');
+  container.style.display = 'none';
+  document.body.appendChild(container);
+  const qr = new QRCode(container, {
+    text: token, width: 232, height: 232, colorDark: '#1e293b', colorLight: '#ffffff'
+  });
+  // qrcode.js always creates both a <canvas> (actually drawn to) and a
+  // fallback <img> placeholder whose `src` stays empty in canvas mode - check
+  // canvas first, since querying img first picks up that empty placeholder
+  // and silently renders nothing.
+  const source = container.querySelector('canvas') || container.querySelector('img');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 232; canvas.height = 232;
+  if (source && source.tagName === 'IMG') {
+    const i = new Image();
+    i.onload = () => ctx.drawImage(i, 0, 0, 232, 232);
+    i.src = source.src;
+  } else if (source) {
+    ctx.drawImage(source, 0, 0);
+  }
+  container.remove();
+}
+
+function startCountdown() {
+  clearInterval(countdownInterval);
+  const ring = document.getElementById('ring-progress');
+  const text = document.getElementById('countdown-text');
+  const circumference = 220;
+
+  countdownInterval = setInterval(() => {
+    const now        = Date.now();
+    const remaining  = Math.max(0, expiresAtMs - now);
+    const fraction   = remaining / totalDurationMs;
+    const offset     = circumference * (1 - fraction);
+    ring.style.strokeDashoffset = offset;
+
+    const secs = Math.ceil(remaining / 1000);
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    text.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+
+    if (remaining <= 0) {
+      clearInterval(countdownInterval);
+      text.textContent = '0:00';
+      ring.style.stroke = '#ef4444';
+      setStatusLabel('expired');
+      document.getElementById('qr-display-box').className = 'qr-display expired mb-3';
+      clearInterval(pollInterval);
+    } else if (remaining < 30000) {
+      ring.style.stroke = '#f59e0b';
+    }
+  }, 500);
+}
+
+function startPolling() {
+  clearInterval(pollInterval);
+  if (!currentSessionId) return;
+  pollSession();
+  pollInterval = setInterval(pollSession, 3000);
+}
+
+function pollSession() {
+  if (!currentSessionId) return;
+  fetch(`{% url 'schooladmin:qr_session_status' 0 %}`.replace('/0/', `/${currentSessionId}/`))
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('stat-total').textContent   = data.total_scans;
+      document.getElementById('stat-success').textContent = data.successful_scans;
+      if (!data.is_active && data.status !== 'active') {
+        clearInterval(pollInterval);
+        setStatusLabel(data.status);
+      }
+      renderScanList(data.recent_scans);
+    });
+}
+
+function renderScanList(scans) {
+  if (!scans || !scans.length) return;
+  document.getElementById('scan-placeholder').style.display = 'none';
+  const el = document.getElementById('scan-list');
+  el.innerHTML = scans.map((s, i) => {
+    const colors = ['#ede9fe','#d1fae5','#fef3c7','#fee2e2','#e0f2fe','#fce7f3'];
+    const textColors = ['#7c3aed','#059669','#d97706','#dc2626','#0369a1','#be185d'];
+    const ci = i % colors.length;
+    const badge = s.status === 'success'
+      ? `<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:600;">✓ Success</span>`
+      : `<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:600;">✗ ${s.status}</span>`;
+    const initials = s.member_name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    return `
+      <div class="scan-row">
+        <div class="scan-avatar" style="background:${colors[ci]};color:${textColors[ci]};">${initials}</div>
+        <div class="flex-grow-1">
+          <div class="fw-semibold small" style="color:#1e293b;">${s.member_name}</div>
+          <div class="text-muted" style="font-size:.75rem;">${s.classification}</div>
+        </div>
+        <div class="text-end">
+          ${badge}
+          <div class="text-muted" style="font-size:.72rem;margin-top:2px;">${s.scanned_at}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function closeSession() {
+  if (!currentSessionId || !confirm('Close this QR session? Members will no longer be able to scan.')) return;
+  fetch(`{% url 'schooladmin:qr_session_close' 0 %}`.replace('/0/', `/${currentSessionId}/`), {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF_TOKEN},
+  }).then(() => {
+    clearInterval(pollInterval);
+    clearInterval(countdownInterval);
+    setStatusLabel('closed');
+    document.getElementById('qr-display-box').className = 'qr-display expired mb-3';
+    document.getElementById('btn-regen').style.display = '';
+    document.getElementById('btn-close').style.display = 'none';
+    currentSessionId = null;
+  });
+}
+
+function setStatusLabel(s) {
+  const labels = {
+    active:  '<span class="status-badge" style="background:#d1fae5;color:#065f46;"><div class="pulse-dot" style="background:#22c55e;"></div>Active Session</span>',
+    expired: '<span class="status-badge" style="background:#fee2e2;color:#991b1b;"><i class="fas fa-clock me-1"></i>Session Expired</span>',
+    closed:  '<span class="status-badge" style="background:#f1f5f9;color:#374151;"><i class="fas fa-times-circle me-1"></i>Session Closed</span>',
+  };
+  document.getElementById('session-status-label').innerHTML = labels[s] || '';
+}
+
+// Resume active session on page load
+{% if active_session %}
+(function() {
+  currentSessionId = {{ active_session.id }};
+  expiresAtMs      = {{ active_session.expires_at|date:'U' }}000;
+  const now        = Date.now();
+  totalDurationMs  = expiresAtMs - {{ active_session.valid_from|date:'U' }}000;
+  if (expiresAtMs > now) {
+    document.getElementById('qr-placeholder').innerHTML = '<p class="text-muted small">Loading active session QR…</p>';
+    // Can't show QR without token (token not re-sent for security). Show note instead.
+    document.getElementById('qr-display-box').className = 'qr-display active mb-3';
+    document.getElementById('countdown-ring').style.display = '';
+    document.getElementById('btn-generate').style.display = 'none';
+    document.getElementById('btn-regen').style.display    = '';
+    document.getElementById('btn-close').style.display    = '';
+    document.getElementById('qr-info').style.display      = '';
+    setStatusLabel('active');
+    startCountdown();
+    startPolling();
+  }
+})();
+{% endif %}
+</script>
+{% endblock %}

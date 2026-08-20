@@ -1,0 +1,48 @@
+{% extends 'dashboard.html' %}
+{% block title %}Face Attendance | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-face-viewfinder text-primary me-2"></i>Face Attendance</h4>
+      <p class="text-xs text-muted mb-0">Enrol member faces, then mark attendance with the camera.</p>
+    </div>
+    <a href="{% url 'schooladmin:face_attendance' %}" class="btn bg-gradient-primary text-white btn-sm mb-0"><i class="fas fa-camera me-1"></i>Open Camera Attendance</a>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th class="text-xs ps-3">Member</th><th class="text-xs">Enrolment</th><th class="text-xs text-end pe-3">Action</th></tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td class="text-sm ps-3 font-weight-bold">{{ row.m.name }}</td>
+            <td class="text-xs">
+              {% if row.face and row.face.sample_count %}
+                <span class="badge bg-success">Enrolled · {{ row.face.sample_count }} sample{{ row.face.sample_count|pluralize }}</span>
+              {% else %}
+                <span class="badge bg-secondary">Not enrolled</span>
+              {% endif %}
+            </td>
+            <td class="text-end pe-3">
+              <a href="{% url 'schooladmin:face_enroll' row.m.id %}" class="btn btn-outline-primary btn-sm mb-0">
+                <i class="fas fa-camera me-1"></i>{% if row.face and row.face.sample_count %}Re-enrol{% else %}Enrol Face{% endif %}
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="text-center text-muted py-4">No active members.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% if template.card_title %}<div class="idc-document-title">{{ template.card_title }}</div>{% endif %}
+{% if template.show_designation and m.designation %}<div class="idc-row"><b>{{ m.designation }}</b></div>{% endif %}
+{% if template.show_member_id %}<div class="idc-row"><b>ID:</b> {{ m.id }}</div>{% endif %}
+{% if template.show_roll_number and m.roll_number %}<div class="idc-row"><b>Roll:</b> {{ m.roll_number }}</div>{% endif %}
+{% if template.show_classification and m.classification %}<div class="idc-row"><b>Dept:</b> {{ m.classification.name }}</div>{% endif %}
+{% if template.show_phone and m.phone %}<div class="idc-row"><b>Ph:</b> {{ m.phone }}</div>{% endif %}
+{% if template.show_email and m.email %}<div class="idc-row"><b>Email:</b> {{ m.email }}</div>{% endif %}
+{% if template.show_address and m.address %}<div class="idc-row"><b>Addr:</b> {{ m.address }}</div>{% endif %}

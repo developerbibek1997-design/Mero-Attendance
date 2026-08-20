@@ -1,0 +1,39 @@
+{% extends 'dashboard.html' %}
+{% block title %}Edit Account | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-sitemap text-primary me-2"></i>Edit Account — {{ account.name }}</h6>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          {% if form.errors %}<div class="alert alert-danger">Please correct the errors below.</div>{% endif %}
+          {% if account.is_system %}<div class="alert alert-info py-2"><i class="fas fa-circle-info me-1"></i>This is a default seeded account. It can be edited or deactivated, but not deleted.</div>{% endif %}
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Name *</label>{{ form.name }}{{ form.name.errors }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Code</label>{{ form.code }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Type *</label>{{ form.account_type }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Parent (Header)</label>{{ form.parent }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Opening Balance (Rs.)</label>{{ form.opening_balance }}</div>
+              <div class="col-md-6 d-flex align-items-end gap-3">
+                <div class="form-check form-switch">{{ form.is_group }}<label class="form-check-label text-xs" for="{{ form.is_group.id_for_label }}">Header/group</label></div>
+                <div class="form-check form-switch">{{ form.is_active }}<label class="form-check-label text-xs" for="{{ form.is_active.id_for_label }}">Active</label></div>
+              </div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Description</label>{{ form.description }}</div>
+              <div class="col-12 d-flex gap-2 mt-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save Changes</button>
+                <a href="{% url 'schooladmin:accounting_accounts' %}" class="btn btn-outline-secondary">Cancel</a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends 'dashboard.html' %}
+{% block title %}My Subject Assignments | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h4 class="font-weight-bolder mb-1"><i class="fas fa-file-signature text-primary me-2"></i>My Subject Assignments</h4>
+      <p class="text-sm text-muted mb-0">Only work connected to your assigned class, section and subject is shown.</p>
+    </div>
+    <a href="{% url 'staff:teacher_assignment_create' %}" class="btn bg-gradient-primary text-white mb-0"><i class="fas fa-plus me-1"></i>New Assignment</a>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %}">{{ msg }}</div>{% endfor %}
+  {% if not active_scope_count %}<div class="alert alert-warning">No active subject scope is assigned to you. Ask the administrator to assign a class, section and subject first.</div>{% endif %}
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th>Assignment</th><th>Academic scope</th><th>Due</th><th>Submissions</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for assignment in assignments %}
+          <tr>
+            <td><div class="text-sm font-weight-bold">{{ assignment.title }}</div><div class="text-xs text-muted">{{ assignment.subject.name }}</div></td>
+            <td class="text-sm">{{ assignment.classification.name }}{% if assignment.section %} / {{ assignment.section.name }}{% else %} / All sections{% endif %}</td>
+            <td class="text-sm">{{ assignment.due_date }}</td>
+            <td><span class="badge bg-light text-dark">{{ assignment.submissions.count }}</span></td>
+            <td><span class="badge {% if assignment.visibility == 'published' and assignment.status == 'open' %}bg-success{% else %}bg-secondary{% endif %}">{{ assignment.get_visibility_display }} · {{ assignment.get_status_display }}</span></td>
+            <td><a href="{% url 'staff:teacher_assignment_detail' assignment.pk %}" class="btn btn-xs btn-outline-primary mb-0">Review</a></td>
+          </tr>
+          {% empty %}<tr><td colspan="6" class="text-center text-muted py-5">No assignments created for your subjects yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends 'dashboard.html' %}
+{% block title %}Assign Shifts | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+  .shift-status { display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:.66rem;font-weight:800; }
+  .shift-complete { background:#dcfce7;color:#166534; }
+  .shift-incomplete { background:#fef3c7;color:#92400e; }
+  .shift-absent { background:#fee2e2;color:#991b1b; }
+  .shift-upcoming { background:#e0f2fe;color:#0369a1; }
+  .shift-off { background:#f1f5f9;color:#64748b; }
+  .week-day-card { border:1px solid #e9ecef;border-radius:10px; }
+  .week-day-today { border-color:#7c3aed;background:#faf5ff; }
+  .override-chip { display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:.7rem;font-weight:700; }
+  .override-chip button { border:none;background:transparent;color:#92400e;line-height:1;padding:0;font-weight:900; }
+  .weekday-grid th, .weekday-grid td { text-align:center;vertical-align:middle; }
+  .weekday-grid td:first-child, .weekday-grid th:first-child { text-align:left; }
+</style>
+
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{% url 'schooladmin:shift_list' %}" class="btn btn-outline-secondary btn-sm rounded-circle mb-0" style="width:36px;height:36px;"><i class="fas fa-arrow-left"></i></a>
+    <div>
+      <h4 class="font-weight-bolder mb-0">Assign Shifts to Members</h4>
+      <p class="text-xs text-muted mb-0">Set a recurring weekly pattern (multiple shifts per day allowed) and add one-off extra shifts for specific dates from "This Week".</p>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="card border-0 shadow-sm" style="border-radius:14px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th class="text-xs ps-3">Member</th><th class="text-xs">Weekly Schedule</th><th class="text-xs text-end pe-3">Action</th></tr>
+        </thead>
+        <tbody>
+          {% for m in members %}
+          <tr>
+            <td class="text-sm ps-3 font-weight-bold">
+              <a href="{% url 'handle:memberEdit' m.id %}" class="text-dark">{{ m.name }}</a>
+              <div><a href="{% url 'schooladmin:member_profile' m.id %}" class="text-xs text-primary">Full profile</a></div>
+            </td>
+            <td class="text-xs text-muted">{{ m.weekly_shifts_display }}</td>
+            <td class="text-end pe-3">
+              <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-outline-primary btn-sm mb-0" data-bs-toggle="modal" data-bs-target="#weeklyModal{{ m.id }}">
+                  <i class="fas fa-repeat me-1"></i>Edit Weekly Pattern
+                </button>
+                <button type="button" class="btn btn-outline-dark btn-sm mb-0" onclick="openWeekModal({{ m.id }})">
+                  <i class="fas fa-calendar-week me-1"></i>This Week
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="text-center text-muted py-4">No active members.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modals live outside the table — a <table>/<tbody> cannot legally contain
+     <div> children, and browsers foster-parent them out in ways that break
+     Bootstrap's display:none nesting. -->
+{% for m in members %}
+<div class="modal fade" id="weeklyModal{{ m.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header border-bottom">
+        <h6 class="modal-title font-weight-bolder text-dark">Weekly Pattern — {{ m.name }}</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="member_id" value="{{ m.id }}">
+        <div class="modal-body p-4">
+          {% if shifts %}
+          <p class="text-xs text-muted">Check every shift that applies on each weekday. Leave a day fully unchecked for a weekly off-day.</p>
+          <div class="table-responsive">
+            <table class="table table-sm weekday-grid">
+              <thead>
+                <tr>
+                  <th class="text-xs">Shift</th>
+                  {% for day_no in '0123456' %}
+                  <th class="text-xxs text-uppercase">
+                    {% if day_no == '0' %}Sun{% elif day_no == '1' %}Mon{% elif day_no == '2' %}Tue{% elif day_no == '3' %}Wed{% elif day_no == '4' %}Thu{% elif day_no == '5' %}Fri{% else %}Sat{% endif %}
+                  </th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for s in shifts %}
+                <tr>
+                  <td class="text-sm font-weight-bold">{{ s.name }}</td>
+                  {% for day_no in '0123456' %}
+                  <td>
+                    <input type="checkbox" name="shift_{{ day_no }}" value="{{ s.id }}"
+                           {% for a in m.weekday_shifts.all %}{% if a.weekday|stringformat:'s' == day_no and a.shift_id == s.id %}checked{% endif %}{% endfor %}>
+                  </td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-sm text-muted mb-0">No active shifts yet. <a href="{% url 'schooladmin:shift_new' %}">Create one first</a>.</p>
+          {% endif %}
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-outline-secondary btn-sm mb-0" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm mb-0" {% if not shifts %}disabled{% endif %}>Save Week</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="weekModal{{ m.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header border-bottom">
+        <h6 class="modal-title font-weight-bolder text-dark">This Week — {{ m.name }}</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4" id="weekModalBody{{ m.id }}">
+        <div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<script>
+const CSRF_TOKEN = "{{ csrf_token }}";
+const WEEK_URL_TMPL = "{% url 'schooladmin:shift_week' 0 %}";
+const OVERRIDE_ADD_URL_TMPL = "{% url 'schooladmin:shift_override_add' 0 %}";
+const OVERRIDE_DELETE_URL_TMPL = "{% url 'schooladmin:shift_override_delete' 0 %}";
+
+function openWeekModal(memberId) {
+  const modalEl = document.getElementById('weekModal' + memberId);
+  new bootstrap.Modal(modalEl).show();
+  loadWeekPanel(memberId);
+}
+
+function loadWeekPanel(memberId) {
+  const body = document.getElementById('weekModalBody' + memberId);
+  body.innerHTML = '<div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</div>';
+  fetch(WEEK_URL_TMPL.replace('/0/', '/' + memberId + '/'))
+    .then(r => r.text())
+    .then(html => { body.innerHTML = html; })
+    .catch(() => { body.innerHTML = '<div class="text-danger p-3">Could not load this week\'s schedule.</div>'; });
+}
+
+function submitOverrideAdd(memberId, formEl) {
+  const body = document.getElementById('weekModalBody' + memberId);
+  const data = new FormData(formEl);
+  fetch(OVERRIDE_ADD_URL_TMPL.replace('/0/', '/' + memberId + '/'), {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF_TOKEN},
+    body: data,
+  }).then(r => r.text()).then(html => { body.innerHTML = html; });
+  return false;
+}
+
+function deleteOverride(memberId, overrideId) {
+  const body = document.getElementById('weekModalBody' + memberId);
+  fetch(OVERRIDE_DELETE_URL_TMPL.replace('/0/', '/' + overrideId + '/'), {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF_TOKEN},
+  }).then(r => r.text()).then(html => { body.innerHTML = html; });
+}
+</script>
+{% endblock %}

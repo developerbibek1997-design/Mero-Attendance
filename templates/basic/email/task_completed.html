@@ -1,0 +1,10 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Task Completed{% endblock %}
+{% block content %}
+<p class="greeting"><strong>{{ staff_name }}</strong> has marked a task as completed.</p>
+<table class="data">
+  <tr><td class="label">Task</td><td><strong>{{ task_title }}</strong></td></tr>
+  <tr><td class="label">Completed At</td><td>{{ completed_at }}</td></tr>
+  {% if note %}<tr><td class="label">Note</td><td>{{ note }}</td></tr>{% endif %}
+</table>
+{% endblock %}

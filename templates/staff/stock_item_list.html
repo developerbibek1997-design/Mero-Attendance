@@ -1,0 +1,44 @@
+{% extends 'dashboard.html' %}
+{% block title %}Stock Items | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 class="fw-bold mb-0" style="color:#1e293b;">Stock Items</h4>
+    {% if staff_perms.can_add_stock %}<a href="{% url 'staff:add_stock_item' %}" class="btn btn-primary btn-sm">Add Item</a>{% endif %}
+  </div>
+
+  <form method="get" class="mb-3">
+    <input type="search" name="search" class="form-control form-control-sm" style="max-width:280px;" placeholder="Search by name or SKU..." value="{{ search }}">
+  </form>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-body p-0">
+      <table class="table mb-0 align-items-center">
+        <thead>
+          <tr>
+            <th class="ps-4 text-uppercase text-xxs text-secondary font-weight-bolder">Item</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Branch</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end">Quantity</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end pe-4">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td class="ps-4 text-sm"><strong>{{ item.name }}</strong><div class="text-xs text-muted">{{ item.sku }}</div></td>
+            <td class="text-sm text-muted">{{ item.branch.name|default:"—" }}</td>
+            <td class="text-sm text-end {% if item.is_low_stock %}text-danger fw-bold{% endif %}">{{ item.quantity }} {{ item.unit }}</td>
+            <td class="text-end pe-4">
+              {% if staff_perms.can_edit_stock %}<a href="{% url 'staff:edit_stock_item' item.id %}" class="btn btn-sm btn-outline-primary py-0">Edit</a>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center py-4 text-muted">No stock items found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

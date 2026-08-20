@@ -351,14 +351,9 @@ class UserLoginSerializer(serializers.Serializer):
         email = attrs.get('email')
         password = attrs.get('password')
 
-        print("Got email and password from API")
-        print(email)
-        print(password)
-        
         user = authenticate(request=self.context.get('request'), 
                           username=email, password=password)
-        
-        print(user)
+
         if not user:
             raise serializers.ValidationError('Invalid credentials')
         

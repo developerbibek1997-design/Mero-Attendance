@@ -1,0 +1,11 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Resignation {{ status|title }}{% endblock %}
+{% block content %}
+<p class="greeting">Hi <strong>{{ name }}</strong>,</p>
+<p class="message-text">Your resignation has been
+  <span class="badge" style="background:{% if status == 'approved' %}#16a34a{% elif status == 'rejected' %}#dc2626{% else %}#f59e0b{% endif %};">{{ status|title }}</span>
+</p>
+<table class="data">
+  <tr><td class="label">Last Working Day</td><td><strong>{{ last_working_day|default:"To be confirmed" }}</strong></td></tr>
+</table>
+{% endblock %}

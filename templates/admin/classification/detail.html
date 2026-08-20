@@ -8,7 +8,7 @@
 .hub-hero p{color:#cbd5e1;font-size:.84rem;margin:.25rem 0 0;}
 .hub-tabs{display:flex;gap:.4rem;overflow-x:auto;margin-bottom:1rem;padding-bottom:.25rem;}
 .hub-tabs a{white-space:nowrap;border:1px solid #e2e8f0;background:#fff;color:#334155;border-radius:8px;padding:.55rem .8rem;font-size:.8rem;font-weight:700;text-decoration:none;}
-.hub-tabs a.active{background:#e11d48;color:#fff;border-color:#e11d48;}
+.hub-tabs a.active{background:#fff;color:#111827;border-color:#fff;font-weight:800;box-shadow:0 5px 14px rgba(15,23,42,.14);transform:translateY(-1px);}
 .stat-card{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;height:100%;}
 .stat-label{font-size:.68rem;text-transform:uppercase;color:#64748b;font-weight:800;letter-spacing:.04em;margin-bottom:.25rem;}
 .stat-value{font-size:1.45rem;font-weight:900;color:#111827;line-height:1.15;}
@@ -84,7 +84,7 @@
         <thead><tr><th>Student</th><th>Guardian</th><th>Billing</th><th>Monthly Payable</th><th>Due</th><th>Attendance</th></tr></thead>
         <tbody>
         {% for row in students|slice:":8" %}
-          <tr><td><strong>{{ row.member.name }}</strong><div class="text-muted text-xs">{{ row.member.card|default:"No roll / ID" }}</div></td><td>{{ row.member.guardian_name|default:"-" }}<div class="text-muted text-xs">{{ row.member.guardian_phone|default:"" }}</div></td><td>{{ row.member.get_billing_type_display }}</td><td>Rs. {{ row.final_fee|floatformat:0 }}</td><td class="{% if row.due > 0 %}text-danger{% endif %}">Rs. {{ row.due|floatformat:0 }}</td><td>{{ row.attendance_pct }}%</td></tr>
+          <tr><td><strong><a href="{% url 'handle:memberEdit' row.member.id %}" class="text-dark">{{ row.member.name }}</a></strong><div class="text-muted text-xs">{{ row.member.card|default:"No roll / ID" }}</div></td><td>{{ row.member.guardian_name|default:"-" }}<div class="text-muted text-xs">{{ row.member.guardian_phone|default:"" }}</div></td><td>{{ row.member.get_billing_type_display }}</td><td>Rs. {{ row.final_fee|floatformat:0 }}</td><td class="{% if row.due > 0 %}text-danger{% endif %}">Rs. {{ row.due|floatformat:0 }}</td><td>{{ row.attendance_pct }}%</td></tr>
         {% empty %}
           <tr><td colspan="6"><div class="empty">No students in this classification yet.</div></td></tr>
         {% endfor %}
@@ -114,7 +114,7 @@
         <tbody>
         {% for row in students %}
           <tr>
-            <td><strong>{{ row.member.name }}</strong><div class="text-muted text-xs">{{ row.member.card|default:"No roll / ID" }}</div></td>
+            <td><strong><a href="{% url 'handle:memberEdit' row.member.id %}" class="text-dark">{{ row.member.name }}</a></strong><div class="text-muted text-xs">{{ row.member.card|default:"No roll / ID" }}</div></td>
             <td>{{ row.member.section.name|default:"-" }}</td>
             <td>{{ row.member.guardian_name|default:"-" }}<div class="text-muted text-xs">{{ row.member.guardian_phone|default:row.member.phone }}{% if row.member.guardian_email %} | {{ row.member.guardian_email }}{% endif %}</div></td>
             <td>{{ row.member.get_billing_type_display }}</td>
@@ -198,7 +198,7 @@
         <div class="table-responsive"><table class="hub-table"><thead><tr><th>Name</th><th>Scope</th><th>Teacher</th><th>Fee</th><th>Marks</th><th>Status</th><th>Action</th></tr></thead><tbody>
           {% for subject in subjects %}
           <tr>
-            <td><strong>{{ subject.name }}</strong><div class="text-muted text-xs">{{ subject.code|default:"" }}</div></td><td>{{ subject.section.name|default:"Whole classification" }}</td><td>{{ subject.teacher.get_full_name|default:subject.teacher.username|default:"-" }}</td><td>Rs. {{ subject.monthly_fee|floatformat:0 }}</td><td>{{ subject.pass_marks|floatformat:0 }} / {{ subject.full_marks|floatformat:0 }}</td><td><span class="pill {% if subject.status == 'active' %}green{% endif %}">{{ subject.get_status_display }}</span></td>
+            <td><strong>{{ subject.name }}</strong><div class="text-muted text-xs">{{ subject.code|default:"" }}</div></td><td>{{ subject.section.name|default:"Whole classification" }}</td><td>{% if subject.teacher %}{{ subject.teacher.get_full_name|default:subject.teacher.username }}{% else %}-{% endif %}</td><td>Rs. {{ subject.monthly_fee|floatformat:0 }}</td><td>{{ subject.pass_marks|floatformat:0 }} / {{ subject.full_marks|floatformat:0 }}</td><td><span class="pill {% if subject.status == 'active' %}green{% endif %}">{{ subject.get_status_display }}</span></td>
             <td>
               <form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="deactivate_subject"><input type="hidden" name="subject_id" value="{{ subject.id }}"><input type="hidden" name="return_tab" value="courses"><button class="btn btn-xs btn-outline-warning">Deactivate</button></form>
               <form method="post" class="d-inline" onsubmit="return confirm('Delete {{ subject.name }}?')">{% csrf_token %}<input type="hidden" name="action" value="delete_subject"><input type="hidden" name="subject_id" value="{{ subject.id }}"><input type="hidden" name="return_tab" value="courses"><button class="btn btn-xs btn-outline-danger">Delete</button></form>

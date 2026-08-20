@@ -46,13 +46,25 @@
                                 </div>
                                 
                                 <div class="form-group mb-3">
-                                    <label for="id_serial_number" class="form-label">Port No</label>
+                                    <label for="id_connection_mode" class="form-label">Connection Mode</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-cloud-arrow-up"></i></span>
+                                        {{ form.connection_mode }}
+                                    </div>
+                                    {% if form.connection_mode.errors %}
+                                        <div class="text-danger small">{{ form.connection_mode.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="id_serial_number" class="form-label">Device Serial Number (SN)</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fas fa-barcode"></i></span>
-                                        {{ form.port_no }}
+                                        {{ form.serial_number }}
                                     </div>
-                                    {% if form.port_no.errors %}
-                                        <div class="text-danger small">{{ form.port_no.errors }}</div>
+                                    <div class="form-text">Required for ADMS. Copy it exactly from Device Information.</div>
+                                    {% if form.serial_number.errors %}
+                                        <div class="text-danger small">{{ form.serial_number.errors }}</div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -66,6 +78,18 @@
                                     </div>
                                     {% if form.ip_address.errors %}
                                         <div class="text-danger small">{{ form.ip_address.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="id_port_no" class="form-label">Local SDK Port</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-plug"></i></span>
+                                        {{ form.port_no }}
+                                    </div>
+                                    <div class="form-text">Used by the desktop puller; normally 4370.</div>
+                                    {% if form.port_no.errors %}
+                                        <div class="text-danger small">{{ form.port_no.errors }}</div>
                                     {% endif %}
                                 </div>
                                 
@@ -111,8 +135,8 @@
                                 <div class="step-number bg-gradient-primary rounded-circle d-inline-flex align-items-center justify-content-center">
                                     2
                                 </div>
-                                <h6 class="mt-2">Network Configuration</h6>
-                                <p class="text-sm">Ensure the device has a static IP address within your network range</p>
+                                <h6 class="mt-2">Register Serial Number</h6>
+                                <p class="text-sm">For ADMS, select Cloud Push and enter the exact device SN before connecting it</p>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -120,8 +144,8 @@
                                 <div class="step-number bg-gradient-primary rounded-circle d-inline-flex align-items-center justify-content-center">
                                     3
                                 </div>
-                                <h6 class="mt-2">System Integration</h6>
-                                <p class="text-sm">Test connectivity after registration to confirm successful pairing</p>
+                                <h6 class="mt-2">Cloud Server</h6>
+                                <p class="text-sm">Set the device server to meroattendance.com on HTTPS port 443</p>
                             </div>
                         </div>
                     </div>

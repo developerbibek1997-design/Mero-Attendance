@@ -53,25 +53,55 @@
     /* plain text */
     root.querySelectorAll('[data-i18n]').forEach(function(el) {
       var key = el.getAttribute('data-i18n');
-      if (translations[key] !== undefined) el.textContent = translations[key];
+      if (translations[key] !== undefined) {
+        if (!el.hasAttribute('data-i18n-en')) el.setAttribute('data-i18n-en', el.textContent);
+        el.textContent = translations[key];
+      }
     });
 
     /* inner HTML (for lists, bold snippets) */
     root.querySelectorAll('[data-i18n-html]').forEach(function(el) {
       var key = el.getAttribute('data-i18n-html');
-      if (translations[key] !== undefined) el.innerHTML = translations[key];
+      if (translations[key] !== undefined) {
+        if (!el.hasAttribute('data-i18n-html-en')) el.setAttribute('data-i18n-html-en', el.innerHTML);
+        el.innerHTML = translations[key];
+      }
     });
 
     /* placeholder */
     root.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
       var key = el.getAttribute('data-i18n-placeholder');
-      if (translations[key] !== undefined) el.placeholder = translations[key];
+      if (translations[key] !== undefined) {
+        if (!el.hasAttribute('data-i18n-placeholder-en')) el.setAttribute('data-i18n-placeholder-en', el.placeholder);
+        el.placeholder = translations[key];
+      }
     });
 
     /* aria-label */
     root.querySelectorAll('[data-i18n-aria]').forEach(function(el) {
       var key = el.getAttribute('data-i18n-aria');
-      if (translations[key] !== undefined) el.setAttribute('aria-label', translations[key]);
+      if (translations[key] !== undefined) {
+        if (!el.hasAttribute('data-i18n-aria-en')) el.setAttribute('data-i18n-aria-en', el.getAttribute('aria-label') || '');
+        el.setAttribute('aria-label', translations[key]);
+      }
+    });
+  }
+
+  /* restore original English text captured before translation */
+  function restoreOriginal(root) {
+    root = root || document;
+
+    root.querySelectorAll('[data-i18n-en]').forEach(function(el) {
+      el.textContent = el.getAttribute('data-i18n-en');
+    });
+    root.querySelectorAll('[data-i18n-html-en]').forEach(function(el) {
+      el.innerHTML = el.getAttribute('data-i18n-html-en');
+    });
+    root.querySelectorAll('[data-i18n-placeholder-en]').forEach(function(el) {
+      el.placeholder = el.getAttribute('data-i18n-placeholder-en');
+    });
+    root.querySelectorAll('[data-i18n-aria-en]').forEach(function(el) {
+      el.setAttribute('aria-label', el.getAttribute('data-i18n-aria-en'));
     });
   }
 
@@ -91,7 +121,11 @@
   function applyLanguage(lang) {
     currentLang = lang;
     applyDirLang(lang);
-    applyToRoot(document);
+    if (lang === 'en') {
+      restoreOriginal(document);
+    } else {
+      applyToRoot(document);
+    }
     updateSwitcherUI(lang);
   }
 
@@ -159,6 +193,7 @@
   document.addEventListener('htmx:afterBoostSwap', function() {
     applyDirLang(currentLang);
     if (currentLang !== 'en') applyToRoot(document);
+    else restoreOriginal(document);
     updateSwitcherUI(currentLang);
   });
 

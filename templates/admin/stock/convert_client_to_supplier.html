@@ -1,0 +1,37 @@
+{% extends 'dashboard.html' %}
+{% block title %}Convert to Supplier | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-exchange-alt text-primary me-2"></i>Convert "{{ client.client_org_name }}" to a Supplier</h6>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          <p class="text-xs text-muted">This creates a new, independent Supplier record pre-filled from this client's contact details. The Client record itself is not changed.</p>
+          {% if form.errors %}<div class="alert alert-danger">Please correct the errors below.</div>{% endif %}
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Name *</label>{{ form.name }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Branch</label>{{ form.branch }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Contact Person</label>{{ form.contact_person }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Phone</label>{{ form.phone }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Email</label>{{ form.email }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Status</label>{{ form.status }}</div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Address</label>{{ form.address }}</div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Notes</label>{{ form.notes }}</div>
+              <div class="col-12 d-flex gap-2 mt-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i>Create Supplier</button>
+                <a href="{% url 'schooladmin:client_detail' client.pk %}" class="btn btn-outline-secondary">Cancel</a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

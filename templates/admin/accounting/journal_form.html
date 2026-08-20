@@ -1,0 +1,144 @@
+{% extends 'dashboard.html' %}
+{% block title %}{% if mode == 'edit' %}Edit{% else %}New{% endif %} Journal Entry | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-book text-primary me-2"></i>{% if mode == 'edit' %}Edit Journal Entry — {{ entry.voucher_number }}{% else %}New Journal Entry{% endif %}</h6>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          {% if form.errors or formset.errors %}<div class="alert alert-danger">Please correct the errors below.</div>{% endif %}
+          {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
+
+          <form method="post" enctype="multipart/form-data" id="journalForm">
+            {% csrf_token %}
+            <div class="row g-3 mb-3">
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Date *</label>{{ form.entry_date }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Reference</label>{{ form.reference }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Branch</label>{{ form.branch }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Attachment</label>{{ form.attachment }}</div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Description</label>{{ form.description }}</div>
+            </div>
+
+            {{ formset.management_form }}
+            <h6 class="text-sm font-weight-bolder mt-3 mb-2">Debit / Credit Lines</h6>
+            <table class="table table-sm align-middle" id="linesTable">
+              <thead class="table-light">
+                <tr><th class="text-xs" style="width:35%;">Account</th><th class="text-xs">Debit</th><th class="text-xs">Credit</th><th class="text-xs">Remarks</th><th class="text-xs text-center" style="width:60px;">Del</th></tr>
+              </thead>
+              <tbody id="linesBody">
+                {% for line_form in formset.forms %}
+                <tr class="line-row">
+                  <td>{{ line_form.id }}{{ line_form.account }}</td>
+                  <td>{{ line_form.debit }}</td>
+                  <td>{{ line_form.credit }}</td>
+                  <td>{{ line_form.remarks }}</td>
+                  <td class="text-center">{% if line_form.instance.pk %}<div class="form-check">{{ line_form.DELETE }}</div>{% else %}<button type="button" class="btn btn-xs btn-outline-danger remove-line"><i class="fas fa-times"></i></button>{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr class="fw-bold">
+                  <td class="text-end">Totals</td>
+                  <td id="totalDebit">0.00</td>
+                  <td id="totalCredit">0.00</td>
+                  <td colspan="2"><span id="balanceBadge" class="badge bg-secondary">Enter amounts</span></td>
+                </tr>
+              </tfoot>
+            </table>
+            <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="addLineBtn"><i class="fas fa-plus me-1"></i>Add Line</button>
+
+            <div class="d-flex gap-2 mt-2">
+              <button type="submit" name="save_draft" value="1" class="btn btn-outline-secondary"><i class="fas fa-save me-1"></i>Save as Draft</button>
+              <button type="submit" name="submit_for_approval" value="1" class="btn btn-primary"><i class="fas fa-paper-plane me-1"></i>Save &amp; Submit for Approval</button>
+              <a href="{% url 'schooladmin:journal_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<template id="emptyLineTemplate">
+  <tr class="line-row">
+    <td>{{ formset.empty_form.account }}</td>
+    <td>{{ formset.empty_form.debit }}</td>
+    <td>{{ formset.empty_form.credit }}</td>
+    <td>{{ formset.empty_form.remarks }}</td>
+    <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger remove-line"><i class="fas fa-times"></i></button></td>
+  </tr>
+</template>
+
+<script>
+(function () {
+  const linesBody = document.getElementById('linesBody');
+  const addLineBtn = document.getElementById('addLineBtn');
+  const template = document.getElementById('emptyLineTemplate').innerHTML;
+  const totalForms = document.getElementById('id_lines-TOTAL_FORMS');
+
+  function recalcTotals() {
+    let debit = 0, credit = 0;
+    linesBody.querySelectorAll('.line-row').forEach(function (row) {
+      const dInput = row.querySelector('input[name$="-debit"]');
+      const cInput = row.querySelector('input[name$="-credit"]');
+      if (dInput && dInput.closest('tr').style.display !== 'none') debit += parseFloat(dInput.value || 0);
+      if (cInput && cInput.closest('tr').style.display !== 'none') credit += parseFloat(cInput.value || 0);
+    });
+    document.getElementById('totalDebit').textContent = debit.toFixed(2);
+    document.getElementById('totalCredit').textContent = credit.toFixed(2);
+    const badge = document.getElementById('balanceBadge');
+    if (debit === 0 && credit === 0) {
+      badge.textContent = 'Enter amounts'; badge.className = 'badge bg-secondary';
+    } else if (Math.abs(debit - credit) < 0.005) {
+      badge.textContent = 'Balanced ✓'; badge.className = 'badge bg-success';
+    } else {
+      badge.textContent = 'Out of balance ✗ (diff ' + Math.abs(debit - credit).toFixed(2) + ')'; badge.className = 'badge bg-danger';
+    }
+  }
+
+  addLineBtn.addEventListener('click', function () {
+    const idx = parseInt(totalForms.value, 10);
+    const html = template.replace(/__prefix__/g, idx);
+    const wrapper = document.createElement('tbody');
+    wrapper.innerHTML = html;
+    linesBody.appendChild(wrapper.firstElementChild);
+    totalForms.value = idx + 1;
+    attachRowListeners();
+  });
+
+  function attachRowListeners() {
+    linesBody.querySelectorAll('input[name$="-debit"], input[name$="-credit"]').forEach(function (input) {
+      input.removeEventListener('input', recalcTotals);
+      input.addEventListener('input', recalcTotals);
+    });
+    linesBody.querySelectorAll('.remove-line').forEach(function (btn) {
+      btn.onclick = function () {
+        const row = btn.closest('tr');
+        const delCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+        if (delCheckbox) { delCheckbox.checked = true; row.style.display = 'none'; }
+        else { row.remove(); }
+        recalcTotals();
+      };
+    });
+    // Existing (already-saved) lines show their own DELETE checkbox directly
+    // (edit mode) rather than a remove button — hide the row from the totals
+    // the moment it's checked, same as the remove button does for new lines.
+    linesBody.querySelectorAll('input[type="checkbox"][name$="-DELETE"]').forEach(function (checkbox) {
+      checkbox.removeEventListener('change', checkbox._onDeleteToggle || function(){});
+      checkbox._onDeleteToggle = function () {
+        checkbox.closest('tr').style.display = checkbox.checked ? 'none' : '';
+        recalcTotals();
+      };
+      checkbox.addEventListener('change', checkbox._onDeleteToggle);
+    });
+  }
+
+  attachRowListeners();
+  recalcTotals();
+})();
+</script>
+{% endblock %}

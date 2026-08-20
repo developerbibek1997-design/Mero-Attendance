@@ -3,52 +3,60 @@
 {% block title %}Member Gap Attendance Report{% endblock title %}
 
 {% block content %}
-<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css' rel='stylesheet' />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+<link rel="stylesheet" href="{% static 'css/attendance_calendar.css' %}">
 
 <style>
+    @page {
+        size: A4 landscape;
+        margin: 8mm;
+    }
+
     @media print {
         .no-print { display: none !important; }
         .card { border: none !important; box-shadow: none !important; }
         table { page-break-after:auto }
         tr, td { page-break-inside:avoid; page-break-after:auto }
+
     }
-    .hidden { display: none !important; }
     .hidden-date-input { display: none !important; }
-    
+
     /* 🎨 PREMIUM UI CUSTOMIZATIONS */
     .filter-card { border-radius: 16px; background: #ffffff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); margin-bottom: 25px; border: none; }
     .custom-input { border-radius: 10px; border: 1.5px solid #e2e8f0; padding: 12px 18px; font-weight: 500; background-color: #f8fafc; height: 50px; }
     .custom-input:focus { border-color: #f5a623; box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.1); background-color: #ffffff; }
     .btn-premium { border-radius: 10px; height: 50px; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; }
     .btn-premium-warning { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: white; border: none; box-shadow: 0 4px 15px rgba(253, 160, 133, 0.3); }
-    
+
     /* Summary Stat Cards */
     .stat-card { border-radius: 15px; border: none; background: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: all 0.3s ease; }
     .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
     .stat-card h3 { font-weight: 800; font-size: 1.8rem; margin-top: 10px; }
     .stat-card h5 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-    
+
     .table-premium th { background-color: #f8fafc; color: #64748b; font-size: 0.75rem; letter-spacing: 1px; padding: 15px; border-bottom: 2px solid #e2e8f0; }
     .table-premium td { vertical-align: middle; padding: 15px; border-bottom: 1px solid #f1f5f9; }
 
-    /* 📅 ENHANCED CALENDAR STYLES */
-    #calendar { min-height: 600px; padding: 20px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-top: 20px;}
-    .fc-event-title { white-space: normal !important; font-weight: bold; margin-bottom: 2px; }
-    .badge-present { background-color: #28a745; color: white; }
-    .badge-absent { background-color: #dc3545; color: white; }
-    .badge-leave { background-color: #007bff; color: white; }
-    .badge-holiday { background-color: #ffc107; color: black; }
-    .badge-occasion { background-color: #17a2b8; color: white; }
-    .fc-event-status { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; font-weight: bold; margin-top: 3px; }
-    .fc-event-alert { display: inline-block; padding: 2px 4px; border-radius: 4px; font-size: 0.7em; font-weight: bold; background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; margin-top: 2px; }
+    #calendar-view { margin-top: 20px; }
 </style>
+
+{% include 'components/report_print_pagination.html' %}
 
 <div class="card filter-card no-print mt-3">
   <div class="card-body p-4">
-    <form action="" method="post">
+    <form action="" method="post" id="gapReportForm">
       {% csrf_token %}
+      <div class="row g-3 mb-1">
+        <div class="col-md-12">
+          <label class="form-label font-weight-bold text-secondary"><i class="fas fa-user text-primary me-1"></i> Member</label>
+          <select class="form-control custom-input w-100" id="memberSwitcher">
+            {% for m in all_members %}
+              <option value="{{ m.id }}" {% if current_member.id == m.id %}selected{% endif %}>{{ m.name }}{% if m.classification %} — {{ m.classification.name }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
       <div class="row g-3">
         <div class="col-md-4">
           <label class="form-label font-weight-bold text-secondary"><i class="fas fa-calendar-alt text-success me-1"></i> From</label>
@@ -74,7 +82,7 @@
           <label class="form-label d-none d-md-block" style="visibility: hidden;">&nbsp;</label>
           <div class="d-flex gap-2">
             <button class="btn btn-premium btn-premium-warning w-100" type="submit" id="filterBtn"><i class="fas fa-filter"></i> Generate</button>
-            <button type="button" class="btn btn-premium btn-outline-info w-100" id="switch-view"><i class="fas fa-calendar-alt"></i> Calendar</button>
+            <button type="button" class="btn btn-premium btn-outline-info w-100" style="font-size: 12px;" id="switch-view"><i class="fas fa-list"></i> Table View</button>
             <button type="button" class="btn btn-premium btn-outline-dark w-100" onclick="printData('printarea')"><i class="fas fa-print"></i> Print</button>
           </div>
         </div>
@@ -142,7 +150,7 @@
         </h6>
     </div>
 
-    <div id="table-view" class="card filter-card">
+    <div id="table-view" class="card filter-card hidden">
         <div class="table-responsive">
             <table class="table table-premium table-hover align-items-center mb-0">
                 <thead>
@@ -165,7 +173,7 @@
                                 {% endif %}
                                 <small class="px-3 text-muted" style="font-weight: bold;">{{i.0|date:'l'}}</small>
                             </td>
-                            
+
                             <!-- Enhanced Punch In Column (i.9 = Late In Time) -->
                             <td>
                                 <p class="text-sm font-weight-bold mb-0 text-dark">{{i.2|default:"-"}}</p>
@@ -200,14 +208,19 @@
         </div>
     </div>
 
-    <div id="calendar-view" class="hidden">
-        <div id="calendar"></div>
+    <div id="calendar-view">
+        <div id="calGridEmpty" class="text-center text-muted py-5">
+            <i class="fas fa-calendar-alt fa-2x mb-2 d-block"></i>Loading calendar…
+        </div>
+        <div id="calGridMount"></div>
     </div>
 </div>
 {% endif %}
 
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js'></script>
+<script src="{% static 'js/attendance_calendar.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+{% include 'admin/partials/day_action_modal.html' %}
+{{ leave_types|json_script:"gapLeaveTypesData" }}
 
 <script>
     function printData(tId) { window.print(); }
@@ -224,84 +237,88 @@
         if(btn) btn.disabled = !(start && end);
     }
 
+    // Switching member re-submits this same form (keeping whatever date
+    // range is already filled in) against the newly selected member's own
+    // gap-report URL, instead of sending the admin back to the directory.
+    var memberSwitcher = document.getElementById('memberSwitcher');
+    if (memberSwitcher) {
+        var gapReportUrlTemplate = "{% url 'schooladmin:memberGapReport' 0 %}";
+        memberSwitcher.addEventListener('change', function () {
+            var form = document.getElementById('gapReportForm');
+            form.action = gapReportUrlTemplate.replace('/0', '/' + this.value);
+            form.submit();
+        });
+    }
+
+    // Calendar is the default view (see #table-view/#calendar-view above);
+    // this toggles to the table and back.
     let switchBtn = document.getElementById('switch-view');
     if(switchBtn){
         switchBtn.addEventListener('click', function() {
             var tableView = document.getElementById('table-view');
             var calendarView = document.getElementById('calendar-view');
 
-            if (tableView.classList.contains('hidden')) {
-                tableView.classList.remove('hidden');
-                calendarView.classList.add('hidden');
-                this.innerHTML = '<i class="fas fa-calendar-alt"></i> Calendar View';
-            } else {
+            if (calendarView.classList.contains('hidden')) {
                 tableView.classList.add('hidden');
                 calendarView.classList.remove('hidden');
                 this.innerHTML = '<i class="fas fa-list"></i> Table View';
                 renderCalendar();
+            } else {
+                tableView.classList.remove('hidden');
+                calendarView.classList.add('hidden');
+                this.innerHTML = '<i class="fas fa-calendar-alt"></i> Calendar View';
             }
         });
     }
 
-    // 🌟 ADVANCED CALENDAR INTEGRATION
+    // Shared calendar grid (static/js/attendance_calendar.js) fed by the
+    // same MemberCalendarDataView AJAX endpoint the Monthly Report Calendar
+    // View tab uses, rather than hand-building events from the `tm` tuple
+    // list here - one calendar implementation instead of two.
+    var gapLeaveTypes = JSON.parse(document.getElementById('gapLeaveTypesData').textContent);
+    var gapDayActionUrl = "{% url 'schooladmin:day_quick_action' %}";
+    var gapCsrfToken = "{{ csrf_token }}";
+    var gapCalendarUrlTemplate = "{% url 'schooladmin:member_calendar_data' 0 %}";
+    var gapCurrentMemberId = {{ current_member.id|default:"null" }};
+    var gapCurrentMemberName = "{{ current_member.name|default:''|escapejs }}";
+
+    function gapCalendarDataUrl() {
+        return gapCalendarUrlTemplate.replace('/0/', '/' + gapCurrentMemberId + '/')
+            + '?from_date={{ first_date|date:"Y-m-d" }}&to_date={{ last_date|date:"Y-m-d" }}';
+    }
+
     function renderCalendar() {
-        var calendarEl = document.getElementById('calendar');
-        var events = [
-            {% for i in tm %}
-            {
-                title: '{{ i.1|escapejs }}',
-                start: '{{ i.0|date:"Y-m-d" }}',
-                extendedProps: {
-                    inTime: '{% if i.2 %}{{ i.2|time:"H:i" }}{% else %}--:--{% endif %}',
-                    outTime: '{% if i.3 %}{{ i.3|time:"H:i" }}{% else %}--:--{% endif %}',
-                    totalHours: '{% if i.4 %}{{ i.4 }}{% else %}--:--{% endif %}',
-                    lateIn: '{% if i.9 %}{{ i.9 }}{% else %}{% endif %}',
-                    earlyOut: '{% if i.10 %}{{ i.10 }}{% else %}{% endif %}',
-                    status: '{% if i.6 %}{{ i.6|escapejs }}{% elif i.5 %}Holiday{% elif i.2 %}Present{% elif i.7 %}On Leave{% else %}Absent{% endif %}',
-                    nepaliDate: '{% if nepali_enabled %}{{ i.8 }}{% endif %}'
+        if (!gapCurrentMemberId) return;
+        var emptyEl = document.getElementById('calGridEmpty');
+        var mountEl = document.getElementById('calGridMount');
+        emptyEl.classList.remove('hidden');
+        emptyEl.textContent = 'Loading calendar…';
+        fetch(gapCalendarDataUrl()).then(function (r) { return r.json(); }).then(function (data) {
+            emptyEl.classList.add('hidden');
+            AttendanceCalendar.render(mountEl, {
+                days: data.days,
+                startDate: data.start,
+                endDate: data.end,
+                onDayClick: function (dateIso, day) {
+                    window.DayActionModal.open({
+                        memberId: gapCurrentMemberId,
+                        memberName: gapCurrentMemberName,
+                        date: dateIso,
+                        dateLabel: dateIso,
+                        existingNote: day ? day.note : '',
+                        existingLeaveType: day ? day.leave_type : '',
+                        existingLeaveReason: day ? day.leave_reason : '',
+                        actionUrl: gapDayActionUrl,
+                        csrfToken: gapCsrfToken,
+                        leaveTypes: gapLeaveTypes,
+                        onSaved: renderCalendar,
+                    });
                 },
-                backgroundColor: '{% if i.6 %}#f8f9fa{% elif i.5 %}#ffc107{% elif i.2 %}#28a745{% elif i.7 %}#007bff{% else %}#dc3545{% endif %}',
-                borderColor: '{% if i.6 %}#f8f9fa{% elif i.5 %}#ffc107{% elif i.2 %}#28a745{% elif i.7 %}#007bff{% else %}#dc3545{% endif %}',
-                textColor: '{% if i.6 or i.5 %}#212529{% else %}#ffffff{% endif %}',
-                display: 'block'
-            },
-            {% endfor %}
-        ];
-
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            initialDate: '{{first_date|date:"Y-m-d"}}', 
-            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
-            events: events,
-            eventContent: function(arg) {
-                var ep = arg.event.extendedProps;
-                var statusClass = '';
-                
-                if (ep.status === 'Present') statusClass = 'badge-present';
-                else if (ep.status === 'Absent') statusClass = 'badge-absent';
-                else if (ep.status === 'On Leave') statusClass = 'badge-leave';
-                else if (ep.status === 'Holiday') statusClass = 'badge-holiday';
-                else statusClass = 'badge-occasion';
-                
-                var html = `<div class="fc-event-title">${arg.event.title}`;
-                if (ep.nepaliDate) html += `<br><span style="font-weight:normal;font-size:0.85em;">(${ep.nepaliDate})</span>`;
-                html += `</div><div class="fc-event-details">
-                            <div style="font-size:0.8em; margin-bottom:2px;">In: ${ep.inTime} | Out: ${ep.outTime}</div>`;
-                
-                if(ep.lateIn) html += `<div class="fc-event-alert"><i class="fas fa-arrow-up"></i> Late: ${ep.lateIn}</div>`;
-                if(ep.earlyOut) html += `<div class="fc-event-alert"><i class="fas fa-arrow-down"></i> Early Out: ${ep.earlyOut}</div>`;
-                
-                html += `<br><span class="fc-event-status ${statusClass}">${ep.status}</span></div>`;
-                
-                var container = document.createElement('div');
-                container.innerHTML = html;
-                return { domNodes: [container] };
-            },
-            height: 'auto'
+            });
+        }).catch(function () {
+            emptyEl.classList.remove('hidden');
+            emptyEl.textContent = 'Could not load the calendar - please retry.';
         });
-
-        calendar.render();
-        setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 100);
     }
 
     // NepaliDate.init handles .nepali-cal globally via dashboard.html
@@ -312,6 +329,10 @@
                 flatpickr(input, { dateFormat: "Y-m-d", maxDate: "today", disableMobile: "true" });
             });
         {% endif %}
+        // Calendar view is the default (see #table-view/#calendar-view above).
+        if (document.getElementById('calGridMount')) {
+            renderCalendar();
+        }
     };
 </script>
 {% endblock content %}

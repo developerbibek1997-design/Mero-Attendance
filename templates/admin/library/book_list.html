@@ -1,0 +1,61 @@
+{% extends 'dashboard.html' %}
+{% block title %}Books | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0">Books</h4>
+    <div>
+      <a href="{% url 'schooladmin:add_book' %}" class="btn btn-primary btn-sm me-1"><i class="fas fa-plus me-1"></i>Add Book</a>
+      <a href="{% url 'schooladmin:library_issue' %}" class="btn btn-success btn-sm me-1"><i class="fas fa-right-from-bracket me-1"></i>Issue</a>
+      <a href="{% url 'schooladmin:export_library' %}?fmt=excel&type=books" class="btn btn-outline-success btn-sm me-1" title="Export Excel"><i class="fas fa-file-excel me-1"></i>Excel</a>
+      <a href="{% url 'schooladmin:export_library' %}?fmt=csv&type=books" class="btn btn-outline-secondary btn-sm" title="Export CSV"><i class="fas fa-file-csv me-1"></i>CSV</a>
+    </div>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-4"><input type="text" name="search" class="form-control form-control-sm" placeholder="Search title, code or ISBN..." value="{{ search }}"></div>
+        <div class="col-md-3"><select name="category" class="form-select form-select-sm"><option value="">All Categories</option>{% for c in categories %}<option value="{{ c.id }}" {% if selected_category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><select name="status" class="form-select form-select-sm"><option value="">All Status</option><option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option><option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option><option value="archived" {% if selected_status == 'archived' %}selected{% endif %}>Archived</option></select></div>
+        <div class="col-md-3 d-flex gap-1"><button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-search me-1"></i>Search</button><a href="{% url 'schooladmin:library_books' %}" class="btn btn-outline-secondary btn-sm">Clear</a></div>
+      </form>
+    </div>
+  </div>
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th class="text-xs">#</th><th class="text-xs">Title</th><th class="text-xs">Code / ISBN</th><th class="text-xs">Category</th><th class="text-xs">Author</th><th class="text-xs">Available</th><th class="text-xs">Status</th><th class="text-xs text-center">Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for book in books %}
+          <tr>
+            <td class="text-xs text-muted">{{ forloop.counter }}</td>
+            <td>
+              <p class="text-sm font-weight-bold mb-0">{{ book.title }}</p>
+              {% if book.subtitle %}<p class="text-xs text-muted mb-0">{{ book.subtitle }}</p>{% endif %}
+            </td>
+            <td class="text-xs">{{ book.book_code }}{% if book.isbn %}<br><span class="text-muted">{{ book.isbn }}</span>{% endif %}</td>
+            <td class="text-sm">{{ book.category.name|default:"-" }}</td>
+            <td class="text-sm">{{ book.author.name|default:"-" }}</td>
+            <td>
+              {% if book.available_quantity > 0 %}<span class="badge bg-success">{{ book.available_quantity }} / {{ book.quantity }}</span>
+              {% else %}<span class="badge bg-danger">0 / {{ book.quantity }}</span>{% endif %}
+            </td>
+            <td><span class="badge {% if book.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">{{ book.status|capfirst }}</span></td>
+            <td class="text-center">
+              <a href="{% url 'schooladmin:edit_book' book.pk %}" class="btn btn-xs btn-outline-primary mb-0"><i class="fas fa-edit"></i></a>
+              <a href="{% url 'schooladmin:library_issues' %}?book={{ book.pk }}" class="btn btn-xs btn-outline-info mb-0"><i class="fas fa-history"></i></a>
+              <form method="post" action="{% url 'schooladmin:delete_book' book.pk %}" class="d-inline" onsubmit="return confirm('Delete this book?')">{% csrf_token %}<button type="submit" class="btn btn-xs btn-outline-danger mb-0"><i class="fas fa-trash"></i></button></form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-muted py-5"><i class="fas fa-book fa-2x mb-2 d-block"></i>No books found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

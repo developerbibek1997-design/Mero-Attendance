@@ -72,15 +72,23 @@
           &bull; Card: {{ mem.card|default:"–" }}
           &bull; Salary: Rs. {{ mem.salary_amount }} ({{ mem.get_salary_type_display }})
           {% if mem.date_of_birth %}&bull; DOB: {{ mem.date_of_birth }}{% endif %}
+          {% if mem.admission_date %}&bull; Joined: {{ mem.admission_date }}{% endif %}
         </p>
       </div>
       <div class="d-flex flex-wrap gap-2 ms-auto mt-2">
+        <a href="{% url 'handle:memberEdit' mem.pk %}" class="btn btn-sm btn-light no-print"><i class="fas fa-user-pen me-1"></i>Edit Member</a>
+        <a href="{% url 'schooladmin:member_history' mem.pk %}" class="btn btn-sm btn-outline-light no-print"><i class="fas fa-clock-rotate-left me-1"></i>Change History</a>
         <a href="{% url 'schooladmin:memberGapReport' mem.pk %}" class="btn btn-sm btn-light no-print">
           <i class="fas fa-calendar-alt me-1"></i>Attendance Report
         </a>
         <a href="{% url 'schooladmin:salaryReport' mem.pk %}" class="btn btn-sm btn-warning no-print">
           <i class="fas fa-file-invoice-dollar me-1"></i>Salary Report
         </a>
+        {% if features.id_cards %}
+        <a href="{% url 'schooladmin:idcard_generate' %}?q={{ mem.card|default:mem.name|urlencode }}&generate=1" class="btn btn-sm btn-light no-print">
+          <i class="fas fa-id-card me-1"></i>Print ID Card
+        </a>
+        {% endif %}
       </div>
     </div>
 
@@ -168,8 +176,8 @@
                 {% for l in leaves %}
                 <tr>
                   <td>{{ l.leave_type.name|default:"General" }}</td>
-                  <td class="text-xs">{% if nepali_enabled %}{{ l.gap_start }}{% else %}{{ l.gap_start }}{% endif %}</td>
-                  <td class="text-xs">{{ l.gap_end|default:"–" }}</td>
+                  <td class="text-xs">{{ l.start_display|default:"–" }}</td>
+                  <td class="text-xs">{{ l.end_display|default:"–" }}</td>
                   <td>
                     {% if l.approved %}<span class="pill pill-green">Approved</span>
                     {% elif l.rejected %}<span class="pill pill-red">Rejected</span>
@@ -263,7 +271,7 @@
               </td>
               <td><strong class="text-success">Rs. {{ p.net_payable|floatformat:2 }}</strong></td>
               <td class="text-xs text-muted">{{ p.generated_on|date:"Y-m-d" }}</td>
-              <td><a href="{% url 'schooladmin:generate' p.pk %}" class="btn btn-xs btn-outline-primary mb-0" title="View Payslip"><i class="fas fa-eye"></i></a></td>
+              <td><a href="{% url 'schooladmin:payslip_detail' p.pk %}" class="btn btn-xs btn-outline-primary mb-0" title="View Payslip"><i class="fas fa-eye"></i></a></td>
             </tr>
             {% endfor %}
           </tbody>
@@ -431,6 +439,37 @@
   </div>
   {% endif %}
 
+  <!-- ── Library — Borrowing History ─────────────────────────────── -->
+  {% if features.library %}
+  <div class="card sec-card">
+    <div class="sec-header"><i class="fas fa-book text-primary"></i><h6>Borrowing History ({{ book_issues|length }})</h6></div>
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead class="table-light"><tr><th class="text-xs">Book</th><th class="text-xs">Issued</th><th class="text-xs">Due</th><th class="text-xs">Returned</th><th class="text-xs">Fine</th><th class="text-xs">Status</th></tr></thead>
+        <tbody>
+          {% for i in book_issues %}
+          <tr>
+            <td class="text-sm font-weight-bold">{{ i.book.title }}</td>
+            <td class="text-sm">{{ i.issue_date }}</td>
+            <td class="text-sm">{{ i.due_date }}</td>
+            <td class="text-sm">{{ i.return_date|default:"-" }}</td>
+            <td class="text-sm">{% if i.fine %}Rs. {{ i.fine }}{% else %}-{% endif %}</td>
+            <td>
+              {% if i.status == 'returned' %}<span class="badge bg-info">Returned</span>
+              {% elif i.status == 'lost' %}<span class="badge bg-secondary">Lost</span>
+              {% elif i.is_overdue %}<span class="badge bg-danger">Overdue</span>
+              {% else %}<span class="badge bg-warning">Issued</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-3">No books borrowed yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- ── Payroll Adjustments (Allowances / Advances / Loans) ─────── -->
   {% if org.feature_payroll %}
   <div class="card sec-card">
@@ -576,6 +615,33 @@
     </div>
   </div>
   {% endif %}
+
+  <!-- Complete identity, academic and schedule footprint -->
+  <div class="row g-3">
+    <div class="col-lg-6"><div class="card sec-card h-100"><div class="sec-header"><i class="fas fa-address-card text-primary"></i><h6>Complete Member Details</h6></div><div class="card-body row g-2 text-sm">
+      <div class="col-6"><span class="text-muted d-block text-xs">Device ID</span><strong>{{ mem.device_id|default:'—' }}</strong></div>
+      <div class="col-6"><span class="text-muted d-block text-xs">Card / RFID</span><strong>{{ mem.card|default:'—' }}</strong></div>
+      <div class="col-6"><span class="text-muted d-block text-xs">Roll / Registration</span><strong>{{ mem.roll_number|default:'—' }}</strong></div>
+      <div class="col-6"><span class="text-muted d-block text-xs">Designation</span><strong>{{ mem.designation|default:'—' }}</strong></div>
+      <div class="col-6"><span class="text-muted d-block text-xs">Gender</span><strong>{{ mem.gender|default:'—' }}</strong></div>
+      <div class="col-6"><span class="text-muted d-block text-xs">Blood Group</span><strong>{{ mem.blood_group|default:'—' }}</strong></div>
+      <div class="col-6"><span class="text-muted d-block text-xs">Branch</span><strong>{{ mem.branch.name|default:'—' }}</strong></div>
+      <div class="col-6"><span class="text-muted d-block text-xs">Classification / Section</span><strong>{{ mem.classification.name|default:'—' }} / {{ mem.section.name|default:'—' }}</strong></div>
+      <div class="col-12"><span class="text-muted d-block text-xs">Weekly Shifts</span><strong>{{ mem.weekly_shifts_display }}</strong></div>
+    </div></div></div>
+    <div class="col-lg-6"><div class="card sec-card h-100"><div class="sec-header"><i class="fas fa-graduation-cap text-info"></i><h6>Academic Enrollment History</h6></div><div class="card-body p-0 table-responsive"><table class="table tbl mb-0"><thead><tr><th>Course</th><th>Class / Section</th><th>Period</th><th>Status</th></tr></thead><tbody>
+      {% for e in enrollments %}<tr><td><strong>{{ e.course.name }}</strong><div class="text-xs text-muted">{{ e.academic_year.name|default:'No academic year' }}</div></td><td>{{ e.classification.name }} / {{ e.section.name|default:'All' }}</td><td>{{ e.start_date }} – {{ e.end_date|default:'Current' }}</td><td>{{ e.get_status_display }}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No dated enrollment history. Current course links remain visible on the edit page.</td></tr>{% endfor %}
+    </tbody></table></div></div></div>
+  </div>
+
+  {% if org.feature_field_visits or mem.live_tracking_enabled %}
+  <div class="card sec-card"><div class="sec-header d-flex justify-content-between"><span><i class="fas fa-route text-danger me-2"></i><strong>Field Visits & Live Tracking</strong></span><a href="{% url 'schooladmin:live_tracking_detail' mem.pk %}" class="btn btn-xs btn-outline-primary no-print">Open movement report</a></div><div class="card-body">
+    <div class="row g-3 mb-3"><div class="col-md-4"><div class="kpi"><div class="num">{{ field_visits|length }}</div><div class="label">Recent field visits</div></div></div><div class="col-md-4"><div class="kpi"><div class="num">{{ tracking_sessions|length }}</div><div class="label">Tracking sessions</div></div></div><div class="col-md-4"><div class="kpi"><div class="num">{{ latest_pings|length }}</div><div class="label">Recent GPS points</div></div></div></div>
+    <div class="table-responsive"><table class="table tbl mb-0"><thead><tr><th>Date</th><th>Purpose / Location</th><th>Coordinates</th><th>Status</th></tr></thead><tbody>{% for visit in field_visits %}<tr><td>{{ visit.visited_at }}</td><td>{{ visit.purpose|default:visit.area_name|default:'Field work' }}</td><td><a target="_blank" href="https://www.google.com/maps?q={{ visit.latitude }},{{ visit.longitude }}">{{ visit.latitude|floatformat:5 }}, {{ visit.longitude|floatformat:5 }}</a></td><td>{{ visit.get_status_display }}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No field visits recorded.</td></tr>{% endfor %}</tbody></table></div>
+  </div></div>
+  {% endif %}
+
+  <div class="card sec-card"><div class="sec-header d-flex justify-content-between"><span><i class="fas fa-clock-rotate-left text-primary me-2"></i><strong>Recent Change History</strong></span><a href="{% url 'schooladmin:member_history' mem.pk %}" class="btn btn-xs btn-outline-primary no-print">View complete history</a></div><div class="card-body p-0"><div class="table-responsive"><table class="table tbl mb-0"><thead><tr><th>When</th><th>Change</th><th>Before</th><th>After</th><th>Changed By</th></tr></thead><tbody>{% for item in history %}<tr><td>{{ item.changed_at }}</td><td><strong>{{ item.description }}</strong></td><td>{{ item.old_value|default:'—' }}</td><td>{{ item.new_value|default:'—' }}</td><td>{% if item.changed_by %}{{ item.changed_by.get_full_name|default:item.changed_by.email }}{% else %}System{% endif %}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted py-3">History starts when this upgrade is installed.</td></tr>{% endfor %}</tbody></table></div></div></div>
 
 </div><!-- /container -->
 

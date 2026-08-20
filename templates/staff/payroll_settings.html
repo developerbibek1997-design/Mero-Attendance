@@ -1,0 +1,66 @@
+{% extends 'dashboard.html' %}
+{% block title %}Payroll Settings | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="fw-bold mb-4" style="color:#1e293b;">Payroll Settings</h4>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm p-4" style="border-radius:12px;">
+        <h6 class="fw-bold mb-3">Policy</h6>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="policy">
+          {{ policy_form.as_p }}
+          <button type="submit" class="btn btn-primary btn-sm">Save Policy</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm p-4" style="border-radius:12px;">
+        <h6 class="fw-bold mb-3">New Adjustment</h6>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="adjustment">
+          {{ adjustment_form.as_p }}
+          <button type="submit" class="btn btn-primary btn-sm">Save Adjustment</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mt-4" style="border-radius:12px;">
+    <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 fw-bold">Recent Adjustments</h6></div>
+    <div class="card-body p-0">
+      <table class="table mb-0 align-items-center">
+        <thead>
+          <tr>
+            <th class="ps-4 text-uppercase text-xxs text-secondary font-weight-bolder">Member</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Type</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Title</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end pe-4">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for adj in adjustments %}
+          <tr>
+            <td class="ps-4 text-sm">{{ adj.member.name }}</td>
+            <td class="text-sm text-muted">{{ adj.get_adjustment_type_display }}</td>
+            <td class="text-sm">{{ adj.title }}</td>
+            <td class="text-sm text-end pe-4">Rs. {{ adj.amount|floatformat:0 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center py-4 text-muted">No adjustments yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

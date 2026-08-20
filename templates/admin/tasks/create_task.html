@@ -68,11 +68,21 @@
               </div>
               <div class="col-md-6" id="startDateWrap">
                 <label class="form-label text-xs font-weight-bold">Start Date <span class="text-danger">*</span></label>
+                {% if nepali_enabled %}
+                <input type="text" id="startDate" class="form-control nepali-cal" name="start_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off" required>
+                <input type="date" class="hidden-date-input" name="start_date" value="{{ today|date:'Y-m-d' }}">
+                {% else %}
                 <input type="date" name="start_date" id="startDate" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
+                {% endif %}
               </div>
               <div class="col-md-6">
                 <label class="form-label text-xs font-weight-bold">Due Date / End Date <span class="text-danger">*</span></label>
+                {% if nepali_enabled %}
+                <input type="text" id="dueDate" class="form-control nepali-cal" name="due_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off" required>
+                <input type="date" class="hidden-date-input" name="due_date" value="{{ today|date:'Y-m-d' }}">
+                {% else %}
                 <input type="date" name="due_date" id="dueDate" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
+                {% endif %}
               </div>
             </div>
             <div id="recurringNote" class="alert alert-info py-2 mt-3 d-none" style="font-size:12px;">
@@ -97,7 +107,7 @@
                 {% for val, label in priority_choices %}
                 <div>
                   <input type="radio" name="priority" value="{{ val }}" id="p_{{ val }}" class="btn-check" {% if val == 'medium' %}checked{% endif %}>
-                  <label class="btn btn-sm {% if val == 'low' %}btn-outline-success{% elif val == 'medium' %}btn-outline-primary{% elif val == 'high' %}btn-outline-warning{% else %}btn-outline-danger{% endif %}" for="p_{{ val }}">
+                  <label class="btn btn-sm priority-btn priority-{{ val }}" for="p_{{ val }}">
                     {{ label }}
                   </label>
                 </div>
@@ -138,12 +148,17 @@
             <input type="text" id="memberSearch" class="form-control form-control-sm mb-3" placeholder="Search members...">
             <div style="max-height:300px;overflow-y:auto;" id="memberList">
               {% for m in members %}
-              <div class="member-item d-flex align-items-center gap-2 p-2 rounded mb-1 hover-bg" style="cursor:pointer;" onclick="toggleMember({{ m.id }})">
-                <input type="checkbox" name="assigned_to" value="{{ m.id }}" id="m_{{ m.id }}" class="member-cb form-check-input" style="pointer-events:none;">
-                <label for="m_{{ m.id }}" class="mb-0 flex-grow-1" style="cursor:pointer;pointer-events:none;">
-                  <p class="text-sm font-weight-bold mb-0">{{ m.name }}</p>
+              <div class="member-item d-flex align-items-center gap-2 p-2 rounded mb-1" onclick="toggleMember({{ m.id }})">
+                <div class="flex-grow-1">
+                  <p class="text-sm font-weight-bold mb-0"><a href="{% url 'handle:memberEdit' m.id %}" class="text-dark">{{ m.name }}</a></p>
                   <p class="text-xs text-muted mb-0">{{ m.get_member_type_display }}</p>
-                </label>
+                </div>
+                <!-- Hidden checkbox to store selection -->
+                <input type="checkbox" name="assigned_to" value="{{ m.id }}" id="m_{{ m.id }}" class="member-cb d-none">
+                <!-- Selection indicator -->
+                <span class="selection-indicator">
+                  <i class="fas fa-check-circle text-primary" style="font-size: 20px; opacity: 0; transition: opacity 0.2s ease;"></i>
+                </span>
               </div>
               {% empty %}
               <p class="text-xs text-muted text-center py-3">No active members found.</p>
@@ -162,7 +177,99 @@
 </div>
 
 <style>
-.hover-bg:hover { background: #f8fafc; }
+/* Priority Button Styles */
+.priority-btn {
+  background: transparent !important;
+  border-width: 1px;
+  border-style: solid;
+  min-width: 60px;
+  transition: all 0.2s ease;
+}
+
+.priority-low {
+  color: #198754 !important;
+  border-color: #198754 !important;
+}
+
+.priority-medium {
+  color: #0d6efd !important;
+  border-color: #0d6efd !important;
+}
+
+.priority-high {
+  color: #ffc107 !important;
+  border-color: #ffc107 !important;
+}
+
+.priority-urgent {
+  color: #dc3545 !important;
+  border-color: #dc3545 !important;
+}
+
+.btn-check:checked + .priority-low {
+  background-color: #198754 !important;
+  color: #ffffff !important;
+  border-color: #198754 !important;
+}
+
+.btn-check:checked + .priority-medium {
+  background-color: #0d6efd !important;
+  color: #ffffff !important;
+  border-color: #0d6efd !important;
+}
+
+.btn-check:checked + .priority-high {
+  background-color: #ffc107 !important;
+  color: #000000 !important;
+  border-color: #ffc107 !important;
+}
+
+.btn-check:checked + .priority-urgent {
+  background-color: #dc3545 !important;
+  color: #ffffff !important;
+  border-color: #dc3545 !important;
+}
+
+/* Member Item Styles */
+.member-item {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+  background: transparent;
+  padding: 10px 12px !important;
+}
+
+.member-item:hover {
+  background: #f8fafc;
+}
+
+.member-item.selected {
+  background-color: #e7f5ff;
+  border-left: 3px solid #0d6efd;
+}
+
+.member-item.selected:hover {
+  background-color: #d0ebff;
+}
+
+.member-item.selected .selection-indicator i {
+  opacity: 1 !important;
+}
+
+.selection-indicator {
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+/* Member type badge */
+.member-type-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #e9ecef;
+  color: #495057;
+}
 </style>
 
 <script>
@@ -176,6 +283,7 @@ function toggleDateRange() {
     note.classList.add('d-none');
     startWrap.classList.add('d-none');
     document.getElementById('startDate').value = document.getElementById('dueDate').value;
+    document.getElementById('startDate').dispatchEvent(new Event('blur'));
   } else {
     note.classList.remove('d-none');
     startWrap.classList.remove('d-none');
@@ -193,6 +301,7 @@ document.getElementById('dueDate').addEventListener('change', function() {
   const type = document.getElementById('taskType').value;
   if (type === 'one_time') {
     document.getElementById('startDate').value = this.value;
+    document.getElementById('startDate').dispatchEvent(new Event('blur'));
   }
 });
 
@@ -200,19 +309,39 @@ function toggleMember(id) {
   const cb = document.getElementById('m_' + id);
   cb.checked = !cb.checked;
   updateCount();
+  updateMemberStyle(cb);
 }
+
+function updateMemberStyle(cb) {
+  const item = cb.closest('.member-item');
+  if (cb.checked) {
+    item.classList.add('selected');
+  } else {
+    item.classList.remove('selected');
+  }
+}
+
 function selectAll() {
-  document.querySelectorAll('.member-cb').forEach(cb => cb.checked = true);
+  document.querySelectorAll('.member-cb').forEach(cb => {
+    cb.checked = true;
+    updateMemberStyle(cb);
+  });
   updateCount();
 }
+
 function clearAll() {
-  document.querySelectorAll('.member-cb').forEach(cb => cb.checked = false);
+  document.querySelectorAll('.member-cb').forEach(cb => {
+    cb.checked = false;
+    updateMemberStyle(cb);
+  });
   updateCount();
 }
+
 function updateCount() {
   document.getElementById('selectedCount').textContent =
     document.querySelectorAll('.member-cb:checked').length;
 }
+
 document.getElementById('memberSearch').addEventListener('input', function() {
   const q = this.value.toLowerCase();
   document.querySelectorAll('.member-item').forEach(item => {
@@ -220,6 +349,16 @@ document.getElementById('memberSearch').addEventListener('input', function() {
     item.style.display = name.includes(q) ? '' : 'none';
   });
 });
-toggleDateRange();
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  toggleDateRange();
+  updateCount();
+  
+  // Highlight initially checked members
+  document.querySelectorAll('.member-cb:checked').forEach(cb => {
+    updateMemberStyle(cb);
+  });
+});
 </script>
 {% endblock %}

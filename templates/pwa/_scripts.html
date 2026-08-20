@@ -1,0 +1,140 @@
+{% comment %}
+PWA runtime: worker registration, install prompt, update toast.
+Include just before the closing body tag.
+{% endcomment %}
+<style>
+  .pwa-toast{
+    position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(140%);
+    background:#0f172a;color:#fff;border-radius:12px;padding:.85rem 1.1rem;
+    box-shadow:0 12px 32px rgba(15,23,42,.28);z-index:20000;
+    display:flex;align-items:center;gap:.85rem;font-size:.85rem;
+    transition:transform .3s cubic-bezier(.22,1,.36,1);max-width:calc(100vw - 32px);
+  }
+  .pwa-toast.show{transform:translateX(-50%) translateY(0);}
+  .pwa-toast button{
+    border:none;border-radius:8px;padding:.42rem .95rem;
+    font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap;
+  }
+  .pwa-toast .pwa-primary{background:#dc2626;color:#fff;}
+  .pwa-toast .pwa-ghost{background:transparent;color:#94a3b8;padding:.42rem .5rem;}
+  #pwaInstallBtn{display:none;}
+  /* In an installed window there's nothing to install — hide the affordance. */
+  @media (display-mode: standalone){ #pwaInstallBtn{display:none !important;} }
+</style>
+
+<div class="pwa-toast" id="pwaInstallToast" role="dialog" aria-live="polite">
+  <span>Install Mero Attendance for a faster, app-like experience.</span>
+  <button class="pwa-primary" id="pwaInstallAccept" type="button">Install</button>
+  <button class="pwa-ghost" id="pwaInstallDismiss" type="button">Not now</button>
+</div>
+
+<div class="pwa-toast" id="pwaUpdateToast" role="dialog" aria-live="polite">
+  <span>A new version is available.</span>
+  <button class="pwa-primary" id="pwaUpdateReload" type="button">Refresh</button>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ── Register the worker ────────────────────────────────────────────────
+  // Service workers require a secure context; localhost counts as secure, so
+  // this works in development without HTTPS.
+  var updateToast = document.getElementById('pwaUpdateToast');
+  var waitingWorker = null;
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+        .then(function (reg) {
+          // A worker sitting in "waiting" means new code is ready but the old
+          // one still controls the page. Offer a refresh rather than swapping
+          // under the user's feet mid-form.
+          function watch(worker) {
+            if (!worker) return;
+            worker.addEventListener('statechange', function () {
+              if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                waitingWorker = worker;
+                updateToast.classList.add('show');
+              }
+            });
+          }
+          if (reg.waiting && navigator.serviceWorker.controller) {
+            waitingWorker = reg.waiting;
+            updateToast.classList.add('show');
+          }
+          watch(reg.installing);
+          reg.addEventListener('updatefound', function () { watch(reg.installing); });
+        })
+        .catch(function (err) { console.warn('SW registration failed:', err); });
+
+      var refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (refreshing) return;      // guard against a reload loop
+        refreshing = true;
+        window.location.reload();
+      });
+    });
+  }
+
+  document.getElementById('pwaUpdateReload').addEventListener('click', function () {
+    updateToast.classList.remove('show');
+    if (waitingWorker) waitingWorker.postMessage('SKIP_WAITING');
+    else window.location.reload();
+  });
+
+  // ── Install prompt ─────────────────────────────────────────────────────
+  var deferredPrompt = null;
+  var installToast = document.getElementById('pwaInstallToast');
+  var installBtn = document.getElementById('pwaInstallBtn');   // optional, in the navbar
+  var DISMISS_KEY = 'pwaInstallDismissedUntil';
+
+  function suppressed() {
+    try {
+      var until = parseInt(localStorage.getItem(DISMISS_KEY) || '0', 10);
+      return Date.now() < until;
+    } catch (e) { return false; }
+  }
+  function suppressFor(days) {
+    try {
+      localStorage.setItem(DISMISS_KEY, String(Date.now() + days * 864e5));
+    } catch (e) { /* private mode — just don't persist */ }
+  }
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();               // keep Chrome's own mini-infobar away
+    deferredPrompt = e;
+    if (installBtn) installBtn.style.display = '';
+    if (!suppressed()) {
+      // Let the page settle before interrupting.
+      setTimeout(function () {
+        if (deferredPrompt) installToast.classList.add('show');
+      }, 3000);
+    }
+  });
+
+  function doInstall() {
+    installToast.classList.remove('show');
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function (choice) {
+      if (choice.outcome !== 'accepted') suppressFor(14);
+      deferredPrompt = null;
+      if (installBtn) installBtn.style.display = 'none';
+    });
+  }
+
+  document.getElementById('pwaInstallAccept').addEventListener('click', doInstall);
+  document.getElementById('pwaInstallDismiss').addEventListener('click', function () {
+    installToast.classList.remove('show');
+    suppressFor(14);
+  });
+  if (installBtn) installBtn.addEventListener('click', doInstall);
+
+  window.addEventListener('appinstalled', function () {
+    installToast.classList.remove('show');
+    deferredPrompt = null;
+    if (installBtn) installBtn.style.display = 'none';
+  });
+})();
+</script>

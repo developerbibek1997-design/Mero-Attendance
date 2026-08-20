@@ -21,6 +21,19 @@ body,
     color: var(--mero-black);
 }
 
+/* `.btn-xs` is used across ~70 templates for compact buttons in tight
+   spaces (search result rows, table action cells, card footers) but was
+   never actually defined - Bootstrap/Soft UI only ship .btn-sm/.btn-lg, so
+   every "extra small" button was silently rendering at full default size,
+   breaking cramped layouts like the navbar member-search dropdown. */
+.btn-xs,
+.btn-group-xs > .btn {
+    padding: 0.25rem 0.65rem;
+    font-size: 0.68rem;
+    line-height: 1.4;
+    border-radius: 0.4rem;
+}
+
 a,
 .text-primary,
 .text-info,
@@ -334,7 +347,6 @@ a:hover,
     border-left-color: var(--mero-red) !important;
 }
 
-.dashboard-header,
 .roster-header,
 .module-card,
 .ma-footer,
@@ -389,4 +401,160 @@ a:hover,
     .stat-card {
         box-shadow: none !important;
     }
+}
+
+/* Soft UI Dashboard's ".alert-dismissible .btn-close { background-image: none; }"
+   strips the built-in "x" icon and the base .btn-close rule colors it white,
+   so the close button on every dismissible alert (success/danger/warning/info)
+   renders as an invisible blank box. Draw the "x" back in with the alert's own
+   text color so it's always visible and readable against that alert's background. */
+.alert-dismissible .btn-close {
+    background-image: none !important;
+    color: inherit;
+    opacity: .7;
+    position: relative;
+}
+
+.alert-dismissible .btn-close::before {
+    content: "\00d7";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    line-height: 1;
+    font-weight: 700;
+    color: inherit;
+}
+
+.alert-dismissible .btn-close:hover {
+    opacity: 1;
+}
+
+/* Role-aware staff portal navigation */
+.mero-portal-identity {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .85rem;
+    border: 1px solid rgba(255, 255, 255, .09);
+    border-radius: 1rem;
+    color: #fff;
+    background:
+        radial-gradient(circle at 100% 0, rgba(225, 29, 72, .26), transparent 42%),
+        linear-gradient(145deg, rgba(30, 41, 59, .96), rgba(15, 23, 42, .96));
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .24);
+}
+
+.mero-portal-identity__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    flex: 0 0 2.6rem;
+    border-radius: .8rem;
+    background: linear-gradient(145deg, #fb7185, #be123c);
+    box-shadow: 0 8px 18px rgba(225, 29, 72, .32);
+}
+
+.sidenav .navbar-nav .mero-portal-identity strong,
+.sidenav .navbar-nav .mero-portal-identity small {
+    display: block !important;
+    line-height: 1.25;
+}
+
+.sidenav .navbar-nav .mero-portal-identity > span:last-child {
+    display: flex !important;
+    min-width: 0;
+    flex-direction: column !important;
+}
+
+.mero-portal-identity strong {
+    font-size: .78rem;
+    letter-spacing: .02em;
+}
+
+.mero-portal-identity small {
+    max-width: 150px;
+    margin-top: .18rem;
+    color: rgba(255, 255, 255, .64);
+    font-size: .66rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mero-nav-section {
+    display: flex;
+    align-items: center;
+    gap: .48rem;
+    margin: 0;
+    padding: .55rem 1.25rem .35rem;
+    color: #94a3b8;
+    font-size: .65rem;
+    font-weight: 800;
+    letter-spacing: .075em;
+    text-transform: uppercase;
+}
+
+.mero-nav-section i {
+    width: .9rem;
+    color: #e11d48;
+    text-align: center;
+}
+
+.sidenav .mero-role-nav-link {
+    display: flex;
+    align-items: center;
+    min-height: 2.85rem;
+    margin: .12rem .72rem;
+    padding: .52rem .65rem;
+    border-radius: .82rem;
+    color: #475569;
+    transition: transform .18s ease, background .18s ease, color .18s ease;
+}
+
+.sidenav .mero-role-nav-link:hover {
+    transform: translateX(3px);
+    color: #0f172a;
+    background: #f8fafc;
+}
+
+.sidenav .mero-role-nav-link.active {
+    color: #fff;
+    background: linear-gradient(120deg, #be123c, #e11d48);
+    box-shadow: 0 8px 18px rgba(225, 29, 72, .24);
+}
+
+.mero-role-nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    flex: 0 0 2rem;
+    margin-right: .58rem;
+    border: 1px solid #e2e8f0;
+    border-radius: .66rem;
+    color: #64748b;
+    background: #fff;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, .05);
+}
+
+.mero-role-nav-link.active .mero-role-nav-icon {
+    border-color: rgba(255, 255, 255, .22);
+    color: #fff;
+    background: rgba(255, 255, 255, .15);
+}
+
+.mero-role-nav-chevron {
+    margin-left: auto;
+    opacity: .35;
+    font-size: .58rem;
+}
+
+.mero-role-nav-link.active .mero-role-nav-chevron {
+    opacity: .8;
 }

@@ -1,0 +1,34 @@
+{% load static %}
+{% comment %}
+Reusable print-configuration widget. Include this partial with a report_key
+variable in scope, and pass `print_preference` (dict from
+school.print_settings.get_print_preference) in the view context.
+{% endcomment %}
+{% with pref_id="print-pref-data-"|add:report_key %}{{ print_preference|json_script:pref_id }}{% endwith %}
+<div class="ps-mount no-print" id="printSettings-{{ report_key }}" data-save-url="{% url 'handle:save_print_preference' report_key %}" data-csrf="{{ csrf_token }}">
+  <button type="button" class="btn btn-outline-secondary btn-sm ps-toggle"><i class="fas fa-sliders-h me-1"></i>Print Settings</button>
+  <div class="ps-panel"></div>
+</div>
+<style>
+  .ps-mount { position: relative; display: inline-block; }
+  .ps-panel { display: none; position: absolute; right: 0; top: 100%; z-index: 1050; margin-top: 6px; width: 260px; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12); padding: 12px; text-align: left; }
+  .ps-panel.ps-open { display: block; }
+  .ps-field { margin-bottom: 10px; }
+  .ps-field:last-child { margin-bottom: 0; }
+  .ps-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #6b7280; margin-bottom: 4px; }
+  .ps-cols { max-height: 140px; overflow-y: auto; }
+  .ps-col-check { display: block; font-size: 13px; font-weight: 400; margin-bottom: 4px; }
+</style>
+<script src="{% static 'js/print_settings.js' %}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var dataEl = document.getElementById('print-pref-data-{{ report_key }}');
+    var initial = {};
+    try { initial = dataEl ? JSON.parse(dataEl.textContent) : {}; } catch (e) { /* ignore */ }
+    window.PrintSettings.init({
+      mountId: 'printSettings-{{ report_key }}',
+      reportKey: '{{ report_key }}',
+      initial: initial,
+    });
+  });
+</script>

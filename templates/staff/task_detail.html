@@ -1,0 +1,60 @@
+{% extends 'dashboard.html' %}
+{% block title %}{{ task.title }} | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="fw-bold mb-1" style="color:#1e293b;">{{ task.title }}</h4>
+  <p class="text-muted mb-4">{{ task.description }}</p>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-body p-0">
+      <table class="table mb-0 align-items-center">
+        <thead>
+          <tr>
+            <th class="ps-4 text-uppercase text-xxs text-secondary font-weight-bolder">Assignee</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Status</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end pe-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inst in instances %}
+          <tr>
+            <td class="ps-4 text-sm"><strong>{{ inst.assigned_member.name }}</strong></td>
+            <td class="text-sm"><span class="badge bg-secondary text-uppercase">{{ inst.status }}</span></td>
+            <td class="text-end pe-4">
+              {% if inst.approval_status == 'pending_approval' %}
+              <form method="post" class="d-inline">
+                {% csrf_token %}<input type="hidden" name="action" value="approve_instance"><input type="hidden" name="instance_id" value="{{ inst.id }}">
+                <button type="submit" class="btn btn-sm btn-outline-success py-0">Approve</button>
+              </form>
+              <form method="post" class="d-inline">
+                {% csrf_token %}<input type="hidden" name="action" value="reject_instance"><input type="hidden" name="instance_id" value="{{ inst.id }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger py-0">Reject</button>
+              </form>
+              {% endif %}
+              <form method="post" class="d-inline">
+                {% csrf_token %}<input type="hidden" name="action" value="cancel_instance"><input type="hidden" name="instance_id" value="{{ inst.id }}">
+                <button type="submit" class="btn btn-sm btn-outline-secondary py-0">Cancel</button>
+              </form>
+              <form method="post" class="d-inline-flex gap-1">
+                {% csrf_token %}<input type="hidden" name="action" value="reassign"><input type="hidden" name="instance_id" value="{{ inst.id }}">
+                <select name="new_member" class="form-select form-select-sm" style="width:auto;display:inline-block;">
+                  {% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+                </select>
+                <button type="submit" class="btn btn-sm btn-outline-primary py-0">Reassign</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="text-center py-4 text-muted">No assignees.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

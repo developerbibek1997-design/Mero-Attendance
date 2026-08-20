@@ -1,0 +1,57 @@
+{% extends 'dashboard.html' %}
+{% block title %}Academic Years | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0">Academic Years</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal"><i class="fas fa-plus me-1"></i>Add Academic Year</button>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th class="text-xs">Name</th><th class="text-xs">Start</th><th class="text-xs">End</th><th class="text-xs">Current</th><th class="text-xs">Status</th><th class="text-xs text-center">Action</th></tr></thead>
+        <tbody>
+          {% for y in years %}
+          <tr>
+            <td class="text-sm font-weight-bold">{{ y.name }}</td>
+            <td class="text-sm">{{ y.start_date|default:"-" }}</td>
+            <td class="text-sm">{{ y.end_date|default:"-" }}</td>
+            <td>{% if y.is_current %}<span class="badge bg-success">Current</span>{% endif %}</td>
+            <td><span class="badge {% if y.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">{{ y.status|capfirst }}</span></td>
+            <td class="text-center">
+              <form method="post" class="d-inline" onsubmit="return confirm('Delete?')">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="item_id" value="{{ y.id }}"><button type="submit" class="btn btn-xs btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-5"><i class="fas fa-calendar fa-2x mb-2 d-block"></i>No academic years yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h6 class="modal-title font-weight-bolder">Add Academic Year</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="add">
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label text-xs font-weight-bold">Name *</label><input type="text" name="name" class="form-control" placeholder="e.g. 2082/83" required></div>
+          <div class="mb-3"><label class="form-label text-xs font-weight-bold">Start Date</label><input type="date" name="start_date" class="form-control"></div>
+          <div class="mb-3"><label class="form-label text-xs font-weight-bold">End Date</label><input type="date" name="end_date" class="form-control"></div>
+          <div class="form-check"><input type="checkbox" name="is_current" class="form-check-input" id="isCurrent"><label class="form-check-label text-xs" for="isCurrent">Mark as current academic year</label></div>
+          <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">Status</label>
+              <select name="status" class="form-select">
+                  <option value="active">Active</option>
+                  <option value="archived">Archived</option>
+              </select>
+          </div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm">Save</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

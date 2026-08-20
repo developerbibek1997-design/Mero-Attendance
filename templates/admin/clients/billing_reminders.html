@@ -1,0 +1,90 @@
+{% extends 'dashboard.html' %}
+{% block title %}Billing Reminders | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-bell text-warning me-2"></i>Billing Reminders</h4>
+      <p class="text-xs text-muted mb-0">Upcoming billing dates, overdue bills, and expiring contracts</p>
+    </div>
+    <a href="{% url 'schooladmin:client_list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>All Customers</a>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-warning bg-opacity-10 pb-0">
+          <h6 class="font-weight-bolder mb-0"><i class="fas fa-calendar-alt me-2 text-warning"></i>Upcoming Billing (30 days)</h6>
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush">
+            {% for c in billing_soon %}
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+              <div>
+                <p class="text-xs fw-bold mb-0"><a href="{% url 'schooladmin:client_detail' c.pk %}">{{ c.client_org_name }}</a></p>
+                {% if c.billing_amount %}<p class="text-xs text-muted mb-0">Rs. {{ c.billing_amount|floatformat:0 }} / {{ c.get_billing_cycle_display }}</p>{% endif %}
+              </div>
+              <span class="badge {% if c.next_billing_date <= in_7 %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                {{ c.next_billing_date }}
+              </span>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-center text-muted py-4"><i class="fas fa-check-circle text-success me-2"></i>No upcoming billing in 30 days.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-danger bg-opacity-10 pb-0">
+          <h6 class="font-weight-bolder mb-0"><i class="fas fa-exclamation-circle me-2 text-danger"></i>Overdue Bills</h6>
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush">
+            {% for b in overdue_bills %}
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+              <div>
+                <p class="text-xs fw-bold mb-0"><a href="{% url 'schooladmin:client_detail' b.client.pk %}">{{ b.client.client_org_name }}</a></p>
+                <p class="text-xs text-muted mb-0">{{ b.invoice_number }} — Rs. {{ b.amount|floatformat:0 }}</p>
+              </div>
+              <span class="badge bg-danger">Due {{ b.due_date }}</span>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-center text-muted py-4"><i class="fas fa-check-circle text-success me-2"></i>No overdue bills.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-primary bg-opacity-10 pb-0">
+          <h6 class="font-weight-bolder mb-0"><i class="fas fa-file-signature me-2 text-primary"></i>Expiring Contracts (30 days)</h6>
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush">
+            {% for c in expiring_contracts %}
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+              <div>
+                <p class="text-xs fw-bold mb-0"><a href="{% url 'schooladmin:client_detail' c.client.pk %}">{{ c.client.client_org_name }}</a></p>
+                <p class="text-xs text-muted mb-0">{{ c.title }}</p>
+              </div>
+              <span class="badge {% if c.end_date <= in_7 %}bg-danger{% else %}bg-primary{% endif %}">
+                Expires {{ c.end_date }}
+              </span>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-center text-muted py-4"><i class="fas fa-check-circle text-success me-2"></i>No contracts expiring soon.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

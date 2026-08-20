@@ -1,0 +1,97 @@
+{% extends 'dashboard.html' %}
+{% block title %}Enrol Face — {{ memb.name }}{% endblock %}
+{% block content %}
+<style>
+  .face-stage { background: radial-gradient(circle at top, #1e293b, #0f172a); border-radius: 22px; padding: 22px; }
+  .cam-frame { position: relative; width: 100%; max-width: 420px; margin: 0 auto; aspect-ratio: 4/3; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.45); background:#000; }
+  .cam-frame video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  .cam-ring { position:absolute; inset:14px; border:3px solid rgba(255,255,255,.35); border-radius:18px; pointer-events:none; }
+  .status-pill { display:inline-flex; align-items:center; gap:8px; padding:8px 16px; border-radius:999px; font-weight:700; font-size:.85rem; }
+  .dot { width:10px; height:10px; border-radius:50%; display:inline-block; background:#cbd5e1; }
+  .dot.filled { background:#22d3ee; box-shadow:0 0 8px #22d3ee; }
+</style>
+
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <a href="{% url 'schooladmin:face_enroll_list' %}" class="btn btn-outline-secondary btn-sm rounded-circle mb-0" style="width:36px;height:36px;"><i class="fas fa-arrow-left"></i></a>
+        <div>
+          <h4 class="font-weight-bolder mb-0">Enrol Face — {{ memb.name }}</h4>
+          <p class="text-xs text-muted mb-0">Look at the camera in good lighting and capture 3 samples from slightly different angles.</p>
+        </div>
+      </div>
+
+      <div class="face-stage mb-3 text-center">
+        <div class="mb-3"><span id="status" class="status-pill bg-white text-dark"><i class="fas fa-satellite-dish"></i> Loading face models…</span></div>
+        <div class="cam-frame"><video id="video" autoplay muted playsinline></video><div class="cam-ring"></div></div>
+        <div class="mt-3">
+          <span class="dot" id="d0"></span> <span class="dot" id="d1"></span> <span class="dot" id="d2"></span>
+          <div class="text-white-50 text-xs mt-1">Samples: <span id="count">0</span> / 3</div>
+        </div>
+      </div>
+
+      <button id="captureBtn" class="btn bg-gradient-primary text-white w-100 mb-2" disabled><i class="fas fa-camera me-1"></i>Capture Sample</button>
+      <button id="saveBtn" class="btn bg-gradient-success text-white w-100 mb-2 d-none"><i class="fas fa-save me-1"></i>Save Enrolment</button>
+      <a href="{% url 'schooladmin:face_enroll_list' %}" class="btn btn-outline-secondary w-100 mb-0">Cancel</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+<script>
+const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+const statusEl = document.getElementById('status');
+const video = document.getElementById('video');
+const captureBtn = document.getElementById('captureBtn');
+const saveBtn = document.getElementById('saveBtn');
+const countEl = document.getElementById('count');
+const NEEDED = 3;
+let samples = [];
+
+function setStatus(html, bg, fg) {
+  statusEl.className = 'status-pill ' + (bg || 'bg-white') + ' ' + (fg || 'text-dark');
+  statusEl.innerHTML = html;
+}
+function paintDots() { for (let i=0;i<NEEDED;i++){ document.getElementById('d'+i).classList.toggle('filled', i < samples.length); } }
+
+async function init() {
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+  } catch (e) { setStatus('<i class="fas fa-triangle-exclamation"></i> Could not load models (check internet).', 'bg-danger', 'text-white'); return; }
+  try {
+    video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    setStatus('<i class="fas fa-circle text-success"></i> Ready — capture 3 samples', 'bg-white', 'text-dark');
+    captureBtn.disabled = false;
+  } catch (e) { setStatus('<i class="fas fa-video-slash"></i> Camera access denied.', 'bg-danger', 'text-white'); }
+}
+
+captureBtn.addEventListener('click', async () => {
+  captureBtn.disabled = true;
+  setStatus('<i class="fas fa-spinner fa-spin"></i> Detecting face…', 'bg-info', 'text-white');
+  const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+  if (!det) { setStatus('<i class="fas fa-face-frown"></i> No face detected — try better lighting.', 'bg-warning', 'text-dark'); captureBtn.disabled = false; return; }
+  samples.push(Array.from(det.descriptor));
+  countEl.innerText = samples.length; paintDots();
+  captureBtn.disabled = false;
+  if (samples.length >= NEEDED) { setStatus('<i class="fas fa-check"></i> Enough samples — save now', 'bg-success', 'text-white'); saveBtn.classList.remove('d-none'); }
+  else { setStatus('<i class="fas fa-check"></i> Captured — move slightly & capture again', 'bg-white', 'text-dark'); }
+});
+
+saveBtn.addEventListener('click', async () => {
+  saveBtn.disabled = true;
+  setStatus('<i class="fas fa-spinner fa-spin"></i> Saving…', 'bg-info', 'text-white');
+  const fd = new FormData();
+  fd.append('descriptors', JSON.stringify(samples));
+  fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+  const resp = await fetch(window.location.href, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+  const data = await resp.json().catch(() => ({ ok: false }));
+  if (data.ok) { setStatus('<i class="fas fa-circle-check"></i> Enrolled! Redirecting…', 'bg-success', 'text-white'); setTimeout(() => { window.location.href = "{% url 'schooladmin:face_enroll_list' %}"; }, 1100); }
+  else { setStatus('<i class="fas fa-xmark"></i> ' + (data.error || 'Save failed.'), 'bg-danger', 'text-white'); saveBtn.disabled = false; }
+});
+
+init();
+</script>
+{% endblock %}

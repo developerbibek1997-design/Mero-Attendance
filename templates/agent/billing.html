@@ -1,0 +1,92 @@
+{% extends 'agent/base.html' %}
+{% block title %}Billing{% endblock %}
+{% block page_title %}Billing Overview{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#d1fae5;"><i class="fas fa-check-circle" style="color:#059669;"></i></div>
+        <div>
+          <div class="fs-4 fw-bold text-dark">Rs. {{ total_paid }}</div>
+          <div class="text-muted small">Total Paid</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#fee2e2;"><i class="fas fa-clock" style="color:#dc2626;"></i></div>
+        <div>
+          <div class="fs-4 fw-bold text-dark">Rs. {{ total_unpaid }}</div>
+          <div class="text-muted small">Pending Payment</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#e0e7ff;"><i class="fas fa-file-invoice-dollar" style="color:#4f46e5;"></i></div>
+        <div>
+          <div class="fs-4 fw-bold text-dark">{{ ledger.count }}</div>
+          <div class="text-muted small">Total Transactions</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="table-card">
+  <h6 class="fw-bold mb-4" style="color:#1e293b;">Billing Ledger</h6>
+  {% if ledger %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle" style="font-size:.88rem;">
+      <thead style="background:#f8fafc;">
+        <tr>
+          <th class="border-0 text-muted fw-semibold">Organization</th>
+          <th class="border-0 text-muted fw-semibold">Amount</th>
+          <th class="border-0 text-muted fw-semibold">Commission</th>
+          <th class="border-0 text-muted fw-semibold">Status</th>
+          <th class="border-0 text-muted fw-semibold">Date</th>
+          <th class="border-0 text-muted fw-semibold">Paid On</th>
+          <th class="border-0 text-muted fw-semibold">Remarks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in ledger %}
+        <tr>
+          <td>
+            <a href="{% url 'agent:org_detail' entry.organization.id %}" class="fw-semibold text-decoration-none" style="color:#4f46e5;">
+              {{ entry.organization.name }}
+            </a>
+          </td>
+          <td class="fw-semibold">Rs. {{ entry.amount }}</td>
+          <td class="text-muted">Rs. {{ entry.commission_amount }}</td>
+          <td>
+            {% if entry.payment_status == 'paid' %}
+            <span class="badge" style="background:#d1fae5;color:#065f46;">Paid</span>
+            {% elif entry.payment_status == 'unpaid' %}
+            <span class="badge" style="background:#fee2e2;color:#991b1b;">Unpaid</span>
+            {% else %}
+            <span class="badge bg-light text-dark">{{ entry.get_payment_status_display }}</span>
+            {% endif %}
+          </td>
+          <td class="text-muted">{{ entry.created_at|date:"d M Y" }}</td>
+          <td class="text-muted">{{ entry.paid_at|date:"d M Y"|default:"—" }}</td>
+          <td class="text-muted">{{ entry.remarks|default:"—"|truncatechars:30 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+    <p class="text-muted mb-0">No billing records yet. Records will appear here once organizations are billed.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

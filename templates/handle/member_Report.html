@@ -94,6 +94,12 @@
         transition: all 0.2s;
     }
     .action-btn:hover { transform: translateY(-2px); }
+
+    @media print {
+        .no-print { display: none !important; }
+        .action-col { display: none !important; }
+        .filter-card { border: 1px solid #d1d5db !important; box-shadow: none !important; }
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -105,7 +111,7 @@
     </div>
     {% endfor %}
 
-    <div class="card filter-card mt-2">
+    <div class="card filter-card mt-2 no-print">
       <div class="card-body p-4">
         <form action="" method="post" class="row g-3 align-items-end">
           {% csrf_token %}
@@ -165,8 +171,9 @@
             <h5 class="mb-1" style="font-weight: 800; color: #1e293b;">Member Directory</h5>
             <span class="text-muted" style="font-weight: 500;">Viewing: <span class="text-primary">{{ thisone|default:"All" }}</span></span>
           </div>
-          <div>
+          <div class="d-flex align-items-center gap-2">
               <span class="badge bg-light text-dark border px-3 py-2"><i class="fas fa-users me-1 text-primary"></i> Total Records: {{mem|length}}</span>
+              <button onclick="window.print()" class="btn btn-outline-dark btn-sm mb-0 no-print"><i class="fas fa-print me-1"></i>Print</button>
           </div>
         </div>
       </div>
@@ -179,7 +186,7 @@
                 <th class="text-uppercase font-weight-bolder">Member Profile</th>
                 {% if features.branches %}<th class="text-uppercase font-weight-bolder">Branch / Department</th>{% endif %}
                 <th class="text-uppercase font-weight-bolder">Contact & Device</th>
-                <th class="text-center text-uppercase font-weight-bolder">Actions</th>
+                <th class="text-center text-uppercase font-weight-bolder action-col">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -188,10 +195,11 @@
                     <td>
                       <div class="d-flex px-3 py-1 align-items-center">
                         <div class="avatar-icon me-3">
-                            <i class="fas fa-user-check"></i>
+                            {% if i.photo %}<img src="{{ i.photo.url }}" alt="{{ i.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
+                            {% else %}<i class="fas fa-user-check"></i>{% endif %}
                         </div>
                         <div class="d-flex flex-column justify-content-center">
-                          <h6 class="mb-0 text-sm" style="font-weight: 700; color: #334155;">{{i.name}}</h6>
+                          <h6 class="mb-0 text-sm" style="font-weight: 700;"><a href="{% url 'handle:memberEdit' i.id %}" class="text-dark">{{i.name}}</a></h6>
                           <p class="text-xs text-secondary mb-0 mt-1"><i class="fas fa-phone-alt me-1 text-success"></i>{{i.phone|default:"No Phone"}}</p>
                         </div>
                       </div>
@@ -214,11 +222,13 @@
                         </p>
                     </td>
                     
-                    <td class="align-middle text-center">
+                    <td class="align-middle text-center action-col">
                         <div class="d-flex justify-content-center gap-2">
+                            {% if staff_perms.can_edit_members %}
                             <a href="{% url 'handle:memberEdit' i.id %}" class="btn btn-outline-primary action-btn mb-0">
                                 <i class="fas fa-user-edit me-1"></i> Edit
                             </a>
+                            {% endif %}
 
                             {% if user.user_type == '2' %}
                             <a href="{% url 'schooladmin:memberGapReport' i.id %}" class="btn btn-outline-info action-btn mb-0">
@@ -247,6 +257,91 @@
         </div>
       </div>
     </div>
+
+    {% if dumped_members %}
+    <div class="card filter-card">
+      <div class="card-header bg-white p-4 border-bottom" style="border-radius: 16px 16px 0 0; cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#dumpedMembersBody">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="mb-1" style="font-weight: 800; color: #1e293b;"><i class="fas fa-box-archive me-2 text-danger"></i>Dumped Members</h5>
+            <span class="text-muted" style="font-weight: 500;">Removed from active roster — all records preserved</span>
+          </div>
+          <span class="badge bg-light text-dark border px-3 py-2"><i class="fas fa-users me-1"></i> {{ dumped_members|length }}</span>
+        </div>
+      </div>
+
+      <div class="collapse" id="dumpedMembersBody">
+        <div class="card-body px-0 pt-0 pb-2">
+          <div class="table-responsive">
+            <table class="table table-premium table-hover align-items-center mb-0">
+              <thead>
+                <tr>
+                  <th class="text-uppercase font-weight-bolder">Member Profile</th>
+                  <th class="text-uppercase font-weight-bolder">Dumped On</th>
+                  <th class="text-uppercase font-weight-bolder">Dumped By</th>
+                  <th class="text-uppercase font-weight-bolder">History</th>
+                  <th class="text-center text-uppercase font-weight-bolder action-col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for i in dumped_members %}
+                {% with hist=i.change_history.all %}
+                <tr>
+                  <td>
+                    <div class="d-flex px-3 py-1 align-items-center">
+                      <div class="avatar-icon me-3">
+                        {% if i.photo %}<img src="{{ i.photo.url }}" alt="{{ i.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
+                        {% else %}<i class="fas fa-user-slash"></i>{% endif %}
+                      </div>
+                      <div class="d-flex flex-column justify-content-center">
+                        <h6 class="mb-0 text-sm" style="font-weight: 700;">{{ i.name }}</h6>
+                        <p class="text-xs text-secondary mb-0 mt-1"><i class="fas fa-phone-alt me-1"></i>{{ i.phone|default:"No Phone" }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <p class="text-sm mb-0">{{ i.updated_date|date:"M d, Y H:i" }}</p>
+                  </td>
+                  <td>
+                    <p class="text-sm mb-0">{{ hist.0.changed_by.get_full_name|default:hist.0.changed_by|default:"—" }}</p>
+                  </td>
+                  <td>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#histCollapse{{ i.id }}">
+                      <i class="fas fa-clock-rotate-left me-1"></i>View
+                    </button>
+                    <div class="collapse mt-2" id="histCollapse{{ i.id }}">
+                      <ul class="list-unstyled mb-0" style="font-size:.8rem;">
+                        {% for h in hist %}
+                        <li class="mb-1">
+                          <span class="badge {% if h.action == 'dumped' %}bg-danger{% else %}bg-success{% endif %}">{{ h.action }}</span>
+                          {{ h.changed_at|date:"M d, Y H:i" }}
+                          {% if h.changed_by %} — {{ h.changed_by }}{% endif %}
+                          {% if h.description %} — {{ h.description }}{% endif %}
+                        </li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  </td>
+                  <td class="align-middle text-center action-col">
+                    {% if staff_perms.can_edit_members %}
+                    <form method="post" action="{% url 'handle:rejoinMember' i.id %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-outline-success action-btn mb-0">
+                        <i class="fas fa-rotate-left me-1"></i>Rejoin
+                      </button>
+                    </form>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
 </div>
 {% endblock content %}

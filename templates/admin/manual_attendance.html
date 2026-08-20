@@ -65,7 +65,7 @@
                                     {{ m.name|slice:":1" }}
                                 </div>
                                 <div>
-                                    <h6 class="mb-0 text-sm font-weight-bold member-name">{{ m.name }}</h6>
+                                    <h6 class="mb-0 text-sm font-weight-bold member-name"><a href="{% url 'handle:memberEdit' m.id %}" class="text-dark">{{ m.name }}</a></h6>
                                     <p class="text-xs text-secondary mb-0">{{ m.phone }}</p>
                                 </div>
                             </div>

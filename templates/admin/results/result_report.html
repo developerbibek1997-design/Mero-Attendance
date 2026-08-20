@@ -48,10 +48,10 @@
   <div style="padding:1rem 1.25rem;">
     <form method="get" class="row g-3 align-items-end">
       <div class="col-md-3"><label style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:.3rem;">Exam</label>
-        <select name="exam" class="f-sel" onchange="this.form.submit()"><option value="">-- Exam --</option>{% for e in exams %}<option value="{{ e.id }}" {% if selected_exam and selected_exam.id == e.id %}selected{% endif %}>{{ e.name }}</option>{% endfor %}</select>
+        <select name="exam" class="f-sel" onchange="this.form.submit()"><option value="">-- Exam --</option>{% for e in exams %}<option value="{{ e.id }}" {% if selected_exam_id == e.id|stringformat:"s" %}selected{% endif %}>{{ e.name }}</option>{% endfor %}</select>
       </div>
       <div class="col-md-3"><label style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:.3rem;">Classification</label>
-        <select name="classification" class="f-sel" onchange="this.form.submit()"><option value="">-- Class --</option>{% for c in classifications %}<option value="{{ c.id }}" {% if selected_classification and selected_classification.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+        <select name="classification" class="f-sel" onchange="this.form.submit()"><option value="">-- Class --</option>{% for c in classifications %}<option value="{{ c.id }}" {% if selected_classification_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
       </div>
       {% if sections %}
       <div class="col-md-3"><label style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:.3rem;">Section</label>
@@ -108,7 +108,7 @@
         <tr>
           <td>{% if row.rank %}{{ row.rank }}{% else %}—{% endif %}</td>
           <td class="left">
-            <div style="font-weight:700;">{{ row.member.name }}</div>
+            <div style="font-weight:700;"><a href="{% url 'handle:memberEdit' row.member.id %}" class="text-dark">{{ row.member.name }}</a></div>
             <div style="font-size:.72rem;color:var(--muted);">{{ row.member.card|default:"" }}</div>
           </td>
           {% for subj in subjects %}

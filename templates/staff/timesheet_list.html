@@ -1,0 +1,109 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}My Timesheets{% endblock %}
+
+{% block content %}
+<style>
+  .ts-card { background:#fff; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,.06); border:1px solid #f1f5f9; }
+  .ts-row { display:flex; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid #f1f5f9; transition:background .15s; }
+  .ts-row:last-child { border-bottom:none; }
+  .ts-row:hover { background:#fafbfc; }
+  .ts-period { font-weight:700; font-size:.92rem; color:#1e293b; }
+  .ts-meta { font-size:.78rem; color:#64748b; }
+  .ts-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:.75rem; font-weight:600; }
+  .ts-badge.draft     { background:#fef3c7; color:#92400e; }
+  .ts-badge.submitted { background:#dbeafe; color:#1e40af; }
+  .ts-badge.approved  { background:#d1fae5; color:#065f46; }
+  .ts-badge.rejected  { background:#fee2e2; color:#991b1b; }
+  .filter-bar { background:#f8fafc; border-radius:12px; padding:16px 20px; border:1px solid #e2e8f0; }
+</style>
+
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+      <h4 class="fw-bold mb-1" style="color:#1e293b;"><i class="fas fa-clock-rotate-left me-2 text-primary"></i>My Timesheets</h4>
+      <p class="text-muted mb-0 small">Record daily work hours and submit for approval</p>
+    </div>
+    <a href="{% url 'staff:timesheet_create' %}" class="btn btn-primary fw-semibold px-4">
+      <i class="fas fa-plus me-2"></i>New Timesheet
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show mb-3">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filter bar -->
+  <div class="filter-bar mb-4">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-auto">
+        <label class="form-label small fw-semibold mb-1">Status</label>
+        <select name="status" class="form-select form-select-sm" style="min-width:140px;">
+          <option value="">All Statuses</option>
+          <option value="draft"     {% if status_f == 'draft' %}selected{% endif %}>Draft</option>
+          <option value="submitted" {% if status_f == 'submitted' %}selected{% endif %}>Submitted</option>
+          <option value="approved"  {% if status_f == 'approved' %}selected{% endif %}>Approved</option>
+          <option value="rejected"  {% if status_f == 'rejected' %}selected{% endif %}>Rejected</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <label class="form-label small fw-semibold mb-1">From</label>
+        <input type="date" name="date_from" value="{{ date_from }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-auto">
+        <label class="form-label small fw-semibold mb-1">To</label>
+        <input type="date" name="date_to" value="{{ date_to }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3">Filter</button>
+        <a href="{% url 'staff:timesheet_list' %}" class="btn btn-sm btn-outline-secondary px-3">Clear</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="ts-card">
+    {% if timesheets %}
+      {% for ts in timesheets %}
+      <div class="ts-row">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#7c3aed);
+             display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="fas fa-file-lines text-white" style="font-size:.85rem;"></i>
+        </div>
+        <div class="flex-grow-1">
+          <div class="ts-period">{{ ts.title|default:"Timesheet" }}</div>
+          <div class="ts-meta">
+            {{ ts.date|date:"d M Y" }}{% if nepali_enabled %} ({{ ts.date_np }} BS){% endif %}
+            &nbsp;·&nbsp; {{ ts.total_hours }}h total
+            {% if ts.submitted_at %}&nbsp;·&nbsp; Submitted {{ ts.submitted_at|date:"d M" }}{% endif %}
+          </div>
+        </div>
+        <span class="ts-badge {{ ts.status }}">
+          {% if ts.status == 'draft' %}<i class="fas fa-pen-to-square"></i>{% endif %}
+          {% if ts.status == 'submitted' %}<i class="fas fa-paper-plane"></i>{% endif %}
+          {% if ts.status == 'approved' %}<i class="fas fa-circle-check"></i>{% endif %}
+          {% if ts.status == 'rejected' %}<i class="fas fa-circle-xmark"></i>{% endif %}
+          {{ ts.get_status_display }}
+        </span>
+        <a href="{% url 'staff:timesheet_detail' pk=ts.pk %}"
+           class="btn btn-sm btn-outline-primary fw-semibold px-3 ms-2">View</a>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center py-5">
+        <div style="width:64px;height:64px;border-radius:16px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+          <i class="fas fa-clock-rotate-left fa-2x text-muted"></i>
+        </div>
+        <h6 class="fw-semibold" style="color:#1e293b;">No timesheets yet</h6>
+        <p class="text-muted small mb-3">Create your first timesheet to start recording work hours.</p>
+        <a href="{% url 'staff:timesheet_create' %}" class="btn btn-primary btn-sm fw-semibold px-4">
+          <i class="fas fa-plus me-1"></i>New Timesheet
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

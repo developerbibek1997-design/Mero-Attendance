@@ -38,7 +38,7 @@
         <tbody>
         {% for row in member_rows %}
           <tr>
-            <td><strong>{{ row.member.name }}</strong><div class="text-muted text-xs">{{ row.member.card|default:"No roll / ID" }}</div></td>
+            <td><strong><a href="{% url 'handle:memberEdit' row.member.id %}" class="text-dark">{{ row.member.name }}</a></strong><div class="text-muted text-xs">{{ row.member.card|default:"No roll / ID" }}</div></td>
             <td>{{ row.member.classification.name|default:"-" }}</td>
             <td>{{ row.member.section.name|default:"-" }}</td>
             <td>{{ row.member.guardian_name|default:"-" }}<div class="text-muted text-xs">{{ row.member.guardian_phone|default:row.member.phone }}</div></td>

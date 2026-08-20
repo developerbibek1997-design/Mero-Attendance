@@ -1,0 +1,146 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Branch Hierarchy | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+  .tree-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:1.5rem;}
+  .tree-hd{display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;}
+  .tree-hd-icon{width:42px;height:42px;border-radius:12px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+  .tree-hd h5{font-weight:800;margin:0;color:#0f172a;}
+  .tree-hd p{margin:0;color:#64748b;font-size:.82rem;}
+  .tree-root, .tree-children{list-style:none;margin:0;padding-left:0;}
+  .tree-children{padding-left:1.6rem;border-left:1.5px dashed #e2e8f0;margin-top:.25rem;margin-left:.9rem;}
+  .tree-node{margin-bottom:.35rem;}
+  .tree-row{display:flex;align-items:center;gap:.6rem;padding:.5rem .7rem;border-radius:10px;border:1px solid #eef1f6;background:#f8fafc;cursor:pointer;transition:background .12s;}
+  .tree-row:hover{background:#eef2ff;}
+  .tree-row.is-leaf{cursor:default;}
+  .tree-toggle{width:20px;height:20px;border-radius:6px;background:#e2e8f0;color:#475569;display:flex;align-items:center;justify-content:center;font-size:.65rem;flex-shrink:0;transition:transform .15s;}
+  .tree-toggle.open{transform:rotate(90deg);}
+  .tree-avatar{width:26px;height:26px;border-radius:50%;background:#c7d2fe;color:#3730a3;font-weight:800;font-size:.7rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+  .tree-avatar img{width:100%;height:100%;object-fit:cover;}
+  .tree-name{font-weight:700;font-size:.86rem;color:#0f172a;}
+  .tree-sub{font-size:.72rem;color:#94a3b8;margin-left:.35rem;}
+  .tree-counts{margin-left:auto;display:flex;gap:.35rem;}
+  .tree-badge{font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:99px;background:#e0e7ff;color:#3730a3;}
+  .tree-badge.status-inactive, .tree-badge.status-archived{background:#fee2e2;color:#991b1b;}
+  .tree-loading{font-size:.78rem;color:#94a3b8;padding:.4rem .7rem;}
+  .tree-empty{font-size:.78rem;color:#94a3b8;padding:.5rem .7rem;font-style:italic;}
+</style>
+
+<div class="container-fluid py-4">
+  <div class="tree-wrap">
+    <div class="tree-hd">
+      <div class="tree-hd-icon"><i class="fas fa-sitemap"></i></div>
+      <div>
+        <h5>Branch Hierarchy</h5>
+        <p>{{ org.name }} → Branch → {{ terms.classification|default:"Classification" }} → {{ terms.section|default:"Section" }} → Member. Click a row to expand.</p>
+      </div>
+    </div>
+    <ul class="tree-root" id="treeRoot">
+      <li class="tree-loading">Loading branches…</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+(function(){
+  var treeUrl = "{% url 'handle:hierarchyTreeChildren' %}";
+  var root = document.getElementById('treeRoot');
+
+  function badge(status){
+    if(!status || status === 'active') return '';
+    return '<span class="tree-badge status-'+status+'">'+status+'</span>';
+  }
+
+  function countsHtml(counts){
+    if(!counts) return '';
+    var parts = [];
+    if('classifications' in counts) parts.push(counts.classifications + ' class.');
+    if('sections' in counts) parts.push(counts.sections + ' sections');
+    if('members' in counts) parts.push(counts.members + ' members');
+    return parts.map(function(p){return '<span class="tree-badge">'+p+'</span>';}).join('');
+  }
+
+  function renderNode(node, isLeaf){
+    var li = document.createElement('li');
+    li.className = 'tree-node';
+    var row = document.createElement('div');
+    row.className = 'tree-row' + (isLeaf ? ' is-leaf' : '');
+
+    var avatarHtml = '';
+    if('photo_url' in node){
+      avatarHtml = node.photo_url
+        ? '<span class="tree-avatar"><img src="'+node.photo_url+'" alt=""></span>'
+        : '<span class="tree-avatar">'+(node.name||'?').trim().charAt(0).toUpperCase()+'</span>';
+    }
+
+    row.innerHTML =
+      (isLeaf ? '' : '<span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>') +
+      avatarHtml +
+      '<span class="tree-name">'+node.name+'</span>' +
+      (node.subtitle ? '<span class="tree-sub">'+node.subtitle+'</span>' : '') +
+      badge(node.status) +
+      '<span class="tree-counts">'+countsHtml(node.counts)+'</span>';
+
+    li.appendChild(row);
+
+    if(isLeaf){
+      if(node.detail_url){
+        row.addEventListener('click', function(){ window.location.href = node.detail_url; });
+      }
+      return li;
+    }
+
+    var childUl = document.createElement('ul');
+    childUl.className = 'tree-children d-none';
+    li.appendChild(childUl);
+
+    var loaded = false;
+    row.addEventListener('click', function(){
+      var toggle = row.querySelector('.tree-toggle');
+      if(loaded){
+        childUl.classList.toggle('d-none');
+        toggle.classList.toggle('open');
+        return;
+      }
+      toggle.classList.add('open');
+      childUl.classList.remove('d-none');
+      childUl.innerHTML = '<li class="tree-loading">Loading…</li>';
+      var p = new URLSearchParams({level: node.type, parent_id: node.id, branch_id: node.branch_id || ''});
+      fetch(treeUrl + '?' + p.toString()).then(function(r){return r.json();}).then(function(data){
+        loaded = true;
+        childUl.innerHTML = '';
+        if(!data.nodes.length){
+          childUl.innerHTML = '<li class="tree-empty">Nothing here yet.</li>';
+          return;
+        }
+        data.nodes.forEach(function(child){
+          childUl.appendChild(renderNode(child, child.type === null));
+        });
+        if(data.truncated){
+          var more = document.createElement('li');
+          more.className = 'tree-empty';
+          more.textContent = 'Showing 50 of ' + data.total + ' — open Member Report to see all.';
+          childUl.appendChild(more);
+        }
+      });
+    });
+
+    return li;
+  }
+
+  fetch(treeUrl + '?' + new URLSearchParams({level: 'branch'}).toString())
+    .then(function(r){return r.json();})
+    .then(function(data){
+      root.innerHTML = '';
+      if(!data.nodes.length){
+        root.innerHTML = '<li class="tree-empty">No branches yet — add one from Branch Management.</li>';
+        return;
+      }
+      data.nodes.forEach(function(node){
+        root.appendChild(renderNode(node, false));
+      });
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends 'dashboard.html' %}
+{% block title %}Payslip List | {{ org.name }}{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="fw-bold mb-0" style="color:#1e293b;">Payslip List</h4>
+      <p class="text-muted mb-0 small">{{ total_count }} payslip{{ total_count|pluralize }} generated{% if selected_branch or selected_classification or selected_status or from_date or to_date %} matching filters{% endif %}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'schooladmin:bulk_payslip' %}" class="btn btn-primary btn-sm">Bulk Generate</a>
+      <a href="{% url 'schooladmin:playslip' %}" class="btn btn-outline-primary btn-sm">Single Payslip</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="card border-0 shadow-sm text-center p-3"><small class="text-muted">Total Payslips</small><h5 class="mb-0">{{ total_count }}</h5></div></div>
+    <div class="col-6 col-md-3"><div class="card border-0 shadow-sm text-center p-3"><small class="text-muted">Total Net Payable</small><h5 class="mb-0">Rs. {{ total_net_payable|floatformat:0 }}</h5></div></div>
+  </div>
+
+  <div class="card border-0 shadow-sm p-3 mb-4" style="border-radius:12px;">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-md-4">
+        <label class="form-label small fw-bold mb-1">Branch</label>
+        <select name="branch" class="form-select form-select-sm">
+          <option value="">All</option>
+          {% for b in branches %}<option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-4">
+        <label class="form-label small fw-bold mb-1">Classification</label>
+        <select name="classification" class="form-select form-select-sm">
+          <option value="">All</option>
+          {% for c in classifications %}<option value="{{ c.id }}" {% if selected_classification == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-4">
+        <label class="form-label small fw-bold mb-1">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All</option>
+          {% for val, label in status_choices %}<option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label small fw-bold mb-1">From</label>
+        <input type="date" name="from_date" class="form-control form-control-sm" value="{{ from_date }}">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label small fw-bold mb-1">To</label>
+        <input type="date" name="to_date" class="form-control form-control-sm" value="{{ to_date }}">
+      </div>
+      <div class="col-6 col-md-6 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill">Filter</button>
+        <a href="{% url 'schooladmin:payslip_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+      </div>
+    </form>
+  </div>
+
+  <form method="post" action="{% url 'schooladmin:payslip_list' %}" id="bulkResendForm">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="bulk_resend_email">
+    <div class="card border-0 shadow-sm" style="border-radius:12px;">
+      <div class="card-body p-0">
+        <div class="d-flex justify-content-end p-2 border-bottom">
+          <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('Resend payslip email for the selected payslip(s)?');">
+            <i class="fas fa-envelope me-1"></i> Resend Email (Selected)
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table mb-0 align-items-center">
+            <thead>
+              <tr>
+                <th class="ps-4"><input type="checkbox" onclick="document.querySelectorAll('.slip-check').forEach(c => c.checked = this.checked)"></th>
+                <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Member</th>
+                <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Branch</th>
+                <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Classification</th>
+                <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Period</th>
+                <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end">Net Payable</th>
+                <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-center">Status</th>
+                <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Payment Date</th>
+                <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end pe-4">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for slip in slips %}
+              <tr>
+                <td class="ps-4"><input type="checkbox" class="slip-check" name="slip_ids" value="{{ slip.id }}"></td>
+                <td class="text-sm"><strong>{{ slip.member.name }}</strong></td>
+                <td class="text-sm text-muted">{{ slip.member.branch.name|default:"—" }}</td>
+                <td class="text-sm text-muted">{{ slip.member.classification.name|default:"—" }}</td>
+                <td class="text-sm text-muted">{{ slip.month_name|default:"—" }}<div class="text-xs">{{ slip.from_date }} to {{ slip.to_date }}</div></td>
+                <td class="text-sm text-end">Rs. {{ slip.net_payable|floatformat:0 }}</td>
+                <td class="text-center">
+                  <span class="badge {% if slip.status == 'paid' %}bg-success{% elif slip.status == 'finalized' %}bg-info{% else %}bg-secondary{% endif %} text-uppercase">{{ slip.status }}</span>
+                </td>
+                <td class="text-sm text-muted">{{ slip.payment_date|date:"M d, Y"|default:"—" }}</td>
+                <td class="text-end pe-4">
+                  <a href="{% url 'schooladmin:payslip_detail' slip.pk %}" class="btn btn-sm btn-outline-primary py-0">View</a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="9" class="text-center py-4 text-muted">No payslips found.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  {% if page_obj.has_other_pages %}
+  <nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?branch={{ selected_branch }}&classification={{ selected_classification }}&status={{ selected_status }}&from_date={{ from_date }}&to_date={{ to_date }}&page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <li class="page-item"><a class="page-link" href="?branch={{ selected_branch }}&classification={{ selected_classification }}&status={{ selected_status }}&from_date={{ from_date }}&to_date={{ to_date }}&page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?branch={{ selected_branch }}&classification={{ selected_classification }}&status={{ selected_status }}&from_date={{ from_date }}&to_date={{ to_date }}&page={{ page_obj.next_page_number }}">&raquo;</a></li>
+      {% endif %}
+    </ul>
+    <p class="text-center text-xs text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} — {{ page_obj.paginator.count }} total records</p>
+  </nav>
+  {% endif %}
+</div>
+{% endblock content %}

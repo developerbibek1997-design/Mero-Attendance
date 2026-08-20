@@ -1,0 +1,12 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Welcome to {{ org_name }}{% endblock %}
+{% block content %}
+<p class="greeting">Hi <strong>{{ name }}</strong>,</p>
+<p class="message-text">Your account has been created on {{ org_name }}'s Mero Attendance portal. Here are your login details:</p>
+<table class="data">
+  <tr><td class="label">Login Email</td><td><strong>{{ email }}</strong></td></tr>
+  <tr><td class="label">Temporary Password</td><td><strong>{{ password }}</strong></td></tr>
+</table>
+<p style="text-align:center;margin:24px 0;"><a href="{{ login_url }}" class="btn">Log In Now</a></p>
+<p class="message-text" style="color:#ef4444;font-size:13px;"><strong>For your security, please change your password after your first login.</strong></p>
+{% endblock %}

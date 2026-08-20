@@ -1,5 +1,6 @@
 {% extends 'dashboard.html' %}
 {% load static %}
+{% load schooladmin_extras %}
 {% block title %}
     Daily Present Report 
 {% endblock title %}
@@ -117,10 +118,11 @@
           {% for i in tm %}
             <tr>
                 <td>
-                  <div class="d-flex px-3 py-1">
+                  <div class="d-flex px-3 py-1 align-items-center gap-2">
+                    {{ i|member_avatar }}
                     <div class="d-flex flex-column justify-content-center">
                       <h6 class="mb-0 text-sm" data-bs-toggle="modal" data-bs-target="#exampleModal{{i.id}}" style="cursor:pointer; color: #2563eb; font-weight: 600;">
-                          {{i.name}}
+                          <a href="{% url 'handle:memberEdit' i.id %}" class="text-primary">{{i.name}}</a>
                       </h6>
                       {% if 'All' == thisone %}
                         <p class="text-xs text-secondary mb-0">{{i.classification}}</p>

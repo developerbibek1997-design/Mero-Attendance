@@ -2,14 +2,45 @@
 {% block title %}Stock Dashboard | {{ org.name }}{% endblock %}
 {% block content %}
 <div class="container-fluid py-2">
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div><h4 class="font-weight-bolder mb-0">Stock Dashboard</h4><p class="text-sm text-muted mb-0">Inventory Overview</p></div>
-    <div>
-      <a href="{% url 'schooladmin:add_stock_item' %}" class="btn btn-primary btn-sm me-1"><i class="fas fa-plus me-1"></i>Add Item</a>
-      <a href="{% url 'schooladmin:stock_in' %}" class="btn btn-success btn-sm me-1"><i class="fas fa-arrow-down me-1"></i>Stock In</a>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'schooladmin:add_stock_item' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i>Add Item</a>
+      <a href="{% url 'schooladmin:stock_in' %}" class="btn btn-success btn-sm"><i class="fas fa-arrow-down me-1"></i>Stock In</a>
       <a href="{% url 'schooladmin:stock_out' %}" class="btn btn-warning btn-sm"><i class="fas fa-arrow-up me-1"></i>Stock Out</a>
     </div>
   </div>
+
+  <!-- Branch / Category Filter -->
+  <form method="get" class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-4">
+          <label class="text-xs fw-bold">Branch</label>
+          <select name="branch" class="form-select form-select-sm">
+            <option value="">All Branches</option>
+            {% for b in branches %}<option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-4">
+          <label class="text-xs fw-bold">Category</label>
+          <select name="category" class="form-select form-select-sm">
+            <option value="">All Categories</option>
+            {% for c in categories %}<option value="{{ c.id }}" {% if selected_category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-4 d-flex gap-1">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i>Filter</button>
+          <a href="{% url 'schooladmin:stock_dashboard' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+        </div>
+        {% if selected_branch or selected_category %}
+        <div class="col-auto">
+          <span class="badge bg-info text-white">Filtered view</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </form>
 
   <div class="row g-4 mb-4">
     <div class="col-xl-3 col-sm-6">

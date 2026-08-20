@@ -1,0 +1,47 @@
+{% extends 'dashboard.html' %}
+{% block title %}Edit Stock Item | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm p-4" style="border-radius:12px;">
+        <h5 class="fw-bold mb-4">Edit {{ item.name }}</h5>
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label small fw-bold">Name</label><input type="text" name="name" class="form-control" value="{{ item.name }}" required></div>
+            <div class="col-md-6"><label class="form-label small fw-bold">SKU</label><input type="text" name="sku" class="form-control" value="{{ item.sku }}"></div>
+            <div class="col-md-6"><label class="form-label small fw-bold">Unit</label><input type="text" name="unit" class="form-control" value="{{ item.unit }}"></div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Branch</label>
+              <select name="branch" class="form-select">
+                <option value="">—</option>
+                {% for b in branches %}<option value="{{ b.id }}" {% if item.branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Category</label>
+              <select name="category" class="form-select">
+                <option value="">—</option>
+                {% for c in categories %}<option value="{{ c.id }}" {% if item.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6"><label class="form-label small fw-bold">Low Stock Threshold</label><input type="number" name="low_stock_threshold" class="form-control" value="{{ item.low_stock_threshold }}"></div>
+            <div class="col-md-6"><label class="form-label small fw-bold">Supplier</label><input type="text" name="supplier" class="form-control" value="{{ item.supplier }}"></div>
+            <div class="col-md-6"><label class="form-label small fw-bold">Purchase Cost / Unit</label><input type="number" step="0.01" name="purchase_cost" class="form-control" value="{{ item.purchase_cost }}"></div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Status</label>
+              <select name="status" class="form-select">
+                <option value="active" {% if item.status == 'active' %}selected{% endif %}>Active</option>
+                <option value="inactive" {% if item.status == 'inactive' %}selected{% endif %}>Inactive</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary mt-4">Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

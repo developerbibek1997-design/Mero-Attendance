@@ -1,0 +1,29 @@
+<html>
+<head>
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; color: #111827; font-size: 12px; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .muted { color: #6b7280; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  td, th { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; text-align: left; }
+  .center { text-align: center; }
+  .pass { color: #16a34a; font-weight: bold; }
+  .fail { color: #dc2626; font-weight: bold; }
+</style>
+</head>
+<body>
+  <h1>{{ org_name }}</h1>
+  <p class="muted">Result &mdash; {{ exam_name }}</p>
+  <p>Student: <strong>{{ name }}</strong></p>
+  <table>
+    <tr><th>Subject</th><th class="center">Marks</th><th class="center">Status</th></tr>
+    {% for r in results %}
+    <tr>
+      <td>{{ r.subject }}</td>
+      <td class="center">{{ r.marks }}/{{ r.full }}</td>
+      <td class="center {% if r.passed %}pass{% else %}fail{% endif %}">{% if r.passed %}Pass{% else %}Fail{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</body>
+</html>

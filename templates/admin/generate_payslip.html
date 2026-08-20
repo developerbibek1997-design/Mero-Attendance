@@ -46,6 +46,13 @@
 
 <div class="container-fluid py-4">
 
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show no-print" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+
     <!-- Header & Filter Form -->
     <div class="card p-4 border-0 shadow-sm mb-4 no-print">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -107,7 +114,9 @@
                             <th>Punch Out</th>
                             <th class="text-center">Late In</th>
                             <th class="text-center">Early Out</th>
+                            <th class="text-center">Overtime</th>
                             <th class="text-end">Total Hours</th>
+                            <th class="text-end">Amount (Rs.)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -125,10 +134,20 @@
                             <td>{{ log.punch_out }}</td>
                             <td class="text-center text-danger">{{ log.late_in }}</td>
                             <td class="text-center text-danger">{{ log.early_out }}</td>
+                            <td class="text-center text-success">{% if log.overtime_hrs > 0 %}{{ log.overtime_hrs }} hrs{% else %}-{% endif %}</td>
                             <td class="text-end font-weight-bold text-dark">{{ log.worked_hrs }} hrs</td>
+                            <td class="text-end">
+                                <input type="number" step="0.01" class="editable-cell daily-amount-input" style="width: 110px; font-size: 0.85rem;" value="{{ log.amount|floatformat:2 }}" oninput="recalcDailyTotalThenGross()">
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
+                    <tfoot>
+                        <tr style="border-top: 2px solid #334155;">
+                            <td colspan="8" class="text-end font-weight-bold text-dark">Daily Total</td>
+                            <td class="text-end font-weight-bold text-dark" id="daily-total-display">0.00</td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -138,8 +157,10 @@
             {% csrf_token %}
             <!-- Hidden context data -->
             <input type="hidden" name="member" value="{{ mem.id }}">
-            <input type="hidden" name="from_date" value="{{ start_date }}">
-            <input type="hidden" name="to_date" value="{{ end_date }}">
+            <input type="hidden" name="first_date" value="{{ start_date }}">
+            <input type="hidden" name="last_date" value="{{ end_date }}">
+            <input type="hidden" name="first_date_np" value="{{ first_date_np }}">
+            <input type="hidden" name="last_date_np" value="{{ last_date_np }}">
             <input type="hidden" name="month_name" value="{{ month_name }}">
             <input type="hidden" name="total_days" value="{{ stats.total_days }}">
             <input type="hidden" name="present_days" value="{{ stats.days_present }}">
@@ -147,15 +168,6 @@
             <input type="hidden" name="holidays" value="{{ stats.days_holiday }}">
             <input type="hidden" name="unpaid_absences" value="{{ stats.days_unpaid_absent }}">
             <input type="hidden" name="salary_type" value="{{ mem.salary_type }}">
-            <input type="hidden" name="allowance_total" value="{{ allowance_total|default:0 }}">
-            <input type="hidden" name="bonus_total" value="{{ bonus_total|default:0 }}">
-            <input type="hidden" name="advance_deduction" value="{{ advance_deduction|default:0 }}">
-            <input type="hidden" name="loan_deduction" value="{{ loan_deduction|default:0 }}">
-            <input type="hidden" name="other_deduction" value="{{ other_deduction|default:0 }}">
-            <input type="hidden" name="pf_employee" value="{{ pf_employee|default:0 }}">
-            <input type="hidden" name="pf_employer" value="{{ pf_employer|default:0 }}">
-            <input type="hidden" name="ssf_employee" value="{{ ssf_employee|default:0 }}">
-            <input type="hidden" name="ssf_employer" value="{{ ssf_employer|default:0 }}">
             <input type="hidden" name="probation_adjustment" value="{{ probation_adjustment|default:0 }}">
 
             <!-- Wrap the payslip in an ID specifically for the PDF generator -->
@@ -163,8 +175,8 @@
                 
                 <!-- Header with Organization Logo -->
                 <div class="text-center border-bottom pb-4 mb-4">
-                    {% if org.logo %}
-                        <img src="{{ org.logo.url }}" alt="{{ org.name }} Logo" style="max-height: 80px; margin-bottom: 15px; object-fit: contain;">
+                    {% if org.image %}
+                        <img src="{{ org.image.url }}" alt="{{ org.name }} Logo" style="max-height: 80px; margin-bottom: 15px; object-fit: contain;">
                     {% endif %}
                     <h2 class="font-weight-bolder text-dark mb-0">{{ org.name }}</h2>
                     <p class="text-muted mb-3">{{ org.address|default:"Corporate Headquarters" }}</p>
@@ -184,10 +196,10 @@
 
                 <!-- Ecosystem Grid -->
                 <div class="row mb-4">
-                    <div class="col-3"><div class="stat-box bg-gradient-dark"><h6>Period Days</h6><h3 class="mb-0 text-white">{{ stats.total_days }}</h3></div></div>
-                    <div class="col-3"><div class="stat-box bg-gradient-success"><h6>Present</h6><h3 class="mb-0 text-white">{{ stats.days_present }}</h3></div></div>
-                    <div class="col-3"><div class="stat-box bg-gradient-info"><h6>Paid Off-Days</h6><h3 class="mb-0 text-white">{{ stats.days_leave|add:stats.days_holiday }}</h3></div></div>
-                    <div class="col-3"><div class="stat-box bg-gradient-danger"><h6>Unpaid Absent</h6><h3 class="mb-0 text-white">{{ stats.days_unpaid_absent }}</h3></div></div>
+                    <div class="col-3"><div class="stat-box bg-outline-dark text-dark"><h6 class="text-dark">Period Days</h6><h3 class="mb-0 text-dark">{{ stats.total_days }}</h3></div></div>
+                    <div class="col-3"><div class="stat-box bg-outline-dark text-dark"><h6 class="text-dark">Present</h6><h3 class="mb-0 text-dark">{{ stats.days_present }}</h3></div></div>
+                    <div class="col-3"><div class="stat-box bg-outline-dark text-dark"><h6 class="text-dark">Paid Off-Days</h6><h3 class="mb-0 text-dark">{{ stats.days_leave|add:stats.days_holiday }}</h3></div></div>
+                    <div class="col-3"><div class="stat-box bg-outline-dark text-dark"><h6 class="text-dark">Unpaid Absent</h6><h3 class="mb-0 text-dark">{{ stats.days_unpaid_absent }}</h3></div></div>
                 </div>
 
                 <!-- Interactive Ledger -->
@@ -210,14 +222,28 @@
                             <td class="text-center text-sm text-secondary">Calculated Base</td>
                             <td class="text-end font-weight-bold" style="font-family: monospace; font-size: 1.1rem;">{{ base_earnings|floatformat:2 }}</td>
                         </tr>
-                        
-                        {% if absent_deduction > 0 %}
+
+                        <!-- INTERACTIVE OVERTIME -->
+                        <tr style="background: #f0fff4;">
+                            <td class="font-weight-bold text-success">Overtime Pay</td>
+                            <td class="text-center text-sm text-secondary">
+                                <input type="number" step="0.01" name="overtime_hours" id="edit_ot_hours" class="editable-cell" style="width: 80px; font-size: 0.85rem;" value="{{ overtime_hours|floatformat:2 }}" oninput="recalcOvertimeThenNet()">
+                                hrs @ Rs.{{ hourly_rate|floatformat:2 }}/hr ×
+                                <input type="number" step="0.01" name="overtime_rate_multiplier" id="edit_ot_multiplier" class="editable-cell" style="width: 70px; font-size: 0.85rem;" value="{{ effective_ot_multiplier|floatformat:2 }}" oninput="recalcOvertimeThenNet()">
+                            </td>
+                            <td class="text-end">
+                                <input type="number" step="0.01" name="overtime_amount" id="edit_ot_amount" class="editable-cell text-success" value="{{ overtime_amount|floatformat:2 }}" oninput="recalcGrossThenNet()">
+                            </td>
+                        </tr>
+
+                        <!-- CALCULATOR-ONLY: feeds gross, not persisted as its own PaySlip column -->
                         <tr style="background: #fff5f5;">
                             <td class="font-weight-bold text-danger">Unpaid Absence Deduction</td>
                             <td class="text-center text-sm text-secondary">{{ stats.days_unpaid_absent }} days @ Rs.{{ per_day_rate|floatformat:2 }}/day</td>
-                            <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">- {{ absent_deduction|floatformat:2 }}</td>
+                            <td class="text-end">
+                                <input type="number" step="0.01" id="edit_absent_deduction" class="editable-cell text-danger" value="{{ absent_deduction|floatformat:2 }}" oninput="recalcGrossThenNet()">
+                            </td>
                         </tr>
-                        {% endif %}
 
                         {% if probation_adjustment > 0 %}
                         <tr style="background: #fffbeb;">
@@ -227,37 +253,41 @@
                         </tr>
                         {% endif %}
 
-                        {% if allowance_total > 0 %}
+                        <!-- INTERACTIVE ALLOWANCE -->
                         <tr>
                             <td class="font-weight-bold text-dark">Allowances</td>
                             <td class="text-center text-sm text-secondary">Active payroll allowance records</td>
-                            <td class="text-end font-weight-bold text-success" style="font-family: monospace; font-size: 1.1rem;">+ {{ allowance_total|floatformat:2 }}</td>
+                            <td class="text-end">
+                                <input type="number" step="0.01" name="allowance_total" id="edit_allowance" class="editable-cell text-success" value="{{ allowance_total|floatformat:2 }}" oninput="recalculateNet()">
+                            </td>
                         </tr>
-                        {% endif %}
 
-                        {% if bonus_total > 0 %}
+                        <!-- INTERACTIVE BONUS -->
                         <tr>
                             <td class="font-weight-bold text-dark">Bonus</td>
                             <td class="text-center text-sm text-secondary">Active payroll bonus records</td>
-                            <td class="text-end font-weight-bold text-success" style="font-family: monospace; font-size: 1.1rem;">+ {{ bonus_total|floatformat:2 }}</td>
+                            <td class="text-end">
+                                <input type="number" step="0.01" name="bonus_total" id="edit_bonus" class="editable-cell text-success" value="{{ bonus_total|floatformat:2 }}" oninput="recalculateNet()">
+                            </td>
                         </tr>
-                        {% endif %}
 
-                        {% if other_deduction > 0 %}
+                        <!-- INTERACTIVE OTHER DEDUCTION -->
                         <tr style="background: #fff5f5;">
                             <td class="font-weight-bold text-danger">Other Deductions</td>
                             <td class="text-center text-sm text-secondary">Active payroll deduction records</td>
-                            <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">- {{ other_deduction|floatformat:2 }}</td>
+                            <td class="text-end">
+                                <input type="number" step="0.01" name="other_deduction" id="edit_other_deduction" class="editable-cell text-danger" value="{{ other_deduction|floatformat:2 }}" oninput="recalculateNet()">
+                            </td>
                         </tr>
-                        {% endif %}
 
-                        {% if penalty_deduction > 0 %}
+                        <!-- CALCULATOR-ONLY: feeds gross, not persisted as its own PaySlip column -->
                         <tr style="background: #fffaf0;">
                             <td class="font-weight-bold text-warning">Time Penalty (Late In / Early Out)</td>
                             <td class="text-center text-sm text-secondary">{{ stats.total_missing_hours|floatformat:2 }} hrs @ Rs.{{ hourly_rate|floatformat:2 }}/hr</td>
-                            <td class="text-end font-weight-bold text-warning" style="font-family: monospace; font-size: 1.1rem;">- {{ penalty_deduction|floatformat:2 }}</td>
+                            <td class="text-end">
+                                <input type="number" step="0.01" id="edit_penalty_deduction" class="editable-cell text-warning" value="{{ penalty_deduction|floatformat:2 }}" oninput="recalcGrossThenNet()">
+                            </td>
                         </tr>
-                        {% endif %}
 
                         <!-- INTERACTIVE GROSS -->
                         <tr style="border-top: 2px solid #334155;">
@@ -276,37 +306,43 @@
                             </td>
                         </tr>
 
-                        {% if pf_employee > 0 or pf_employer > 0 %}
+                        <!-- INTERACTIVE PF -->
                         <tr>
                             <td class="font-weight-bold text-danger">Provident Fund</td>
-                            <td class="text-center text-sm text-secondary">Employee {{ payroll_policy.pf_employee_percentage }}% | Employer {{ payroll_policy.pf_employer_percentage }}%</td>
-                            <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">- {{ pf_employee|floatformat:2 }} <small class="text-muted">(Employer: {{ pf_employer|floatformat:2 }})</small></td>
+                            <td class="text-center text-sm text-secondary">
+                                Employee <input type="number" step="0.01" name="pf_employee" id="edit_pf_employee" class="editable-cell" style="width: 90px; font-size: 0.85rem;" value="{{ pf_employee|floatformat:2 }}" oninput="recalculateNet()">
+                                Employer <input type="number" step="0.01" name="pf_employer" id="edit_pf_employer" class="editable-cell" style="width: 90px; font-size: 0.85rem;" value="{{ pf_employer|floatformat:2 }}">
+                            </td>
+                            <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">— see row</td>
                         </tr>
-                        {% endif %}
 
-                        {% if ssf_employee > 0 or ssf_employer > 0 %}
+                        <!-- INTERACTIVE SSF -->
                         <tr>
                             <td class="font-weight-bold text-danger">Social Security Fund</td>
-                            <td class="text-center text-sm text-secondary">Employee {{ payroll_policy.ssf_employee_percentage }}% | Employer {{ payroll_policy.ssf_employer_percentage }}%</td>
-                            <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">- {{ ssf_employee|floatformat:2 }} <small class="text-muted">(Employer: {{ ssf_employer|floatformat:2 }})</small></td>
+                            <td class="text-center text-sm text-secondary">
+                                Employee <input type="number" step="0.01" name="ssf_employee" id="edit_ssf_employee" class="editable-cell" style="width: 90px; font-size: 0.85rem;" value="{{ ssf_employee|floatformat:2 }}" oninput="recalculateNet()">
+                                Employer <input type="number" step="0.01" name="ssf_employer" id="edit_ssf_employer" class="editable-cell" style="width: 90px; font-size: 0.85rem;" value="{{ ssf_employer|floatformat:2 }}">
+                            </td>
+                            <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">— see row</td>
                         </tr>
-                        {% endif %}
 
-                        {% if advance_deduction > 0 %}
+                        <!-- INTERACTIVE ADVANCE -->
                         <tr style="background: #fff5f5;">
                             <td class="font-weight-bold text-danger">Advance Salary Deduction</td>
                             <td class="text-center text-sm text-secondary">Active advance records</td>
-                            <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">- {{ advance_deduction|floatformat:2 }}</td>
+                            <td class="text-end">
+                                <input type="number" step="0.01" name="advance_deduction" id="edit_advance" class="editable-cell text-danger" value="{{ advance_deduction|floatformat:2 }}" oninput="recalculateNet()">
+                            </td>
                         </tr>
-                        {% endif %}
 
-                        {% if loan_deduction > 0 %}
+                        <!-- INTERACTIVE LOAN -->
                         <tr style="background: #fff5f5;">
                             <td class="font-weight-bold text-danger">Loan Deduction</td>
                             <td class="text-center text-sm text-secondary">Active loan records</td>
-                            <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">- {{ loan_deduction|floatformat:2 }}</td>
+                            <td class="text-end">
+                                <input type="number" step="0.01" name="loan_deduction" id="edit_loan" class="editable-cell text-danger" value="{{ loan_deduction|floatformat:2 }}" oninput="recalculateNet()">
+                            </td>
                         </tr>
-                        {% endif %}
 
                         <!-- INTERACTIVE NET -->
                         <tr style="background-color: #f8fafc; border-top: 2px solid #10b981;">
@@ -371,12 +407,18 @@
                     {% endif %}
                 </div>
                 <p class="text-sm mb-1 d-flex justify-content-between"><strong>Gross:</strong> <span>Rs. {{ ps.gross_salary }}</span></p>
+                {% if ps.overtime_amount > 0 %}
+                <p class="text-sm mb-1 d-flex justify-content-between text-success"><strong>Overtime ({{ ps.overtime_hours|floatformat:2 }} hrs):</strong> <span>+ Rs. {{ ps.overtime_amount }}</span></p>
+                {% endif %}
                 <p class="text-sm mb-1 d-flex justify-content-between text-success"><strong>Allowance/Bonus:</strong> <span>Rs. {{ ps.allowance_total|add:ps.bonus_total }}</span></p>
                 <p class="text-sm mb-1 d-flex justify-content-between text-danger"><strong>PF/SSF:</strong> <span>- Rs. {{ ps.pf_employee|add:ps.ssf_employee }}</span></p>
                 <p class="text-sm mb-1 d-flex justify-content-between text-danger"><strong>Advance/Loan:</strong> <span>- Rs. {{ ps.advance_deduction|add:ps.loan_deduction }}</span></p>
                 <p class="text-sm mb-1 d-flex justify-content-between text-danger"><strong>Tax (TDS):</strong> <span>- Rs. {{ ps.tax_deduction }}</span></p>
                 <hr class="my-2">
                 <h6 class="text-success text-end mb-2">Net: Rs. {{ ps.net_payable }}</h6>
+                <a href="{% url 'schooladmin:payslip_detail' ps.pk %}" class="btn btn-outline-dark btn-sm w-100 mb-1">
+                    <i class="fas fa-eye me-1"></i> View Details
+                </a>
                 {% if ps.status == 'draft' %}
                 <form method="post" action="{% url 'schooladmin:finalize_payslip' ps.pk %}">
                     {% csrf_token %}
@@ -410,12 +452,55 @@
 
 <script>
     // 1. Math Recalculation Engine
+    function readVal(id) {
+        const el = document.getElementById(id);
+        return el ? (parseFloat(el.value) || 0) : 0;
+    }
+
+    function recalcOvertimeThenNet() {
+        const hourlyRate = {{ hourly_rate|default:0 }};
+        const otAmount = readVal('edit_ot_hours') * hourlyRate * readVal('edit_ot_multiplier');
+        document.getElementById('edit_ot_amount').value = otAmount.toFixed(2);
+        recalcGrossThenNet();
+    }
+
+    function recalcGrossThenNet() {
+        const baseEarnings = {{ base_earnings|default:0 }};
+        let gross = baseEarnings - readVal('edit_absent_deduction') - readVal('edit_penalty_deduction') + readVal('edit_ot_amount');
+        if (gross < 0) gross = 0;
+        document.getElementById('edit_gross').value = gross.toFixed(2);
+        recalculateNet();
+    }
+
     function recalculateNet() {
-        let gross = parseFloat(document.getElementById('edit_gross').value) || 0;
-        let tax = parseFloat(document.getElementById('edit_tax').value) || 0;
-        let net = gross - tax;
+        let net = readVal('edit_gross') + readVal('edit_allowance') + readVal('edit_bonus')
+            - readVal('edit_other_deduction') - readVal('edit_tax')
+            - readVal('edit_pf_employee') - readVal('edit_ssf_employee')
+            - readVal('edit_advance') - readVal('edit_loan');
+        if (net < 0) net = 0;
         document.getElementById('edit_net').value = net.toFixed(2);
     }
+
+    // Daily amounts are a per-day breakdown of the same gross figure — editing
+    // any day's amount re-sums the column and feeds that sum straight into
+    // Gross Salary (which already embeds each day's penalty/overtime), then
+    // cascades into net via the existing chain.
+    function recalcDailyTotalThenGross() {
+        const inputs = document.querySelectorAll('.daily-amount-input');
+        let total = 0;
+        inputs.forEach(function(el) { total += parseFloat(el.value) || 0; });
+        const totalEl = document.getElementById('daily-total-display');
+        if (totalEl) totalEl.textContent = total.toFixed(2);
+        const grossEl = document.getElementById('edit_gross');
+        if (grossEl) grossEl.value = total.toFixed(2);
+        recalculateNet();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.querySelectorAll('.daily-amount-input').length) {
+            recalcDailyTotalThenGross();
+        }
+    });
 
     // 2. PDF Generation & Sharing Engine (FIXED SIDEBAR BUG)
     function generatePDF() {

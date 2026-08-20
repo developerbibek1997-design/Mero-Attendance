@@ -1,0 +1,110 @@
+{% extends 'dashboard.html' %}
+{% block title %}Shift Management | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-clock text-primary me-2"></i>Shift Management</h4>
+      <p class="text-xs text-muted mb-0">Define work schedules with one or more time windows (supports split shifts).</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'schooladmin:shift_assign' %}" class="btn btn-outline-primary btn-sm mb-0"><i class="fas fa-user-clock me-1"></i>Assign to Members</a>
+      <a href="{% url 'schooladmin:shift_new' %}" class="btn bg-gradient-primary text-white btn-sm mb-0"><i class="fas fa-plus me-1"></i>New Shift</a>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="card border-0 shadow-sm mb-4" style="border-radius:16px;">
+    <div class="card-body p-4">
+      <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-3">
+        <div>
+          <h6 class="font-weight-bolder mb-1"><i class="fas fa-bell text-primary me-2"></i>Mobile attendance reminders</h6>
+          <p class="text-xs text-muted mb-0">Set up to three reminders. Enter minutes after shift start or shift end, separated by commas.</p>
+        </div>
+        <span class="badge {% if reminder_policy.enabled %}bg-success{% else %}bg-secondary{% endif %}">
+          {% if reminder_policy.enabled %}Enabled{% else %}Disabled{% endif %}
+        </span>
+      </div>
+      <form method="post" class="row g-3 align-items-end">
+        {% csrf_token %}
+        <div class="col-lg-3 col-md-6">
+          <label class="form-label text-xs font-weight-bold">Check-in offsets</label>
+          <input type="text" name="checkin_offsets" class="form-control"
+                 value="{{ reminder_policy.checkin_offsets|join:', ' }}"
+                 placeholder="0, 20, 30" maxlength="30">
+          <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" name="checkin_enabled" id="checkin-enabled"
+                   {% if reminder_policy.checkin_enabled %}checked{% endif %}>
+            <label class="form-check-label text-xs" for="checkin-enabled">Check-in reminders</label>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <label class="form-label text-xs font-weight-bold">Check-out offsets</label>
+          <input type="text" name="checkout_offsets" class="form-control"
+                 value="{{ reminder_policy.checkout_offsets|join:', ' }}"
+                 placeholder="0, 15, 30" maxlength="30">
+          <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" name="checkout_enabled" id="checkout-enabled"
+                   {% if reminder_policy.checkout_enabled %}checked{% endif %}>
+            <label class="form-check-label text-xs" for="checkout-enabled">Check-out reminders</label>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" name="enabled" id="reminders-enabled"
+                   {% if reminder_policy.enabled %}checked{% endif %}>
+            <label class="form-check-label font-weight-bold text-sm" for="reminders-enabled">Enable mobile reminders</label>
+          </div>
+          <small class="text-muted">Leave and non-working days are skipped automatically.</small>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <button class="btn bg-gradient-primary text-white w-100 mb-0" type="submit">
+            <i class="fas fa-save me-1"></i>Save reminder policy
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    {% for s in shifts %}
+    <div class="col-lg-4 col-md-6">
+      <div class="card border-0 shadow-sm h-100" style="border-radius:14px;">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h6 class="font-weight-bolder mb-0">{{ s.name }}</h6>
+            {% if s.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+          </div>
+          <div class="mb-3">
+            {% for w in s.ordered_windows %}
+            <span class="badge bg-gradient-info text-white mb-1 d-inline-block">{{ w.label }}</span>
+            {% endfor %}
+          </div>
+          <div class="d-flex justify-content-between text-xs text-muted mb-3">
+            <span><i class="fas fa-hourglass-half me-1"></i>{{ s.expected_hours }} h / day</span>
+            <span><i class="fas fa-users me-1"></i>{{ s.members.count }} member{{ s.members.count|pluralize }}</span>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'schooladmin:shift_edit' s.pk %}" class="btn btn-outline-primary btn-sm mb-0 flex-fill"><i class="fas fa-pen me-1"></i>Edit</a>
+            <form method="post" action="{% url 'schooladmin:shift_delete' s.pk %}" onsubmit="return confirm('Delete shift {{ s.name|escapejs }}? Assigned members will revert to their default times.');">
+              {% csrf_token %}
+              <button class="btn btn-outline-danger btn-sm mb-0"><i class="fas fa-trash"></i></button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="card border-0 shadow-sm"><div class="card-body text-center py-5 text-muted">
+        <i class="fas fa-clock fa-2x mb-2 d-block opacity-6"></i>
+        No shifts yet. Create one to schedule split or multi-window work hours.
+      </div></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

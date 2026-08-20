@@ -44,11 +44,15 @@
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                             <span><i class="fas fa-barcode me-2"></i>Serial Number</span>
-                            <span class="badge bg-primary rounded-pill">{{ devi.serial_number }}</span>
+                            <span class="badge bg-primary rounded-pill">{{ devi.serial_number|default:"Not set" }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                            <span><i class="fas fa-map-marker-alt me-2"></i>Location</span>
-                            <span class="badge bg-primary rounded-pill">{{ devi.location }}</span>
+                            <span><i class="fas fa-cloud me-2"></i>Mode</span>
+                            <span class="badge bg-primary rounded-pill">{{ devi.get_connection_mode_display }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span><i class="fas fa-signal me-2"></i>Last Seen</span>
+                            <span class="badge {% if devi.is_online %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">{{ devi.last_seen_at|date:"Y-m-d H:i:s"|default:"Never" }}</span>
                         </li>
                     </ul>
                     
@@ -102,6 +106,12 @@
                                         <div class="text-danger small">{{ form.ip_address.errors }}</div>
                                     {% endif %}
                                 </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="id_connection_mode" class="form-label">Connection Mode</label>
+                                    {{ form.connection_mode }}
+                                    {% if form.connection_mode.errors %}<div class="text-danger small">{{ form.connection_mode.errors }}</div>{% endif %}
+                                </div>
                             </div>
                             
                             <div class="col-md-6">
@@ -114,6 +124,13 @@
                                     {% if form.port_no.errors %}
                                         <div class="text-danger small">{{ form.port_no.errors }}</div>
                                     {% endif %}
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="id_serial_number" class="form-label">Device Serial Number (SN)</label>
+                                    {{ form.serial_number }}
+                                    <div class="form-text">Required for ADMS cloud push.</div>
+                                    {% if form.serial_number.errors %}<div class="text-danger small">{{ form.serial_number.errors }}</div>{% endif %}
                                 </div>
                                 
                                
@@ -153,9 +170,12 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="{% url 'handle:deleteDevice' devi.id %}" class="btn btn-danger">
-                    <i class="fas fa-trash-alt me-1"></i> Delete Permanently
-                </a>
+                <form method="post" action="{% url 'handle:deleteDevice' devi.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-1"></i> Delete Permanently
+                    </button>
+                </form>
             </div>
         </div>
     </div>

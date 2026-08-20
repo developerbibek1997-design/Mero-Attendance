@@ -1,0 +1,61 @@
+{% extends 'dashboard.html' %}
+{% block title %}My Subject Attendance Report | {{ org.name }}{% endblock %}
+{% block content %}
+{% include 'components/report_workspace_styles.html' %}
+<div class="container-fluid py-4 report-workspace">
+  <section class="report-hero mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <span class="report-eyebrow"><i class="fas fa-chalkboard-user"></i> Teacher Reporting</span>
+        <h3 class="font-weight-bolder mt-3 mb-1">My Subject Attendance Report</h3>
+        <p class="text-sm mb-0 opacity-8">School-admin reporting quality with a secure scope: only subjects and sessions taught by your account.</p>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button onclick="window.print()" class="btn btn-light btn-sm mb-0"><i class="fas fa-print me-1"></i>Print</button>
+        <a href="{% url 'staff:subject_teaching_log' %}" class="btn btn-light btn-sm mb-0"><i class="fas fa-user-check me-1 text-primary"></i>Mark Attendance</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="report-toolbar mb-4 no-print">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-2"><label class="report-filter-label">From</label><input type="date" name="date_from" class="form-control" value="{{ date_from|date:'Y-m-d' }}" data-global-date-picker></div>
+      <div class="col-md-2"><label class="report-filter-label">To</label><input type="date" name="date_to" class="form-control" value="{{ date_to|date:'Y-m-d' }}" data-global-date-picker></div>
+      <div class="col-md-4"><label class="report-filter-label">Assigned subject</label><select name="subject" class="form-select"><option value="">All assigned subjects</option>{% for subject in subjects %}<option value="{{ subject.pk }}" {% if selected_subject == subject.pk|stringformat:'s' %}selected{% endif %}>{{ subject }}</option>{% endfor %}</select></div>
+      <div class="col-md-2"><label class="report-filter-label">Status</label><select name="status" class="form-select"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-md-2"><button class="btn btn-primary w-100 mb-0 py-2"><i class="fas fa-filter me-1"></i>Generate</button></div>
+    </form>
+  </section>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-2"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-check"></i></span><p class="report-stat-label">Present</p><p class="report-stat-value text-success">{{ counts.present|default:0 }}</p></div></div>
+    <div class="col-6 col-lg-2"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-xmark"></i></span><p class="report-stat-label">Absent</p><p class="report-stat-value text-danger">{{ counts.absent|default:0 }}</p></div></div>
+    <div class="col-6 col-lg-2"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-clock"></i></span><p class="report-stat-label">Late</p><p class="report-stat-value text-warning">{{ counts.late|default:0 }}</p></div></div>
+    <div class="col-6 col-lg-2"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-user-shield"></i></span><p class="report-stat-label">Excused</p><p class="report-stat-value">{{ counts.excused|default:0 }}</p></div></div>
+    <div class="col-6 col-lg-2"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-calendar-minus"></i></span><p class="report-stat-label">Leave</p><p class="report-stat-value">{{ counts.leave|default:0 }}</p></div></div>
+    <div class="col-6 col-lg-2"><div class="report-stat"><span class="report-stat-icon"><i class="fas fa-list-ol"></i></span><p class="report-stat-label">Total Marks</p><p class="report-stat-value">{{ total }}</p></div></div>
+  </div>
+
+  <section class="report-panel overflow-hidden">
+    <div class="px-3 py-3 border-bottom"><h6 class="mb-0 font-weight-bolder">Subject Attendance Ledger</h6><p class="text-xs text-muted mb-0">Student-level marks across your validated teaching assignments.</p></div>
+    <div class="table-responsive">
+      <table class="table report-table">
+        <thead><tr><th class="ps-3">Date</th><th>Course / Class</th><th>Subject</th><th>Period</th><th>Student</th><th>Status</th><th>Remarks</th></tr></thead>
+        <tbody>
+          {% for record in records %}
+          <tr>
+            <td class="ps-3 font-weight-bold">{{ record.teaching_log.date }}</td>
+            <td>{% if record.teaching_log.course %}{{ record.teaching_log.course.name }} / {% endif %}{{ record.teaching_log.classification.name }}{% if record.teaching_log.section %} / {{ record.teaching_log.section.name }}{% endif %}</td>
+            <td class="font-weight-bold">{{ record.teaching_log.subject.name }}</td>
+            <td>{{ record.teaching_log.period|default:"—" }}</td>
+            <td>{{ record.member.name }}</td>
+            <td><span class="badge {% if record.status == 'present' %}bg-success{% elif record.status == 'absent' %}bg-danger{% elif record.status == 'late' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ record.get_status_display }}</span></td>
+            <td>{{ record.remarks|default:"—" }}</td>
+          </tr>
+          {% empty %}<tr><td colspan="7"><div class="report-empty"><span class="report-empty-icon"><i class="fas fa-folder-open"></i></span><h6>No subject attendance records</h6><p class="text-sm mb-0">Try another date range or subject.</p></div></td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

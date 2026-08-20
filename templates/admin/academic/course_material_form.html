@@ -1,0 +1,38 @@
+{% extends 'dashboard.html' %}
+{% block title %}{% if mode == 'edit' %}Edit{% else %}Add{% endif %} Course Material | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-folder-open text-primary me-2"></i>{% if mode == 'edit' %}Edit{% else %}Add{% endif %} Course Material</h6>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          {% if form.errors %}<div class="alert alert-danger">{{ form.non_field_errors }} Please correct the errors below.</div>{% endif %}
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Title *</label>{{ form.title }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Type</label>{{ form.material_type }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Faculty</label>{{ form.faculty }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Course</label>{{ form.course }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Semester</label>{{ form.semester }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Subject *</label>{{ form.subject }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Chapter</label>{{ form.chapter }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Unit</label>{{ form.unit }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">File</label>{{ form.file }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">External Link</label>{{ form.external_link }}</div>
+              <div class="col-12 d-flex gap-2 mt-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+                <a href="{% url 'schooladmin:course_material_list' %}" class="btn btn-outline-secondary">Cancel</a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

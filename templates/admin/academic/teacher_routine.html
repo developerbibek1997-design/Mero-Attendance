@@ -1,0 +1,35 @@
+{% extends 'dashboard.html' %}
+{% load schooladmin_extras %}
+{% block title %}My Routine | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0">My Weekly Routine</h4>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+  <div class="row g-3">
+    {% for day_num, day_name in days %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white border-bottom py-2"><span class="text-sm font-weight-bolder">{{ day_name }}</span></div>
+        <div class="card-body p-2">
+          {% with periods=grid|dict_get:day_num %}
+          {% for p in periods %}
+          <div class="border-bottom py-1">
+            <div>
+              <span class="text-xs text-muted">P{{ p.period_number }}</span>
+              <span class="text-sm font-weight-bold ms-1">{{ p.subject.name }}</span>
+              <div class="text-xs text-muted">{{ p.start_time|time:"H:i" }}-{{ p.end_time|time:"H:i" }} &bull; {{ p.teacher.get_full_name|default:p.teacher.email }}{% if p.room %} &bull; {{ p.room }}{% endif %}</div>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-xs text-muted mb-0 py-2">No periods.</p>
+          {% endfor %}
+          {% endwith %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

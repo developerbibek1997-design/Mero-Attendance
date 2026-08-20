@@ -1,0 +1,47 @@
+{% extends 'dashboard.html' %}
+{% block title %}Stock Adjustment | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-info text-white py-3">
+          <h6 class="mb-0 font-weight-bolder text-white"><i class="fas fa-sliders-h me-2"></i>Stock Adjustment</h6>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Select Item *</label>
+              <select name="item" class="form-select" required>
+                <option value="">-- Choose Stock Item --</option>
+                {% for item in items %}<option value="{{ item.id }}">{{ item.name }} (Current: {{ item.quantity }} {{ item.unit }})</option>{% endfor %}
+              </select></div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Direction *</label>
+              <select name="direction" class="form-select" required>
+                <option value="increase">Increase (found extra stock)</option>
+                <option value="decrease">Decrease (shrinkage / damage)</option>
+              </select>
+            </div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Quantity *</label><input type="number" step="0.01" name="quantity" class="form-control" required min="0.01"></div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Date</label>
+              {% if nepali_enabled %}
+              <input type="text" class="form-control nepali-cal" name="movement_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+              <input type="date" class="hidden-date-input" name="movement_date" value="{{ today }}">
+              {% else %}
+              <input type="date" name="movement_date" class="form-control" value="{{ today }}">
+              {% endif %}
+            </div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Note</label><input type="text" name="note" class="form-control" placeholder="e.g. Annual stock count correction"></div>
+            <p class="text-xs text-muted">If Accounting is enabled, this posts a journal entry against the Inventory Adjustment account automatically.</p>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-info text-white"><i class="fas fa-save me-1"></i>Record Adjustment</button>
+              <a href="{% url 'schooladmin:stock_items' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

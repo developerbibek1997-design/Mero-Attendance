@@ -43,6 +43,18 @@
             <div class="border rounded p-3 mt-1 bg-light"><p class="text-sm mb-0">{{ complaint.admin_remarks }}</p></div>
           </div>
           {% endif %}
+          {% if complaint.messages.all %}
+          <div class="mt-4">
+            <span class="text-xs text-uppercase text-muted font-weight-bold">Conversation</span>
+            {% for reply in complaint.messages.all %}
+            <div class="border rounded p-3 mt-2 {% if reply.is_staff_reply %}bg-light{% endif %}">
+              <p class="text-sm mb-1 font-weight-bold">{% if reply.is_staff_reply %}Management{% else %}{{ complaint.filed_by.name }}{% endif %}</p>
+              <p class="text-sm mb-1">{{ reply.message }}</p>
+              <span class="text-xs text-muted">{{ reply.created_at|date:"M d, Y, g:i A" }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -58,6 +70,8 @@
               <textarea name="admin_remarks" class="form-control" rows="3" placeholder="Add remarks...">{{ complaint.admin_remarks|default:'' }}</textarea></div>
             <div class="mb-3"><label class="form-label text-xs font-weight-bold">Resolution Date</label>
               <input type="date" name="resolution_date" class="form-control" value="{{ complaint.resolution_date|date:'Y-m-d'|default:'' }}"></div>
+            <div class="mb-3"><label class="form-label text-xs font-weight-bold">Reply to Filer</label>
+              <textarea name="reply_message" class="form-control" rows="3" placeholder="Visible in the staff mobile conversation"></textarea></div>
             <button type="submit" class="btn btn-primary w-100"><i class="fas fa-save me-1"></i>Update Complaint</button>
           </form>
         </div>

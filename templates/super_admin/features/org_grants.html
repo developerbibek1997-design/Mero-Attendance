@@ -1,0 +1,93 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Dynamic Features | {{ org.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h4 class="fw-bold mb-1" style="color:#1e293b;">Dynamic Features — {{ org.name }}</h4>
+      <p class="text-muted mb-0 small">Grants here are additional to the org's built-in 31 features (managed via "Edit Configuration").</p>
+    </div>
+    <a href="{% url 'superadmin:orgDetail' org.id %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i>Back to Organization
+    </a>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="d-flex gap-2 mb-3">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="enable_all">
+      <button type="submit" class="btn btn-sm btn-outline-success">Enable All</button>
+    </form>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="disable_all">
+      <button type="submit" class="btn btn-sm btn-outline-danger">Disable All</button>
+    </form>
+    {% if other_orgs %}
+    <form method="post" class="d-flex gap-2">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="clone_from">
+      <select name="source_org_id" class="form-select form-select-sm" style="width:auto;">
+        {% for o in other_orgs %}
+        <option value="{{ o.id }}">Clone from {{ o.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-sm btn-outline-primary">Clone</button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if rows %}
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save_grants">
+    <div class="card border-0 shadow-sm" style="border-radius:12px;">
+      <div class="card-body p-0">
+        <table class="table mb-0 align-middle">
+          <thead>
+            <tr>
+              <th class="ps-4">Feature</th>
+              <th>Category</th>
+              <th class="text-end pe-4">Enabled</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            <tr>
+              <td class="ps-4">
+                <i class="fas {{ row.feature.icon }} me-2 text-muted"></i>
+                <strong>{{ row.feature.label }}</strong>
+                <div class="text-muted small">{{ row.feature.key }}</div>
+              </td>
+              <td class="text-muted small">{{ row.feature.category|default:"Custom" }}</td>
+              <td class="text-end pe-4">
+                <div class="form-check form-switch d-inline-block">
+                  <input class="form-check-input" type="checkbox" name="feature_key" value="{{ row.feature.key }}" {% if row.enabled %}checked{% endif %}>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3"><i class="fas fa-save me-1"></i>Save Grants</button>
+  </form>
+  {% else %}
+  <div class="text-center text-muted py-5">
+    <i class="fas fa-puzzle-piece fa-2x mb-3"></i>
+    <p>No active dynamic features exist yet. <a href="{% url 'superadmin:feature_registry' %}">Create one in the Feature Registry</a>.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

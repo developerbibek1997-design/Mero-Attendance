@@ -1,0 +1,187 @@
+{% extends 'dashboard.html' %}
+{% block title %}{% if is_edit %}Edit Notice{% else %}New Notice{% endif %} | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+  .nf-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; margin-bottom:1.25rem; overflow:hidden; }
+  .nf-card-hd { padding:1rem 1.4rem; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; gap:.75rem; }
+  .nf-card-hd-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:.95rem; flex-shrink:0; }
+  .nf-card-title { font-size:.82rem; font-weight:800; color:#0f172a; margin:0; text-transform:uppercase; letter-spacing:.04em; }
+  .nf-card-bd { padding:1.4rem; }
+  .nf-label { font-size:.72rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.4rem; display:block; }
+</style>
+
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h4 class="font-weight-bolder mb-0">
+        <i class="fas fa-bullhorn text-primary me-2"></i>{% if is_edit %}Edit Notice{% else %}New Notice{% endif %}
+      </h4>
+      <p class="text-xs text-muted mb-0">Publish an announcement to a chosen audience.</p>
+    </div>
+    <a href="{% url 'schooladmin:notice_list' %}" class="btn btn-outline-secondary btn-sm mb-0"><i class="fas fa-arrow-left me-1"></i>Back</a>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags|default:'success' }}{% endif %} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="nf-card">
+      <div class="nf-card-hd">
+        <div class="nf-card-hd-icon" style="background:#e0e7ff;color:#4338ca;"><i class="fas fa-pen"></i></div>
+        <div><div class="nf-card-title">Content</div></div>
+      </div>
+      <div class="nf-card-bd">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="nf-label">Title <span class="text-danger">*</span></label>
+            <input type="text" name="title" class="form-control" maxlength="255" required
+                   value="{{ notice.title|default:'' }}" placeholder="e.g. Office closed on Friday">
+          </div>
+          <div class="col-12">
+            <label class="nf-label">Message <span class="text-danger">*</span></label>
+            <textarea name="body" class="form-control" rows="7" required
+                      placeholder="Write the announcement…">{{ notice.body|default:'' }}</textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="nf-label">Priority</label>
+            <select name="priority" class="form-select">
+              {% for val,label in priority_choices %}
+              <option value="{{ val }}" {% if notice.priority == val %}selected{% elif not notice and val == 'normal' %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="nf-label">Attachment <span class="text-muted fw-normal">(optional)</span></label>
+            {% if notice.attachment %}
+            <div class="text-xs mb-1">
+              <a href="{{ notice.attachment.url }}" target="_blank"><i class="fas fa-paperclip me-1"></i>Current file</a>
+              <span class="text-muted">— choosing a new file replaces it.</span>
+            </div>
+            {% endif %}
+            <input type="file" name="attachment" class="form-control">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nf-card">
+      <div class="nf-card-hd">
+        <div class="nf-card-hd-icon" style="background:#dcfce7;color:#166534;"><i class="fas fa-users"></i></div>
+        <div><div class="nf-card-title">Send To</div></div>
+      </div>
+      <div class="nf-card-bd">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="nf-label">Audience</label>
+            <select name="audience" id="audienceSelect" class="form-select">
+              {% for val,label in audience_choices %}
+              <option value="{{ val }}" {% if notice.audience == val %}selected{% elif not notice and val == 'org' %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6" id="targetWrap" style="display:none;">
+            <label class="nf-label">Target <span class="text-danger">*</span></label>
+            <select name="target_id" id="targetSelect" class="form-select">
+              <option value="">— Select —</option>
+            </select>
+            <p class="text-xs text-muted mb-0 mt-1" id="targetHint"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nf-card">
+      <div class="nf-card-hd">
+        <div class="nf-card-hd-icon" style="background:#fef3c7;color:#b45309;"><i class="fas fa-clock"></i></div>
+        <div><div class="nf-card-title">Schedule &amp; Delivery</div></div>
+      </div>
+      <div class="nf-card-bd">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="nf-label">Publish At</label>
+            <input type="datetime-local" name="publish_at" class="form-control"
+                   value="{{ notice.publish_at|date:'Y-m-d\TH:i' }}">
+            <p class="text-xs text-muted mb-0 mt-1">Leave as-is to publish immediately. A future time schedules it.</p>
+          </div>
+          <div class="col-md-6">
+            <label class="nf-label">Expires At <span class="text-muted fw-normal">(optional)</span></label>
+            <input type="datetime-local" name="expires_at" class="form-control"
+                   value="{% if notice.expires_at %}{{ notice.expires_at|date:'Y-m-d\TH:i' }}{% endif %}">
+            <p class="text-xs text-muted mb-0 mt-1">After this, the notice stops showing to recipients.</p>
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              <input type="checkbox" name="send_email" id="sendEmail" class="form-check-input"
+                     {% if notice.send_email %}checked{% endif %}>
+              <label for="sendEmail" class="form-check-label text-sm">
+                Also email this notice to its recipients
+                {% if notice.email_sent_at %}
+                <span class="badge bg-success ms-1">Sent {{ notice.email_sent_at|date:"M d, Y g:i A" }}</span>
+                {% endif %}
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 pb-4">
+      <a href="{% url 'schooladmin:notice_list' %}" class="btn btn-outline-secondary mb-0">Cancel</a>
+      <button type="submit" class="btn btn-primary mb-0">
+        <i class="fas fa-check me-1"></i>{% if is_edit %}Save Changes{% else %}Publish Notice{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  // Target options per audience, rendered server-side so the picker never
+  // needs a round-trip and can only ever contain this org's own records.
+  var OPTIONS = {
+    branch: [{% for b in branches %}{v:"{{ b.id }}",t:"{{ b.name|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}],
+    department: [{% for c in classifications %}{v:"{{ c.id }}",t:"{{ c.name|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}],
+    section: [{% for s in sections %}{v:"{{ s.id }}",t:"{{ s|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}],
+    course: [{% for c in courses %}{v:"{{ c.id }}",t:"{{ c.name|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}],
+    shift: [{% for s in shifts %}{v:"{{ s.id }}",t:"{{ s.name|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}],
+    member: [{% for m in members %}{v:"{{ m.id }}",t:"{{ m.name|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]
+  };
+  var HINTS = {
+    branch: "Everyone assigned to this branch.",
+    department: "Everyone in this department / class.",
+    section: "Everyone in this section.",
+    course: "Everyone enrolled in this course.",
+    shift: "Everyone on this shift.",
+    member: "Just this one person."
+  };
+
+  var audience = document.getElementById('audienceSelect');
+  var wrap = document.getElementById('targetWrap');
+  var select = document.getElementById('targetSelect');
+  var hint = document.getElementById('targetHint');
+  var current = "{{ selected_target_id }}";
+
+  function refresh() {
+    var opts = OPTIONS[audience.value];
+    if (!opts) { wrap.style.display = 'none'; select.innerHTML = '<option value=""></option>'; return; }
+    wrap.style.display = '';
+    hint.textContent = HINTS[audience.value] || '';
+    select.innerHTML = '<option value="">— Select —</option>';
+    opts.forEach(function (o) {
+      var el = document.createElement('option');
+      el.value = o.v; el.textContent = o.t;
+      if (o.v === current) el.selected = true;
+      select.appendChild(el);
+    });
+  }
+
+  audience.addEventListener('change', function () { current = ''; refresh(); });
+  refresh();
+})();
+</script>
+{% endblock %}

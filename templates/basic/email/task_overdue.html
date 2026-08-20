@@ -1,0 +1,10 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Task Overdue{% endblock %}
+{% block content %}
+<p class="greeting">Task <em>"{{ task_title }}"</em> assigned to <strong>{{ staff_name }}</strong> is now overdue.</p>
+<table class="data">
+  <tr><td class="label">Task</td><td><strong>{{ task_title }}</strong></td></tr>
+  <tr><td class="label">Assigned To</td><td>{{ staff_name }}</td></tr>
+  <tr><td class="label">Due Date</td><td><span class="badge" style="background:#ef4444;">Overdue since {{ due_date }}</span></td></tr>
+</table>
+{% endblock %}

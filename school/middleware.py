@@ -13,8 +13,11 @@ _FEATURE_URL_MAP = {
     'results/':             'results',
     'courses/':             'courses',
     'complaints/':          'complaints',
+    'notices/':             'notices',
     'hrms/resignations':    'hrms',
     'hrms/documents':       'hrms',
+    'shifts/':              'hrms',
+    'face/':                'face_attendance',
     'branches/':            'branches',
     'study-gap/':           'study_gap',
     'tasks/':               'tasks',
@@ -22,6 +25,8 @@ _FEATURE_URL_MAP = {
     'export/stock':         'stock',
     'export/finance':       'finance',
     'export/leave':         'leave',
+    'qr-attendance/':       'qr_attendance',
+    'timesheets/':          'timesheet',
     'payroll/':             'payroll',
     'generate-payslip':     'payroll',
     'salaryReport':         'payroll',
@@ -30,6 +35,10 @@ _FEATURE_URL_MAP = {
     'log-leave':            'leave',
     'manage-leave-types':   'leave',
     'leaveReportView':      'leave',
+    'id-card/':             'id_cards',
+    'field-visits/':        'field_visits',
+    'live-tracking/':       'field_visits',
+    'clients/':             'clients',
 }
 
 # Staff-portal URL prefixes → feature keys
@@ -40,11 +49,59 @@ _STAFF_FEATURE_URL_MAP = {
     'staff/my-results':       'results',
     'staff/apply-leave':      'leave',
     'staff/my-complaint':     'complaints',
+    'staff/notices':          'notices',
     'staff/tasks':            'tasks',
-    'staff/teaching-log':     'study_gap',
+    'staff/teaching-log':     'academic_management',
     'staff/my-resignation':   'hrms',
     'staff/location-checkin': 'gps',
     'staff/wifi-checkin':     'wifi',
+    'staff/qr-attendance':    'qr_attendance',
+    'staff/timesheets':       'timesheet',
+    'staff/send-location':    'field_visits',
+    'staff/live-tracking':    'field_visits',
+    'staff/clients':          'clients',
+
+    # Delegated staff views (Phase 3)
+    'staff/payroll-report':   'payroll',
+    'staff/payroll-settings': 'payroll',
+    'staff/generate-payslip': 'payroll',
+    'staff/leave-approval':   'leave',
+    'staff/leave-report':     'leave',
+    'staff/hrms':             'hrms',
+    'staff/courses':          'courses',
+    'staff/results':          'results',
+    'staff/stock':            'stock',
+    'staff/branches':         'branches',
+    'staff/events':           'events',
+    'staff/field-visits':     'field_visits',
+    'staff/billing':          'billing',
+    'staff/finance':          'finance',
+    'staff/tasks/create':     'tasks',
+    'staff/tasks/dashboard':  'tasks',
+    'staff/tasks/list':       'tasks',
+    'staff/tasks/report':     'tasks',
+    'staff/complaints/manage': 'complaints',
+}
+
+# Carefully delegated school-admin workflows. Staff/teacher/student accounts
+# may enter only when an administrator explicitly grants one of the listed
+# permissions; each target view still enforces its exact read/write permission.
+_DELEGATED_SCHOOLADMIN_PATHS = {
+    'schooladmin/library/': (
+        'can_view_library', 'can_manage_library', 'can_issue_books', 'can_return_books',
+    ),
+    'schooladmin/export/library/': ('can_view_library',),
+    'schooladmin/suppliers/': ('can_view_purchases', 'can_manage_purchases'),
+    'schooladmin/purchases/': (
+        'can_view_purchases', 'can_manage_purchases', 'can_manage_purchase_returns',
+    ),
+    'schooladmin/purchase-returns/': (
+        'can_view_purchases', 'can_manage_purchase_returns',
+    ),
+    'schooladmin/sales/': (
+        'can_view_sales', 'can_manage_sales', 'can_manage_sales_returns',
+    ),
+    'schooladmin/sales-returns/': ('can_view_sales', 'can_manage_sales_returns'),
 }
 
 
@@ -53,6 +110,27 @@ class SecurityEnforcementMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        path = request.path_info.lstrip('/')
+
+        # An anonymous session hitting a role-gated prefix must be sent to
+        # login, not let through to the view — every one of these views
+        # assumes an authenticated user with a `.schooladmin`/`.staff`
+        # relation and crashes with an AttributeError on AnonymousUser
+        # otherwise (this used to only apply once request.user.is_authenticated
+        # was already True, silently skipping this check for logged-out visitors).
+        # DRF authenticates Bearer tokens inside the view, after Django
+        # middleware has run. Do not redirect anonymous-looking requests for
+        # staff JSON endpoints here; their explicit IsAuthenticated +
+        # JWTAuthentication policies must be allowed to return proper 401/403
+        # JSON responses to mobile clients.
+        jwt_api_path = path.startswith(('staff/api/', 'staff/api-'))
+        if (
+            not request.user.is_authenticated
+            and not jwt_api_path
+            and path.startswith(('superadmin/', 'schooladmin/', 'staff/', 'agent/'))
+        ):
+            return redirect('/')
+
         if request.user.is_authenticated:
 
             # --- A. SESSION DEVICE FINGERPRINT ---
@@ -74,11 +152,31 @@ class SecurityEnforcementMiddleware:
                 return redirect('/')
 
             if path.startswith('schooladmin/') and user_type not in ('1', '2'):
-                messages.error(request, "Access Denied: Organization Admin area only.")
-                return redirect('/')
+                delegated_permissions = next(
+                    (
+                        permissions
+                        for prefix, permissions in _DELEGATED_SCHOOLADMIN_PATHS.items()
+                        if path.startswith(prefix)
+                    ),
+                    None,
+                )
+                delegated_allowed = False
+                if user_type == '3' and delegated_permissions:
+                    from school.features import has_perm
+                    delegated_allowed = any(
+                        has_perm(request.user, permission)
+                        for permission in delegated_permissions
+                    )
+                if not delegated_allowed:
+                    messages.error(request, "Access Denied: Organization Admin area only.")
+                    return redirect('/')
 
             if path.startswith('staff/') and user_type != '3':
                 messages.error(request, "Access Denied: Staff portal only.")
+                return redirect('/')
+
+            if path.startswith('agent/') and user_type not in ('1', '4'):
+                messages.error(request, "Access Denied: Agent portal only.")
                 return redirect('/')
 
             # --- C. FEATURE-BASED URL PROTECTION ---
@@ -127,29 +225,8 @@ def _get_org(user):
     return None
 
 
-_FEATURE_FIELD_MAP = {
-    'finance':      'feature_finance',
-    'billing':      'feature_billing',
-    'stock':        'feature_stock',
-    'tasks':        'feature_tasks',
-    'results':      'feature_results',
-    'hrms':         'feature_hrms',
-    'payroll':      'feature_payroll',
-    'complaints':   'feature_complaints',
-    'events':       'feature_events',
-    'branches':     'feature_branches',
-    'leave':        'feature_leave',
-    'study_gap':    'feature_study_gap',
-    'bulk_export':  'feature_bulk_export',
-    'courses':      'feature_courses',
-    'student_mgmt': 'feature_student_mgmt',
-    'gps':          'location_based',
-    'wifi':         'mutifeature_enable',
-}
-
-
 def _org_has_feature(org, key):
-    field = _FEATURE_FIELD_MAP.get(key)
-    if not field:
+    from school.features import has_feature, FEATURE_MAP
+    if key not in FEATURE_MAP:
         return True   # unknown feature → allow (fail open for unregistered keys)
-    return bool(getattr(org, field, False))
+    return has_feature(org, key)

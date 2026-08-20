@@ -1,0 +1,323 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block title %}ID Card Settings | Mero Attendance{% endblock title %}
+
+{% block content %}
+<style>
+    .idc-hero { background:radial-gradient(circle at 88% 12%,rgba(255,255,255,.2),transparent 25%),linear-gradient(135deg,#111827,#312e81 65%,#7c3aed);border-radius:20px;padding:26px 28px;color:#fff;box-shadow:0 18px 45px rgba(49,46,129,.2); }
+    .idc-hero h4 { color:#fff; }
+    .idc-step { display:flex;align-items:center;gap:9px;color:rgba(255,255,255,.72);font-size:.74rem;font-weight:700; }
+    .idc-step b { width:25px;height:25px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);color:#fff; }
+    .idc-card { background: #fff; border: 1px solid #e6eaf1; border-radius: 14px; box-shadow: 0 9px 28px rgba(18, 24, 40, 0.06); overflow:hidden; }
+    .idc-card-header { border-bottom: 1px solid #eceff3; padding: 16px 18px; }
+    .idc-card-body { padding: 18px; }
+    .idc-title { color: #111827; font-weight: 800; margin: 0; }
+    .idc-muted { color: #6b7280; font-size: 13px; }
+    .form-control, .form-select { border-radius: 6px; border-color: #d8dde6; min-height: 40px; }
+    .idc-size-hint { font-size: 12px; color: #6b7280; background: #f9fafb; border: 1px dashed #d8dde6; border-radius: 6px; padding: 8px 12px; }
+    .idc-field-toggle { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #eceff3; border-radius: 9px; margin-bottom: 8px; background:#fbfcfe; }
+    .idc-design-tab { display:flex;align-items:center;gap:9px;padding:10px 13px;border:1px solid #e2e8f0;border-radius:11px;background:#fff;color:#475569;font-size:.76rem;font-weight:750;text-decoration:none; }
+    .idc-design-tab:hover { border-color:#818cf8;color:#4338ca; }
+    .idc-design-tab.active { border-color:#4f46e5;background:#eef2ff;color:#3730a3;box-shadow:0 5px 14px rgba(79,70,229,.12); }
+    .idc-design-dot { width:9px;height:9px;border-radius:50%;background:#cbd5e1; }
+    .idc-design-tab.saved .idc-design-dot { background:#22c55e; }
+    .idc-design-tab.active .idc-design-dot { background:#4f46e5; }
+    .idc-help-card { border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:13px 15px;color:#1e40af;font-size:.75rem; }
+    .idc-error-list { border-radius:12px;background:#fff1f2;border:1px solid #fecdd3;padding:12px 15px;color:#9f1239;font-size:.78rem; }
+    .idc-editor-shell { display:grid;grid-template-columns:minmax(310px,.9fr) minmax(0,1.1fr);gap:22px;align-items:start; }
+    .idc-preview-panel { position:sticky;top:82px;background:linear-gradient(145deg,#111827,#1e293b);border-radius:18px;padding:20px;box-shadow:0 18px 40px rgba(15,23,42,.18); }
+    .idc-preview-toolbar { display:flex;justify-content:space-between;align-items:center;color:#fff;margin-bottom:16px; }
+    .idc-live-stage { min-height:405px;display:grid;place-items:center;padding:20px;border-radius:14px;background-color:#eef2f7;background-image:linear-gradient(45deg,#e2e8f0 25%,transparent 25%),linear-gradient(-45deg,#e2e8f0 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8f0 75%),linear-gradient(-45deg,transparent 75%,#e2e8f0 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;overflow:auto; }
+    .idc-live-card { --idc-primary:#1e293b;--idc-secondary:#6366f1;--idc-text:#111827;position:relative;overflow:hidden;background:#fff;color:var(--idc-text);box-shadow:0 20px 45px rgba(15,23,42,.25);border-radius:13px;padding:18px;display:flex;flex-direction:column;background-size:cover;background-position:center; }
+    .idc-live-card.vertical { width:255px;height:406px; }
+    .idc-live-card.horizontal { width:406px;height:255px; }
+    .idc-live-header { margin:-18px -18px 14px;padding:14px 18px;background:var(--idc-primary);color:#fff;display:flex;gap:9px;align-items:center; }
+    .idc-live-logo { width:35px;height:35px;object-fit:contain;background:#fff;border-radius:7px;padding:3px; }
+    .idc-live-title { opacity:.85;font-size:9px;text-transform:uppercase;letter-spacing:.12em;outline:none; }
+    .idc-live-content { display:flex;gap:14px;align-items:flex-start;flex:1; }
+    .vertical .idc-live-content { flex-direction:column;align-items:center;text-align:center; }
+    .idc-live-photo { width:86px;height:86px;object-fit:cover;border:3px solid var(--idc-secondary);border-radius:13px;background:#e2e8f0;display:grid;place-items:center;flex:0 0 auto; }
+    .vertical .idc-live-photo { border-radius:50%; }
+    .idc-live-name { font-weight:900;color:var(--idc-primary);outline:none; }
+    .idc-live-fields { margin-top:5px; }
+    .idc-live-row { margin:2px 0; }
+    .idc-live-footer { margin:10px -18px -18px;padding:8px 18px;background:var(--idc-secondary);color:#fff;text-align:center;font-size:9px;min-height:27px;outline:none; }
+    .idc-control-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px; }
+    .idc-control-grid .wide { grid-column:1/-1; }
+    .idc-editor-hint { color:rgba(255,255,255,.65);font-size:.7rem; }
+    [contenteditable="true"]:focus { box-shadow:0 0 0 2px rgba(255,255,255,.55);border-radius:4px; }
+    @media(max-width:1100px){.idc-editor-shell{grid-template-columns:1fr}.idc-preview-panel{position:relative;top:auto}.idc-live-stage{min-height:350px}}
+    @media(max-width:575px){.idc-live-stage{place-items:start center;padding:12px}.idc-live-card.horizontal{transform:scale(.75);transform-origin:top center;margin-bottom:-55px}.idc-control-grid{grid-template-columns:1fr}.idc-control-grid .wide{grid-column:auto}}
+</style>
+
+<div class="container-fluid py-4">
+    <div class="idc-hero mb-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <span class="badge bg-white text-primary mb-2">Identity Studio</span>
+                <h4 class="font-weight-bolder mb-1">Design professional ID cards</h4>
+                <p class="text-sm mb-0 opacity-8">Edit text, fonts, size, colours and backgrounds with an instant print-accurate preview, then generate a filtered batch.</p>
+            </div>
+            <div class="d-flex gap-2">
+                {% if preview_member %}
+                <a href="{% url 'schooladmin:idcard_generate' %}?design={{ selected_design }}&q={{ preview_member.name|urlencode }}&generate=1" class="btn btn-outline-light btn-sm mb-0"><i class="fas fa-eye me-1"></i>Preview Sample</a>
+                {% endif %}
+                <a href="{% url 'schooladmin:idcard_generate' %}?design={{ selected_design }}" class="btn btn-light btn-sm mb-0"><i class="fas fa-layer-group me-1"></i>Generate Cards</a>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-3 mt-4">
+            <span class="idc-step"><b>1</b>Choose design</span>
+            <span class="idc-step"><b>2</b>Set size & branding</span>
+            <span class="idc-step"><b>3</b>Select fields</span>
+            <span class="idc-step"><b>4</b>Preview & print</span>
+        </div>
+    </div>
+
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+
+    {% if form.errors %}
+    <div class="idc-error-list mb-3">
+        <strong><i class="fas fa-circle-exclamation me-1"></i>Please review these fields:</strong>
+        {{ form.errors }}
+    </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <div>
+            <h6 class="mb-0 font-weight-bolder">1. Select a layout</h6>
+            <span class="text-xs text-muted">{{ configured_design_count }} configured design{{ configured_design_count|pluralize }} · {{ active_member_count }} active member{{ active_member_count|pluralize }}</span>
+        </div>
+        <span class="badge bg-light text-dark"><i class="fas fa-circle text-success me-1" style="font-size:.45rem;"></i>Green dot means configured</span>
+    </div>
+    <div class="d-flex gap-2 flex-wrap mb-4">
+        {% for key, label in design_choices %}
+        <a href="{% url 'schooladmin:idcard_settings' %}?design={{ key }}"
+           class="idc-design-tab {% if key == selected_design %}active{% endif %} {% if key in saved_templates %}saved{% endif %}">
+            <span class="idc-design-dot"></span>{{ label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="design" value="{{ selected_design }}">
+        <div class="idc-editor-shell mb-4">
+            <div class="idc-preview-panel">
+                <div class="idc-preview-toolbar">
+                    <div><strong><i class="fas fa-wand-magic-sparkles me-1"></i>Live card preview</strong><div class="idc-editor-hint">Click the card title or footer to type directly.</div></div>
+                    <span class="badge bg-white text-dark">{{ form.instance.get_orientation_display }}</span>
+                </div>
+                <div class="idc-live-stage">
+                    <div id="idcLiveCard" class="idc-live-card {{ form.instance.orientation }}"
+                         style="--idc-primary:{{ form.instance.primary_color }};--idc-secondary:{{ form.instance.secondary_color }};--idc-text:{{ form.instance.text_color }};font-family:{{ form.instance.font_css_stack }};font-size:{{ form.instance.base_font_size }}px;line-height:{{ form.instance.line_height }};{% if template.front_background %}background-image:url('{{ template.front_background.url }}');{% endif %}">
+                        <div class="idc-live-header">
+                            {% if org.image %}<img class="idc-live-logo" data-preview-field="show_logo" src="{{ org.image.url }}" alt="Logo">{% else %}<div class="idc-live-logo" data-preview-field="show_logo"><i class="fas fa-building text-dark"></i></div>{% endif %}
+                            <div>
+                                <div class="idc-live-org" data-preview-field="show_org_name" style="font-size:{{ form.instance.org_font_size }}px;font-weight:900;">{{ org.name }}</div>
+                                <div id="idcEditableTitle" class="idc-live-title" contenteditable="true">{{ form.instance.card_title|default:"IDENTITY CARD" }}</div>
+                            </div>
+                        </div>
+                        <div class="idc-live-content">
+                            <div data-preview-field="show_photo">
+                                {% if preview_member and preview_member.photo %}<img class="idc-live-photo" src="{{ preview_member.photo.url }}" alt="Member">{% else %}<div class="idc-live-photo"><i class="fas fa-user fa-2x text-secondary"></i></div>{% endif %}
+                            </div>
+                            <div>
+                                <div class="idc-live-name" style="font-size:{{ form.instance.name_font_size }}px;">{{ preview_member.name|default:"Member Name" }}</div>
+                                <div class="idc-live-fields">
+                                    <div class="idc-live-row" data-preview-field="show_designation">{{ preview_member.designation|default:"Member / Student" }}</div>
+                                    <div class="idc-live-row" data-preview-field="show_member_id"><b>ID:</b> {{ preview_member.id|default:"0001" }}</div>
+                                    <div class="idc-live-row" data-preview-field="show_roll_number"><b>Roll:</b> {{ preview_member.roll_number|default:"R-001" }}</div>
+                                    <div class="idc-live-row" data-preview-field="show_classification"><b>Class/Dept:</b> {{ preview_member.classification.name|default:"General" }}</div>
+                                    <div class="idc-live-row" data-preview-field="show_phone"><b>Phone:</b> {{ preview_member.phone|default:"98XXXXXXXX" }}</div>
+                                    <div class="idc-live-row" data-preview-field="show_email"><b>Email:</b> {{ preview_member.email|default:"member@example.com" }}</div>
+                                    <div class="idc-live-row" data-preview-field="show_address"><b>Address:</b> {{ preview_member.address|default:org.address|default:"Kathmandu" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="idcEditableFooter" class="idc-live-footer" contenteditable="true">{{ form.instance.footer_text|default:"If found, please return to the organization." }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="idc-card">
+                <div class="idc-card-header"><h6 class="mb-0"><i class="fas fa-font me-1 text-primary"></i>Word-style typography & content</h6><span class="text-xs text-muted">Every control updates the preview immediately.</span></div>
+                <div class="idc-card-body idc-control-grid">
+                    <div><label class="form-label">Font family</label>{{ form.font_family }}</div>
+                    <div><label class="form-label">Text colour</label>{{ form.text_color }}</div>
+                    <div><label class="form-label">Details font size</label>{{ form.base_font_size }}</div>
+                    <div><label class="form-label">Name font size</label>{{ form.name_font_size }}</div>
+                    <div><label class="form-label">Organization font size</label>{{ form.org_font_size }}</div>
+                    <div><label class="form-label">Line spacing</label>{{ form.line_height }}</div>
+                    <div class="wide"><label class="form-label">Card heading</label>{{ form.card_title }}</div>
+                    <div class="wide"><label class="form-label">Back/footer instruction</label>{{ form.footer_text }}</div>
+                    <div class="wide idc-help-card"><i class="fas fa-pen-ruler me-1"></i>Use the inputs or click the heading/footer directly inside the card. All generated cards use these exact typography settings.</div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="idc-card">
+                    <div class="idc-card-header d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="mb-0">2. Brand {{ form.instance.get_name_display }}</h6>
+                            <span class="text-xs text-muted">Set the visual identity and default behavior.</span>
+                        </div>
+                        <span class="badge bg-gradient-primary">{{ form.instance.get_orientation_display }}</span>
+                    </div>
+                    <div class="idc-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Primary Color</label>
+                                {{ form.primary_color }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Secondary Color</label>
+                                {{ form.secondary_color }}
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="idc-field-toggle w-100">{{ form.is_default }} <label class="mb-0">Use as default design on Generate ID Cards page</label></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-4 mt-1">
+            <div class="col-xl-6">
+                <div class="idc-card h-100">
+                    <div class="idc-card-header"><h6 class="mb-0">3. Print Size & Media</h6></div>
+                    <div class="idc-card-body">
+                        <div class="idc-size-hint mb-3">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Default (standard) ID card size is <strong>CR80: 85.6mm &times; 54mm</strong>
+                            (3.375in &times; 2.125in) &mdash; the same size as a bank card. Pick Custom if you need a different size.
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Card Size</label>
+                                {{ form.card_size }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Custom Width (mm)</label>
+                                {{ form.custom_width_mm }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Custom Height (mm)</label>
+                                {{ form.custom_height_mm }}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <label class="form-label">Member Photo Size</label>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                {{ form.photo_size }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted">Custom Photo Size (mm, square)</label>
+                                {{ form.custom_photo_size_mm }}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <label class="form-label">Front Background Image</label>
+                        {{ form.front_background }}
+                        {% if template.front_background %}
+                        <div class="mt-2"><img src="{{ template.front_background.url }}" style="max-height:90px; border-radius:6px; border:1px solid #eceff3;"></div>
+                        {% endif %}
+
+                        <label class="form-label mt-3">Back Background Image</label>
+                        {{ form.back_background }}
+                        {% if template.back_background %}
+                        <div class="mt-2"><img src="{{ template.back_background.url }}" style="max-height:90px; border-radius:6px; border:1px solid #eceff3;"></div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-6">
+                <div class="idc-card h-100">
+                    <div class="idc-card-header"><h6 class="mb-0">4. Information Visibility</h6></div>
+                    <div class="idc-card-body">
+                        <div class="idc-field-toggle">{{ form.show_logo }} <label class="mb-0">Organization Logo</label></div>
+                        <div class="idc-field-toggle">{{ form.show_org_name }} <label class="mb-0">Organization Name</label></div>
+                        <div class="idc-field-toggle">{{ form.show_photo }} <label class="mb-0">Member Photo</label></div>
+                        <div class="idc-field-toggle">{{ form.show_member_id }} <label class="mb-0">Member ID Number</label></div>
+                        <div class="idc-field-toggle">{{ form.show_roll_number }} <label class="mb-0">Roll / Registration Number</label></div>
+                        <div class="idc-field-toggle">{{ form.show_address }} <label class="mb-0">Address</label></div>
+                        <div class="idc-field-toggle">{{ form.show_phone }} <label class="mb-0">Contact Number</label></div>
+                        <div class="idc-field-toggle">{{ form.show_email }} <label class="mb-0">Email</label></div>
+                        <div class="idc-field-toggle">{{ form.show_classification }} <label class="mb-0">Classification / Department</label></div>
+                        <div class="idc-field-toggle">{{ form.show_designation }} <label class="mb-0">Designation / Job Title</label></div>
+                        <div class="idc-field-toggle">{{ form.show_qr_code }} <label class="mb-0">QR Code</label></div>
+                        <div class="idc-field-toggle">{{ form.show_barcode }} <label class="mb-0">Barcode</label></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="idc-help-card mt-4">
+            <i class="fas fa-shield-halved me-1"></i>
+            Card data always comes from the selected member inside this organization. Background uploads and design settings never change member records.
+        </div>
+        <div class="mt-3 d-flex gap-2 flex-wrap">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Save & Keep Designing</button>
+            {% if preview_member %}
+            <a href="{% url 'schooladmin:idcard_generate' %}?design={{ selected_design }}&q={{ preview_member.name|urlencode }}&generate=1" class="btn btn-outline-primary"><i class="fas fa-eye me-1"></i>Save first, then preview</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+<script>
+(function () {
+    const card = document.getElementById('idcLiveCard');
+    if (!card) return;
+    const fontStacks = {
+        inter: 'Inter, Arial, sans-serif', poppins: 'Poppins, Arial, sans-serif',
+        roboto: 'Roboto, Arial, sans-serif', montserrat: 'Montserrat, Arial, sans-serif',
+        georgia: 'Georgia, Times New Roman, serif', times: 'Times New Roman, Times, serif'
+    };
+    const byId = id => document.getElementById(id);
+    const bind = (id, handler) => { const el = byId(id); if (el) el.addEventListener('input', () => handler(el)); };
+    bind('id_primary_color', el => card.style.setProperty('--idc-primary', el.value));
+    bind('id_secondary_color', el => card.style.setProperty('--idc-secondary', el.value));
+    bind('id_text_color', el => card.style.setProperty('--idc-text', el.value));
+    bind('id_font_family', el => card.style.fontFamily = fontStacks[el.value] || fontStacks.inter);
+    bind('id_base_font_size', el => card.style.fontSize = `${el.value}px`);
+    bind('id_name_font_size', el => card.querySelector('.idc-live-name').style.fontSize = `${el.value}px`);
+    bind('id_org_font_size', el => card.querySelector('.idc-live-org').style.fontSize = `${el.value}px`);
+    bind('id_line_height', el => card.style.lineHeight = el.value);
+
+    const titleInput = byId('id_card_title');
+    const footerInput = byId('id_footer_text');
+    const editableTitle = byId('idcEditableTitle');
+    const editableFooter = byId('idcEditableFooter');
+    if (titleInput) titleInput.addEventListener('input', () => editableTitle.textContent = titleInput.value || 'IDENTITY CARD');
+    if (footerInput) footerInput.addEventListener('input', () => editableFooter.textContent = footerInput.value || 'If found, please return to the organization.');
+    editableTitle.addEventListener('input', () => { if (titleInput) titleInput.value = editableTitle.textContent.trim(); });
+    editableFooter.addEventListener('input', () => { if (footerInput) footerInput.value = editableFooter.textContent.trim(); });
+
+    document.querySelectorAll('[data-preview-field]').forEach(node => {
+        const input = byId(`id_${node.dataset.previewField}`);
+        const sync = () => node.style.display = !input || input.checked ? '' : 'none';
+        if (input) input.addEventListener('change', sync);
+        sync();
+    });
+    const backgroundInput = byId('id_front_background');
+    if (backgroundInput) backgroundInput.addEventListener('change', function () {
+        const file = this.files && this.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = event => card.style.backgroundImage = `url('${event.target.result}')`;
+        reader.readAsDataURL(file);
+    });
+})();
+</script>
+{% endblock content %}

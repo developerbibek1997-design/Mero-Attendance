@@ -1,0 +1,58 @@
+{% extends 'dashboard.html' %}
+{% block title %}Due for Follow-Up | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-bell text-warning me-2"></i>Due for Follow-Up</h4>
+      <p class="text-xs text-muted mb-0">Clients whose next follow-up is due today or overdue, most-overdue first</p>
+    </div>
+    <a href="{% url 'schooladmin:client_list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Back to Clients</a>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body border-bottom py-3">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="text-xs font-weight-bold text-uppercase text-muted me-1">Priority queue</span>
+        <a href="?" class="btn btn-sm {% if not priority %}btn-dark{% else %}btn-outline-dark{% endif %} mb-0">All</a>
+        {% for value,label in priority_choices %}
+        <a href="?priority={{ value }}" class="btn btn-sm {% if priority == value %}{% if value == 'high' %}btn-danger{% elif value == 'medium' %}btn-warning{% else %}btn-secondary{% endif %}{% else %}btn-outline-secondary{% endif %} mb-0">{{ label }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 font-weight-bolder">Results <span class="text-muted fw-normal">({{ clients_due|length }})</span></h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="text-xs">Client #</th>
+            <th class="text-xs">Organization</th>
+            <th class="text-xs">Contact</th>
+            <th class="text-xs">Priority</th>
+            <th class="text-xs">Next Follow-Up Was Due</th>
+            <th class="text-xs text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in clients_due %}
+          <tr>
+            <td class="text-xs">{{ c.client_number }}</td>
+            <td class="text-xs font-weight-bold">{{ c.client_org_name }}</td>
+            <td class="text-xs">{{ c.contact_person|default:"—" }}</td>
+            <td><span class="badge {% if c.priority == 'high' %}bg-danger{% elif c.priority == 'medium' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ c.get_priority_display }}</span></td>
+            <td class="text-xs"><span class="badge bg-warning text-dark">{{ c.latest_next }}</span></td>
+            <td class="text-center">
+              <a href="{% url 'schooladmin:client_detail' c.pk %}" class="btn btn-outline-primary btn-sm">View</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No clients are due for follow-up. 🎉</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

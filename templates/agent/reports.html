@@ -1,0 +1,106 @@
+{% extends 'agent/base.html' %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="fs-3 fw-bold mb-1" style="color:#4f46e5;">{{ orgs.count }}</div>
+      <div class="text-muted small">Total Organizations</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="fs-3 fw-bold mb-1" style="color:#059669;">{{ active_count }}</div>
+      <div class="text-muted small">Active</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="fs-3 fw-bold mb-1" style="color:#dc2626;">{{ inactive_count }}</div>
+      <div class="text-muted small">Inactive</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="fs-3 fw-bold mb-1" style="color:#d97706;">{{ agent.max_organizations_allowed|add:"-"|add:orgs.count|default:"0" }}</div>
+      <div class="text-muted small">Slots Remaining</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Status breakdown -->
+  <div class="col-md-5">
+    <div class="table-card">
+      <h6 class="fw-bold mb-4" style="color:#1e293b;">Organizations by Status</h6>
+      {% for status, count in org_by_status.items %}
+      <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+        <div class="d-flex align-items-center gap-2">
+          <div style="width:10px;height:10px;border-radius:50%;background:
+            {% if status == 'active' %}#10b981
+            {% elif status == 'trial' %}#f59e0b
+            {% elif status == 'expired' %}#ef4444
+            {% else %}#6b7280{% endif %};"></div>
+          <span class="text-capitalize fw-semibold small" style="color:#1e293b;">{{ status }}</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="fw-bold" style="color:#4f46e5;">{{ count }}</span>
+          {% if orgs.count > 0 %}
+          <div style="width:80px;height:6px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
+            <div style="width:{% widthratio count orgs.count 100 %}%;height:100%;background:#4f46e5;border-radius:4px;"></div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Category breakdown -->
+  <div class="col-md-7">
+    <div class="table-card">
+      <h6 class="fw-bold mb-4" style="color:#1e293b;">Organizations by Category</h6>
+      {% regroup orgs by get_category_display as orgs_by_category %}
+      {% if orgs_by_category %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size:.88rem;">
+          <thead style="background:#f8fafc;">
+            <tr>
+              <th class="border-0 text-muted fw-semibold">Organization</th>
+              <th class="border-0 text-muted fw-semibold">Category</th>
+              <th class="border-0 text-muted fw-semibold">Status</th>
+              <th class="border-0 text-muted fw-semibold">Expires</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for org in orgs %}
+            <tr>
+              <td>
+                <a href="{% url 'agent:org_detail' org.id %}" class="fw-semibold text-decoration-none" style="color:#4f46e5;">{{ org.name }}</a>
+              </td>
+              <td><span class="badge bg-light text-dark">{{ org.get_category_display }}</span></td>
+              <td>
+                {% if org.activate %}
+                <span class="badge" style="background:#d1fae5;color:#065f46;">Active</span>
+                {% else %}
+                <span class="badge" style="background:#fee2e2;color:#991b1b;">Inactive</span>
+                {% endif %}
+              </td>
+              <td class="text-muted">{{ org.expire_on|date:"d M Y" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-4">
+        <i class="fas fa-chart-bar fa-2x text-muted mb-2"></i>
+        <p class="text-muted small mb-0">No data to report.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

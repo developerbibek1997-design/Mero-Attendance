@@ -1,0 +1,21 @@
+{% extends 'dashboard.html' %}
+{% block title %}{{ scope.subject.name }} Marks | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"><div><h4 class="font-weight-bolder mb-1">{{ exam.name }} · {{ scope.subject.name }}</h4><p class="text-sm text-muted mb-0">{{ scope.classification.name }}{% if exam.section %} / {{ exam.section.name }}{% elif scope.section %} / {{ scope.section.name }}{% endif %} · Full marks {{ scope.subject.full_marks }}</p></div><a href="{% url 'staff:teacher_exams' %}" class="btn btn-sm btn-outline-secondary mb-0">All Exams</a></div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %}">{{ msg }}</div>{% endfor %}
+  {% if not can_edit %}<div class="alert alert-info"><i class="fas fa-lock me-1"></i>This exam is published or archived. Marks are read-only.</div>{% endif %}
+  <form method="post">{% csrf_token %}
+    <div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table align-middle mb-0">
+      <thead class="table-light"><tr><th>Student</th><th style="width:150px">Marks</th><th style="width:100px">Absent</th><th>Remarks</th></tr></thead>
+      <tbody>{% for row in rows %}<tr>
+        <td class="text-sm font-weight-bold">{{ row.student.name }}{% if row.student.roll_number %}<div class="text-xs text-muted">Roll {{ row.student.roll_number }}</div>{% endif %}</td>
+        <td><input type="number" name="marks_{{ row.student.pk }}" min="0" max="{{ scope.subject.full_marks }}" step="0.01" class="form-control form-control-sm" value="{% if row.result and not row.result.is_absent %}{{ row.result.obtained_marks }}{% endif %}" {% if not can_edit %}disabled{% endif %}></td>
+        <td><input type="checkbox" name="absent_{{ row.student.pk }}" class="form-check-input" {% if row.result.is_absent %}checked{% endif %} {% if not can_edit %}disabled{% endif %}></td>
+        <td><input type="text" name="remarks_{{ row.student.pk }}" class="form-control form-control-sm" value="{{ row.result.remarks|default:'' }}" {% if not can_edit %}disabled{% endif %}></td>
+      </tr>{% empty %}<tr><td colspan="4" class="text-center text-muted py-5">No students in this validated roster.</td></tr>{% endfor %}</tbody>
+    </table></div></div>
+    {% if can_edit %}<button class="btn bg-gradient-primary text-white mt-3 mb-0"><i class="fas fa-save me-1"></i>Save Subject Marks</button>{% endif %}
+  </form>
+</div>
+{% endblock %}

@@ -42,6 +42,8 @@
         <div class="col-md-3"><div class="metric"><span>PF Employer</span><strong>{{ policy.pf_employer_percentage }}%</strong></div></div>
         <div class="col-md-3"><div class="metric"><span>SSF Employee</span><strong>{{ policy.ssf_employee_percentage }}%</strong></div></div>
         <div class="col-md-3"><div class="metric"><span>Probation Salary</span><strong>{{ policy.probation_salary_percentage }}%</strong></div></div>
+        <div class="col-md-3"><div class="metric"><span>Overtime Multiplier</span><strong>{{ policy.overtime_rate_multiplier }}x</strong></div></div>
+        <div class="col-md-3"><div class="metric"><span>Late Grace</span><strong>{{ policy.late_grace_minutes }} min</strong></div></div>
     </div>
 
     <div class="row g-4 mb-4">
@@ -59,6 +61,8 @@
                             <div class="col-md-6"><label class="form-label">SSF Employer %</label>{{ policy_form.ssf_employer_percentage }}</div>
                             <div class="col-md-6"><label class="form-label">Probation Salary %</label>{{ policy_form.probation_salary_percentage }}</div>
                             <div class="col-md-6"><label class="form-label">Reminder Days</label>{{ policy_form.probation_reminder_days }}</div>
+                            <div class="col-md-6"><label class="form-label">Overtime Multiplier</label>{{ policy_form.overtime_rate_multiplier }}</div>
+                            <div class="col-md-6"><label class="form-label">Late Grace (minutes)</label>{{ policy_form.late_grace_minutes }}<small class="text-muted d-block mt-1">Lateness within this window is not deducted from salary.</small></div>
                             <div class="col-12">
                                 <div class="form-check">
                                     {{ policy_form.probation_leave_cut_enabled }}

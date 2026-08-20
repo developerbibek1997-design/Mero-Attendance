@@ -1,0 +1,51 @@
+{% extends 'dashboard.html' %}
+{% block title %}Assign Task | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      {% for msg in messages %}
+      <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+      {% endfor %}
+      <div class="card border-0 shadow-sm p-4" style="border-radius:12px;">
+        <h5 class="fw-bold mb-4">Assign Task</h5>
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-12"><label class="form-label small fw-bold">Title</label><input type="text" name="title" class="form-control" required></div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Priority</label>
+              <select name="priority" class="form-select">{% for val, label in priority_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}</select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Type</label>
+              <select name="task_type" class="form-select">{% for val, label in type_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}</select>
+            </div>
+            <div class="col-md-6"><label class="form-label small fw-bold">Start Date</label><input type="date" name="start_date" class="form-control" value="{{ today|date:'Y-m-d' }}" required></div>
+            <div class="col-md-6"><label class="form-label small fw-bold">Due Date</label><input type="date" name="due_date" class="form-control" required></div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Branch</label>
+              <select name="branch" class="form-select"><option value="">—</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Assign To</label>
+              <select name="assigned_to" class="form-select" multiple required>
+                {% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-12"><label class="form-label small fw-bold">Description</label><textarea name="description" class="form-control" rows="2"></textarea></div>
+            <div class="col-12">
+              <div class="form-check">
+                <input type="checkbox" name="requires_approval" class="form-check-input" id="reqApproval">
+                <label class="form-check-label" for="reqApproval">Requires approval on completion</label>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary mt-4">Assign Task</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

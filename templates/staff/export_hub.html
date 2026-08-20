@@ -1,0 +1,20 @@
+{% extends 'dashboard.html' %}
+{% block title %}Exports | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="fw-bold mb-4" style="color:#1e293b;">Exports</h4>
+  <div class="row g-3">
+    {% for e in exports %}
+    <div class="col-md-4">
+      <a href="{{ e.url }}" class="card border-0 shadow-sm p-3 text-decoration-none d-flex flex-row align-items-center gap-3">
+        <i class="fas fa-file-csv fa-lg text-primary"></i>
+        <span class="fw-bold" style="color:#1e293b;">{{ e.label }}</span>
+      </a>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center text-muted py-4">No exports available to you yet.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock content %}

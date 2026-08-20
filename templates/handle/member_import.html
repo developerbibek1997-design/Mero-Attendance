@@ -1,0 +1,70 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Bulk Import Members | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+  .imp-tab{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:12px 12px 0 0;font-weight:700;font-size:.9rem;text-decoration:none;border:1px solid #e2e8f0;border-bottom:none;}
+  .imp-tab.active{background:#fff;color:#4f46e5;}
+  .imp-tab.inactive{background:#f1f5f9;color:#64748b;}
+  .drop{border:2px dashed #cbd5e1;border-radius:14px;padding:2.4rem;text-align:center;background:#f8fafc;transition:.15s;}
+  .drop:hover{border-color:#6366f1;background:#eef2ff;}
+</style>
+
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 px-1">
+    <div class="d-flex gap-1 mb-0">
+      <a href="{% url 'handle:addMember' %}" class="imp-tab inactive"><i class="fas fa-user-plus"></i> Single Member</a>
+      <a href="{% url 'handle:member_import' %}" class="imp-tab active"><i class="fas fa-file-excel"></i> Bulk Import (Excel)</a>
+    </div>
+    <span class="badge {% if total_member >= org.member_limit %}bg-danger{% else %}bg-light text-dark border{% endif %} mb-2">
+      {{ total_member }} / {{ org.member_limit }} members used
+    </span>
+  </div>
+
+  <div class="card border-0 shadow-sm" style="border-radius:0 16px 16px 16px;">
+    <div class="card-body p-4">
+      {% for msg in messages %}
+      <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+      {% endfor %}
+
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <h5 class="font-weight-bolder mb-2"><i class="fas fa-download text-success me-2"></i>Step 1 — Get the template</h5>
+          <p class="text-sm text-muted">Download the sample Excel file, fill one member per row, then upload it. Only <strong>name</strong> is required.</p>
+          <a href="{% url 'handle:member_import_sample' %}" class="btn bg-gradient-success text-white"><i class="fas fa-file-excel me-1"></i>Download Sample (.xlsx)</a>
+
+          <div class="mt-4">
+            <h6 class="text-uppercase text-xs text-muted fw-bold">Columns</h6>
+            <div class="d-flex flex-wrap gap-1">
+              {% for h in headers %}<span class="badge bg-light text-dark border">{{ h }}</span>{% endfor %}
+            </div>
+            <p class="text-xs text-muted mt-2 mb-0">member_type: member / staff / student … · gender: Male / Female · salary_type: monthly / hourly · branch / classification / section are matched by name (leave blank if none).</p>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <h5 class="font-weight-bolder mb-2"><i class="fas fa-upload text-primary me-2"></i>Step 2 — Upload</h5>
+          <form method="post" enctype="multipart/form-data" id="impForm">
+            {% csrf_token %}
+            <label for="fileInput" class="drop d-block mb-3" style="cursor:pointer;">
+              <i class="fas fa-cloud-arrow-up fa-2x text-primary mb-2 d-block"></i>
+              <span id="dropText" class="text-sm">Click to choose an <strong>.xlsx</strong> or <strong>.csv</strong> file</span>
+              <input type="file" name="file" id="fileInput" accept=".xlsx,.csv" class="d-none">
+            </label>
+            <button type="submit" class="btn bg-gradient-primary text-white w-100"><i class="fas fa-users me-1"></i>Import Members</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const fi = document.getElementById('fileInput');
+  fi.addEventListener('change', function () {
+    document.getElementById('dropText').innerHTML = this.files.length
+      ? '<strong>' + this.files[0].name + '</strong> selected'
+      : 'Click to choose an .xlsx or .csv file';
+  });
+</script>
+{% endblock %}

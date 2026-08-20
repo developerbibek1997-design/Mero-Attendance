@@ -1,0 +1,37 @@
+{% extends 'dashboard.html' %}
+{% block title %}My Field Visits | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="fw-bold mb-4" style="color:#1e293b;">My Field Visits</h4>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-body p-0">
+      <table class="table mb-0 align-items-center">
+        <thead>
+          <tr>
+            <th class="ps-4 text-uppercase text-xxs text-secondary font-weight-bolder">Visited At</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Area</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Client</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end pe-4">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in visits %}
+          <tr>
+            <td class="ps-4 text-sm">{{ v.visited_at|date:"M d, Y H:i" }}</td>
+            <td class="text-sm text-muted">{{ v.area_name|default:"—" }}</td>
+            <td class="text-sm">{{ v.client.client_org_name|default:"—" }}</td>
+            <td class="text-end pe-4">
+              <span class="badge {% if v.status == 'approved' %}bg-success{% elif v.status == 'rejected' %}bg-danger{% else %}bg-secondary{% endif %} text-uppercase">{{ v.get_status_display }}</span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center py-4 text-muted">You haven't logged any field visits yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

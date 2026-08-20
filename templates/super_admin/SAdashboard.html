@@ -65,6 +65,18 @@
     }
     .date-block .month { font-size: 0.65rem; font-weight: 700; color: #5e72e4; letter-spacing: 1px; }
     .date-block .day { font-size: 1.25rem; font-weight: 800; color: #32325d; line-height: 1; margin-top: 2px; }
+    .metric-card {
+        border: 1px solid #eef2f7; border-radius: 1rem; overflow: hidden;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, .05); height: 100%;
+    }
+    .metric-icon {
+        width: 46px; height: 46px; border-radius: .85rem; display: flex;
+        align-items: center; justify-content: center; flex: 0 0 auto;
+    }
+    .reminder-item { border: 1px solid #edf2f7; border-radius: .8rem; transition: .2s ease; }
+    .reminder-item:hover { border-color: #c7d2fe; transform: translateY(-1px); }
+    .expiry-badge { border-radius: 999px; font-size: .62rem; padding: .25rem .5rem; font-weight: 800; }
+    .table-custom tbody tr:hover { background: #fafbff; }
 </style>
 
 <div class="container-fluid py-4">
@@ -78,14 +90,14 @@
                 <div class="card-body p-4">
                     <div class="row align-items-center gx-4">
                         <div class="col-auto">
-                            <div class="avatar avatar-xl position-relative">
-                                <img src="{% static 'img/admin-avatar.png' %}" alt="profile_image" class="w-100 border-radius-lg shadow-sm border border-2 border-white">
+                            <div class="avatar avatar-xl position-relative bg-gradient-primary text-white border-radius-lg shadow-sm border border-2 border-white d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user-shield fa-lg" aria-hidden="true"></i>
                             </div>
                         </div>
                         <div class="col-auto my-auto">
                             <div class="h-100">
                                 <h4 class="mb-0 text-dark font-weight-bolder">Super Admin Control Center</h4>
-                                <p class="mb-0 text-muted text-sm font-weight-bold">Attendance Management System</p>
+                                <p class="mb-0 text-muted text-sm font-weight-bold">Subscriptions, organizations and platform health at a glance</p>
                             </div>
                         </div>
                     </div>
@@ -104,6 +116,57 @@
         </button>
     </div>
     {% endfor %}
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card metric-card">
+                <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-xs text-uppercase text-muted font-weight-bold mb-1">Organizations</p>
+                        <h4 class="mb-0 font-weight-bolder">{{ org_count }}</h4>
+                        <span class="text-xs text-success">{{ active_subscription_count }} active subscriptions</span>
+                    </div>
+                    <span class="metric-icon bg-gradient-primary text-white"><i class="ni ni-building"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card metric-card">
+                <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-xs text-uppercase text-muted font-weight-bold mb-1">Annual Package Value</p>
+                        <h5 class="mb-0 font-weight-bolder">Rs {{ total_annual_cost|floatformat:0 }}</h5>
+                        <span class="text-xs text-muted">Current enabled features</span>
+                    </div>
+                    <span class="metric-icon bg-gradient-success text-white"><i class="fas fa-chart-line"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card metric-card">
+                <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-xs text-uppercase text-muted font-weight-bold mb-1">Contract Total</p>
+                        <h5 class="mb-0 font-weight-bolder">Rs {{ total_contract_cost|floatformat:0 }}</h5>
+                        <span class="text-xs text-warning">Rs {{ outstanding_cost|floatformat:0 }} unpaid / partial</span>
+                    </div>
+                    <span class="metric-icon bg-gradient-info text-white"><i class="fas fa-file-invoice-dollar"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card metric-card">
+                <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-xs text-uppercase text-muted font-weight-bold mb-1">Renewal Attention</p>
+                        <h4 class="mb-0 font-weight-bolder">{{ expiring_count|add:expired_count }}</h4>
+                        <span class="text-xs text-danger">{{ expired_count }} expired · {{ expiring_count }} due soon</span>
+                    </div>
+                    <span class="metric-icon bg-gradient-warning text-white"><i class="fas fa-clock"></i></span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Command Actions -->
     <div class="row mb-5">
@@ -156,7 +219,7 @@
                 <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
                     <div class="d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 font-weight-bolder text-dark"><i class="ni ni-bullet-list-67 text-primary me-2"></i>Active Organizations Directory</h6>
-                        <span class="badge bg-light text-primary border">{{ org.count }} Total</span>
+                        <span class="badge bg-light text-primary border">{{ org_count }} Total</span>
                     </div>
                 </div>
                 <div class="card-body px-0 pt-0 pb-2">
@@ -164,15 +227,16 @@
                         <table class="table table-custom align-items-center mb-0">
                             <thead class="bg-light">
                                 <tr>
-                                    <th class="text-uppercase font-weight-bolder ps-4">Organization Profile</th>
-                                    <th class="text-uppercase font-weight-bolder">Category</th>
-                                    <th class="text-uppercase font-weight-bolder text-center">Tech Stack</th>
+                                    <th class="text-uppercase font-weight-bolder ps-4">Organization & Expiry</th>
+                                    <th class="text-uppercase font-weight-bolder">Subscription</th>
+                                    <th class="text-uppercase font-weight-bolder text-end">Annual Cost</th>
                                     <th class="text-uppercase font-weight-bolder text-center">Status</th>
                                     <th class="text-uppercase font-weight-bolder text-end pe-4">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for org in org %}
+                                {% for row in organization_rows %}
+                                {% with org=row.org summary=row.summary %}
                                 <tr class="hover-scale">
                                     <td class="ps-4">
                                         <div class="d-flex align-items-center py-1">
@@ -180,37 +244,46 @@
                                                 <i class="ni ni-building text-dark opacity-10" style="font-size: 0.8rem;"></i>
                                             </div>
                                             <div class="d-flex flex-column justify-content-center">
-                                                <h6 class="mb-0 text-sm font-weight-bold text-dark">{{ org.name }}</h6>
-                                                <p class="text-xs text-muted mb-0"><i class="ni ni-key-25 me-1"></i>{{ org.serial_key }}</p>
+                                                <div class="d-flex flex-wrap align-items-center gap-1">
+                                                    <h6 class="mb-0 text-sm font-weight-bold text-dark">{{ org.name }}</h6>
+                                                    {% if summary.expiry_state == 'expired' %}
+                                                        <span class="expiry-badge bg-danger text-white">Expired {{ summary.end_date|date:"M d" }}</span>
+                                                    {% elif summary.expiry_state == 'due_soon' %}
+                                                        <span class="expiry-badge bg-warning text-dark">{{ summary.days_remaining }} days left</span>
+                                                    {% elif summary.end_date %}
+                                                        <span class="expiry-badge bg-light text-success border">Ends {{ summary.end_date|date:"M d, Y" }}</span>
+                                                    {% else %}
+                                                        <span class="expiry-badge bg-light text-muted border">No expiry</span>
+                                                    {% endif %}
+                                                </div>
+                                                <p class="text-xs text-muted mb-0 mt-1"><span class="text-capitalize">{{ org.category }}</span> · <i class="ni ni-key-25 me-1"></i>{{ org.serial_key }}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="text-xs font-weight-bold text-dark text-capitalize">{{ org.category }}</span>
+                                        <span class="text-xs font-weight-bold text-dark">{{ org.subscription_plan|default:"Annual Custom" }}</span>
+                                        <div class="mt-1">
+                                            <span class="badge bg-light text-dark border text-xxs text-capitalize">{{ org.payment_status }}</span>
+                                            <span class="text-xxs text-muted ms-1">{{ summary.enabled_count }} features</span>
+                                        </div>
                                     </td>
-                                    <td class="align-middle text-center">
-                                        <div class="d-flex justify-content-center gap-1">
-                                            {% if org.rfid_based %}
-                                                <span class="badge bg-gradient-info text-xxs px-2 py-1" data-bs-toggle="tooltip" title="RFID Enabled"><i class="ni ni-credit-card"></i></span>
-                                            {% endif %}
-                                            {% if org.qr_based %}
-                                                <span class="badge bg-gradient-dark text-xxs px-2 py-1" data-bs-toggle="tooltip" title="QR Enabled"><i class="ni ni-active-40"></i></span>
-                                            {% endif %}
-                                            {% if not org.rfid_based and not org.qr_based %}
-                                                <span class="text-xs text-muted">-</span>
-                                            {% endif %}
+                                    <td class="align-middle text-end">
+                                        <span class="text-sm font-weight-bolder text-dark">Rs {{ summary.annual_cost|floatformat:0 }}</span>
+                                        <div class="text-xxs text-muted">
+                                            Rs {{ summary.contract_total|floatformat:0 }} term
+                                            {% if summary.custom_amount_applied %}<span class="badge bg-light text-primary border ms-1">Custom</span>{% endif %}
                                         </div>
                                     </td>
                                     <td class="align-middle text-center">
-                                        {% if org.activate %}
+                                        {% if org.activate and summary.expiry_state != 'expired' %}
                                             <span class="badge badge-dot me-4">
                                                 <i class="bg-success"></i>
-                                                <span class="text-dark text-xs font-weight-bold">Active</span>
+                                                <span class="text-dark text-xs font-weight-bold text-capitalize">{{ org.org_status }}</span>
                                             </span>
                                         {% else %}
                                             <span class="badge badge-dot me-4">
-                                                <i class="bg-secondary"></i>
-                                                <span class="text-muted text-xs font-weight-bold">Inactive</span>
+                                                <i class="bg-danger"></i>
+                                                <span class="text-muted text-xs font-weight-bold">{% if summary.expiry_state == 'expired' %}Expired{% else %}Inactive{% endif %}</span>
                                             </span>
                                         {% endif %}
                                     </td>
@@ -223,6 +296,9 @@
                                         </a>
                                     </td>
                                 </tr>
+                                {% endwith %}
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted py-5">No organizations have been added yet.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -231,9 +307,44 @@
             </div>
         </div>
 
-        <!-- Recent Occasions Timeline -->
+        <!-- Subscription reminders and occasions -->
         <div class="col-lg-4 col-md-12 mb-4">
-            <div class="card shadow-sm border-0 h-100">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 font-weight-bolder text-dark"><i class="fas fa-clock-rotate-left text-danger me-2"></i>Subscription Reminders</h6>
+                        <span class="badge bg-danger">{{ expiry_reminders|length }}</span>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    {% for row in expiry_reminders %}
+                    <div class="reminder-item p-3 mb-3">
+                        <div class="d-flex justify-content-between gap-2">
+                            <div>
+                                <h6 class="text-sm mb-1">{{ row.org.name }}</h6>
+                                <div class="text-xs text-muted">{{ row.summary.end_date|date:"M d, Y" }} · {{ row.org.subscription_plan|default:"Annual Custom" }}</div>
+                            </div>
+                            {% if row.summary.expiry_state == 'expired' %}
+                                <span class="badge bg-danger align-self-start">Expired</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark align-self-start">{{ row.summary.days_remaining }} days</span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center border-top mt-2 pt-2">
+                            <span class="text-xs font-weight-bold">Rs {{ row.summary.contract_total|floatformat:0 }}</span>
+                            <a href="{% url 'superadmin:editOrg' row.org.id %}" class="text-xs text-primary font-weight-bold">Review <i class="fas fa-arrow-right ms-1"></i></a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-circle-check text-success fa-2x mb-3"></i>
+                        <p class="text-sm text-secondary mb-0">No subscriptions expire within 30 days.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0">
                 <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
                     <h6 class="mb-0 font-weight-bolder text-dark"><i class="ni ni-notification-70 text-warning me-2"></i>Occasions Timeline</h6>
                 </div>
@@ -262,6 +373,58 @@
                         <a href="{% url 'superadmin:globalHoliday' %}" class="btn btn-sm btn-outline-primary mb-0 w-100">Manage All Holidays</a>
                     </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact submissions and package requests (leads) -->
+    <div class="row">
+        <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 font-weight-bolder text-dark"><i class="fas fa-envelope-open-text text-primary me-2"></i>Recent Contact Submissions</h6>
+                        <a href="{% url 'superadmin:contact_list' %}" class="text-xs text-primary font-weight-bold">View All <i class="fas fa-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    {% for contact in recent_contacts %}
+                    <div class="d-flex justify-content-between align-items-start mb-3 pb-3 border-bottom">
+                        <div>
+                            <h6 class="text-sm mb-1">{{ contact.fullname }}</h6>
+                            <div class="text-xs text-muted">{{ contact.email|default:contact.number }}</div>
+                            <div class="text-xs text-secondary mt-1">{{ contact.message|truncatewords:12|default:"—" }}</div>
+                        </div>
+                        <span class="text-xxs text-muted">{{ contact.created_at|date:"M d"|default:"—" }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-secondary mb-0 text-center py-3">No contact submissions yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 font-weight-bolder text-dark"><i class="fas fa-file-invoice-dollar text-success me-2"></i>Recent Package Requests</h6>
+                        <a href="{% url 'superadmin:package_request_list' %}" class="text-xs text-primary font-weight-bold">View All <i class="fas fa-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    {% for req in recent_package_requests %}
+                    <div class="d-flex justify-content-between align-items-start mb-3 pb-3 border-bottom">
+                        <div>
+                            <h6 class="text-sm mb-1">{{ req.full_name }}</h6>
+                            <div class="text-xs text-muted">{{ req.package_name }} · {{ req.member_limit }} members</div>
+                        </div>
+                        <span class="text-xs font-weight-bold">Rs {{ req.annual_total|floatformat:0 }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-secondary mb-0 text-center py-3">No package requests yet.</p>
+                    {% endfor %}
                 </div>
             </div>
         </div>

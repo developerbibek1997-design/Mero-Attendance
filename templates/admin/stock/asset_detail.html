@@ -1,0 +1,28 @@
+{% extends 'dashboard.html' %}
+{% block title %}{{ asset.name }} | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-boxes-stacked text-primary me-2"></i>{{ asset.name }}</h6>
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-2 mb-3">
+            <div class="col-md-4"><p class="text-xs text-muted mb-0">Category</p><p class="text-sm font-weight-bold">{{ asset.category|default:"-" }}</p></div>
+            <div class="col-md-4"><p class="text-xs text-muted mb-0">Purchase Date</p><p class="text-sm font-weight-bold">{{ asset.purchase_date }}</p></div>
+            <div class="col-md-4"><p class="text-xs text-muted mb-0">Cost</p><p class="text-sm font-weight-bold">Rs. {{ asset.cost }}</p></div>
+            <div class="col-md-4"><p class="text-xs text-muted mb-0">Payment Method</p><p class="text-sm font-weight-bold">{{ asset.get_payment_method_display }}</p></div>
+            <div class="col-md-4"><p class="text-xs text-muted mb-0">Vendor</p><p class="text-sm font-weight-bold">{% if asset.vendor %}<a href="{% url 'schooladmin:supplier_detail' asset.vendor_id %}">{{ asset.vendor.name }}</a>{% else %}-{% endif %}</p></div>
+          </div>
+          {% if asset.notes %}<p class="text-sm text-muted">{{ asset.notes }}</p>{% endif %}
+          {% if asset.journal_entry_id %}
+          <div class="alert alert-success py-2"><i class="fas fa-check-circle me-1"></i>Journal entry <a href="{% url 'schooladmin:journal_detail' asset.journal_entry_id %}">{{ asset.journal_entry.voucher_number }}</a> posted.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

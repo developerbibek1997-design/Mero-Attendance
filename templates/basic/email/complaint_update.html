@@ -1,0 +1,9 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Complaint Update{% endblock %}
+{% block content %}
+<p class="greeting">Hi <strong>{{ name }}</strong>,</p>
+<p class="message-text">Your complaint <em>"{{ subject_text }}"</em> has been updated to
+  <span class="badge" style="background:{% if status == 'resolved' %}#16a34a{% else %}#f59e0b{% endif %};">{{ status|title }}</span>
+</p>
+{% if remarks %}<table class="data"><tr><td class="label">Remarks</td><td>{{ remarks }}</td></tr></table>{% endif %}
+{% endblock %}

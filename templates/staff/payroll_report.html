@@ -1,0 +1,59 @@
+{% extends 'dashboard.html' %}
+{% load schooladmin_extras %}
+{% block title %}Payroll Report | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 class="fw-bold mb-0" style="color:#1e293b;">Payroll Report</h4>
+    <form method="get" class="d-flex gap-2">
+      <select name="classification" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All Classifications</option>
+        {% for c in classifications %}
+        <option value="{{ c.id }}" {% if selected_classification == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-body p-0">
+      <table class="table align-items-center mb-0">
+        <thead>
+          <tr>
+            <th class="ps-4 text-uppercase text-xxs text-secondary font-weight-bolder">Name</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Classification</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end">Salary</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end pe-4">Latest Payslip</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in members %}
+          <tr>
+            <td class="ps-4 text-sm">
+              <div class="d-flex align-items-center gap-2">
+                {{ m|member_avatar:28 }}
+                <strong>{{ m.name }}</strong>
+              </div>
+            </td>
+            <td class="text-sm text-muted">{{ m.classification.name|default:"—" }}</td>
+            <td class="text-sm text-end">Rs. {{ m.salary_amount|floatformat:0 }}</td>
+            <td class="text-end pe-4">
+              {% with slip=m.payslip_set.last %}
+              {% if slip %}
+              <a href="{% url 'staff:payroll_payslip_detail' slip.pk %}" class="btn btn-sm btn-outline-primary py-0">View</a>
+              {% else %}
+              <span class="text-muted text-xs">No payslip yet</span>
+              {% endif %}
+              {% endwith %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center py-4 text-muted">No members found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

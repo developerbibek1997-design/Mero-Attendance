@@ -1,0 +1,56 @@
+{% extends 'dashboard.html' %}
+{% block title %}Teaching Log | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 font-weight-bolder">{{ log.subject.name }} — {{ log.date }}</h6>
+          {% if log.status == 'approved' %}<span class="badge bg-success">Approved</span>
+          {% elif log.status == 'rejected' %}<span class="badge bg-danger">Rejected</span>
+          {% else %}<span class="badge bg-warning text-dark">Submitted</span>{% endif %}
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          {% if log.status == 'rejected' and log.rejection_reason %}<div class="alert alert-danger py-2"><b>Rejected:</b> {{ log.rejection_reason }}</div>{% endif %}
+
+          <div class="row g-2 mb-3">
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Teacher</p><p class="text-sm font-weight-bold">{{ log.teacher.get_full_name|default:log.teacher.email }}</p></div>
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Class</p><p class="text-sm font-weight-bold">{{ log.classification }}{% if log.section %} / {{ log.section }}{% endif %}</p></div>
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Period</p><p class="text-sm font-weight-bold">{{ log.period|default:"-" }}</p></div>
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Chapter</p><p class="text-sm font-weight-bold">{{ log.chapter|default:"-" }}</p></div>
+          </div>
+          <p class="text-sm"><b>Topic Covered:</b> {{ log.topic_covered }}</p>
+          {% if log.learning_objectives %}<p class="text-sm"><b>Learning Objectives:</b> {{ log.learning_objectives }}</p>{% endif %}
+          {% if log.homework_given %}<p class="text-sm"><b>Homework Given:</b> {{ log.homework_given.subject.name }} (due {{ log.homework_given.due_date }})</p>{% endif %}
+          {% if log.attendance_present is not None %}<p class="text-sm"><b>Attendance:</b> {{ log.attendance_present }} present, {{ log.attendance_absent }} absent</p>{% endif %}
+          {% if log.remarks %}<p class="text-sm text-muted"><b>Remarks:</b> {{ log.remarks }}</p>{% endif %}
+          {% if attachments %}
+          <div class="mt-2">{% for att in attachments %}<a href="{{ att.file.url }}" target="_blank" class="badge bg-light text-dark text-decoration-none me-1"><i class="fas fa-paperclip me-1"></i>{{ att.file.name|slice:"-25:" }}</a>{% endfor %}</div>
+          {% endif %}
+
+          {% if log.status == 'submitted' %}
+          <div class="d-flex gap-2 mt-3">
+            <form method="post" action="{% url 'schooladmin:approve_teaching_log' log.pk %}">{% csrf_token %}<button class="btn btn-success btn-sm"><i class="fas fa-check me-1"></i>Approve</button></form>
+            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#rejectModal"><i class="fas fa-times me-1"></i>Reject</button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="rejectModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h6 class="modal-title font-weight-bolder">Reject Teaching Log</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="post" action="{% url 'schooladmin:reject_teaching_log' log.pk %}">
+        {% csrf_token %}
+        <div class="modal-body"><label class="form-label text-xs font-weight-bold">Reason *</label><textarea name="reason" class="form-control" rows="3" required></textarea></div>
+        <div class="modal-footer"><button type="submit" class="btn btn-danger btn-sm">Reject</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'dashboard.html' %}
+{% block title %}Leave Approval | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="fw-bold mb-4" style="color:#1e293b;">Leave Approval</h4>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-header bg-white border-bottom py-3"><h6 class="mb-0 fw-bold">Pending Requests</h6></div>
+    <div class="card-body p-0">
+      <table class="table mb-0 align-items-center">
+        <thead>
+          <tr>
+            <th class="ps-4 text-uppercase text-xxs text-secondary font-weight-bolder">Member</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Type</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Dates</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Reason</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end pe-4">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in pending %}
+          <tr>
+            <td class="ps-4 text-sm"><strong>{{ req.member.name }}</strong></td>
+            <td class="text-sm text-muted">{{ req.leave_type.name|default:"Leave" }}</td>
+            <td class="text-sm">{{ req.start_display }}{% if req.gap_end %} to {{ req.end_display }}{% endif %}{% if nepali_enabled %} <span class="text-muted">BS</span>{% endif %}</td>
+            <td class="text-sm" style="max-width:260px;">{{ req.reason }}</td>
+            <td class="text-end pe-4">
+              <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="report_id" value="{{ req.id }}">
+                <input type="hidden" name="action" value="approve">
+                <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2">Approve</button>
+              </form>
+              <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="report_id" value="{{ req.id }}">
+                <input type="hidden" name="action" value="reject">
+                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">Reject</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center py-4 text-muted">No pending leave requests.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

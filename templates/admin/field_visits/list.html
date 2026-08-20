@@ -1,0 +1,191 @@
+{% extends 'dashboard.html' %}
+{% block title %}Field Visits | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-location-arrow text-primary me-2"></i>Field Visits</h4>
+      <p class="text-xs text-muted mb-0">Locations shared by field staff</p>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm mb-0" data-bs-toggle="modal" data-bs-target="#manualVisitModal">
+      <i class="fas fa-plus me-1"></i>Log Visit Manually
+    </button>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3 col-12">
+          <label class="text-xs font-weight-bold">Staff Member</label>
+          <select name="member" class="form-select form-select-sm">
+            <option value="">All Members</option>
+            {% for m in members %}<option value="{{ m.id }}" {% if filters.member == m.id|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="text-xs font-weight-bold">From</label>
+          <input type="date" name="from_date" class="form-control form-control-sm" value="{{ filters.from_date }}">
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="text-xs font-weight-bold">To</label>
+          <input type="date" name="to_date" class="form-control form-control-sm" value="{{ filters.to_date }}">
+        </div>
+        <div class="col-md-3 col-12">
+          <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 font-weight-bolder">Results <span class="text-muted fw-normal">({{ visits|length }})</span></h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="text-xs">Member</th>
+            <th class="text-xs">Time</th>
+            <th class="text-xs">Location</th>
+            <th class="text-xs">Client</th>
+            <th class="text-xs">Report</th>
+            <th class="text-xs">Status</th>
+            <th class="text-xs text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in visits %}
+          <tr>
+            <td class="text-xs">{{ v.member.name }}{% if v.created_by %}<br><small class="text-muted">Added by {{ v.created_by.get_full_name|default:v.created_by.username }}</small>{% endif %}</td>
+            <td class="text-xs">{{ v.visited_at }}{% if nepali_enabled %}<br><small class="text-muted">{{ v.visited_at_np }} BS</small>{% endif %}</td>
+            <td class="text-xs">
+              {% if v.area_name %}<div class="mb-1"><i class="fas fa-map-marker-alt text-danger me-1"></i>{{ v.area_name }}</div>{% endif %}
+              {% if v.latitude and v.longitude %}
+              <a href="https://maps.google.com/?q={{ v.latitude }},{{ v.longitude }}" target="_blank" rel="noopener">
+                {{ v.latitude|floatformat:5 }}, {{ v.longitude|floatformat:5 }}
+              </a>
+              {% if v.accuracy_meters %}<br><small class="text-muted">±{{ v.accuracy_meters|floatformat:0 }}m</small>{% endif %}
+              {% else %}
+              <span class="text-muted">Not recorded (manual entry)</span>
+              {% endif %}
+            </td>
+            <td class="text-xs">
+              {% if v.client %}
+                <span class="font-weight-bold">{{ v.client.client_org_name }}</span>
+                <br><small class="text-muted">{{ v.client.client_number }}</small>
+                {% with fu=v.follow_ups.first %}
+                  {% if fu %}<div class="mt-1"><span class="badge bg-info">Follow-up</span> <span class="text-muted">{{ fu.feedback|truncatechars:50 }}</span></div>{% endif %}
+                {% endwith %}
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="text-xs">
+              {% if v.report %}
+                <span class="badge bg-success">Yes</span>
+                {% if v.report.note %}<div class="mt-1">{{ v.report.note }}</div>{% endif %}
+                {% if v.report.attachment %}<a href="{{ v.report.attachment.url }}" target="_blank" rel="noopener" class="d-inline-block mt-1"><i class="fas fa-paperclip me-1"></i>Attachment</a>{% endif %}
+              {% else %}
+                <span class="badge bg-secondary">No</span>
+              {% endif %}
+            </td>
+            <td class="text-xs">
+              {% if v.status == 'approved' %}<span class="badge bg-success">Approved</span>
+              {% elif v.status == 'rejected' %}<span class="badge bg-danger">Rejected</span>
+              {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
+            </td>
+            <td class="text-center">
+              <a href="{% url 'schooladmin:field_visit_detail' v.pk %}" class="btn btn-xs btn-outline-primary mb-0"><i class="fas fa-eye me-1"></i>View</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4">No field visits recorded.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Log Visit Manually modal — lives outside the table (a <table>/<tbody> cannot
+     legally contain <div> children; browsers foster-parent them out in ways
+     that break Bootstrap's display:none nesting). -->
+<div class="modal fade" id="manualVisitModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:16px;border:none;">
+      <div class="modal-header border-bottom">
+        <h6 class="modal-title font-weight-bolder text-dark">Log a Field Visit Manually</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{% url 'schooladmin:field_visit_manual_add' %}">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <div class="alert alert-light text-sm p-3 mb-4 border">
+            <i class="fas fa-info-circle text-info me-2"></i>
+            Use this when a visit needs to be logged on a staff member's behalf — it's recorded as approved right away and attendance is created immediately.
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label text-xs font-weight-bold">Staff Member *</label>
+              <select name="member_id" class="form-select form-select-sm" required>
+                <option value="">Select member</option>
+                {% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-xs font-weight-bold">Start Date</label>
+              <input type="date" name="visit_date" class="form-control form-control-sm" value="{{ today_val }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-xs font-weight-bold">End Date <span class="text-muted fw-normal">(optional — for multi-day field visits)</span></label>
+              <input type="date" name="end_date" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-12">
+              <div class="alert alert-info text-xs p-2 mb-0">
+                <i class="fas fa-calendar-week me-1"></i>
+                Leave End Date blank to log a single day. Set it to log the same check-in/out time, client, purpose and note for every day in the range — useful for backfilling a multi-day field posting in one go.
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-xs">Check-in Time *</label>
+              <input type="time" name="checkin_time" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-xs">Check-out Time (optional)</label>
+              <input type="time" name="checkout_time" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-xs">Client (optional)</label>
+              <select name="client_id" class="form-select form-select-sm">
+                <option value="">No client</option>
+                {% for c in clients %}<option value="{{ c.id }}">{{ c.client_org_name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-xs">Destination (optional)</label>
+              <input type="text" name="destination" class="form-control form-control-sm" maxlength="300">
+            </div>
+            <div class="col-md-12">
+              <label class="form-label text-xs">Purpose (optional)</label>
+              <input type="text" name="purpose" class="form-control form-control-sm" maxlength="300">
+            </div>
+            <div class="col-md-12">
+              <label class="form-label text-xs">Note (optional)</label>
+              <textarea name="note" class="form-control form-control-sm" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-outline-secondary btn-sm mb-0" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm mb-0"><i class="fas fa-check me-1"></i>Log Visit &amp; Mark Attendance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock content %}

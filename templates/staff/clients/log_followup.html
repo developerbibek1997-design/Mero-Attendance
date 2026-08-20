@@ -1,0 +1,107 @@
+{% extends 'dashboard.html' %}
+{% block title %}Log Follow-Up | Staff Portal{% endblock title %}
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+
+      {% for msg in messages %}
+      <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+      {% endfor %}
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom p-4">
+          <h5 class="mb-0"><i class="fas fa-comment-dots text-primary me-2"></i>Log a Client Follow-Up</h5>
+        </div>
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+
+            {% if client %}
+              <input type="hidden" name="client_id" value="{{ client.pk }}">
+              <div class="mb-3">
+                <label class="text-xs font-weight-bold">Client</label>
+                <input type="text" class="form-control" value="{{ client.client_number }} — {{ client.client_org_name }}" disabled>
+              </div>
+            {% else %}
+              <div class="mb-3">
+                <label class="text-xs font-weight-bold">Existing Client (optional)</label>
+                <select name="client_id" class="form-select" id="clientSelect" onchange="toggleNewClient()">
+                  <option value="">— New Client —</option>
+                  {% for c in clients %}
+                    <option value="{{ c.pk }}">{{ c.client_number }} — {{ c.client_org_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div id="newClientFields">
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="text-xs font-weight-bold">Client Number <span class="text-muted">(optional)</span></label>
+                    <input type="text" name="client_number" class="form-control" placeholder="Auto-generated if left blank">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="text-xs font-weight-bold">Client Organization Name</label>
+                    <input type="text" name="client_org_name" class="form-control">
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="text-xs font-weight-bold">Client Priority</label>
+                  <select name="client_priority" class="form-select">
+                    <option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option>
+                  </select>
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="text-xs font-weight-bold">Contact Person</label>
+                    <input type="text" name="contact_person" class="form-control">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="text-xs font-weight-bold">Phone</label>
+                    <input type="text" name="phone" class="form-control">
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="mb-3">
+              <label class="text-xs font-weight-bold">Feedback</label>
+              <textarea name="feedback" class="form-control" rows="3" required></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="text-xs font-weight-bold">Follow-Up Priority</label>
+              <select name="priority" class="form-select">
+                <option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="text-xs font-weight-bold">Follow-Up Date</label>
+                <input type="date" name="follow_up_date" class="form-control" value="{% now 'Y-m-d' %}">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="text-xs font-weight-bold">Next Follow-Up Date</label>
+                <input type="date" name="next_follow_up_date" class="form-control">
+              </div>
+            </div>
+
+            <button type="submit" class="btn bg-gradient-success btn-lg w-100">
+              <i class="fas fa-check-circle me-2"></i> Save Follow-Up
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleNewClient() {
+    const sel = document.getElementById('clientSelect');
+    const fields = document.getElementById('newClientFields');
+    if (!sel || !fields) return;
+    fields.style.display = sel.value ? 'none' : 'block';
+  }
+</script>
+{% endblock content %}

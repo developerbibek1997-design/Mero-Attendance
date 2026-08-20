@@ -1,0 +1,108 @@
+{% extends 'dashboard.html' %}
+{% block title %}New Purchase | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-cart-arrow-down text-primary me-2"></i>New Purchase</h6>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          {% if source_supplier %}<div class="alert alert-info py-2"><i class="fas fa-truck me-2"></i>Creating a purchase for <strong>{{ source_supplier.name }}</strong>. The supplier and branch have been preselected.</div>{% endif %}
+          {% if form.errors or formset.errors %}<div class="alert alert-danger">Please correct the highlighted fields below.</div>{% endif %}
+          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+          {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
+
+          <form method="post" id="purchaseForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% if source_supplier %}<input type="hidden" name="source_supplier" value="{{ source_supplier.pk }}">{% endif %}
+            <div class="row g-3 mb-3">
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Supplier *</label>{{ form.supplier }}{% for error in form.supplier.errors %}<div class="text-danger text-xs mt-1">{{ error }}</div>{% endfor %}
+                <a href="{% url 'schooladmin:add_supplier' %}" target="_blank" class="text-xs">+ New supplier</a>
+              </div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Bill Date *</label>{{ form.purchase_date }}{% for error in form.purchase_date.errors %}<div class="text-danger text-xs mt-1">{{ error }}</div>{% endfor %}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Due Date</label>{{ form.due_date }}{% for error in form.due_date.errors %}<div class="text-danger text-xs mt-1">{{ error }}</div>{% endfor %}</div>
+              <div class="col-md-2"><label class="form-label text-xs font-weight-bold">Invoice #</label>{{ form.invoice_number }}{% for error in form.invoice_number.errors %}<div class="text-danger text-xs mt-1">{{ error }}</div>{% endfor %}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Branch</label>{{ form.branch }}{% for error in form.branch.errors %}<div class="text-danger text-xs mt-1">{{ error }}</div>{% endfor %}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Payment Method</label>{{ form.payment_method }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Discount Amount</label>{{ form.discount_amount }}{% for error in form.discount_amount.errors %}<div class="text-danger text-xs mt-1">{{ error }}</div>{% endfor %}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Tax Amount</label>{{ form.tax_amount }}{% for error in form.tax_amount.errors %}<div class="text-danger text-xs mt-1">{{ error }}</div>{% endfor %}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Attach Bill / Document</label>{{ form.attachment }}{% for error in form.attachment.errors %}<div class="text-danger text-xs mt-1">{{ error }}</div>{% endfor %}</div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Notes</label>{{ form.notes }}</div>
+            </div>
+
+            {{ formset.management_form }}
+            <h6 class="text-sm font-weight-bolder mt-3 mb-2">Items</h6>
+            <table class="table table-sm align-middle" id="linesTable">
+              <thead class="table-light">
+                <tr><th class="text-xs" style="width:30%;">Stock Item</th><th class="text-xs">Description</th><th class="text-xs">Qty</th><th class="text-xs">Unit Cost</th><th class="text-xs text-center" style="width:60px;">Del</th></tr>
+              </thead>
+              <tbody id="linesBody">
+                {% for line_form in formset.forms %}
+                <tr class="line-row">
+                  <td>{{ line_form.id }}{{ line_form.stock_item }}{% for error in line_form.stock_item.errors %}<div class="text-danger text-xs">{{ error }}</div>{% endfor %}</td>
+                  <td>{{ line_form.description }}{% for error in line_form.description.errors %}<div class="text-danger text-xs">{{ error }}</div>{% endfor %}</td>
+                  <td>{{ line_form.quantity }}{% for error in line_form.quantity.errors %}<div class="text-danger text-xs">{{ error }}</div>{% endfor %}</td>
+                  <td>{{ line_form.unit_cost }}{% for error in line_form.unit_cost.errors %}<div class="text-danger text-xs">{{ error }}</div>{% endfor %}</td>
+                  <td class="text-center">{% if line_form.instance.pk %}<div class="form-check">{{ line_form.DELETE }}</div>{% else %}<button type="button" class="btn btn-xs btn-outline-danger remove-line"><i class="fas fa-times"></i></button>{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="addLineBtn"><i class="fas fa-plus me-1"></i>Add Line</button>
+
+            <div class="d-flex gap-2 mt-2">
+              <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save Purchase</button>
+              {% if source_supplier %}<a href="{% url 'schooladmin:supplier_detail' source_supplier.pk %}" class="btn btn-outline-secondary">Cancel</a>{% else %}<a href="{% url 'schooladmin:purchase_list' %}" class="btn btn-outline-secondary">Cancel</a>{% endif %}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<template id="emptyLineTemplate">
+  <tr class="line-row">
+    <td>{{ formset.empty_form.stock_item }}</td>
+    <td>{{ formset.empty_form.description }}</td>
+    <td>{{ formset.empty_form.quantity }}</td>
+    <td>{{ formset.empty_form.unit_cost }}</td>
+    <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger remove-line"><i class="fas fa-times"></i></button></td>
+  </tr>
+</template>
+
+<script>
+(function () {
+  const linesBody = document.getElementById('linesBody');
+  const addLineBtn = document.getElementById('addLineBtn');
+  const template = document.getElementById('emptyLineTemplate').innerHTML;
+  const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+
+  addLineBtn.addEventListener('click', function () {
+    const idx = parseInt(totalForms.value, 10);
+    const html = template.replace(/__prefix__/g, idx);
+    const wrapper = document.createElement('tbody');
+    wrapper.innerHTML = html;
+    linesBody.appendChild(wrapper.firstElementChild);
+    totalForms.value = idx + 1;
+    attachRowListeners();
+  });
+
+  function attachRowListeners() {
+    linesBody.querySelectorAll('.remove-line').forEach(function (btn) {
+      btn.onclick = function () {
+        const row = btn.closest('tr');
+        const delCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+        if (delCheckbox) { delCheckbox.checked = true; row.style.display = 'none'; }
+        else { row.remove(); }
+      };
+    });
+  }
+
+  attachRowListeners();
+})();
+</script>
+{% endblock %}

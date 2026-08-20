@@ -1,0 +1,144 @@
+{% extends 'dashboard.html' %}
+{% block title %}Live Tracking | Staff Portal{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom p-4 text-center">
+          <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-md mx-auto mb-3" style="width:60px;height:60px;">
+            <i class="fas fa-route text-white text-2xl" style="line-height:60px;"></i>
+          </div>
+          <h4 class="mb-0">Live Location Tracking</h4>
+          <p class="text-sm text-muted mb-0">Share your live route while you're out in the field.</p>
+        </div>
+        <div class="card-body p-4 text-center">
+
+          {% if not enabled %}
+          <div class="alert alert-warning">Live tracking is not enabled for your account. Ask your admin to enable it.</div>
+          {% else %}
+          <div id="status" class="alert alert-secondary py-2">Tracking is off.</div>
+
+          <div class="mb-3">
+            <div class="badge bg-gradient-info text-white">Pings sent this session: <span id="count">0</span></div>
+            <div id="coords" class="text-xs text-muted mt-2"></div>
+          </div>
+
+          <button id="startBtn" class="btn bg-gradient-success btn-lg w-100 mb-2"><i class="fas fa-play me-1"></i>Start Live Tracking</button>
+          <button id="stopBtn" class="btn btn-outline-danger btn-lg w-100 mb-0 d-none"><i class="fas fa-stop me-1"></i>Stop Tracking</button>
+
+          <p class="text-xs text-muted mt-3 mb-0">
+            <i class="fas fa-circle-info me-1"></i>Your browser will ask for location permission.
+            Tracking runs only while this page is open.
+          </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if enabled %}
+<script>
+const statusEl = document.getElementById('status');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const countEl = document.getElementById('count');
+const coordsEl = document.getElementById('coords');
+const POST_URL = "{% url 'staff:live_tracking' %}";
+const CSRF = '{{ csrf_token }}';
+let watchId = null;
+let sent = 0;
+let lastSent = 0;
+
+function setStatus(msg, type) {
+  statusEl.className = 'alert py-2 alert-' + (type || 'secondary');
+  statusEl.innerText = msg;
+}
+
+let lastLat = null, lastLng = null;
+let totalMeters = 0;
+let heartbeat = null;
+const MIN_MOVE_M = 8;        // send when moved at least this far…
+const HEARTBEAT_MS = 20000;  // …or at least this often, even if stationary
+
+function haversine(la1, lo1, la2, lo2) {
+  const R = 6371000, toRad = d => d * Math.PI / 180;
+  const dLa = toRad(la2 - la1), dLo = toRad(lo2 - lo1);
+  const a = Math.sin(dLa/2)**2 + Math.cos(toRad(la1)) * Math.cos(toRad(la2)) * Math.sin(dLo/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+async function ping(lat, lng, acc) {
+  const fd = new FormData();
+  fd.append('latitude', lat);
+  fd.append('longitude', lng);
+  if (acc != null) fd.append('accuracy', acc);
+  fd.append('csrfmiddlewaretoken', CSRF);
+  try {
+    const r = await fetch(POST_URL, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    const d = await r.json();
+    if (d.ok) { sent++; countEl.innerText = sent; }
+  } catch (e) { /* keep trying on next position */ }
+}
+
+function onPos(pos) {
+  const { latitude, longitude, accuracy } = pos.coords;
+  const now = Date.now();
+
+  let movedM = 0;
+  if (lastLat != null) movedM = haversine(lastLat, lastLng, latitude, longitude);
+
+  const stamp = new Date().toLocaleTimeString();
+  coordsEl.innerHTML =
+    latitude.toFixed(6) + ', ' + longitude.toFixed(6) + '  (±' + Math.round(accuracy) + 'm)'
+    + '<br><span class="text-muted">Updated ' + stamp
+    + ' · moved ' + Math.round(movedM) + 'm · total ' + Math.round(totalMeters) + 'm</span>';
+  setStatus('Tracking active — sharing your location.', 'success');
+
+  // Send on meaningful movement, or as a periodic heartbeat.
+  const movedEnough = (lastLat == null) || (movedM >= MIN_MOVE_M);
+  const dueHeartbeat = (now - lastSent) >= HEARTBEAT_MS;
+  if (movedEnough || dueHeartbeat) {
+    if (lastLat != null) totalMeters += movedM;
+    lastLat = latitude; lastLng = longitude; lastSent = now;
+    ping(latitude, longitude, accuracy);
+  }
+}
+
+function onErr(err) {
+  setStatus('Location error: ' + (err.message || 'permission denied'), 'danger');
+}
+
+function pollOnce() {
+  // Backup for browsers that stop re-firing watchPosition while stationary/moving.
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(onPos, () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+}
+
+startBtn.addEventListener('click', () => {
+  if (!navigator.geolocation) { setStatus('Geolocation not supported.', 'danger'); return; }
+  watchId = navigator.geolocation.watchPosition(onPos, onErr, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+  heartbeat = setInterval(pollOnce, 10000);  // refresh every 10s regardless
+  startBtn.classList.add('d-none');
+  stopBtn.classList.remove('d-none');
+  setStatus('Requesting location permission…', 'info');
+});
+
+function stopTracking() {
+  if (watchId != null) navigator.geolocation.clearWatch(watchId);
+  if (heartbeat != null) clearInterval(heartbeat);
+  watchId = null; heartbeat = null;
+}
+
+stopBtn.addEventListener('click', () => {
+  stopTracking();
+  stopBtn.classList.add('d-none');
+  startBtn.classList.remove('d-none');
+  setStatus('Tracking stopped.', 'secondary');
+});
+
+window.addEventListener('beforeunload', stopTracking);
+</script>
+{% endif %}
+{% endblock %}

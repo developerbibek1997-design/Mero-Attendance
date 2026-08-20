@@ -1,0 +1,110 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Timesheet — {{ ts.title }}{% endblock %}
+
+{% block content %}
+<style>
+  .ts-header-card { background:linear-gradient(135deg,#4f46e5,#7c3aed); border-radius:18px; padding:24px 28px; color:#fff; }
+  .ts-entries-card { background:#fff; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,.06); border:1px solid #f1f5f9; overflow:hidden; }
+  .ts-table thead th { background:#f8fafc; font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#64748b; padding:10px 12px; border-bottom:2px solid #e2e8f0; }
+  .ts-table tbody td { vertical-align:middle; padding:10px 12px; border-bottom:1px solid #f1f5f9; font-size:.88rem; }
+  .ts-table tbody tr:last-child td { border-bottom:none; }
+  .ts-inline-form { background:#f8fafc; border-top:2px solid #4f46e5; }
+  .ts-summary-pill { background:rgba(255,255,255,.15); border-radius:12px; padding:8px 16px; text-align:center; }
+  .ts-summary-pill .val { font-size:1.4rem; font-weight:800; }
+  .ts-summary-pill .lbl { font-size:.72rem; opacity:.8; }
+</style>
+
+<div class="container-fluid py-4">
+  <div class="mb-3">
+    <a href="{% url 'staff:timesheet_list' %}" class="text-muted text-decoration-none small">
+      <i class="fas fa-arrow-left me-1"></i>All Timesheets
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show mb-3">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Header card -->
+  <div class="ts-header-card mb-4">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <h5 class="fw-bold mb-1">{{ ts.title|default:"Timesheet" }}</h5>
+        <p class="mb-0 opacity-75 small">
+          <i class="fas fa-calendar-range me-1"></i>
+          {{ ts.date|date:"d M Y" }}{% if nepali_enabled %} ({{ ts.date_np }} BS){% endif %}
+        </p>
+      </div>
+      <div class="d-flex gap-3">
+        <div class="ts-summary-pill">
+          <div class="val">{{ ts.total_hours }}</div>
+          <div class="lbl">Total Hours</div>
+        </div>
+        <div class="ts-summary-pill">
+          <div class="val">{{ entries.count }}</div>
+          <div class="lbl">Entries</div>
+        </div>
+      </div>
+    </div>
+
+    {% if ts.admin_comment and ts.status == 'rejected' %}
+    <div class="mt-3 p-3 rounded-3" style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.3);">
+      <strong><i class="fas fa-comment-exclamation me-1"></i>Admin comment:</strong> {{ ts.admin_comment }}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Status bar (HTMX-swappable) -->
+  {% include 'staff/partials/_ts_status_bar.html' %}
+
+  <!-- Entries table -->
+  <div class="ts-entries-card mt-4">
+    <div class="p-3 pb-0 d-flex align-items-center justify-content-between">
+      <h6 class="fw-bold mb-0" style="color:#1e293b;">
+        <i class="fas fa-list-ul me-2 text-primary"></i>Work Entries
+      </h6>
+    </div>
+
+    <div class="table-responsive mt-2">
+      <table class="table ts-table mb-0" id="ts-entries-table">
+        <thead>
+          <tr>
+            <th>Task / Project</th>
+            <th style="width:90px;" class="text-center">Hours</th>
+            <th>Notes</th>
+            <th style="width:90px;" class="text-end pe-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="ts-entries-tbody">
+          {% for entry in entries %}
+            {% include 'staff/partials/_ts_entry_row.html' with entry=entry ts=ts nepali_enabled=nepali_enabled %}
+          {% empty %}
+            <tr id="ts-empty-row">
+              <td colspan="4" class="text-center py-4 text-muted">
+                <i class="fas fa-inbox fa-2x mb-2 d-block opacity-25"></i>No entries yet. Add your first entry below.
+              </td>
+            </tr>
+          {% endfor %}
+
+          {# HTMX add-entry trigger row #}
+          {% include 'staff/partials/_ts_add_trigger.html' with ts=ts %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Total footer -->
+  {% if entries %}
+  <div class="text-end mt-2 me-3">
+    <span class="text-muted small fw-semibold">
+      Total: <strong style="color:#4f46e5;">{{ ts.total_hours }} hours</strong>
+    </span>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

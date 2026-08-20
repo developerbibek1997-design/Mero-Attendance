@@ -1,0 +1,114 @@
+{% extends 'dashboard.html' %}
+{% block title %}Email Logs | {{ org.name }}{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="fw-bold mb-0" style="color:#1e293b;">Email Logs</h4>
+      <p class="text-muted mb-0 small">Delivery status for every outgoing email — resend anything that failed.</p>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="card border-0 shadow-sm text-center p-3"><small class="text-muted">Sent</small><h5 class="mb-0 text-success">{{ sent_count }}</h5></div></div>
+    <div class="col-6 col-md-3"><div class="card border-0 shadow-sm text-center p-3"><small class="text-muted">Failed</small><h5 class="mb-0 text-danger">{{ failed_count }}</h5></div></div>
+  </div>
+
+  <div class="card border-0 shadow-sm p-3 mb-4" style="border-radius:12px;">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-md-4">
+        <label class="form-label small fw-bold mb-1">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All</option>
+          {% for val, label in status_choices %}<option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-4">
+        <label class="form-label small fw-bold mb-1">Type</label>
+        <select name="type" class="form-select form-select-sm">
+          <option value="">All</option>
+          {% for val, label in type_choices %}<option value="{{ val }}" {% if selected_type == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill">Filter</button>
+        <a href="{% url 'schooladmin:email_logs' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table mb-0 align-items-center">
+          <thead>
+            <tr>
+              <th class="ps-4 text-uppercase text-xxs text-secondary font-weight-bolder">Recipient</th>
+              <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Type</th>
+              <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Subject</th>
+              <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-center">Status</th>
+              <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Sent / Created</th>
+              <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end pe-4">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in logs %}
+            <tr>
+              <td class="ps-4 text-sm">
+                <strong>{{ log.recipient_email }}</strong>
+                {% if log.recipient_name %}<div class="text-xs text-muted">{{ log.recipient_name }}</div>{% endif %}
+              </td>
+              <td class="text-sm text-muted">{{ log.get_email_type_display }}</td>
+              <td class="text-sm text-muted">{{ log.subject|truncatechars:50 }}</td>
+              <td class="text-center">
+                <span class="badge {% if log.status == 'sent' %}bg-success{% elif log.status == 'failed' %}bg-danger{% else %}bg-secondary{% endif %} text-uppercase">{{ log.status }}</span>
+                {% if log.status == 'failed' and log.error_message %}
+                <div class="text-xs text-danger mt-1" style="max-width:220px;white-space:normal;">{{ log.error_message|truncatechars:80 }}</div>
+                {% endif %}
+              </td>
+              <td class="text-sm text-muted">{{ log.sent_at|default:log.created_at|date:"M d, Y H:i" }}</td>
+              <td class="text-end pe-4">
+                {% if log.status == 'failed' %}
+                <form method="post" action="{% url 'schooladmin:email_logs' %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="log_id" value="{{ log.id }}">
+                  <input type="hidden" name="redirect_qs" value="status={{ selected_status }}&type={{ selected_type }}">
+                  <button type="submit" class="btn btn-sm btn-outline-primary py-0">
+                    <i class="fas fa-rotate-right me-1"></i>Resend
+                  </button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center py-4 text-muted">No emails found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?status={{ selected_status }}&type={{ selected_type }}&page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <li class="page-item"><a class="page-link" href="?status={{ selected_status }}&type={{ selected_type }}&page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?status={{ selected_status }}&type={{ selected_type }}&page={{ page_obj.next_page_number }}">&raquo;</a></li>
+      {% endif %}
+    </ul>
+    <p class="text-center text-xs text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} — {{ page_obj.paginator.count }} total records</p>
+  </nav>
+  {% endif %}
+</div>
+{% endblock content %}

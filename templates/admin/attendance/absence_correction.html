@@ -71,7 +71,7 @@
                 <tr class="{% if m.id in present_ids %}table-success{% endif %}">
                   <td class="text-xs text-muted">{{ forloop.counter }}</td>
                   <td>
-                    <p class="text-sm font-weight-bold mb-0">{{ m.name }}</p>
+                    <p class="text-sm font-weight-bold mb-0"><a href="{% url 'handle:memberEdit' m.id %}" class="text-dark">{{ m.name }}</a></p>
                     <p class="text-xs text-muted mb-0">{{ m.get_member_type_display }} &bull; {{ m.classification.name|default:"—" }}</p>
                   </td>
                   <td class="text-center">

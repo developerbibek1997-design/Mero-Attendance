@@ -100,21 +100,33 @@
         <form action="" method="post" class="row g-3 align-items-end">
           {% csrf_token %}
           
-          <div class="col-md-9">
+          <div class="col-md-4">
             <label class="form-label" style="font-weight: 600; color: #475569;">
-                <i class="fas fa-sitemap text-primary me-1"></i> Select Department / Classification
+                <i class="fas fa-sitemap text-primary me-1"></i> Classification
             </label>
             <select name="classification" class="form-select custom-input w-100">
-              <option {% if 'All' == thisone %} selected {%endif%} value="All">🌐 All Departments</option>
+              <option value="All" {% if selected_classification == 'All' or not selected_classification %}selected{% endif %}>All Classifications</option>
               {% for c in clas %}
-                <option {% if thisone == c.name  %} selected {%endif%} value="{{c.id}}" >{{c.name}}</option>
+                <option value="{{ c.id }}" {% if selected_classification|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
               {% endfor %}
             </select>
           </div>
 
-          <div class="col-md-3">
+          <div class="col-md-4">
+            <label class="form-label" style="font-weight: 600; color: #475569;">
+                <i class="fas fa-code-branch text-warning me-1"></i> Branch
+            </label>
+            <select name="branch" class="form-select custom-input w-100">
+              <option value="All" {% if selected_branch == 'All' or not selected_branch %}selected{% endif %}>All Branches</option>
+              {% for b in branches %}
+                <option value="{{ b.id }}" {% if selected_branch|stringformat:"s" == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-4">
             <button type="submit" class="btn btn-premium btn-premium-primary w-100">
-              <i class="fas fa-filter me-2"></i> Filter Employees
+              <i class="fas fa-filter me-2"></i> Filter
             </button>
           </div>
 
@@ -152,10 +164,11 @@
                     <td>
                       <div class="d-flex px-3 py-1 align-items-center">
                         <div class="avatar-icon me-3">
-                            <i class="fas fa-user-tie"></i>
+                            {% if i.photo %}<img src="{{ i.photo.url }}" alt="{{ i.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
+                            {% else %}<i class="fas fa-user-tie"></i>{% endif %}
                         </div>
                         <div class="d-flex flex-column justify-content-center">
-                          <h6 class="mb-0 text-sm" style="font-weight: 700; color: #334155;">{{i.name}}</h6>
+                          <h6 class="mb-0 text-sm" style="font-weight: 700;"><a href="{% url 'handle:memberEdit' i.id %}" class="text-dark">{{i.name}}</a></h6>
                           <p class="text-xs text-secondary mb-0 mt-1"><i class="fas fa-briefcase me-1 text-primary"></i>{{i.classification}}</p>
                         </div>
                       </div>

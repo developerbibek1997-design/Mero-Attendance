@@ -14,9 +14,33 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     {% endfor %}
-   
-    
 
-    
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+            <h6 class="mb-0 font-weight-bolder"><i class="fas fa-database text-primary me-2"></i>Database Backup</h6>
+        </div>
+        <div class="card-body p-4">
+            {% if db_is_sqlite %}
+            <p class="text-sm text-muted mb-3">
+                Downloads a complete, point-in-time copy of the live database using SQLite's
+                online backup API — safe to run while the app is in normal use, since it never
+                reads a half-written page the way copying the raw file could. Nothing is stored
+                on the server; the file streams straight to your browser.
+            </p>
+            <form method="post" action="{% url 'superadmin:database_backup' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-download me-1"></i>Download Backup Now
+                </button>
+            </form>
+            {% else %}
+            <p class="text-sm text-muted mb-0">
+                This deployment is running on a non-SQLite database engine. Use your database
+                provider's own backup/snapshot tooling instead — this one-click backup only
+                supports SQLite.
+            </p>
+            {% endif %}
+        </div>
+    </div>
 {% endblock content %}
     

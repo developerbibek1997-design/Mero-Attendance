@@ -1,0 +1,69 @@
+{% extends 'dashboard.html' %}
+{% block title %}{% if mode == 'edit' %}Edit{% else %}Add{% endif %} Supplier | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-truck text-primary me-2"></i>{% if mode == 'edit' %}Edit{% else %}Add{% endif %} Supplier</h6>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          {% if form.errors %}<div class="alert alert-danger">Please correct the errors below.</div>{% endif %}
+          <form method="post">
+            {% csrf_token %}
+
+            <h6 class="text-sm font-weight-bolder mb-2">Supplier Information</h6>
+            <div class="row g-3 mb-3">
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Company Name *</label>{{ form.name }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Supplier Code</label>{{ form.supplier_number }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Branch</label>{{ form.branch }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Contact Person</label>{{ form.contact_person }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Phone</label>{{ form.phone }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Mobile</label>{{ form.mobile }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Email</label>{{ form.email }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Website</label>{{ form.website }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Status</label>{{ form.status }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">PAN/VAT Number</label>{{ form.pan_vat_number }}</div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Registration Number</label>{{ form.registration_number }}</div>
+            </div>
+
+            <h6 class="text-sm font-weight-bolder mb-2">Address</h6>
+            <div class="row g-3 mb-3">
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Address</label>{{ form.address }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Country</label>{{ form.country }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Province</label>{{ form.province }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">District</label>{{ form.district }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Municipality</label>{{ form.municipality }}</div>
+            </div>
+
+            <h6 class="text-sm font-weight-bolder mb-2">Bank Details</h6>
+            <div class="row g-3 mb-3">
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Bank Name</label>{{ form.bank_name }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Account Number</label>{{ form.bank_account_number }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Bank Branch</label>{{ form.bank_branch }}</div>
+            </div>
+
+            <h6 class="text-sm font-weight-bolder mb-2">Terms & Balances</h6>
+            <div class="row g-3 mb-3">
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Payment Terms</label>{{ form.payment_terms }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Credit Limit</label>{{ form.credit_limit }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Opening Balance</label>{{ form.opening_balance }}</div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Notes</label>{{ form.notes }}</div>
+            </div>
+
+            <div class="d-flex gap-2 mt-2">
+              <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+              <a href="{% url 'schooladmin:supplier_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

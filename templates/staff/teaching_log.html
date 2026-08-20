@@ -1,6 +1,6 @@
 {% extends 'dashboard.html' %}
 {% load static %}
-{% block title %}Teaching Log | {{ org.name }}{% endblock %}
+{% block title %}Assigned Course Attendance | {{ org.name }}{% endblock %}
 
 {% block content %}
 <style>
@@ -84,13 +84,13 @@ textarea.tl-input{min-height:80px;resize:vertical;}
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
       <div>
         <div class="text-xs text-white opacity-50 mb-1 fw-bold text-uppercase" style="position:relative;z-index:1;">{{ org.name }}</div>
-        <h4 class="tl-hero-title"><i class="fas fa-chalkboard-teacher me-2 opacity-75"></i>Teaching Log</h4>
-        <p class="tl-hero-sub">Record lessons covered and flag any gaps or follow-ups per course.</p>
+        <h4 class="tl-hero-title"><i class="fas fa-chalkboard-teacher me-2 opacity-75"></i>Assigned Course Attendance</h4>
+        <p class="tl-hero-sub">Only courses assigned to you by your administrator appear here.</p>
       </div>
-      <button class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#addLogModal"
+      {% if courses %}<button class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#addLogModal"
         style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;font-weight:700;position:relative;z-index:1;">
-        <i class="fas fa-plus me-1"></i>Add Today's Log
-      </button>
+        <i class="fas fa-plus me-1"></i>Mark Course Attendance
+      </button>{% endif %}
     </div>
   </div>
 
@@ -146,6 +146,11 @@ textarea.tl-input{min-height:80px;resize:vertical;}
         </div>
       </div>
     </div>
+    {% else %}
+    <div class="alert alert-info border-0 mb-4">
+      <i class="fas fa-circle-info me-2"></i>No course attendance work is assigned to you yet. Ask your administrator to use
+      <strong>Course Management → Assign Staff</strong>.
+    </div>
     {% endif %}
 
     <!-- Log history -->
@@ -155,10 +160,10 @@ textarea.tl-input{min-height:80px;resize:vertical;}
           <div class="tl-card-hd-icon" style="background:#dbeafe;color:#2563eb;"><i class="fas fa-clock-rotate-left"></i></div>
           <div class="tl-card-hd-title">Recent Logs <span class="text-muted fw-normal" style="font-size:.7rem;text-transform:none;">(last 20)</span></div>
         </div>
-        <button data-bs-toggle="modal" data-bs-target="#addLogModal"
+        {% if courses %}<button data-bs-toggle="modal" data-bs-target="#addLogModal"
           style="background:var(--tl-blue);color:#fff;border:none;border-radius:8px;padding:.42rem 1rem;font-size:.78rem;font-weight:700;cursor:pointer;">
-          <i class="fas fa-plus me-1"></i>New Log
-        </button>
+          <i class="fas fa-plus me-1"></i>Mark Attendance
+        </button>{% endif %}
       </div>
       <div class="tl-card-bd">
         {% if logs %}
@@ -196,12 +201,14 @@ textarea.tl-input{min-height:80px;resize:vertical;}
         {% else %}
         <div class="tl-empty">
           <i class="fas fa-chalkboard-teacher"></i>
-          <h5 class="fw-bold mb-1" style="color:var(--tl-ink);">No logs yet</h5>
-          <p class="mb-3">Start recording your lessons to track teaching progress.</p>
+          <h5 class="fw-bold mb-1" style="color:var(--tl-ink);">No attendance logs yet</h5>
+          <p class="mb-3">{% if courses %}Select an assigned course to record the lesson and absences.{% else %}An administrator must assign a course before you can record attendance.{% endif %}</p>
+          {% if courses %}
           <button data-bs-toggle="modal" data-bs-target="#addLogModal"
             style="background:var(--tl-blue);color:#fff;border:none;border-radius:10px;padding:.62rem 1.6rem;font-size:.85rem;font-weight:700;cursor:pointer;">
-            <i class="fas fa-plus me-1"></i>Add First Log
+            <i class="fas fa-plus me-1"></i>Mark First Attendance
           </button>
+          {% endif %}
         </div>
         {% endif %}
       </div>
@@ -214,7 +221,7 @@ textarea.tl-input{min-height:80px;resize:vertical;}
   <div class="modal-dialog modal-lg">
     <div class="modal-content" style="border:none;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.18);">
       <div class="modal-header" style="background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:18px 18px 0 0;border:none;padding:1.2rem 1.6rem;">
-        <h5 class="modal-title text-white fw-bold"><i class="fas fa-chalkboard-teacher me-2"></i>Add Teaching Log</h5>
+        <h5 class="modal-title text-white fw-bold"><i class="fas fa-chalkboard-teacher me-2"></i>Mark Assigned Course Attendance</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1) brightness(200%);"></button>
       </div>
       <form method="post">
@@ -244,7 +251,7 @@ textarea.tl-input{min-height:80px;resize:vertical;}
             </div>
             <div class="col-12">
               <label class="tl-label">Mark Absent Members <span class="text-muted fw-normal">(click to select)</span></label>
-              <p class="text-xs text-muted mb-2">Absent members auto-create gap records for the selected course.</p>
+              <p class="text-xs text-muted mb-2">Only active members enrolled in this course are listed. Selected absences create study-gap records.</p>
               <div id="memberCheckboxes" class="d-flex flex-wrap gap-2">
                 <span class="text-muted" style="font-size:.8rem;">Select a course first to load members.</span>
               </div>
@@ -269,8 +276,11 @@ document.getElementById('courseSelect').addEventListener('change', function(){
   var container = document.getElementById('memberCheckboxes');
   if(!courseId){ container.innerHTML = '<span class="text-muted" style="font-size:.8rem;">Select a course first.</span>'; return; }
   container.innerHTML = '<span class="text-muted" style="font-size:.8rem;"><i class="fas fa-spinner fa-spin me-1"></i>Loading members…</span>';
-  fetch('/staff/api/staff/class/'+courseId+'/members/')
-    .then(function(r){ return r.json(); })
+  fetch('/staff/api/assigned-courses/'+courseId+'/members/')
+    .then(function(r){
+      if(!r.ok){ throw new Error('Course roster unavailable'); }
+      return r.json();
+    })
     .then(function(data){
       container.innerHTML = '';
       var members = data.members || [];
@@ -279,7 +289,19 @@ document.getElementById('courseSelect').addEventListener('change', function(){
         return;
       }
       members.forEach(function(m){
-        container.innerHTML += '<div class="absent-pill"><input type="checkbox" name="absent_member_ids" value="'+m.id+'" id="abm'+m.id+'"><label for="abm'+m.id+'">'+m.name+'</label></div>';
+        var pill = document.createElement('div');
+        pill.className = 'absent-pill';
+        var input = document.createElement('input');
+        input.type = 'checkbox';
+        input.name = 'absent_member_ids';
+        input.value = m.id;
+        input.id = 'abm' + m.id;
+        var label = document.createElement('label');
+        label.htmlFor = input.id;
+        label.textContent = m.name;
+        pill.appendChild(input);
+        pill.appendChild(label);
+        container.appendChild(pill);
       });
     }).catch(function(){
       container.innerHTML = '<span class="text-danger" style="font-size:.8rem;"><i class="fas fa-exclamation-circle me-1"></i>Failed to load members.</span>';

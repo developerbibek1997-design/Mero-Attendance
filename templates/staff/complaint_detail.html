@@ -1,0 +1,49 @@
+{% extends 'dashboard.html' %}
+{% block title %}{{ complaint.subject }} | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      {% for msg in messages %}
+      <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+      {% endfor %}
+      <div class="card border-0 shadow-sm p-4" style="border-radius:12px;">
+        <h5 class="fw-bold mb-1">{{ complaint.subject }}</h5>
+        <p class="text-xs text-muted mb-3">Filed by {{ complaint.filed_by.name }} on {{ complaint.created_at|date:"M d, Y" }}</p>
+        <p class="mb-4">{{ complaint.description }}</p>
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Status</label>
+            <select name="status" class="form-select">
+              {% for val, label in status_choices %}<option value="{{ val }}" {% if complaint.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Remarks</label>
+            <textarea name="admin_remarks" class="form-control" rows="3">{{ complaint.admin_remarks }}</textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Reply to filer</label>
+            <textarea name="reply_message" class="form-control" rows="3" placeholder="This reply will appear in the mobile conversation."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Update Complaint</button>
+        </form>
+        {% if complaint.messages.all %}
+        <hr class="my-4">
+        <h6 class="fw-bold">Conversation</h6>
+        {% for reply in complaint.messages.all %}
+        <div class="border rounded p-3 mb-2 {% if reply.is_staff_reply %}bg-light{% endif %}">
+          <div class="small fw-bold">{% if reply.is_staff_reply %}Management{% else %}{{ complaint.filed_by.name }}{% endif %}</div>
+          <div>{{ reply.message }}</div>
+          <div class="text-muted text-xs mt-1">{{ reply.created_at|date:"M d, Y, g:i A" }}</div>
+        </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

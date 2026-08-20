@@ -158,7 +158,7 @@
       <div>
         <div style="font-size:.7rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:.4rem;">{{ org.name }}</div>
         <h4 class="pg-header-title"><i class="fas fa-sitemap me-2 opacity-75"></i>Manage Structure</h4>
-        <p class="pg-header-sub">Branches · Classifications · Sections · Courses</p>
+        <p class="pg-header-sub">{{ terms.structure_page_subtitle }}{% if features.courses %} · Courses{% endif %}</p>
       </div>
       <a href="javascript:history.back()" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:.4rem .9rem;font-size:.8rem;font-weight:600;text-decoration:none;">
         <i class="fas fa-arrow-left me-1"></i>Back
@@ -181,14 +181,16 @@
         <div class="tab-icon"><i class="fas fa-code-branch"></i></div>Branch
       </button>
       <button class="tab-btn" onclick="switchTab('classification', this)">
-        <div class="tab-icon"><i class="fas fa-layer-group"></i></div>Classification
+        <div class="tab-icon"><i class="fas fa-layer-group"></i></div>{{ terms.classification }}
       </button>
       <button class="tab-btn" onclick="switchTab('section', this)">
-        <div class="tab-icon"><i class="fas fa-object-group"></i></div>Section
+        <div class="tab-icon"><i class="fas fa-object-group"></i></div>{{ terms.section }}
       </button>
+      {% if features.courses %}
       <button class="tab-btn" onclick="switchTab('course', this)">
         <div class="tab-icon"><i class="fas fa-book-open"></i></div>Course
       </button>
+      {% endif %}
     </div>
 
     <!-- Branch Tab -->
@@ -232,6 +234,14 @@
             <label class="f-label">Email</label>
             {{ branch_form.email }}
           </div>
+          <div class="col-md-4">
+            <label class="f-label">Default Check-in</label>
+            {{ branch_form.default_shift_start_time }}
+          </div>
+          <div class="col-md-4">
+            <label class="f-label">Default Check-out</label>
+            {{ branch_form.default_shift_end_time }}
+          </div>
           <div class="col-12 d-flex justify-content-end pt-2">
             <button type="submit" class="btn-save"><i class="fas fa-code-branch"></i>Save Branch</button>
           </div>
@@ -244,28 +254,37 @@
       <div class="sec-hd">
         <div class="sec-icon indigo"><i class="fas fa-layer-group"></i></div>
         <div>
-          <div class="sec-title">Add Classification</div>
-          <div class="sec-sub">A classification represents a department, class, grade, or team within a branch</div>
+          <div class="sec-title">Add {{ terms.classification }}</div>
+          <div class="sec-sub">A {{ terms.classification|lower }} represents a department, class, grade, or team within a branch</div>
         </div>
       </div>
       <form method="post">
         {% csrf_token %}
         <div class="row g-3">
           <div class="col-md-5">
-            <label class="f-label">Classification Name <span style="color:#e11d48">*</span></label>
+            <label class="f-label">{{ terms.classification }} Name <span style="color:#e11d48">*</span></label>
             {{ form.name }}
             {% if form.name.errors %}<div style="color:#e11d48;font-size:.78rem;margin-top:.3rem;">{{ form.name.errors }}</div>{% endif %}
           </div>
           <div class="col-md-4">
-            <label class="f-label">Branch</label>
-            {{ form.branch }}
+            <label class="f-label">Available Branches</label>
+            {{ form.branches }}
+            <div class="text-muted" style="font-size:.72rem;margin-top:.25rem;">Leave empty for all branches. Ctrl/Cmd-click to select multiple.</div>
           </div>
           <div class="col-md-3">
             <label class="f-label">Status</label>
             {{ form.status }}
           </div>
+          <div class="col-md-4">
+            <label class="f-label">Default Check-in</label>
+            {{ form.default_shift_start_time }}
+          </div>
+          <div class="col-md-4">
+            <label class="f-label">Default Check-out</label>
+            {{ form.default_shift_end_time }}
+          </div>
           <div class="col-12 d-flex justify-content-end pt-2">
-            <button type="submit" class="btn-save"><i class="fas fa-layer-group"></i>Save Classification</button>
+            <button type="submit" class="btn-save"><i class="fas fa-layer-group"></i>Save {{ terms.classification }}</button>
           </div>
         </div>
       </form>
@@ -276,8 +295,8 @@
       <div class="sec-hd">
         <div class="sec-icon teal"><i class="fas fa-object-group"></i></div>
         <div>
-          <div class="sec-title">Add Section</div>
-          <div class="sec-sub">Sections subdivide a classification (e.g., Section A, Morning Batch)</div>
+          <div class="sec-title">Add {{ terms.section }}</div>
+          <div class="sec-sub">{{ terms.section_plural }} subdivide a {{ terms.classification|lower }} (e.g., Section A, Morning Batch)</div>
         </div>
       </div>
       <form method="post">
@@ -285,7 +304,7 @@
         <input type="hidden" name="add_section" value="1">
         <div class="row g-3">
           <div class="col-md-4">
-            <label class="f-label">Classification <span style="color:#e11d48">*</span></label>
+            <label class="f-label">{{ terms.classification }} <span style="color:#e11d48">*</span></label>
             {{ section_form.classification }}
           </div>
           <div class="col-md-4">
@@ -297,7 +316,7 @@
             {{ section_form.status }}
           </div>
           <div class="col-md-5">
-            <label class="f-label">Section Name <span style="color:#e11d48">*</span></label>
+            <label class="f-label">{{ terms.section }} Name <span style="color:#e11d48">*</span></label>
             {{ section_form.name }}
           </div>
           <div class="col-md-3">
@@ -305,12 +324,13 @@
             {{ section_form.code }}
           </div>
           <div class="col-12 d-flex justify-content-end pt-2">
-            <button type="submit" class="btn-save"><i class="fas fa-object-group"></i>Save Section</button>
+            <button type="submit" class="btn-save"><i class="fas fa-object-group"></i>Save {{ terms.section }}</button>
           </div>
         </div>
       </form>
     </div>
 
+    {% if features.courses %}
     <!-- Course Tab -->
     <div class="tab-pane" id="tab-course">
       <div class="sec-hd">
@@ -366,12 +386,13 @@
         </div>
       </form>
     </div>
+    {% endif %}
   </div>
 
   <!-- Classifications List -->
   <div class="list-card mb-4">
     <div class="list-card-hd">
-      <div class="list-card-hd-title"><i class="fas fa-layer-group me-2" style="color:var(--indigo);"></i>Classifications</div>
+      <div class="list-card-hd-title"><i class="fas fa-layer-group me-2" style="color:var(--indigo);"></i>{{ terms.classification_plural }}</div>
       <span class="badge-pill">{{ clas.count }} total</span>
     </div>
     {% if clas %}
@@ -379,9 +400,9 @@
       <table class="tbl">
         <thead>
           <tr>
-            <th>Classification</th>
+            <th>{{ terms.classification }}</th>
             <th>Branch</th>
-            <th>Sections</th>
+            <th>{{ terms.section_plural }}</th>
             <th style="text-align:right;">Actions</th>
           </tr>
         </thead>
@@ -389,7 +410,7 @@
           {% for classification in clas %}
           <tr>
             <td><span style="font-weight:700;">{{ classification.name }}</span></td>
-            <td><span class="badge-pill neutral">{{ classification.branch|default:"All branches" }}</span></td>
+            <td><span class="badge-pill neutral">{{ classification.branches.all|join:", "|default:"All branches" }}</span></td>
             <td>
               {% for section in classification.sections.all %}
                 <span class="badge-pill" style="margin:.1rem;">{{ section.name }}</span>
@@ -420,7 +441,7 @@
 
   <!-- Branches & Courses side by side -->
   <div class="row g-4">
-    <div class="col-lg-5">
+    <div class="{% if features.courses %}col-lg-5{% else %}col-12{% endif %}">
       <div class="list-card">
         <div class="list-card-hd">
           <div class="list-card-hd-title"><i class="fas fa-code-branch me-2" style="color:#e11d48;"></i>Branches</div>
@@ -443,6 +464,7 @@
         {% endif %}
       </div>
     </div>
+    {% if features.courses %}
     <div class="col-lg-7">
       <div class="list-card">
         <div class="list-card-hd">
@@ -469,6 +491,7 @@
         {% endif %}
       </div>
     </div>
+    {% endif %}
   </div>
 
 </div>
@@ -486,9 +509,12 @@
         <p style="color:#64748b;font-size:.88rem;">This will permanently delete <strong>{{ classification.name }}</strong> and cannot be undone.</p>
         <div class="d-flex gap-2 justify-content-center mt-3">
           <button type="button" class="btn-save-outline" data-bs-dismiss="modal">Cancel</button>
-          <a href="{% url 'handle:deleteClassification' classification.id %}" style="background:#e11d48;color:#fff;border:none;border-radius:10px;padding:.7rem 1.5rem;font-size:.88rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;">
-            <i class="fas fa-trash"></i>Delete
-          </a>
+          <form method="post" action="{% url 'handle:deleteClassification' classification.id %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" style="background:#e11d48;color:#fff;border:none;border-radius:10px;padding:.7rem 1.5rem;font-size:.88rem;font-weight:700;display:inline-flex;align-items:center;gap:.4rem;">
+              <i class="fas fa-trash"></i>Delete
+            </button>
+          </form>
         </div>
       </div>
     </div>

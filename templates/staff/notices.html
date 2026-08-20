@@ -1,0 +1,82 @@
+{% extends 'dashboard.html' %}
+{% block title %}Notices | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+  .nb-pill { display:inline-block; padding:.2rem .6rem; border-radius:999px; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+  .nb-urgent { background:#fee2e2; color:#991b1b; }
+  .nb-high { background:#ffedd5; color:#9a3412; }
+  .nb-normal { background:#e0e7ff; color:#3730a3; }
+  .nb-low { background:#f1f5f9; color:#475569; }
+  .notice-item { border-left:4px solid #e2e8f0; background:#fff; border-radius:12px; padding:1.1rem 1.3rem; margin-bottom:.9rem; box-shadow:0 2px 10px rgba(15,23,42,.05); }
+  .notice-item.unread { border-left-color:#dc2626; background:#fffbfb; }
+  .notice-item.unread .notice-title { font-weight:800; }
+  .notice-title { font-size:.98rem; color:#0f172a; font-weight:700; margin:0 0 .25rem; }
+  .notice-body { font-size:.87rem; color:#475569; line-height:1.65; white-space:pre-wrap; }
+</style>
+
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h4 class="font-weight-bolder mb-0"><i class="fas fa-bullhorn text-primary me-2"></i>Notices</h4>
+      <p class="text-xs text-muted mb-0">
+        {{ org.name }}{% if unread_count %} &middot; <strong class="text-danger">{{ unread_count }} unread</strong>{% else %} &middot; all caught up{% endif %}
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="?{% if selected_show == 'unread' %}{% else %}show=unread{% endif %}"
+         class="btn btn-sm mb-0 {% if selected_show == 'unread' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+        {% if selected_show == 'unread' %}Show All{% else %}Unread Only{% endif %}
+      </a>
+      {% if unread_count %}
+      <form method="post" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="mark_all_read">
+        <button type="submit" class="btn btn-sm btn-outline-secondary mb-0"><i class="fas fa-check-double me-1"></i>Mark All Read</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags|default:'success' }}{% endif %} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+
+  {% for n in notices %}
+  <div class="notice-item {% if not n.has_read %}unread{% endif %}">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+      <div>
+        <p class="notice-title">
+          {% if not n.has_read %}<span class="badge bg-danger me-1">New</span>{% endif %}{{ n.title }}
+        </p>
+        <span class="nb-pill nb-{{ n.priority }}">{{ n.get_priority_display }}</span>
+        <span class="text-xs text-muted ms-2">{{ n.publish_at|date:"M d, Y g:i A" }}</span>
+        {% if n.expires_at %}<span class="text-xs text-muted ms-2">· expires {{ n.expires_at|date:"M d, Y" }}</span>{% endif %}
+      </div>
+      <form method="post" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="notice_id" value="{{ n.id }}">
+        <input type="hidden" name="action" value="{% if n.has_read %}mark_unread{% else %}mark_read{% endif %}">
+        <button type="submit" class="btn btn-sm {% if n.has_read %}btn-outline-secondary{% else %}btn-outline-success{% endif %} py-0 mb-0">
+          {% if n.has_read %}<i class="fas fa-rotate-left me-1"></i>Mark Unread{% else %}<i class="fas fa-check me-1"></i>Mark Read{% endif %}
+        </button>
+      </form>
+    </div>
+    <div class="notice-body">{{ n.body }}</div>
+    {% if n.attachment %}
+    <a href="{{ n.attachment.url }}" target="_blank" class="btn btn-sm btn-outline-secondary mt-3 mb-0">
+      <i class="fas fa-paperclip me-1"></i>Download attachment
+    </a>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="card border-0 shadow-sm">
+    <div class="card-body text-center py-5 text-muted">
+      <i class="fas fa-bullhorn fa-2x mb-2 d-block opacity-50"></i>
+      {% if selected_show == 'unread' %}No unread notices.{% else %}No notices for you right now.{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

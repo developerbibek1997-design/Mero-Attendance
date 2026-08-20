@@ -1,14 +1,68 @@
-asgiref==3.4.1
-Django==3.2.7
-django-cors-headers==3.10.0
-django-pwa==1.0.10
-django-rest-framework==0.1.0
-djangorestframework==3.12.4
-et-xmlfile==1.1.0
-future==0.18.2
-openpyxl==3.0.9
-pillow==10.3.0
-pytz==2021.1
-pyzk==0.9
-sqlparse==0.4.2
-typing_extensions==4.11.0
+# Mero Attendance — production requirements
+#
+# This is a curated list of what the project actually imports, NOT a `pip freeze`
+# of a dev machine. The previous freeze is preserved at requirements.dev-freeze.txt.
+# It could not be installed on a Linux server: it contained 153 macOS-only
+# pyobjc-* packages (which fail outright), plus several GB of ML libraries
+# (torch, tensorflow, transformers, opencv, …) that no part of this codebase
+# imports.
+#
+# Install:
+#     pip install -r requirements.txt
+
+# ── Core framework ───────────────────────────────────────────────────────────
+Django==5.2.16
+
+# ── REST API (mobile app endpoints) ──────────────────────────────────────────
+djangorestframework==3.17.1
+djangorestframework-simplejwt==5.5.1
+django-filter==26.1
+django-cors-headers==4.9.0
+
+# ── Images ───────────────────────────────────────────────────────────────────
+# Required by every Django ImageField: member photos, signatures, org logos,
+# ID-card backgrounds, notice attachments.
+Pillow==12.3.0
+
+# ── ID cards: QR + barcode generation ────────────────────────────────────────
+qrcode==8.2
+python-barcode==0.15.1
+
+# ── PDF generation (payslip / bill / result email attachments) ───────────────
+# Pulls in reportlab, html5lib, svglib and pypdf as transitive dependencies.
+xhtml2pdf==0.2.15
+
+# ── Excel import / export (bulk member import, report exports) ───────────────
+openpyxl==3.1.5
+
+# ── Nepali (Bikram Sambat) calendar ──────────────────────────────────────────
+nepali-datetime==1.0.8.5
+pytz==2026.2
+
+# ── Attendance report export ─────────────────────────────────────────────────
+# Used in exactly one place (the daily attendance export in schooladmin/views.py)
+# to build a DataFrame that is then written out with the stdlib csv module.
+# It is a heavy dependency for that single use — that view could be rewritten
+# without it if you want a smaller install.
+pandas==3.0.3
+
+# ── Production server & static files ─────────────────────────────────────────
+# Not needed for `manage.py runserver`, but required for a real deployment.
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# ── Database driver (MySQL) ──────────────────────────────────────────────────
+# mysqlclient is the driver Django recommends. It is a C extension, so the
+# server needs build headers BEFORE pip install:
+#
+#   Debian/Ubuntu:  sudo apt install -y python3-dev default-libmysqlclient-dev \
+#                                       build-essential pkg-config
+#   RHEL/Alma:      sudo dnf install -y python3-devel mysql-devel gcc pkgconf
+#
+# If you cannot install build tools, swap it for the pure-Python driver:
+#   PyMySQL==1.1.1        # then add to school/__init__.py:
+#                         #   import pymysql; pymysql.install_as_MySQLdb()
+mysqlclient==2.2.4
+
+# PostgreSQL alternative — not needed if you're on MySQL.
+# psycopg2-binary==2.9.10

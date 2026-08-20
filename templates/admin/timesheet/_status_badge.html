@@ -1,0 +1,59 @@
+{% load static %}
+{# HTMX partial: swapped in after approve / reject. Replaces id="ts-review-{{ ts.pk }}". #}
+<div id="ts-review-{{ ts.pk }}" class="d-flex align-items-center gap-3 flex-wrap">
+  {% if ts.status == 'submitted' %}
+    <span class="badge rounded-pill px-3 py-2" style="background:#dbeafe;color:#1e40af;font-size:.82rem;">
+      <i class="fas fa-paper-plane me-1"></i>Submitted
+    </span>
+    <form hx-post="{% url 'schooladmin:timesheet_approve' pk=ts.pk %}"
+          hx-target="#ts-review-{{ ts.pk }}"
+          hx-swap="outerHTML"
+          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+          class="d-inline">
+      <button type="submit" class="btn btn-sm btn-success fw-semibold px-3">
+        <i class="fas fa-check me-1"></i>Approve
+      </button>
+    </form>
+    <button class="btn btn-sm btn-outline-danger fw-semibold px-3"
+            type="button"
+            onclick="document.getElementById('reject-form-{{ ts.pk }}').classList.toggle('d-none')">
+      <i class="fas fa-times me-1"></i>Reject
+    </button>
+    <form id="reject-form-{{ ts.pk }}"
+          class="d-none d-flex align-items-center gap-2 w-100 mt-2"
+          hx-post="{% url 'schooladmin:timesheet_reject' pk=ts.pk %}"
+          hx-target="#ts-review-{{ ts.pk }}"
+          hx-swap="outerHTML"
+          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+      <input type="text" name="comment" class="form-control form-control-sm"
+             placeholder="Rejection reason (optional)" style="max-width:320px;">
+      <button type="submit" class="btn btn-sm btn-danger fw-semibold px-3">
+        <i class="fas fa-times me-1"></i>Confirm Reject
+      </button>
+    </form>
+
+  {% elif ts.status == 'approved' %}
+    <span class="badge rounded-pill px-3 py-2" style="background:#d1fae5;color:#065f46;font-size:.82rem;">
+      <i class="fas fa-circle-check me-1"></i>Approved
+    </span>
+    {% if ts.approved_by %}
+    <span class="text-muted small">by {{ ts.approved_by.get_full_name|default:ts.approved_by.username }}
+      {% if ts.approved_at %}· {{ ts.approved_at|date:"d M Y" }}{% endif %}
+    </span>
+    {% endif %}
+
+  {% elif ts.status == 'rejected' %}
+    <span class="badge rounded-pill px-3 py-2" style="background:#fee2e2;color:#991b1b;font-size:.82rem;">
+      <i class="fas fa-circle-xmark me-1"></i>Rejected
+    </span>
+    {% if ts.admin_comment %}
+    <span class="text-muted small fst-italic">"{{ ts.admin_comment }}"</span>
+    {% endif %}
+
+  {% elif ts.status == 'draft' %}
+    <span class="badge rounded-pill px-3 py-2" style="background:#fef3c7;color:#92400e;font-size:.82rem;">
+      <i class="fas fa-pen-to-square me-1"></i>Draft
+    </span>
+    <span class="text-muted small">Not yet submitted by staff.</span>
+  {% endif %}
+</div>

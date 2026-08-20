@@ -1,0 +1,31 @@
+{% extends 'dashboard.html' %}
+{% block title %}Purchase Returns | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="font-weight-bolder mb-0">Purchase Returns</h4>
+    <a href="{% url 'schooladmin:purchase_list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Purchases</a>
+  </div>
+  {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th class="text-xs">Date</th><th class="text-xs">Supplier</th><th class="text-xs">Purchase #</th><th class="text-xs">Status</th><th class="text-xs">Total</th></tr></thead>
+        <tbody>
+          {% for r in returns %}
+          <tr>
+            <td class="text-sm"><a href="{% url 'schooladmin:purchase_return_detail' r.pk %}">{{ r.return_date }}</a></td>
+            <td class="text-sm">{{ r.supplier.name }}</td>
+            <td class="text-sm">#{{ r.purchase_id }}</td>
+            <td>{% if r.status == 'completed' %}<span class="badge bg-success">Completed</span>{% else %}<span class="badge bg-warning text-dark">Draft</span>{% endif %}</td>
+            <td class="text-sm font-weight-bold">Rs. {{ r.total_amount }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-5"><i class="fas fa-undo fa-2x mb-2 d-block"></i>No purchase returns yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

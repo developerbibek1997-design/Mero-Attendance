@@ -43,7 +43,7 @@
         <tbody>
         {% for row in preview_rows %}
           <tr>
-            <td><strong>{{ row.member.name }}</strong></td><td>{{ row.member.card|default:"-" }}</td><td>{{ row.member.section.name|default:"-" }}</td><td>{{ row.member.get_billing_type_display }}</td>
+            <td><strong><a href="{% url 'handle:memberEdit' row.member.id %}" class="text-dark">{{ row.member.name }}</a></strong></td><td>{{ row.member.card|default:"-" }}</td><td>{{ row.member.section.name|default:"-" }}</td><td>{{ row.member.get_billing_type_display }}</td>
             <td>Rs. {{ row.base_amount|floatformat:0 }}</td><td>Rs. {{ row.course_fee_amount|floatformat:0 }}</td><td>Rs. {{ row.discount_amount|floatformat:0 }}</td><td>Rs. {{ row.prev_due|floatformat:0 }}</td><td><strong>Rs. {{ row.total_payable|floatformat:0 }}</strong></td>
             <td>{% if row.existing_bill %}<span class="pill amber">{{ row.existing_status }}</span>{% else %}<span class="pill green">New</span>{% endif %}</td>
             <td>{% if row.existing_bill %}Skip / Regenerate{% else %}Generate{% endif %}</td>

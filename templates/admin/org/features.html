@@ -43,6 +43,8 @@
   }
   .feat-card.feat-enabled  { border-color: #22c55e; background: #f0fdf4; }
   .feat-card.feat-disabled { border-color: #e2e8f0; background: #fafafa; }
+  .feat-card.feat-locked   { opacity: .55; }
+  .feat-locked-note        { font-size: .72rem; color: #dc2626; font-weight: 600; margin: 4px 0 0; }
   .feat-card-icon {
     width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
@@ -53,6 +55,11 @@
   .feat-card-body { flex: 1; min-width: 0; }
   .feat-card-label { font-size: .87rem; font-weight: 700; color: #0f172a; margin: 0 0 2px; }
   .feat-card-desc  { font-size: .76rem; color: #64748b; margin: 0; line-height: 1.4; }
+  .feat-price-badge { display:inline-block; font-size:.6rem; font-weight:800; letter-spacing:.03em;
+    padding:2px 7px; border-radius:20px; margin-left:6px; vertical-align:middle; text-transform:uppercase; }
+  .feat-price-free { background:#dcfce7; color:#15803d; }
+  .feat-price-paid { background:#fef3c7; color:#b45309; }
+  .feat-locked-note { font-size:.72rem; color:#b45309; margin:6px 0 0; font-weight:600; }
   /* Toggle switch */
   .feat-toggle { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; }
   .feat-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
@@ -143,6 +150,9 @@
         {% include "admin/org/_feat_row.html" with field="manual_attendance" label="Manual Attendance"      desc="Admin manually marks attendance"            icon="fa-hand-paper" %}
         {% include "admin/org/_feat_row.html" with field="auto_checkin"     label="Auto Check-in"          desc="Automatically check in at scheduled time"   icon="fa-robot" %}
         {% include "admin/org/_feat_row.html" with field="course_based_attendance" label="Course-based Attendance" desc="Attendance tied to specific courses" icon="fa-book-open" %}
+        {% include "admin/org/_feat_row.html" with field="enable_qr_attendance" label="Dynamic QR Attendance" desc="Admin generates a time-limited QR; staff/students scan it to mark attendance" icon="fa-qrcode" %}
+        {% include "admin/org/_feat_row.html" with field="feature_face_attendance" label="Face Attendance" desc="Enrol member faces and mark attendance with the camera using facial recognition" icon="fa-face-viewfinder" %}
+        {% include "admin/org/_feat_row.html" with field="feature_timesheet" label="Timesheet Management" desc="Staff log daily work hours per task; admin reviews and approves submissions" icon="fa-clock-rotate-left" %}
       </div>
     </div>
 
@@ -159,6 +169,7 @@
         {% include "admin/org/_feat_row.html" with field="feature_hrms"        label="HRMS Module"         desc="Staff documents, resignation, and HR records" icon="fa-id-card-alt" %}
         {% include "admin/org/_feat_row.html" with field="feature_member_mgmt" label="Member Management"   desc="Add, edit, and manage members/employees"      icon="fa-users" %}
         {% include "admin/org/_feat_row.html" with field="feature_branches"    label="Branch Management"   desc="Multi-location/branch support"                icon="fa-code-branch" %}
+        {% include "admin/org/_feat_row.html" with field="feature_id_cards"    label="ID Card Generation"  desc="Design and bulk-generate printable member ID cards as PDF" icon="fa-id-card" %}
       </div>
     </div>
 
@@ -173,6 +184,21 @@
       </div>
       <div class="feat-grid">
         {% include "admin/org/_feat_row.html" with field="feature_payroll" label="Payroll Module" desc="Generate payslips, salary sheets, allowances, deductions, and tax" icon="fa-file-invoice-dollar" %}
+      </div>
+    </div>
+
+    <!-- ── 3b. FIELD OPERATIONS ──────────────────────────── -->
+    <div class="feat-section">
+      <div class="feat-section-header">
+        <div class="feat-section-icon" style="background:#0d9488;"><i class="fas fa-location-arrow"></i></div>
+        <div>
+          <p class="feat-section-title">Field Operations</p>
+          <p class="feat-section-sub">Field staff location sharing and client follow-up tracking</p>
+        </div>
+      </div>
+      <div class="feat-grid">
+        {% include "admin/org/_feat_row.html" with field="feature_field_visits" label="Field Visit / Location Sharing" desc="Field staff can send their GPS location with an optional visit report" icon="fa-location-arrow" %}
+        {% include "admin/org/_feat_row.html" with field="feature_clients" label="Client Follow-Up (CRM)" desc="Track client organizations, log follow-up visits, and see who's due for a follow-up" icon="fa-building" %}
       </div>
     </div>
 
@@ -280,7 +306,7 @@ const PRESETS = {
 };
 
 function applyPreset(key) {
-  const boxes = document.querySelectorAll('.feat-toggle input[type=checkbox]');
+  const boxes = Array.from(document.querySelectorAll('.feat-toggle input[type=checkbox]')).filter(b => !b.disabled);
   if (key === 'all') { boxes.forEach(b => b.checked = true); }
   else if (key === 'none') { boxes.forEach(b => b.checked = false); }
   else {

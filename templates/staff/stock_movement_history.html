@@ -1,0 +1,35 @@
+{% extends 'dashboard.html' %}
+{% block title %}Stock Movement History | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="fw-bold mb-4" style="color:#1e293b;">Stock Movement History</h4>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-body p-0">
+      <table class="table mb-0 align-items-center">
+        <thead>
+          <tr>
+            <th class="ps-4 text-uppercase text-xxs text-secondary font-weight-bolder">Item</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Type</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder">Date</th>
+            <th class="text-uppercase text-xxs text-secondary font-weight-bolder text-end pe-4">Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in movements %}
+          <tr>
+            <td class="ps-4 text-sm"><strong>{{ m.item.name }}</strong></td>
+            <td class="text-sm"><span class="badge bg-{% if m.movement_type == 'in' %}success{% else %}danger{% endif %}">{{ m.movement_type|upper }}</span></td>
+            <td class="text-sm text-muted">{{ m.movement_date }}</td>
+            <td class="text-sm text-end pe-4">{{ m.quantity }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center py-4 text-muted">No movements found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

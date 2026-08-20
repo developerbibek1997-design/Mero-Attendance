@@ -1,0 +1,44 @@
+{% extends 'dashboard.html' %}
+{% block title %}{% if mode == 'edit' %}Edit{% else %}New{% endif %} Homework | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-book-open-reader text-primary me-2"></i>{% if mode == 'edit' %}Edit Homework{% else %}Assign Homework{% endif %}</h6>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+          {% if form.errors %}<div class="alert alert-danger">Please correct the errors below.</div>{% endif %}
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Class *</label>{{ form.classification }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Section</label>{{ form.section }}</div>
+              <div class="col-md-4"><label class="form-label text-xs font-weight-bold">Subject *</label>{{ form.subject }}</div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Description *</label>{{ form.description }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Due Date *</label>{{ form.due_date }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Priority</label>{{ form.priority }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Est. Time (min)</label>{{ form.estimated_time_minutes }}</div>
+              <div class="col-md-3"><label class="form-label text-xs font-weight-bold">Frequency</label>{{ form.frequency }}</div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Attachments</label><input type="file" name="attachments" class="form-control" multiple></div>
+              <div class="mb-3">
+                <label class="form-label text-xs font-weight-bold">Status</label>
+                <select name="status" class="form-select">
+                    <option value="active">Active</option>
+                    <option value="archived">Archived</option>
+                </select>
+               </div>
+              <div class="col-12 d-flex gap-2 mt-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+                <a href="{% url 'schooladmin:homework_list' %}" class="btn btn-outline-secondary">Cancel</a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

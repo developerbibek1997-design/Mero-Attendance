@@ -112,7 +112,12 @@ class PermRequiredMixin:
         if self.required_perm:
             ut = getattr(request.user, 'user_type', '')
             if ut not in ('1', '2'):
-                if not has_perm(request.user, self.required_perm):
+                permission_keys = (
+                    (self.required_perm,)
+                    if isinstance(self.required_perm, str)
+                    else tuple(self.required_perm)
+                )
+                if not any(has_perm(request.user, key) for key in permission_keys):
                     return _denied_response(
                         request,
                         "You don't have permission to access this page."

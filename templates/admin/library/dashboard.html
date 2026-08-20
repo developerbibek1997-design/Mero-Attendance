@@ -1,0 +1,117 @@
+{% extends 'dashboard.html' %}
+{% block title %}Library Dashboard | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div><h4 class="font-weight-bolder mb-0">Library Dashboard</h4><p class="text-sm text-muted mb-0">Books, borrowing and reports</p></div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'schooladmin:add_book' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i>Add Book</a>
+      <a href="{% url 'schooladmin:library_issue' %}" class="btn btn-success btn-sm"><i class="fas fa-right-from-bracket me-1"></i>Issue Book</a>
+      <a href="{% url 'schooladmin:library_issues' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-history me-1"></i>Issue History</a>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-primary mb-1">Total Books</p><h3 class="font-weight-bolder mb-0">{{ total_books }}</h3><span class="text-xs text-muted">{{ title_count }} titles</span></div>
+          <div class="icon icon-shape bg-gradient-primary text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-book"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-success mb-1">Available</p><h3 class="font-weight-bolder mb-0">{{ available }}</h3><span class="text-xs text-muted">On the shelf</span></div>
+          <div class="icon icon-shape bg-gradient-success text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-check-circle"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-warning mb-1">Issued</p><h3 class="font-weight-bolder mb-0">{{ issued_count }}</h3><span class="text-xs text-muted">Currently borrowed</span></div>
+          <div class="icon icon-shape bg-gradient-warning text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-right-from-bracket"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-danger mb-1">Overdue</p><h3 class="font-weight-bolder mb-0">{{ overdue_count }}</h3><span class="text-xs text-muted">Past due date</span></div>
+          <div class="icon icon-shape bg-gradient-danger text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-triangle-exclamation"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-info mb-1">Returned</p><h3 class="font-weight-bolder mb-0">{{ returned_count }}</h3><span class="text-xs text-muted">All-time</span></div>
+          <div class="icon icon-shape bg-gradient-info text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-right-to-bracket"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-secondary mb-1">Lost</p><h3 class="font-weight-bolder mb-0">{{ lost }}</h3><span class="text-xs text-muted">Copies</span></div>
+          <div class="icon icon-shape bg-gradient-secondary text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-question-circle"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-dark mb-1">Damaged</p><h3 class="font-weight-bolder mb-0">{{ damaged }}</h3><span class="text-xs text-muted">Copies</span></div>
+          <div class="icon icon-shape bg-gradient-dark text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-bandage"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <p class="text-xs text-uppercase font-weight-bold text-primary mb-1">Today</p>
+          <div class="d-flex justify-content-between">
+            <span class="text-sm"><i class="fas fa-right-from-bracket text-success me-1"></i>{{ today_issued }} issued</span>
+            <span class="text-sm"><i class="fas fa-right-to-bracket text-info me-1"></i>{{ today_returned }} returned</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between">
+      <h6 class="mb-0 font-weight-bolder"><i class="fas fa-history text-primary me-2"></i>Recent Issues</h6>
+      <a href="{% url 'schooladmin:library_issues' %}" class="btn btn-xs btn-outline-primary">View All</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th class="text-xs">Book</th><th class="text-xs">Member</th><th class="text-xs">Issued</th><th class="text-xs">Due</th><th class="text-xs">Status</th></tr></thead>
+        <tbody>
+          {% for i in recent_issues %}
+          <tr>
+            <td class="text-sm font-weight-bold">{{ i.book.title }}</td>
+            <td class="text-sm">{{ i.member.name }}</td>
+            <td class="text-sm">{{ i.issue_date }}</td>
+            <td class="text-sm">{{ i.due_date }}</td>
+            <td>
+              {% if i.status == 'returned' %}<span class="badge bg-info">Returned</span>
+              {% elif i.status == 'lost' %}<span class="badge bg-secondary">Lost</span>
+              {% elif i.is_overdue %}<span class="badge bg-danger">Overdue</span>
+              {% else %}<span class="badge bg-warning">Issued</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No books issued yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

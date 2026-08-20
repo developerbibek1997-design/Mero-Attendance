@@ -1,181 +1,123 @@
 {% extends 'dashboard.html' %}
+{% load schooladmin_extras %}
 {% load static %}
-{% block title %}Class Attendance Report{% endblock title %}
-
+{% block title %}Class Attendance Report | {{ org.name }}{% endblock %}
 {% block content %}
-<style>
-    /* Premium UI Styling */
-    .filter-card { border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-    .report-card { border-radius: 12px; border: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
-    .table-hover tbody tr:hover { background-color: #f8f9fe; transition: all 0.2s ease; }
-    
-    /* Print Specific Styling */
-    @media print {
-        body * { visibility: hidden; }
-        #printarea, #printarea * { visibility: visible; }
-        #printarea { position: absolute; left: 0; top: 0; width: 100%; }
-        
-        .badge { border: 1px solid #000; color: #000 !important; background: transparent !important; }
-        .bg-gradient-success, .bg-gradient-danger { background: none !important; -webkit-print-color-adjust: exact; }
-        
-        table { border-collapse: collapse !important; width: 100%; }
-        th, td { border: 1px solid #ddd !important; padding: 8px !important; text-align: left; }
-        th { background-color: #f5f5f5 !important; -webkit-print-color-adjust: exact; }
-        
-        /* Hide UI elements during print */
-        .modal, .btn, form, .navbar, .sidenav { display: none !important; }
-        @page { margin: 1cm; }
-    }
-</style>
-
-<div class="container-fluid py-4">
-    
-    <div class="card filter-card mb-4 p-3">
-        <form action="" method="post" class="m-0">
-            {% csrf_token %}
-            <div class="row align-items-end g-3">
-                
-                <div class="col-md-4">
-                    <label class="form-label text-xs font-weight-bolder text-uppercase mb-1"><i class="fas fa-calendar-alt me-1"></i> Select Date</label>
-                    <input type="date" class="form-control" name="date" value="{{ date }}" required>
-                </div>
-                
-                <div class="col-md-5">
-                    <label class="form-label text-xs font-weight-bolder text-uppercase mb-1"><i class="fas fa-users me-1"></i> Assigned Classification</label>
-                    <select name="filter" class="form-select">
-                        <option value="All" {% if 'All' in thisone %} selected {% endif %}>All Assigned Classes</option>
-                        {% for c in clas %}
-                            <option value="{{ c.id }}" {% if thisone == c.name %} selected {% endif %}>{{ c.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn bg-gradient-primary mb-0 flex-grow-1">
-                        <i class="fas fa-filter me-1"></i> Generate
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary mb-0 px-3" onclick="window.print()" title="Print Report">
-                        <i class="fas fa-print"></i>
-                    </button>
-                </div>
-                
-            </div>
-        </form>
+{% include 'components/report_workspace_styles.html' %}
+<div class="container-fluid py-4 report-workspace">
+  <section class="report-hero mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <span class="report-eyebrow"><i class="fas fa-chart-column"></i> Attendance Reporting</span>
+        <h3 class="font-weight-bolder mt-3 mb-1">Class Attendance Report</h3>
+        <p class="text-sm mb-0 opacity-8">The same audit-ready reporting workspace used by your organization administrator, limited to your assigned classes.</p>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-light btn-sm mb-0 no-print" onclick="window.print()">
+          <i class="fas fa-print me-1"></i>Print Report
+        </button>
+      </div>
     </div>
-
-    <div class="card report-card" id="printarea">
-        
-        <div class="card-header bg-light border-bottom p-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="mb-0 text-dark">{{ org.name }}</h5>
-                    <p class="text-sm text-muted mb-0 font-weight-bold">Daily Attendance Log</p>
-                </div>
-                <div class="text-end">
-                    <h6 class="mb-0 text-primary">{{ date }}</h6>
-                    <span class="badge bg-secondary">{{ thisone }}</span>
-                </div>
-            </div>
-        </div>
-       
-        <div class="card-body px-0 pt-0 pb-2">
-            <div class="table-responsive">
-                <table class="table table-hover align-items-center mb-0">
-                    <thead>
-                        <tr>
-                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Member Details</th>
-                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Time In</th>
-                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Time Out</th>
-                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Total Hours</th>
-                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for i in tm %}
-                        <tr>
-                            <td>
-                                <div class="d-flex px-3 py-1">
-                                    <div class="d-flex flex-column justify-content-center">
-                                        <h6 class="mb-0 text-sm text-primary" data-bs-toggle="modal" data-bs-target="#exampleModal{{ i.id }}" style="cursor:pointer;" title="Click for punch details">
-                                            {{ i.name }} <i class="fas fa-info-circle text-xs text-muted ms-1 d-print-none"></i>
-                                        </h6>
-                                        {% if 'All' in thisone %}
-                                        <p class="text-xs text-secondary mb-0">{{ i.classification.name }}</p>
-                                        {% endif %}
-                                    </div>
-                                </div>
-
-                                <div class="modal fade d-print-none" id="exampleModal{{ i.id }}" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered modal-sm">
-                                        <div class="modal-content border-0 shadow">
-                                            <div class="modal-header bg-light">
-                                                <h6 class="modal-title" id="exampleModalLabel"><i class="fas fa-list-ul me-2 text-primary"></i>{{ i.name }}'s Punches</h6>
-                                                <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close">
-                                                    <span aria-hidden="true">&times;</span>
-                                                </button>
-                                            </div>
-                                            <div class="modal-body p-0">
-                                                <ul class="list-group list-group-flush">
-                                                    <li class="list-group-item d-flex justify-content-between font-weight-bold bg-gray-100">
-                                                        <span>Status</span><span>Scanned Time</span>
-                                                    </li>
-                                                    {% for j in i.alldataofdaily.all %}
-                                                    <li class="list-group-item d-flex justify-content-between">
-                                                        <span><i class="fas fa-check-circle text-success me-2"></i>Log {{ forloop.counter }}</span>
-                                                        <span class="text-dark">{{ j.scanned_time.time|time:"g:i A" }}</span>
-                                                    </li>
-                                                    {% empty %}
-                                                    <li class="list-group-item text-center text-muted py-3">No scans recorded on this date.</li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </div>
-                                            <div class="modal-footer border-0 pt-0">
-                                                <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Close Window</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-
-                            <td>
-                                <p class="text-sm font-weight-bold text-dark mb-0">{{ i.first_daily_time|time:"g:i A"|default:"--" }}</p>
-                            </td>
-
-                            <td>
-                                <p class="text-sm font-weight-bold text-dark mb-0">{{ i.last_daily_time|time:"g:i A"|default:"--" }}</p>
-                            </td>
-
-                            <td class="align-middle text-center text-sm">
-                                {% if i.hour_inside %}
-                                    <span class="text-sm font-weight-bolder text-dark">{{ i.hour_inside }}</span>
-                                {% else %}
-                                    <span class="text-xs text-muted">--</span>
-                                {% endif %}
-                            </td>
-
-                            <td class="align-middle text-center">
-                                {% if i.first_daily_time %}
-                                    <span class="badge bg-gradient-success px-3 py-2">PRESENT</span>
-                                {% else %}
-                                    <span class="badge bg-gradient-danger px-3 py-2">ABSENT</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center py-5">
-                                <div class="text-muted">
-                                    <i class="fas fa-folder-open text-4xl mb-3 opacity-5"></i>
-                                    <h6>No data available</h6>
-                                    <p class="text-sm">There are no members assigned to this selection for the chosen date.</p>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <div class="d-flex gap-2 flex-wrap mt-4">
+      <span class="report-chip bg-white text-dark"><i class="fas fa-calendar"></i>{{ date }}</span>
+      <span class="report-chip bg-white text-dark"><i class="fas fa-users"></i>{{ thisone }}</span>
     </div>
+  </section>
+
+  <section class="report-toolbar mb-4 no-print">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="report-filter-label">Attendance date</label>
+          <input type="date" class="form-control" name="date" value="{{ date }}" required data-global-date-picker>
+        </div>
+        <div class="col-md-5">
+          <label class="report-filter-label">Assigned classification</label>
+          <select name="filter" class="form-select">
+            <option value="All" {% if 'All' in thisone %}selected{% endif %}>All assigned classes</option>
+            {% for c in clas %}
+            <option value="{{ c.id }}" {% if thisone == c.name %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary w-100 mb-0 py-2"><i class="fas fa-filter me-1"></i>Generate Report</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="report-stat"><span class="report-stat-icon"><i class="fas fa-users"></i></span><p class="report-stat-label">Roster Members</p><p class="report-stat-value">{{ tm|length }}</p></div>
+    </div>
+    <div class="col-md-4">
+      <div class="report-stat"><span class="report-stat-icon"><i class="fas fa-layer-group"></i></span><p class="report-stat-label">Assigned Classes</p><p class="report-stat-value">{{ clas|length }}</p></div>
+    </div>
+    <div class="col-md-4">
+      <div class="report-stat"><span class="report-stat-icon"><i class="fas fa-shield-halved"></i></span><p class="report-stat-label">Report Scope</p><p class="report-stat-value" style="font-size:1rem;">Assigned only</p></div>
+    </div>
+  </div>
+
+  <section class="report-panel overflow-hidden" id="printarea">
+    <div class="px-3 py-3 border-bottom d-flex justify-content-between align-items-center">
+      <div>
+        <h6 class="mb-0 font-weight-bolder">{{ org.name }}</h6>
+        <p class="text-xs text-muted mb-0">Daily attendance ledger · {{ date }} · {{ thisone }}</p>
+      </div>
+      <span class="report-chip">{{ tm|length }} records</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table report-table">
+        <thead>
+          <tr>
+            <th class="ps-3">Member</th><th>Classification</th><th>Time In</th>
+            <th>Time Out</th><th class="text-center">Worked</th><th class="text-center">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in tm %}
+          <tr>
+            <td class="ps-3">
+              <div class="d-flex align-items-center gap-2">
+                {{ i|member_avatar:28 }}
+                <button type="button" class="btn btn-link p-0 text-start font-weight-bolder text-dark" data-bs-toggle="modal" data-bs-target="#punchModal{{ i.id }}">
+                  {{ i.name }} <i class="fas fa-circle-info text-primary ms-1 no-print"></i>
+                </button>
+              </div>
+            </td>
+            <td>{{ i.classification.name|default:"—" }}</td>
+            <td class="font-weight-bold">{{ i.first_daily_time|time:"g:i A"|default:"—" }}</td>
+            <td class="font-weight-bold">{{ i.last_daily_time|time:"g:i A"|default:"—" }}</td>
+            <td class="text-center">{{ i.hour_inside|default:"—" }}</td>
+            <td class="text-center">
+              {% if i.first_daily_time %}<span class="badge bg-success">Present</span>
+              {% else %}<span class="badge bg-danger">Absent</span>{% endif %}
+            </td>
+          </tr>
+          <div class="modal fade no-print" id="punchModal{{ i.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+              <div class="modal-content border-0 shadow">
+                <div class="modal-header"><h6 class="modal-title">{{ i.name }} · Punches</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-0">
+                  <ul class="list-group list-group-flush">
+                    {% for punch in i.alldataofdaily.all %}
+                    <li class="list-group-item d-flex justify-content-between"><span>Log {{ forloop.counter }}</span><strong>{{ punch.scanned_time.time|time:"g:i A" }}</strong></li>
+                    {% empty %}
+                    <li class="list-group-item text-center text-muted py-4">No scans recorded.</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <tr><td colspan="6"><div class="report-empty"><span class="report-empty-icon"><i class="fas fa-folder-open"></i></span><h6>No attendance data</h6><p class="text-sm mb-0">No members are available for this class and date.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
 </div>
-{% endblock content %}
+{% endblock %}

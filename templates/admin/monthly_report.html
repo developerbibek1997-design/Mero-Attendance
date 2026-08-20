@@ -1,0 +1,660 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Monthly Attendance Report | {{ org.name }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/attendance_calendar.css' %}">
+
+<!-- Full-page loading overlay — shown while a preset link or the date-range
+     form navigates to a new report (these are plain page loads, not AJAX,
+     so this is purely a "your click registered, hang on" indicator). -->
+<div id="mrLoadingOverlay" class="mr-loading-overlay">
+  <div class="mr-loading-box">
+    <div class="mr-spinner"></div>
+    <p class="mr-loading-text">Loading report…</p>
+  </div>
+</div>
+
+<style>
+  .mr-loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+  }
+  .mr-loading-overlay.active { display: flex; }
+  .mr-loading-box { text-align: center; }
+  .mr-spinner {
+    width: 46px; height: 46px; margin: 0 auto 12px;
+    border: 4px solid rgba(255,255,255,.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: mr-spin .7s linear infinite;
+  }
+  @keyframes mr-spin { to { transform: rotate(360deg); } }
+  .mr-loading-text { color: #fff; font-size: .85rem; font-weight: 600; margin: 0; letter-spacing: .02em; }
+</style>
+<style>
+  .mr-legend span { display:inline-flex; align-items:center; gap:5px; font-size:.72rem; margin-right:12px; }
+  .mr-dot { width:14px; height:14px; border-radius:3px; display:inline-block; }
+  .mr-p { background:#16a34a; } .mr-a { background:#f97316; } .mr-l { background:#facc15; }
+  .mr-h { background:#3b82f6; } .mr-w { background:#e2e8f0; border:1px solid #cbd5e1; }
+  .mr-f { background:#8b5cf6; }
+  table.mr-matrix { border-collapse:collapse; width:100%; font-size:.7rem; }
+  table.mr-matrix th, table.mr-matrix td { border:1px solid #d7dee7; text-align:center; padding:2px 3px; white-space:nowrap; }
+  table.mr-matrix thead th { background:#f1f5f9; position:sticky; top:0; }
+  table.mr-matrix td.nm { text-align:left; font-weight:600; position:sticky; left:0; background:#fff; z-index:2; min-width:130px; }
+  table.mr-matrix thead th.nm { left:0; z-index:3; }
+  .cell-p { background:#16a34a; color:#fff; } .cell-a { background:#f97316; color:#fff; }
+  .cell-l { background:#facc15; color:#334155; } .cell-h { background:#3b82f6; color:#fff; }
+  .cell-w { background:#eef2f7; color:#94a3b8; }
+  .cell-f { background:#8b5cf6; color:#fff; }
+  .mr-summary th, .mr-summary td { font-size:.78rem; }
+  .mr-scroll { overflow:auto; max-height:70vh; }
+  .mr-avatar-img { width:28px; height:28px; border-radius:50%; object-fit:cover; }
+  .mr-name-link:hover { text-decoration: underline; color: #4f46e5; }
+  .mr-avatar-fallback {
+    width:28px; height:28px; border-radius:50%; flex-shrink:0;
+    background:linear-gradient(135deg,#818cf8,#6366f1);
+    color:#fff; display:inline-flex; align-items:center; justify-content:center;
+    font-size:.75rem; font-weight:800; text-transform:uppercase;
+  }
+  @media print {
+    #sidenav-main, .navbar, .g-sidenav-show > .main-content > nav, .no-print, .mr-tabs, footer { display:none !important; }
+    .main-content { margin:0 !important; }
+    .mr-scroll { max-height:none; overflow:visible; }
+    body { background:#fff; }
+    .cell-p,.cell-a,.cell-l,.cell-h { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+
+    /* Makes every filter/select/input/button exactly the same height */
+    .filter-control {
+      height: 40px !important;
+      min-height: 40px !important;
+      border-radius: 7px;
+      font-size: 0.875rem;
+    }
+
+    select.filter-control,
+    input.filter-control {
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+
+    a.filter-control {
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    button.filter-control {
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+
+    /* Keep labels perfectly consistent */
+    .card form label {
+      min-height: 18px;
+      line-height: 18px;
+    }
+
+    @media (max-width: 767.98px) {
+      .filter-control {
+        height: 42px !important;
+        min-height: 42px !important;
+      }
+    }
+
+  .report-actions {
+    justify-content: flex-end;
+  }
+
+  .report-action-btn {
+    height: 38px;
+    min-height: 38px;
+    padding: 0 14px;
+    margin: 0 !important;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    white-space: nowrap;
+    border-radius: 7px;
+  }
+
+  .report-action-item {
+    height: 38px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Make buttons inside print settings match */
+  .report-action-item .btn {
+    height: 38px;
+    min-height: 38px;
+    margin: 0 !important;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 7px;
+  }
+
+  @media (max-width: 767.98px) {
+    .report-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .report-action-btn {
+      flex: 1 1 auto;
+    }
+  }
+</style>
+
+
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3 no-print">
+
+  <!-- Title -->
+  <div class="flex-grow-1">
+    <h4 class="font-weight-bolder mb-1 d-flex align-items-center">
+      <i class="fas fa-table-cells text-primary me-2"></i>
+      Monthly Attendance Report
+    </h4>
+
+    <p class="text-xs text-muted mb-0">
+      All employees · {{ period_label }}
+    </p>
+  </div>
+
+
+  <!-- Actions -->
+  <div class="d-flex align-items-center flex-wrap gap-2 report-actions">
+
+    <!-- CSV -->
+    <a
+      href="?{% if nepali_enabled %}from_date_np={{ filters.from_date_np }}&to_date_np={{ filters.to_date_np }}{% else %}from_date={{ filters.from_date }}&to_date={{ filters.to_date }}{% endif %}&branch={{ selected_branch }}&classification={{ selected_classification }}&export=csv"
+      class="btn btn-outline-success btn-sm report-action-btn"
+    >
+      <i class="fas fa-file-csv me-1"></i>
+      Download CSV
+    </a>
+
+    <!-- Print -->
+    <button
+      type="button"
+      onclick="window.print()"
+      class="btn btn-outline-dark btn-sm report-action-btn"
+    >
+      <i class="fas fa-print me-1"></i>
+      Print
+    </button>
+
+  </div>
+
+  </div>
+
+
+
+
+  <!-- Filters - Enhanced Version -->
+  <!-- Filters - Perfectly Aligned -->
+  <div class="card border-0 shadow-sm mb-3 no-print">
+    <div class="card-body p-3">
+      <form method="get">
+
+        <!-- Row 1 -->
+        <div class="row g-3 mb-3">
+
+          <!-- Quick Filters -->
+          <div class="col-12 col-md-6 col-lg-4">
+            <label class="text-xs fw-bold d-block mb-1 text-muted text-uppercase">
+              Quick Filters
+            </label>
+
+            <div class="d-flex gap-2 w-100">
+              <a href="?preset=this_month"
+                class="btn filter-control flex-fill d-flex align-items-center justify-content-center
+                {% if active_preset == 'this_month' %}
+                  bg-gradient-primary text-white
+                {% else %}
+                  btn-outline-primary
+                {% endif %}">
+                This Month
+              </a>
+
+              <a href="?preset=last_month"
+                class="btn filter-control flex-fill d-flex align-items-center justify-content-center
+                {% if active_preset == 'last_month' %}
+                  bg-gradient-primary text-white
+                {% else %}
+                  btn-outline-primary
+                {% endif %}">
+                Last Month
+              </a>
+            </div>
+          </div>
+
+          <!-- Branch -->
+          <div class="col-12 col-md-6 col-lg-4">
+            <label class="text-xs fw-bold d-block mb-1 text-muted text-uppercase">
+              Branch
+            </label>
+
+            <select name="branch" class="form-select filter-control">
+              <option value="">All Branches</option>
+
+              {% for b in branches %}
+                <option value="{{ b.id }}"
+                  {% if selected_branch == b.id|stringformat:"s" %}
+                    selected
+                  {% endif %}>
+                  {{ b.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Classification -->
+          <div class="col-12 col-md-6 col-lg-4">
+            <label class="text-xs fw-bold d-block mb-1 text-muted text-uppercase">
+              Classification
+            </label>
+
+            <select name="classification" class="form-select filter-control">
+              <option value="">All</option>
+
+              {% for c in classifications %}
+                <option value="{{ c.id }}"
+                  {% if selected_classification == c.id|stringformat:"s" %}
+                    selected
+                  {% endif %}>
+                  {{ c.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+        </div>
+
+
+        <!-- Row 2 -->
+        <div class="row g-3">
+
+          <!-- From Date -->
+          <div class="col-12 col-md-6 col-lg-4">
+            <label class="text-xs fw-bold d-block mb-1 text-muted text-uppercase">
+              From
+            </label>
+
+            {% if nepali_enabled %}
+
+              <input
+                type="text"
+                name="from_date_np"
+                value="{{ filters.from_date_np }}"
+                class="form-control filter-control nepali-cal"
+                placeholder="YYYY-MM-DD (BS)"
+                data-global-date-picker
+              >
+
+              <input
+                type="hidden"
+                name="from_date"
+                value="{{ filters.from_date }}"
+                class="hidden-date-input"
+              >
+
+            {% else %}
+
+              <input
+                type="date"
+                name="from_date"
+                value="{{ filters.from_date }}"
+                class="form-control filter-control"
+                data-global-date-picker
+              >
+
+            {% endif %}
+          </div>
+
+
+          <!-- To Date -->
+          <div class="col-12 col-md-6 col-lg-4">
+            <label class="text-xs fw-bold d-block mb-1 text-muted text-uppercase">
+              To
+            </label>
+
+            {% if nepali_enabled %}
+
+              <input
+                type="text"
+                name="to_date_np"
+                value="{{ filters.to_date_np }}"
+                class="form-control filter-control nepali-cal"
+                placeholder="YYYY-MM-DD (BS)"
+                data-global-date-picker
+              >
+
+              <input
+                type="hidden"
+                name="to_date"
+                value="{{ filters.to_date }}"
+                class="hidden-date-input"
+              >
+
+            {% else %}
+
+              <input
+                type="date"
+                name="to_date"
+                value="{{ filters.to_date }}"
+                class="form-control filter-control"
+                data-global-date-picker
+              >
+
+            {% endif %}
+          </div>
+
+
+          <!-- Generate -->
+          <div class="col-12 col-md-6 col-lg-4">
+            <label class="text-xs fw-bold d-block mb-1 invisible">
+              Generate
+            </label>
+
+            <button
+              type="submit"
+              class="btn btn-primary filter-control w-100 d-flex align-items-center justify-content-center"
+            >
+              <i class="bi bi-search me-2"></i>
+              Generate Report
+            </button>
+          </div>
+
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-pills mb-3 mr-tabs" id="mrTabs">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-matrix">Day-wise Matrix</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-summary">Summary</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-calendar" id="mrTabBtnCalendar"><i class="fas fa-calendar-alt me-1"></i>Calendar View</button></li>
+  </ul>
+
+  <div class="mr-legend mb-2">
+    <span><i class="mr-dot mr-p"></i>P Present</span>
+    <span><i class="mr-dot mr-a"></i>A Absent</span>
+    <span><i class="mr-dot mr-l"></i>L Leave</span>
+    <span><i class="mr-dot mr-h"></i>H Holiday</span>
+    <span><i class="mr-dot mr-w"></i>W Weekend</span>
+    {% if show_field_visits %}<span><i class="mr-dot mr-f"></i>F Field Visit</span>{% endif %}
+  </div>
+
+  <div class="tab-content">
+    <!-- MATRIX -->
+    <div class="tab-pane fade show active" id="tab-matrix">
+      <div class="card border-0 shadow-sm">
+        <div class="mr-scroll">
+          <table class="mr-matrix">
+            <thead>
+              <tr>
+                <th class="nm">Employee</th>
+                {% for d in days %}<th title="{% if nepali_enabled %}{{ d.date_np }} BS{% else %}{{ d.date|date:'Y-m-d' }} AD{% endif %}">{{ d.dow }}</th>{% endfor %}
+              </tr>
+              <tr>
+                <th class="nm"></th>
+                {% for d in days %}<th>{{ d.dom }}</th>{% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rows %}
+              <tr>
+                <td class="nm mr-name-link" data-member-id="{{ r.id }}" title="Open {{ r.name }}'s calendar">{{ r.name }}</td>
+                {% for c in r.cells %}<td class="cell-{{ c.cls }}">{{ c.code }}</td>{% endfor %}
+              </tr>
+              {% empty %}
+              <tr><td class="nm">No active members.</td>{% for d in days %}<td></td>{% endfor %}</tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="tab-pane fade" id="tab-summary">
+      <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 mr-summary">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3" data-print-col="avatar" data-print-col-label="Avatar"></th>
+                <th class="ps-3">Code</th><th>Name</th>
+                <th data-print-col="section" data-print-col-label="Section">Section</th>
+                <th class="text-end">Total</th>
+                <th class="text-end">Present</th><th class="text-end">Absent</th>
+                <th class="text-end">Attendance %</th>
+                <th class="text-end">Paid Leave</th><th class="text-end">Unpaid Leave</th>
+                <th class="text-end">Holiday</th><th class="text-end">Weekend</th>
+                <th class="text-end" data-print-col="worked" data-print-col-label="Worked (H)">Worked (H)</th>
+                <th class="text-end" data-print-col="ot" data-print-col-label="OT (H)">OT (H)</th>
+                <th class="text-end" data-print-col="late" data-print-col-label="Late-in">Late-in</th>
+                <th class="text-end" data-print-col="early" data-print-col-label="Early-out">Early-out</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rows %}
+              <tr>
+                <td class="ps-3" data-print-col="avatar">
+                  {% if r.photo_url %}<img src="{{ r.photo_url }}" alt="" class="mr-avatar-img">
+                  {% else %}<span class="mr-avatar-fallback">{{ r.name|slice:":1" }}</span>{% endif %}
+                </td>
+                <td class="ps-3 text-muted">{{ r.id }}</td>
+                <td class="fw-bold mr-name-link" data-member-id="{{ r.id }}" title="Open {{ r.name }}'s calendar">{{ r.name }}</td>
+                <td data-print-col="section">{{ r.section|default:"—" }}</td>
+                <td class="text-end">{{ r.total }}</td>
+                <td class="text-end text-success fw-bold">{{ r.present }}</td>
+                <td class="text-end text-danger fw-bold">{{ r.absent }}</td>
+                <td class="text-end">{% if r.attendance_pct is not None %}{{ r.attendance_pct }}%{% else %}—{% endif %}</td>
+                <td class="text-end">{{ r.paid_leave }}</td>
+                <td class="text-end">{{ r.unpaid_leave }}</td>
+                <td class="text-end">{{ r.holiday }}</td>
+                <td class="text-end">{{ r.weekend }}</td>
+                <td class="text-end" data-print-col="worked">{{ r.worked }}</td>
+                <td class="text-end text-primary" data-print-col="ot">{{ r.ot }}</td>
+                <td class="text-end" data-print-col="late">{{ r.late_days }}</td>
+                <td class="text-end" data-print-col="early">{{ r.early_days }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="16" class="text-center text-muted py-4">No active members.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALENDAR VIEW -->
+    <div class="tab-pane fade" id="tab-calendar">
+      <div class="card border-0 shadow-sm p-3 mb-3 no-print">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-6">
+            <label class="text-xs fw-bold d-block mb-1 text-muted text-uppercase">Member</label>
+            <select class="form-select form-select-sm" id="calMemberSelect">
+              <option value="">Select a member…</option>
+              {% for m in calendar_members %}
+                <option value="{{ m.id }}">{{ m.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <button class="btn btn-outline-dark btn-sm w-100" id="calPrintBtn" disabled><i class="fas fa-print me-1"></i>Print This Member</button>
+          </div>
+          <div class="col-md-3 text-md-end">
+            <span class="ac-legend">
+              <span><i class="ac-legend-dot" style="background:#16a34a;"></i>Present</span>
+              <span><i class="ac-legend-dot" style="background:#f97316;"></i>Absent</span>
+              <span><i class="ac-legend-dot" style="background:#eab308;"></i>Leave</span>
+              <span><i class="ac-legend-dot" style="background:#3b82f6;"></i>Holiday</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-member-calendar">
+        <div id="calMemberHeader" class="d-none align-items-center gap-3 mb-3 no-print" style="display:flex;">
+          <img id="calMemberPhoto" class="ac-member-avatar-lg d-none" alt="">
+          <div id="calMemberAvatarFallback" class="ac-member-avatar-lg-fallback d-none"></div>
+          <div>
+            <h5 class="mb-0 fw-bolder" id="calMemberName"></h5>
+            <p class="text-xs text-muted mb-0" id="calMemberSub"></p>
+          </div>
+        </div>
+        <div id="calMemberEmpty" class="text-center text-muted py-5">
+          <i class="fas fa-calendar-alt fa-2x mb-2 d-block"></i>
+          Select a member above to see their full calendar for {{ period_label }}.
+        </div>
+        <div id="calMemberGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'js/attendance_calendar.js' %}"></script>
+{% include 'admin/partials/day_action_modal.html' %}
+{{ leave_types|json_script:"calLeaveTypesData" }}
+<script>
+(function () {
+  var select = document.getElementById('calMemberSelect');
+  var printBtn = document.getElementById('calPrintBtn');
+  var gridEl = document.getElementById('calMemberGrid');
+  var emptyEl = document.getElementById('calMemberEmpty');
+  var headerEl = document.getElementById('calMemberHeader');
+  var currentData = null;
+  var leaveTypes = JSON.parse(document.getElementById('calLeaveTypesData').textContent);
+  var dayActionUrl = "{% url 'schooladmin:day_quick_action' %}";
+  var csrfToken = "{{ csrf_token }}";
+  var fromDate = "{{ filters.from_date }}";
+  var toDate = "{{ filters.to_date }}";
+  var calendarUrlTemplate = "{% url 'schooladmin:member_calendar_data' 0 %}";
+
+  function calendarDataUrl(memberId) {
+    return calendarUrlTemplate.replace('/0/', '/' + memberId + '/') + '?from_date=' + fromDate + '&to_date=' + toDate;
+  }
+
+  function loadMember(memberId) {
+    if (!memberId) {
+      headerEl.classList.add('d-none');
+      emptyEl.classList.remove('d-none');
+      gridEl.innerHTML = '';
+      printBtn.disabled = true;
+      currentData = null;
+      return;
+    }
+    fetch(calendarDataUrl(memberId)).then(function (r) { return r.json(); }).then(function (data) {
+      currentData = data;
+      emptyEl.classList.add('d-none');
+      headerEl.classList.remove('d-none');
+      document.getElementById('calMemberName').textContent = data.member.name;
+      document.getElementById('calMemberSub').textContent = (data.member.classification ? data.member.classification + ' · ' : '') + '{{ period_label|escapejs }}';
+      var img = document.getElementById('calMemberPhoto');
+      var fallback = document.getElementById('calMemberAvatarFallback');
+      if (data.member.photo_url) {
+        img.src = data.member.photo_url; img.classList.remove('d-none'); fallback.classList.add('d-none');
+      } else {
+        fallback.textContent = (data.member.name || '?').charAt(0).toUpperCase();
+        fallback.classList.remove('d-none'); img.classList.add('d-none');
+      }
+      renderGrid();
+      printBtn.disabled = false;
+    });
+  }
+
+  function renderGrid() {
+    if (!currentData) return;
+    AttendanceCalendar.render(gridEl, {
+      days: currentData.days,
+      startDate: currentData.start,
+      endDate: currentData.end,
+      onDayClick: function (dateIso, day) {
+        window.DayActionModal.open({
+          memberId: currentData.member.id,
+          memberName: currentData.member.name,
+          date: dateIso,
+          dateLabel: dateIso,
+          existingNote: day ? day.note : '',
+          existingLeaveType: day ? day.leave_type : '',
+          existingLeaveReason: day ? day.leave_reason : '',
+          actionUrl: dayActionUrl,
+          csrfToken: csrfToken,
+          leaveTypes: leaveTypes,
+          onSaved: function () { loadMember(currentData.member.id); },
+        });
+      },
+    });
+  }
+
+  select.addEventListener('change', function () { loadMember(this.value); });
+  printBtn.addEventListener('click', function () { window.print(); });
+
+  function openMemberCalendar(memberId) {
+    select.value = memberId;
+    loadMember(memberId);
+    var tabBtn = document.getElementById('mrTabBtnCalendar');
+    if (window.bootstrap && tabBtn) { bootstrap.Tab.getOrCreateInstance(tabBtn).show(); }
+  }
+
+  document.querySelectorAll('.mr-name-link').forEach(function (el) {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', function () { openMemberCalendar(this.dataset.memberId); });
+  });
+})();
+</script>
+
+<script>
+(function () {
+  // Show the loading overlay the instant the user asks for a different
+  // period — the "This Month" / "Last Month" quick filters and the custom
+  // date-range form both do a real page navigation, so there's a gap
+  // between click and the new page rendering where the UI would otherwise
+  // look frozen on a report that can take a moment to compute.
+  var overlay = document.getElementById('mrLoadingOverlay');
+  if (!overlay) return;
+
+  function showOverlay() {
+    overlay.classList.add('active');
+  }
+
+  document.querySelectorAll('a[href*="preset="]').forEach(function (link) {
+    link.addEventListener('click', function () {
+      showOverlay();
+    });
+  });
+
+  var rangeForm = document.querySelector('form[method="get"]');
+  if (rangeForm) {
+    rangeForm.addEventListener('submit', function () {
+      showOverlay();
+      var btn = rangeForm.querySelector('button[type="submit"]');
+      if (btn) btn.disabled = true;
+    });
+  }
+
+  // Safety net: if the browser serves this page from the back/forward
+  // cache (bfcache) instead of a fresh load, the overlay would otherwise
+  // stay stuck on-screen from before the user navigated away.
+  window.addEventListener('pageshow', function () {
+    overlay.classList.remove('active');
+  });
+})();
+</script>
+{% endblock %}

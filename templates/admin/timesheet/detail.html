@@ -1,0 +1,143 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Timesheet — {{ ts.member.name }}{% endblock %}
+
+{% block content %}
+<style>
+  .ts-hero { background:linear-gradient(135deg,#1e293b,#334155); border-radius:18px; padding:24px 28px; color:#fff; }
+  .ts-meta-pill { background:rgba(255,255,255,.1); border-radius:10px; padding:8px 16px; font-size:.82rem; }
+  .ts-detail-card { background:#fff; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,.06); border:1px solid #f1f5f9; overflow:hidden; }
+  .ts-table thead th { background:#f8fafc; font-size:.74rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#64748b; padding:10px 14px; border-bottom:2px solid #e2e8f0; }
+  .ts-table tbody td { vertical-align:middle; padding:10px 14px; border-bottom:1px solid #f1f5f9; font-size:.88rem; color:#374151; }
+  .ts-table tbody tr:last-child td { border-bottom:none; }
+  .ts-table tfoot td { background:#f8fafc; font-weight:700; padding:10px 14px; border-top:2px solid #e2e8f0; }
+  .review-box { background:#f8fafc; border-radius:14px; border:1px solid #e2e8f0; padding:20px 24px; }
+</style>
+
+<div class="container-fluid py-4">
+  <div class="mb-3">
+    <a href="{% url 'schooladmin:timesheet_list' %}" class="text-muted text-decoration-none small">
+      <i class="fas fa-arrow-left me-1"></i>All Timesheets
+    </a>
+  </div>
+
+  <!-- Hero header -->
+  <div class="ts-hero mb-4">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <p class="mb-1 opacity-60 small text-uppercase fw-semibold tracking-wide">Timesheet Review</p>
+        <h5 class="fw-bold mb-1">{{ ts.member.name }}</h5>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          <span class="ts-meta-pill"><i class="fas fa-calendar me-1 opacity-75"></i>{{ ts.date|date:"d M Y" }}{% if nepali_enabled %} ({{ ts.date_np }} BS){% endif %}</span>
+          <span class="ts-meta-pill"><i class="fas fa-clock me-1 opacity-75"></i>{{ ts.total_hours }} hours total</span>
+          <span class="ts-meta-pill"><i class="fas fa-list-ul me-1 opacity-75"></i>{{ entries.count }} entries</span>
+          {% if ts.submitted_at %}
+          <span class="ts-meta-pill"><i class="fas fa-paper-plane me-1 opacity-75"></i>Submitted {{ ts.submitted_at|date:"d M Y, H:i" }}</span>
+          {% endif %}
+        </div>
+        {% if ts.title %}
+        <p class="mb-0 mt-2 opacity-75 small fst-italic">{{ ts.title }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Entries table -->
+    <div class="col-lg-8">
+      <div class="ts-detail-card">
+        <div class="p-3 pb-0">
+          <h6 class="fw-bold mb-0" style="color:#1e293b;">
+            <i class="fas fa-list-ul me-2 text-primary"></i>Work Entries
+          </h6>
+        </div>
+        <div class="table-responsive mt-3">
+          <table class="table ts-table mb-0">
+            <thead>
+              <tr>
+                <th>Task / Project</th>
+                <th style="width:80px;" class="text-center">Hours</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for entry in entries %}
+              <tr>
+                <td class="fw-semibold">{{ entry.task }}</td>
+                <td class="text-center">
+                  <span class="badge rounded-pill" style="background:#ede9fe;color:#6d28d9;">{{ entry.hours }}h</span>
+                </td>
+                <td class="text-muted">{{ entry.notes|default:"—"|truncatechars:80 }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="text-center py-4 text-muted">No entries in this timesheet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            {% if entries %}
+            <tfoot>
+              <tr>
+                <td class="text-end text-muted small">Total</td>
+                <td class="text-center" style="color:#4f46e5;">{{ ts.total_hours }}h</td>
+                <td></td>
+              </tr>
+            </tfoot>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review panel -->
+    <div class="col-lg-4">
+      <div class="review-box">
+        <h6 class="fw-bold mb-3" style="color:#1e293b;">
+          <i class="fas fa-gavel me-2 text-primary"></i>Review Decision
+        </h6>
+
+        {# HTMX-swappable status + action block #}
+        {% include 'admin/timesheet/_status_badge.html' with ts=ts %}
+
+        {% if ts.status == 'approved' or ts.status == 'rejected' %}
+        <hr class="my-3">
+        <div class="text-muted small">
+          {% if ts.status == 'approved' %}
+          <i class="fas fa-circle-check text-success me-1"></i>
+          Approved{% if ts.approved_at %} on {{ ts.approved_at|date:"d M Y" }}{% endif %}
+          {% if ts.approved_by %}by {{ ts.approved_by.get_full_name|default:ts.approved_by.username }}{% endif %}.
+          {% elif ts.status == 'rejected' %}
+          <i class="fas fa-circle-xmark text-danger me-1"></i>
+          Rejected.
+          {% if ts.admin_comment %}
+          <div class="mt-2 p-2 rounded-2" style="background:#fee2e2;color:#991b1b;font-size:.82rem;">
+            "{{ ts.admin_comment }}"
+          </div>
+          {% endif %}
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Member info -->
+      <div class="review-box mt-3">
+        <h6 class="fw-bold mb-3" style="color:#1e293b;">
+          <i class="fas fa-user me-2 text-muted"></i>Staff Info
+        </h6>
+        <div class="d-flex flex-column gap-1 small text-muted">
+          <div><strong class="text-dark">Name:</strong> {{ ts.member.name }}</div>
+          {% if ts.member.email %}
+          <div><strong class="text-dark">Email:</strong> {{ ts.member.email }}</div>
+          {% endif %}
+          {% if ts.member.phone %}
+          <div><strong class="text-dark">Phone:</strong> {{ ts.member.phone }}</div>
+          {% endif %}
+          {% if ts.member.designation %}
+          <div><strong class="text-dark">Role:</strong> {{ ts.member.designation }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

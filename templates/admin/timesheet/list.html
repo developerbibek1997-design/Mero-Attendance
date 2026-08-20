@@ -1,0 +1,141 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Timesheets | Admin{% endblock %}
+
+{% block content %}
+<style>
+  .ts-card { background:#fff; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,.06); border:1px solid #f1f5f9; }
+  .ts-row  { display:flex; align-items:center; gap:14px; padding:14px 20px; border-bottom:1px solid #f1f5f9; transition:background .15s; }
+  .ts-row:last-child { border-bottom:none; }
+  .ts-row:hover { background:#fafbfc; }
+  .ts-avatar { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:.82rem; flex-shrink:0; }
+  .ts-name  { font-weight:700; font-size:.9rem; color:#1e293b; }
+  .ts-meta  { font-size:.76rem; color:#64748b; }
+  .ts-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:.74rem; font-weight:600; white-space:nowrap; }
+  .ts-badge.draft     { background:#fef3c7; color:#92400e; }
+  .ts-badge.submitted { background:#dbeafe; color:#1e40af; }
+  .ts-badge.approved  { background:#d1fae5; color:#065f46; }
+  .ts-badge.rejected  { background:#fee2e2; color:#991b1b; }
+  .filter-bar { background:#f8fafc; border-radius:12px; padding:16px 20px; border:1px solid #e2e8f0; }
+  .stat-pill { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 18px; text-align:center; min-width:90px; }
+  .stat-pill .val { font-size:1.3rem; font-weight:800; color:#4f46e5; }
+  .stat-pill .lbl { font-size:.7rem; color:#64748b; font-weight:600; }
+</style>
+
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+      <h4 class="fw-bold mb-1" style="color:#1e293b;"><i class="fas fa-clock-rotate-left me-2 text-primary"></i>Timesheet Review</h4>
+      <p class="text-muted mb-0 small">Review and approve staff timesheet submissions</p>
+    </div>
+    <!-- Summary pills -->
+    <div class="d-flex gap-2 flex-wrap">
+      <div class="stat-pill">
+        <div class="val">{{ timesheets|length }}</div>
+        <div class="lbl">Shown</div>
+      </div>
+      <div class="stat-pill">
+        <div class="val" style="color:#1e40af;">{{ timesheets|dictsort:"status"|dictsortreversed:"status"|length }}</div>
+        <div class="lbl">Pending</div>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show mb-3">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filters -->
+  <div class="filter-bar mb-4">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-sm-auto">
+        <label class="form-label small fw-semibold mb-1">Employee</label>
+        <select name="member" class="form-select form-select-sm" style="min-width:180px;">
+          <option value="">All Employees</option>
+          {% for m in members %}
+          <option value="{{ m.pk }}" {% if member_f == m.pk|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-sm-auto">
+        <label class="form-label small fw-semibold mb-1">Status</label>
+        <select name="status" class="form-select form-select-sm" style="min-width:140px;">
+          <option value="">All Statuses</option>
+          <option value="draft"     {% if status_f == 'draft' %}selected{% endif %}>Draft</option>
+          <option value="submitted" {% if status_f == 'submitted' %}selected{% endif %}>Submitted</option>
+          <option value="approved"  {% if status_f == 'approved' %}selected{% endif %}>Approved</option>
+          <option value="rejected"  {% if status_f == 'rejected' %}selected{% endif %}>Rejected</option>
+        </select>
+      </div>
+      <div class="col-6 col-sm-auto">
+        <label class="form-label small fw-semibold mb-1">Period from</label>
+        {% if nepali_enabled %}
+        <input type="text" class="form-control form-control-sm nepali-cal" name="date_from_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+        <input type="date" class="hidden-date-input" name="date_from" value="{{ date_from }}">
+        {% else %}
+        <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+        {% endif %}
+      </div>
+      <div class="col-6 col-sm-auto">
+        <label class="form-label small fw-semibold mb-1">Period to</label>
+        {% if nepali_enabled %}
+        <input type="text" class="form-control form-control-sm nepali-cal" name="date_to_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+        <input type="date" class="hidden-date-input" name="date_to" value="{{ date_to }}">
+        {% else %}
+        <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
+        {% endif %}
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3">Filter</button>
+        <a href="{% url 'schooladmin:timesheet_list' %}" class="btn btn-sm btn-outline-secondary px-3">Clear</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="ts-card">
+    {% if timesheets %}
+      {% for ts in timesheets %}
+      {% with initials=ts.member.name|slice:":2"|upper %}
+      <div class="ts-row">
+        <div class="ts-avatar" style="background:
+          {% cycle '#ede9fe' '#d1fae5' '#fef3c7' '#dbeafe' '#fee2e2' '#e0f2fe' %};
+          color:{% cycle '#6d28d9' '#059669' '#d97706' '#1d4ed8' '#dc2626' '#0369a1' %};">
+          {{ initials }}
+        </div>
+        <div class="flex-grow-1 min-w-0">
+          <div class="ts-name">{{ ts.member.name }}</div>
+          <div class="ts-meta">
+            {{ ts.date|date:"d M Y" }}{% if nepali_enabled %} ({{ ts.date_np }} BS){% endif %}
+            &nbsp;·&nbsp; {{ ts.total_hours }}h
+            {% if ts.submitted_at %}&nbsp;·&nbsp; Submitted {{ ts.submitted_at|date:"d M" }}{% endif %}
+          </div>
+          {% if ts.title %}<div class="ts-meta mt-1 fst-italic">{{ ts.title }}</div>{% endif %}
+        </div>
+        <span class="ts-badge {{ ts.status }}">
+          {% if ts.status == 'draft' %}<i class="fas fa-pen-to-square fa-xs"></i>{% endif %}
+          {% if ts.status == 'submitted' %}<i class="fas fa-paper-plane fa-xs"></i>{% endif %}
+          {% if ts.status == 'approved' %}<i class="fas fa-circle-check fa-xs"></i>{% endif %}
+          {% if ts.status == 'rejected' %}<i class="fas fa-circle-xmark fa-xs"></i>{% endif %}
+          {{ ts.get_status_display }}
+        </span>
+        <a href="{% url 'schooladmin:timesheet_detail' pk=ts.pk %}"
+           class="btn btn-sm btn-outline-primary fw-semibold px-3 ms-1 flex-shrink-0">
+          {% if ts.status == 'submitted' %}Review{% else %}View{% endif %}
+        </a>
+      </div>
+      {% endwith %}
+      {% endfor %}
+    {% else %}
+      <div class="text-center py-5">
+        <i class="fas fa-clock-rotate-left fa-3x text-muted opacity-25 mb-3 d-block"></i>
+        <h6 class="fw-semibold" style="color:#1e293b;">No timesheets found</h6>
+        <p class="text-muted small mb-0">Adjust the filters or wait for staff to submit timesheets.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

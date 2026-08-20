@@ -1,0 +1,26 @@
+{% extends 'dashboard.html' %}
+{% block title %}Branches | Staff Portal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 class="fw-bold mb-0" style="color:#1e293b;">Branches</h4>
+    {% if staff_perms.can_manage_branches %}<a href="{% url 'staff:manage_branches' %}" class="btn btn-primary btn-sm">Add Branch</a>{% endif %}
+  </div>
+
+  <div class="row g-3">
+    {% for b in branches %}
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm p-3">
+        <h6 class="fw-bold mb-1">{{ b.name }}</h6>
+        <div class="text-xs text-muted mb-2">Code: {{ b.code }}</div>
+        <div class="text-sm">{{ b.address|default:"No address" }}</div>
+        <div class="text-xs text-muted mt-2">{{ b.member_count }} active member{{ b.member_count|pluralize }}</div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center text-muted py-4">No branches found.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock content %}

@@ -115,13 +115,13 @@ Download Mero Attendance Puller | Desktop Device Sync and Mobile Apps
   }
 
   .download-btn-primary {
-    color: #ffffff;
+    color: #ffffff!important;
     background: linear-gradient(135deg, var(--download-red), var(--download-red-dark));
     box-shadow: 0 18px 36px rgba(225, 29, 72, 0.32);
   }
 
   .download-btn-primary:hover {
-    color: #ffffff;
+    color: #ffffff!important;
   }
 
   .download-btn-light {
@@ -178,8 +178,14 @@ Download Mero Attendance Puller | Desktop Device Sync and Mobile Apps
 
   .download-cards {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 18px;
+  }
+
+  @media (max-width: 1199px) and (min-width: 992px) {
+    .download-cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   .download-card {
@@ -412,15 +418,28 @@ Download Mero Attendance Puller | Desktop Device Sync and Mobile Apps
       <div class="download-cards">
         <div class="download-card featured">
           <div class="download-card-icon"><i class="fa-solid fa-desktop"></i></div>
-          <h3>Desktop Puller</h3>
+          <h3>ZKTeco Desktop Puller</h3>
           <p>
-            Install the puller on the computer connected to your attendance device network.
-            Request the latest installer so support can confirm your device model and setup path.
+            Download the desktop puller app for connecting ZKTeco biometric devices and syncing attendance records.
           </p>
           <div class="download-actions">
-            <a href="{% url 'management:contact' %}" class="download-btn download-btn-primary">
-              <i class="fa-solid fa-headset"></i>
-              Request ZIP
+            <a href="{% static 'res/puller.zip' %}" download class="download-btn download-btn-primary">
+              <i class="fa-solid fa-download"></i>
+              Download Now
+            </a>
+          </div>
+        </div>
+
+        <div class="download-card">
+          <div class="download-card-icon"><i class="fa-solid fa-video"></i></div>
+          <h3>HikVision Desktop Puller</h3>
+          <p>
+            Download the desktop puller app for connecting HikVision attendance devices and syncing attendance records.
+          </p>
+          <div class="download-actions">
+            <a href="https://drive.google.com/uc?export=download&id=1fvdMJtpYmB736UHynMSpE2swWX7iVDes" class="download-btn download-btn-primary" target="_blank" rel="noopener noreferrer">
+              <i class="fa-solid fa-download"></i>
+              Download Now
             </a>
           </div>
         </div>
@@ -432,7 +451,7 @@ Download Mero Attendance Puller | Desktop Device Sync and Mobile Apps
             Open mobile workflows from Android devices for organization users who need quick access on phone.
           </p>
           <div class="download-actions">
-            <a href="https://play.google.com/store/apps/details?id=com.gharbhada.fullsewa.rentbill&pli=1" class="download-btn download-btn-outline">
+            <a href="{{ play_store_url }}" class="download-btn download-btn-outline" target="_blank" rel="noopener noreferrer">
               <i class="fa-solid fa-arrow-up-right-from-square"></i>
               Open Play Store
             </a>
@@ -446,12 +465,27 @@ Download Mero Attendance Puller | Desktop Device Sync and Mobile Apps
             Use the App Store link for iPhone users who need mobile access to supported app workflows.
           </p>
           <div class="download-actions">
-            <a href="https://apps.apple.com/np/app/ghar-bhada/id6762967907" class="download-btn download-btn-outline">
+            <a href="{{ app_store_url }}" class="download-btn download-btn-outline" target="_blank" rel="noopener noreferrer">
               <i class="fa-solid fa-arrow-up-right-from-square"></i>
               Open App Store
             </a>
           </div>
         </div>
+
+         <div class="download-card">
+          <div class="download-card-icon"><i class="fa-solid fa-video"></i></div>
+          <h3>ZKteco Desktop v2</h3>
+          <p>
+            Download the desktop puller app for connecting Zkteco attendance devices and syncing attendance records.
+          </p>
+          <div class="download-actions">
+            <a href="https://drive.google.com/file/d/1SuZuQ61P_gfjL27t1n7KfFhgvBxmo31a" class="download-btn download-btn-primary" target="_blank" rel="noopener noreferrer">
+              <i class="fa-solid fa-download"></i>
+              Download Now
+            </a>
+          </div>
+        </div>
+      </div>
       </div>
     </div>
   </section>

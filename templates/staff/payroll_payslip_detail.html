@@ -1,0 +1,51 @@
+{% extends 'dashboard.html' %}
+{% block title %}Payslip | {{ mem.name }}{% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <a href="{% url 'staff:payroll_report' %}" class="btn btn-outline-secondary btn-sm mb-3"><i class="fas fa-arrow-left me-1"></i>Back to Payroll Report</a>
+
+      <div class="card border-0 shadow-sm p-4" style="border-radius:12px;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="mb-0 fw-bold">{{ mem.name }}</h5>
+            <p class="text-xs text-muted mb-0">{{ slip.month_name }} &middot; {{ slip.from_date }} to {{ slip.to_date }}</p>
+            {% if slip.payment_date %}<p class="text-xs text-success mb-0">Paid on {{ slip.payment_date|date:"F j, Y" }}</p>{% endif %}
+          </div>
+          <span class="badge {% if slip.status == 'draft' %}bg-secondary{% elif slip.status == 'finalized' %}bg-info{% else %}bg-success{% endif %} text-uppercase">{{ slip.status }}</span>
+        </div>
+
+        <div class="row g-2 mb-4">
+          <div class="col-3"><div class="p-2 text-center bg-light rounded"><small class="text-muted d-block">Period Days</small><strong>{{ slip.total_days }}</strong></div></div>
+          <div class="col-3"><div class="p-2 text-center bg-light rounded"><small class="text-muted d-block">Present</small><strong>{{ slip.present_days }}</strong></div></div>
+          <div class="col-3"><div class="p-2 text-center bg-light rounded"><small class="text-muted d-block">Paid Off-Days</small><strong>{{ slip.paid_leaves|add:slip.holidays }}</strong></div></div>
+          <div class="col-3"><div class="p-2 text-center bg-light rounded"><small class="text-muted d-block">Unpaid Absent</small><strong>{{ slip.unpaid_absences }}</strong></div></div>
+        </div>
+
+        <table class="table table-sm mb-3">
+          <tbody>
+            <tr><td>Gross Salary</td><td class="text-end">Rs. {{ slip.gross_salary }}</td></tr>
+            {% if slip.overtime_amount > 0 %}<tr><td class="text-success">Overtime ({{ slip.overtime_hours|floatformat:2 }} hrs &times; {{ slip.overtime_rate_multiplier }}x)</td><td class="text-end text-success">+ {{ slip.overtime_amount }}</td></tr>{% endif %}
+            {% if slip.allowance_total > 0 %}<tr><td class="text-success">Allowances</td><td class="text-end text-success">+ {{ slip.allowance_total }}</td></tr>{% endif %}
+            {% if slip.bonus_total > 0 %}<tr><td class="text-success">Bonus</td><td class="text-end text-success">+ {{ slip.bonus_total }}</td></tr>{% endif %}
+            {% if slip.probation_adjustment > 0 %}<tr><td class="text-warning">Probation Adjustment</td><td class="text-end text-warning">- {{ slip.probation_adjustment }}</td></tr>{% endif %}
+            {% if slip.tax_deduction > 0 %}<tr><td class="text-danger">Tax</td><td class="text-end text-danger">- {{ slip.tax_deduction }}</td></tr>{% endif %}
+            {% if slip.pf_employee > 0 %}<tr><td class="text-danger">Provident Fund</td><td class="text-end text-danger">- {{ slip.pf_employee }}</td></tr>{% endif %}
+            {% if slip.ssf_employee > 0 %}<tr><td class="text-danger">Social Security Fund</td><td class="text-end text-danger">- {{ slip.ssf_employee }}</td></tr>{% endif %}
+            {% if slip.advance_deduction > 0 %}<tr><td class="text-danger">Advance Deduction</td><td class="text-end text-danger">- {{ slip.advance_deduction }}</td></tr>{% endif %}
+            {% if slip.loan_deduction > 0 %}<tr><td class="text-danger">Loan Deduction</td><td class="text-end text-danger">- {{ slip.loan_deduction }}</td></tr>{% endif %}
+            {% if slip.other_deduction > 0 %}<tr><td class="text-danger">Other Deduction</td><td class="text-end text-danger">- {{ slip.other_deduction }}</td></tr>{% endif %}
+          </tbody>
+        </table>
+        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+          <h6 class="mb-0">Net Payable</h6>
+          <h4 class="mb-0 text-success">Rs. {{ slip.net_payable }}</h4>
+        </div>
+        <p class="text-xs text-muted mt-3 mb-0">This is a read-only view. Finalizing a payslip for payment requires an administrator.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

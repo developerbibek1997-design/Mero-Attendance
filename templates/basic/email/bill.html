@@ -1,0 +1,21 @@
+{% extends "basic/email/_base.html" %}
+{% block title %}Invoice {{ invoice_number }}{% endblock %}
+{% block content %}
+<p class="greeting">Dear <strong>{{ name }}</strong>,</p>
+<p class="message-text">Please find your invoice details below. Payment is due by <strong>{{ due_date }}</strong>.</p>
+<table class="data">
+  <tr><td class="label">Invoice No.</td><td><strong>{{ invoice_number }}</strong></td></tr>
+</table>
+<table class="data">
+  {% for item in items %}
+  <tr><td>{{ item.desc }}</td><td style="text-align:right;">Rs. {{ item.amount }}</td></tr>
+  {% endfor %}
+</table>
+<div class="total-box">
+  <table width="100%"><tr>
+    <td style="color:#fff;font-weight:700;">Total Due</td>
+    <td style="color:#fff;font-weight:700;text-align:right;">Rs. {{ total_amount }}</td>
+  </tr></table>
+</div>
+{% if remarks %}<p class="message-text" style="font-size:13px;margin-top:16px;">Note: {{ remarks }}</p>{% endif %}
+{% endblock %}

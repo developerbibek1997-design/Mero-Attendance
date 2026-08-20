@@ -1,0 +1,153 @@
+{% comment %}
+Reusable "click a calendar day -> Mark Leave / Add Note" modal. Include once
+per page (needs Bootstrap 5 JS already loaded, true on every admin page via
+dashboard.html) and call window.DayActionModal.open({...}) from the
+calendar's day-click handler. Shared by Monthly Report's Calendar View tab
+and the Member Gap Report calendar so both get identical behaviour instead
+of two hand-rolled copies.
+{% endcomment %}
+<div class="modal fade" id="dayActionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px; border:none; overflow:hidden;">
+      <div class="modal-header" style="background:linear-gradient(135deg,#6366f1,#818cf8); color:#fff; border:none;">
+        <h6 class="modal-title mb-0"><i class="fas fa-calendar-day me-2"></i><span id="damMemberName"></span> &mdash; <span id="damDateLabel"></span></h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body pt-3">
+        <div class="btn-group w-100 mb-3" role="group">
+          <button type="button" class="btn btn-outline-primary" id="damTabLeave"><i class="fas fa-plane-departure me-1"></i>Mark Leave</button>
+          <button type="button" class="btn btn-outline-secondary" id="damTabNote"><i class="fas fa-sticky-note me-1"></i>Add Note</button>
+        </div>
+
+        <div id="damPaneLeave">
+          <div class="mb-2">
+            <label class="form-label text-xs fw-bold text-uppercase text-muted">Leave Type</label>
+            <select class="form-select form-select-sm" id="damLeaveType"></select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label text-xs fw-bold text-uppercase text-muted">Reason</label>
+            <textarea class="form-control form-control-sm" id="damLeaveReason" rows="2" placeholder="Optional reason"></textarea>
+          </div>
+        </div>
+
+        <div id="damPaneNote" class="hidden">
+          <label class="form-label text-xs fw-bold text-uppercase text-muted">Note</label>
+          <textarea class="form-control form-control-sm" id="damNoteText" rows="3" maxlength="500" placeholder="e.g. Left early - doctor appointment"></textarea>
+        </div>
+
+        <div id="damAlert" class="alert alert-danger py-2 px-3 mt-3 hidden" style="font-size:.8rem;"></div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm text-white" id="damSaveBtn" style="background:linear-gradient(135deg,#f6d365,#fda085); border:none;">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var state = {};
+  var modalEl = document.getElementById('dayActionModal');
+  var modal = null;
+
+  function bsModal() {
+    if (!modal) modal = new bootstrap.Modal(modalEl);
+    return modal;
+  }
+
+  function showAlert(msg) {
+    var el = document.getElementById('damAlert');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+  function clearAlert() {
+    document.getElementById('damAlert').classList.add('hidden');
+  }
+
+  function setTab(tab) {
+    var leavePane = document.getElementById('damPaneLeave');
+    var notePane = document.getElementById('damPaneNote');
+    var leaveBtn = document.getElementById('damTabLeave');
+    var noteBtn = document.getElementById('damTabNote');
+    if (tab === 'leave') {
+      leavePane.classList.remove('hidden'); notePane.classList.add('hidden');
+      leaveBtn.classList.add('active'); noteBtn.classList.remove('active');
+    } else {
+      leavePane.classList.add('hidden'); notePane.classList.remove('hidden');
+      leaveBtn.classList.remove('active'); noteBtn.classList.add('active');
+    }
+    state.tab = tab;
+    clearAlert();
+  }
+
+  document.getElementById('damTabLeave').addEventListener('click', function () { setTab('leave'); });
+  document.getElementById('damTabNote').addEventListener('click', function () { setTab('note'); });
+
+  document.getElementById('damSaveBtn').addEventListener('click', function () {
+    clearAlert();
+    var body = { member_id: state.memberId, date: state.date };
+    if (state.tab === 'leave') {
+      var ltId = document.getElementById('damLeaveType').value;
+      if (!ltId) { showAlert('Pick a leave type.'); return; }
+      body.action = 'leave';
+      body.leave_type_id = ltId;
+      body.reason = document.getElementById('damLeaveReason').value;
+    } else {
+      var text = document.getElementById('damNoteText').value.trim();
+      if (!text) { showAlert('Note cannot be empty.'); return; }
+      body.action = 'note';
+      body.text = text;
+    }
+    var btn = document.getElementById('damSaveBtn');
+    btn.disabled = true;
+    fetch(state.actionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': state.csrfToken },
+      body: JSON.stringify(body),
+    }).then(function (r) {
+      return r.json().then(function (data) { return data; });
+    }).then(function (data) {
+      btn.disabled = false;
+      if (!data.ok) { showAlert(data.message || 'Something went wrong.'); return; }
+      bsModal().hide();
+      if (state.onSaved) state.onSaved();
+    }).catch(function () {
+      btn.disabled = false;
+      showAlert('Network error - please try again.');
+    });
+  });
+
+  window.DayActionModal = {
+    open: function (opts) {
+      state = {
+        memberId: opts.memberId, date: opts.date,
+        actionUrl: opts.actionUrl, csrfToken: opts.csrfToken,
+        onSaved: opts.onSaved,
+      };
+      document.getElementById('damMemberName').textContent = opts.memberName || '';
+      document.getElementById('damDateLabel').textContent = opts.dateLabel || opts.date;
+
+      var sel = document.getElementById('damLeaveType');
+      sel.innerHTML = '';
+      (opts.leaveTypes || []).forEach(function (lt) {
+        var o = document.createElement('option');
+        o.value = lt.id;
+        o.textContent = lt.name + (lt.is_paid ? '' : ' (Unpaid)');
+        sel.appendChild(o);
+      });
+      if (opts.existingLeaveType) {
+        Array.from(sel.options).forEach(function (o) {
+          if (o.textContent.indexOf(opts.existingLeaveType) === 0) sel.value = o.value;
+        });
+      }
+      document.getElementById('damLeaveReason').value = opts.existingLeaveReason || '';
+      document.getElementById('damNoteText').value = opts.existingNote || '';
+
+      setTab(opts.existingNote && !opts.existingLeaveType ? 'note' : 'leave');
+      clearAlert();
+      bsModal().show();
+    }
+  };
+})();
+</script>

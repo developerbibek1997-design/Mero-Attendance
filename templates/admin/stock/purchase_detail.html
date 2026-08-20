@@ -1,0 +1,127 @@
+{% extends 'dashboard.html' %}
+{% block title %}Purchase #{{ purchase.pk }} | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 font-weight-bolder">Purchase #{{ purchase.pk }} — {{ purchase.supplier.name }}</h6>
+          <div class="d-flex gap-2">
+            {% if purchase.status == 'draft' %}<span class="badge bg-warning text-dark">Draft</span>
+            {% elif purchase.status == 'cancelled' %}<span class="badge bg-danger">Cancelled</span>
+            {% else %}<span class="badge bg-success">{{ purchase.get_status_display }}</span>{% endif %}
+            <span class="badge {% if purchase.payment_status == 'Paid' %}bg-success{% elif purchase.payment_status == 'Partial' %}bg-warning text-dark{% elif purchase.payment_status == 'Cancelled' %}bg-secondary{% else %}bg-danger{% endif %}">{{ purchase.payment_status }}</span>
+          </div>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+          <div class="row g-2 mb-3">
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Bill Date</p><p class="text-sm font-weight-bold">{{ purchase.purchase_date }}</p></div>
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Due Date</p><p class="text-sm font-weight-bold">{{ purchase.due_date|default:"—" }}</p></div>
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Invoice #</p><p class="text-sm font-weight-bold">{{ purchase.invoice_number|default:"-" }}</p></div>
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Payment Method</p><p class="text-sm font-weight-bold">{{ purchase.get_payment_method_display }}</p></div>
+          </div>
+
+          <div class="table-responsive mb-3">
+            <table class="table table-sm align-middle">
+              <thead class="table-light"><tr><th class="text-xs">Item</th><th class="text-xs">Qty</th><th class="text-xs">Unit Cost</th><th class="text-xs">Line Total</th></tr></thead>
+              <tbody>
+                {% for item in items %}
+                <tr><td class="text-sm">{{ item.stock_item.name|default:item.description }}</td><td class="text-sm">{{ item.quantity }}</td><td class="text-sm">{{ item.unit_cost }}</td><td class="text-sm">{{ item.line_total }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="row g-2 mb-3 justify-content-end">
+            <div class="col-md-4">
+              <div class="p-3 bg-light rounded">
+                <div class="d-flex justify-content-between text-sm"><span class="text-muted">Subtotal</span><span>Rs. {{ purchase.subtotal }}</span></div>
+                <div class="d-flex justify-content-between text-sm"><span class="text-muted">Discount</span><span>- Rs. {{ purchase.discount_amount }}</span></div>
+                <div class="d-flex justify-content-between text-sm"><span class="text-muted">Tax</span><span>+ Rs. {{ purchase.tax_amount }}</span></div>
+                <hr class="my-2">
+                <div class="d-flex justify-content-between font-weight-bolder"><span>Grand Total</span><span>Rs. {{ purchase.total_amount }}</span></div>
+                <div class="d-flex justify-content-between text-sm text-success"><span>Paid</span><span>Rs. {{ purchase.paid_amount }}</span></div>
+                <div class="d-flex justify-content-between text-sm text-danger"><span>Due</span><span>Rs. {{ purchase.due_amount }}</span></div>
+              </div>
+            </div>
+          </div>
+
+          {% if purchase.notes %}
+          <div class="mb-3"><p class="text-xs text-muted mb-0">Notes</p><p class="text-sm">{{ purchase.notes }}</p></div>
+          {% endif %}
+
+          {% if purchase.attachment %}
+          <div class="mb-3"><a href="{{ purchase.attachment.url }}" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="fas fa-paperclip me-1"></i>View Attached Bill</a></div>
+          {% endif %}
+
+          {% if purchase.journal_entry_id %}
+          <div class="alert alert-success py-2"><i class="fas fa-check-circle me-1"></i>Journal entry <a href="{% url 'schooladmin:journal_detail' purchase.journal_entry_id %}">{{ purchase.journal_entry.voucher_number }}</a> posted.</div>
+          {% endif %}
+
+          <div class="d-flex gap-2 mb-4">
+            {% if purchase.status == 'draft' %}
+            <form method="post" action="{% url 'schooladmin:receive_purchase' purchase.pk %}" onsubmit="return confirm('Mark this purchase as received? This will add stock and post the accounting entry.')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success"><i class="fas fa-check me-1"></i>Mark Received</button>
+            </form>
+            {% else %}
+            <a href="{% url 'schooladmin:add_purchase_return' purchase.pk %}" class="btn btn-outline-danger"><i class="fas fa-undo me-1"></i>Create Return</a>
+            {% endif %}
+            <a href="{% url 'schooladmin:supplier_detail' purchase.supplier_id %}" class="btn btn-outline-secondary"><i class="fas fa-truck me-1"></i>View Supplier</a>
+          </div>
+
+          <!-- Payment history + record payment -->
+          <div class="card border-0 bg-light">
+            <div class="card-body p-3">
+              <h6 class="text-xs font-weight-bolder text-uppercase text-muted mb-3">Record a Payment for This Bill</h6>
+              {% if purchase.due_amount > 0 %}
+              <form method="post" action="{% url 'schooladmin:add_supplier_payment' purchase.supplier_id %}" class="row g-2 align-items-end mb-3">
+                {% csrf_token %}
+                <input type="hidden" name="purchase" value="{{ purchase.id }}">
+                <div class="col-md-3">
+                  <label class="text-xs text-muted">Amount</label>
+                  {{ payment_form.amount }}
+                </div>
+                <div class="col-md-3">
+                  <label class="text-xs text-muted">Date</label>
+                  {{ payment_form.payment_date }}
+                </div>
+                <div class="col-md-2">
+                  <label class="text-xs text-muted">Method</label>
+                  {{ payment_form.payment_method }}
+                </div>
+                <div class="col-md-2">
+                  <label class="text-xs text-muted">Reference</label>
+                  {{ payment_form.reference_number }}
+                </div>
+                <div class="col-md-2">
+                  <button type="submit" class="btn btn-dark w-100 btn-sm">Record Payment</button>
+                </div>
+              </form>
+              {% else %}
+              <p class="text-xs text-muted mb-3">This bill is fully paid — nothing due.</p>
+              {% endif %}
+
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                  <thead class="table-light"><tr><th class="text-xs">Date</th><th class="text-xs">Amount</th><th class="text-xs">Method</th><th class="text-xs">Reference</th></tr></thead>
+                  <tbody>
+                    {% for pay in payments %}
+                    <tr><td class="text-sm">{{ pay.payment_date }}</td><td class="text-sm">Rs. {{ pay.amount }}</td><td class="text-sm">{{ pay.get_payment_method_display }}</td><td class="text-sm">{{ pay.reference_number|default:"—" }}</td></tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted py-3">No payments recorded against this bill yet.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

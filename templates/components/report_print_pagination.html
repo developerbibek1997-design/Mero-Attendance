@@ -1,0 +1,64 @@
+{# Print-only reset for long report tables inside the viewport-based dashboard shell. #}
+<style>
+  @media print {
+    html,
+    body {
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
+    .main-content {
+      position: static !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
+    #htmx-content,
+    .backnow,
+    #printarea,
+    #printarea .card,
+    #printarea .card-body,
+    #printarea .table-responsive {
+      position: static !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
+    #printarea {
+      display: block;
+      width: 100% !important;
+    }
+
+    #printarea table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      break-after: auto;
+      page-break-after: auto;
+    }
+
+    #printarea thead {
+      display: table-header-group;
+    }
+
+    #printarea tfoot {
+      display: table-footer-group;
+    }
+
+    #printarea tbody {
+      display: table-row-group;
+    }
+
+    #printarea tr,
+    #printarea th,
+    #printarea td {
+      break-inside: avoid-page;
+      page-break-inside: avoid;
+    }
+  }
+</style>

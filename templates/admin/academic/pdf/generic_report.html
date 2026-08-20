@@ -1,0 +1,24 @@
+<html>
+<head>
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; color: #111827; font-size: 11px; }
+  h1 { font-size: 17px; margin-bottom: 2px; }
+  .muted { color: #6b7280; margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  th { background: #4338CA; color: #fff; text-align: left; padding: 6px 8px; }
+  td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; }
+</style>
+</head>
+<body>
+  <h1>{{ org.name }}</h1>
+  <p class="muted">{{ title }}</p>
+  <table>
+    <tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr>
+    {% for row in rows %}
+    <tr>{% for val in row %}<td>{{ val }}</td>{% endfor %}</tr>
+    {% empty %}
+    <tr><td colspan="{{ headers|length }}">No data.</td></tr>
+    {% endfor %}
+  </table>
+</body>
+</html>

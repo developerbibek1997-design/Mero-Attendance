@@ -97,33 +97,86 @@
     </div>
     {% endfor %}
 
-    <div class="row">
-      <div class="col-12">
-        <div class="card leave-card">
-          
-          <div class="card-header-premium d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div>
-              <h4 class="mb-0 text-white font-weight-bolder">Leave Requests</h4>
-              <p class="text-sm mb-0 opacity-8">
-                Manage and review employee time-off
-                {% if total_pending > 0 %}
-                — <span class="badge bg-warning text-dark">{{ total_pending }} Pending</span>
-                {% endif %}
-              </p>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div>
+        <h4 class="font-weight-bolder mb-0">Leave Requests</h4>
+        {% if total_pending > 0 %}<span class="badge bg-danger">{{ total_pending }} Pending</span>{% endif %}
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'schooladmin:export_leave' %}?fmt=excel" class="btn btn-outline-success btn-sm"><i class="fas fa-file-excel me-1"></i>Excel</a>
+        <a href="{% url 'schooladmin:export_leave' %}?fmt=csv" class="btn btn-outline-secondary btn-sm"><i class="fas fa-file-csv me-1"></i>CSV</a>
+      </div>
+    </div>
+
+    <!-- Filters - Two Row Layout -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body py-3">
+        <form method="get">
+          <!-- Row 1: Status, Branch, Classification, Leave Type -->
+          <div class="row g-2 mb-2">
+            <div class="col-md-3 col-6">
+              <label class="text-xs fw-bold d-block mb-1">Status</label>
+              <select name="status" class="form-select form-select-sm w-100">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+              </select>
             </div>
-            <div class="text-end">
-              <h5 class="text-white mb-1">{{org.name}}</h5>
-              <div class="d-flex gap-2 justify-content-end flex-wrap mt-2">
-                <a href="?status=all" class="btn btn-sm {% if status_filter == 'all' %}btn-white text-dark{% else %}btn-outline-light{% endif %}">All</a>
-                <a href="?status=pending" class="btn btn-sm {% if status_filter == 'pending' %}btn-warning text-dark{% else %}btn-outline-light{% endif %}">Pending</a>
-                <a href="?status=approved" class="btn btn-sm {% if status_filter == 'approved' %}btn-success{% else %}btn-outline-light{% endif %}">Approved</a>
-                <a href="?status=rejected" class="btn btn-sm {% if status_filter == 'rejected' %}btn-danger{% else %}btn-outline-light{% endif %}">Rejected</a>
-                <a href="{% url 'schooladmin:export_leave' %}?fmt=excel" class="btn btn-sm btn-light"><i class="fas fa-file-excel me-1 text-success"></i>Excel</a>
-                <a href="{% url 'schooladmin:export_leave' %}?fmt=csv" class="btn btn-sm btn-light"><i class="fas fa-file-csv me-1 text-secondary"></i>CSV</a>
+            
+            <div class="col-md-3 col-6">
+              <label class="text-xs fw-bold d-block mb-1">Branch</label>
+              <select name="branch" class="form-select form-select-sm w-100">
+                <option value="">All Branches</option>
+                {% for b in branches %}
+                  <option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            
+            <div class="col-md-3 col-6">
+              <label class="text-xs fw-bold d-block mb-1">Classification</label>
+              <select name="classification" class="form-select form-select-sm w-100">
+                <option value="">All</option>
+                {% for c in classifications %}
+                  <option value="{{ c.id }}" {% if selected_classification == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            
+            <div class="col-md-3 col-6">
+              <label class="text-xs fw-bold d-block mb-1">Leave Type</label>
+              <select name="leave_type" class="form-select form-select-sm w-100">
+                <option value="">All Types</option>
+                {% for lt in leave_types %}
+                  <option value="{{ lt.id }}" {% if selected_leave_type == lt.id|stringformat:"s" %}selected{% endif %}>{{ lt.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            
+        
+          </div>
+          
+          <!-- Row 2: Action Buttons (full width) -->
+          <div class="row g-2">
+            <div class="col-12 col-md-12">
+              <div class="d-flex gap-1 w-100">
+                <button type="submit" class="btn btn-primary btn-sm flex-fill">
+                  <i class="fas fa-filter me-1"></i>Filter
+                </button>
+                <a href="{% url 'schooladmin:leaveReportView' %}" class="btn btn-outline-secondary btn-sm">
+                  Clear
+                </a>
               </div>
             </div>
           </div>
-          
+        </form>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-12">
+        <div class="card leave-card">
           <div class="card-body p-4">
             
             {% for i in leave %}

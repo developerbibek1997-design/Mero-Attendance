@@ -1,0 +1,83 @@
+{% extends 'dashboard.html' %}
+{% block title %}{% if shift %}Edit{% else %}New{% endif %} Shift | {{ org.name }}{% endblock %}
+{% block content %}
+<style>
+  .back-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:10px;
+    background:#f1f5f9;color:#334155;font-weight:600;font-size:.85rem;text-decoration:none;border:1px solid #e2e8f0;transition:.18s;}
+  .back-btn:hover{background:#e2e8f0;color:#0f172a;transform:translateX(-2px);}
+  .shift-head{background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:18px 18px 0 0;color:#fff;padding:24px 28px;}
+  .window-row{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;}
+  .win-badge{width:30px;height:30px;border-radius:8px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;}
+</style>
+
+<div class="container-fluid py-4">
+  <a href="{% url 'schooladmin:shift_list' %}" class="back-btn mb-3"><i class="fas fa-arrow-left"></i> Back to Shifts</a>
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm" style="border-radius:18px;overflow:hidden;">
+        <div class="shift-head">
+          <h4 class="text-white font-weight-bolder mb-1"><i class="fas fa-clock me-2"></i>{% if shift %}Edit Shift{% else %}New Shift{% endif %}</h4>
+          <p class="text-white opacity-8 mb-0 text-sm">Add one window for a normal shift, or two+ for a split shift.</p>
+        </div>
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-4">
+              <label class="form-label fw-bold">Shift Name</label>
+              <input type="text" name="name" class="form-control form-control-lg" placeholder="e.g. Split Day Shift" value="{{ shift.name|default:'' }}" required>
+            </div>
+
+            <label class="form-label fw-bold">Time Windows</label>
+            <p class="text-xs text-muted">e.g. 08:00–12:00 and 15:00–21:00 for a split shift.</p>
+            <div id="windowRows" class="d-flex flex-column gap-2 mb-3">
+              {% for w in windows %}
+              <div class="window-row d-flex align-items-center gap-2 window-item">
+                <span class="win-badge win-num"></span>
+                <input type="time" name="start_time" class="form-control" value="{{ w.start_time|time:'H:i' }}" required>
+                <span class="text-muted small">to</span>
+                <input type="time" name="end_time" class="form-control" value="{{ w.end_time|time:'H:i' }}" required>
+                <button type="button" class="btn btn-outline-danger btn-sm mb-0 removeWindow"><i class="fas fa-times"></i></button>
+              </div>
+              {% endfor %}
+            </div>
+
+            <button type="button" id="addWindow" class="btn btn-outline-primary btn-sm mb-4"><i class="fas fa-plus me-1"></i>Add Window</button>
+
+            <div class="form-check form-switch mb-4">
+              <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if not shift or shift.is_active %}checked{% endif %}>
+              <label class="form-check-label" for="isActive">Active</label>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn bg-gradient-primary text-white px-4"><i class="fas fa-save me-1"></i>{% if shift %}Save Changes{% else %}Create Shift{% endif %}</button>
+              <a href="{% url 'schooladmin:shift_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const rows = document.getElementById('windowRows');
+  function rowHtml() {
+    return '<div class="window-row d-flex align-items-center gap-2 window-item">' +
+      '<span class="win-badge win-num"></span>' +
+      '<input type="time" name="start_time" class="form-control" required>' +
+      '<span class="text-muted small">to</span>' +
+      '<input type="time" name="end_time" class="form-control" required>' +
+      '<button type="button" class="btn btn-outline-danger btn-sm mb-0 removeWindow"><i class="fas fa-times"></i></button></div>';
+  }
+  function renumber() { rows.querySelectorAll('.win-num').forEach((el, i) => el.textContent = i + 1); }
+  document.getElementById('addWindow').addEventListener('click', () => { rows.insertAdjacentHTML('beforeend', rowHtml()); renumber(); });
+  rows.addEventListener('click', (e) => { const b = e.target.closest('.removeWindow'); if (b) { b.closest('.window-item').remove(); renumber(); } });
+  if (!rows.querySelector('.window-item')) { rows.insertAdjacentHTML('beforeend', rowHtml()); }
+  renumber();
+</script>
+{% endblock %}

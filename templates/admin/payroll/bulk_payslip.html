@@ -37,12 +37,19 @@
               </div>
             </div>
 
-            <!-- Filter by class -->
+            <!-- Filter by class / branch -->
             <div class="mb-3">
               <label class="form-label text-xs font-weight-bold">Filter by Classification</label>
               <select id="classFilter" class="form-select form-select-sm">
-                <option value="">All (show all members)</option>
+                <option value="">All Classifications</option>
                 {% for cls in classifications %}<option value="{{ cls.id }}">{{ cls.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-xs font-weight-bold">Filter by Branch</label>
+              <select id="branchFilter" class="form-select form-select-sm">
+                <option value="">All Branches</option>
+                {% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
               </select>
             </div>
 
@@ -56,10 +63,11 @@
               </div>
               <div id="memberList" style="max-height:300px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;padding:8px;">
                 {% for m in members %}
-                <div class="form-check member-row" data-class="{{ m.classification_id|default:'' }}">
+                <div class="form-check member-row" data-class="{{ m.classification_id|default:'' }}" data-branch="{{ m.branch_id|default:'' }}">
                   <input type="checkbox" class="form-check-input member-cb" name="member_ids" value="{{ m.id }}" id="m{{ m.id }}">
                   <label class="form-check-label text-xs" for="m{{ m.id }}">
-                    <strong>{{ m.name }}</strong> <span class="text-muted">— Rs. {{ m.salary_amount }}</span>
+                    <strong><a href="{% url 'handle:memberEdit' m.id %}" class="text-dark">{{ m.name }}</a></strong> <span class="text-muted">— Rs. {{ m.salary_amount }}</span>
+                    {% if m.branch %}<span class="badge bg-light text-secondary ms-1" style="font-size:.6rem;">{{ m.branch.name }}</span>{% endif %}
                   </label>
                 </div>
                 {% empty %}
@@ -69,7 +77,7 @@
               <p class="text-xs text-muted mt-1"><span id="selectedCount">0</span> selected</p>
             </div>
 
-            <button type="submit" class="btn btn-success w-100"><i class="fas fa-cogs me-1"></i>Generate Payslips</button>
+            <button type="submit" name="step" value="preview" class="btn btn-success w-100"><i class="fas fa-table me-1"></i>Review Payslips</button>
           </form>
         </div>
       </div>
@@ -87,9 +95,9 @@
               <div class="p-3 bg-light rounded">
                 <h6 class="text-xs font-weight-bold text-uppercase text-primary mb-2">What Gets Calculated</h6>
                 <ul class="text-xs text-muted ps-3 mb-0">
-                  <li>Attendance days in selected date range</li>
-                  <li>Gross salary from member profile</li>
-                  <li>Basic net payable (use individual for deductions)</li>
+                  <li>Attendance days, overtime and probation in the selected range</li>
+                  <li>Gross salary, allowances, bonuses and deductions</li>
+                  <li>PF, SSF and TDS — reviewable and editable before you generate</li>
                 </ul>
               </div>
             </div>
@@ -97,9 +105,9 @@
               <div class="p-3 bg-light rounded">
                 <h6 class="text-xs font-weight-bold text-uppercase text-warning mb-2">Notes</h6>
                 <ul class="text-xs text-muted ps-3 mb-0">
-                  <li>Skips members with existing payslip for same period</li>
+                  <li>"Review Payslips" calculates but doesn't save anything yet</li>
+                  <li>Skips members with an existing payslip for the same period</li>
                   <li>Email is sent in background (non-blocking)</li>
-                  <li>PF/SSF/tax deductions: use individual payslip</li>
                 </ul>
               </div>
             </div>
@@ -121,7 +129,7 @@
             <tbody>
               {% for m in members %}
               <tr>
-                <td class="text-sm font-weight-bold">{{ m.name }}</td>
+                <td class="text-sm font-weight-bold"><a href="{% url 'handle:memberEdit' m.id %}" class="text-dark">{{ m.name }}</a></td>
                 <td><span class="badge bg-light text-dark">{{ m.get_member_type_display }}</span></td>
                 <td class="text-sm">Rs. {{ m.salary_amount }}/{{ m.salary_type }}</td>
                 <td class="text-xs {% if m.email %}text-success{% else %}text-muted{% endif %}">
@@ -145,12 +153,17 @@ function updateCount() { countEl.textContent = document.querySelectorAll('.membe
 cbs.forEach(cb => cb.addEventListener('change', updateCount));
 document.getElementById('selectAll').addEventListener('click', () => { cbs.forEach(cb => { if (!cb.closest('.member-row').style.display || cb.closest('.member-row').style.display !== 'none') cb.checked = true; }); updateCount(); });
 document.getElementById('deselectAll').addEventListener('click', () => { cbs.forEach(cb => cb.checked = false); updateCount(); });
-document.getElementById('classFilter').addEventListener('change', function() {
-  const val = this.value;
+function applyFilters() {
+  const cls = document.getElementById('classFilter').value;
+  const br = document.getElementById('branchFilter').value;
   document.querySelectorAll('.member-row').forEach(row => {
-    row.style.display = (!val || row.dataset.class === val) ? '' : 'none';
+    const clsMatch = !cls || row.dataset.class === cls;
+    const brMatch = !br || row.dataset.branch === br;
+    row.style.display = (clsMatch && brMatch) ? '' : 'none';
   });
-});
+}
+document.getElementById('classFilter').addEventListener('change', applyFilters);
+document.getElementById('branchFilter').addEventListener('change', applyFilters);
 document.getElementById('bulkForm').addEventListener('submit', function(e) {
   if (!document.querySelectorAll('.member-cb:checked').length) { e.preventDefault(); alert('Please select at least one member.'); }
 });

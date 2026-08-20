@@ -208,7 +208,7 @@
         border-radius: 16px;
         border: 0;
         background: linear-gradient(135deg, #e11d48, #be123c);
-        color: #ffffff;
+        color: #ffffff!important;
         font-weight: 950;
         display: inline-flex;
         align-items: center;
@@ -221,7 +221,7 @@
 
     .pricing-btn:hover {
         transform: translateY(-2px);
-        color: #ffffff;
+        color: #ffffff!important;
         box-shadow: 0 24px 48px rgba(225, 29, 72, 0.34);
     }
 
@@ -275,6 +275,145 @@
         margin: 0;
     }
 
+    .quote-builder {
+        margin-bottom: 60px;
+        border-radius: 34px;
+        background: #ffffff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 28px 80px rgba(15, 23, 42, 0.10);
+        overflow: hidden;
+    }
+
+    .quote-builder-head {
+        padding: 34px;
+        background:
+            radial-gradient(circle at right top, rgba(225, 29, 72, .2), transparent 35%),
+            linear-gradient(135deg, #0f172a, #1e293b);
+        color: #fff;
+    }
+
+    .quote-builder-head h2 {
+        font-size: clamp(1.65rem, 3vw, 2.7rem);
+        font-weight: 950;
+        letter-spacing: -.04em;
+        margin: 0 0 8px;
+    }
+
+    .quote-builder-head p { margin: 0; color: rgba(255,255,255,.7); }
+    .quote-builder-body { padding: 34px; }
+
+    .member-input-wrap {
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 18px;
+        background: #f8fafc;
+    }
+
+    .member-input-wrap label {
+        display: block;
+        font-size: .78rem;
+        font-weight: 900;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 8px;
+    }
+
+    .member-input-wrap input {
+        width: 100%;
+        min-height: 54px;
+        border: 1px solid #cbd5e1;
+        border-radius: 14px;
+        padding: 0 16px;
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .quote-feature-list {
+        max-height: 500px;
+        overflow-y: auto;
+        padding-right: 8px;
+    }
+
+    .quote-feature {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 14px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: .2s ease;
+        background: #fff;
+    }
+
+    .quote-feature:has(input:checked) {
+        border-color: #fb7185;
+        background: #fff1f2;
+        box-shadow: 0 8px 20px rgba(225,29,72,.08);
+    }
+
+    .quote-feature-title { color: #0f172a; font-weight: 850; font-size: .92rem; }
+    .quote-feature-meta { color: #64748b; font-size: .74rem; }
+    .quote-feature-price { color: #e11d48; font-weight: 900; font-size: .78rem; white-space: nowrap; }
+    .quote-feature-price.free { color: #16a34a; }
+
+    .quote-summary {
+        position: sticky;
+        top: 95px;
+        border-radius: 24px;
+        padding: 26px;
+        background: linear-gradient(155deg, #111827, #312e81);
+        color: #fff;
+        box-shadow: 0 22px 50px rgba(30,41,59,.2);
+    }
+
+    .quote-total {
+        font-size: clamp(2rem, 4vw, 3.3rem);
+        font-weight: 950;
+        letter-spacing: -.05em;
+    }
+
+    .quote-line {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 13px 0;
+        border-top: 1px solid rgba(255,255,255,.13);
+        font-size: .86rem;
+    }
+
+    .quote-submit {
+        width: 100%;
+        min-height: 52px;
+        border: 0;
+        border-radius: 15px;
+        background: #fff;
+        color: #be123c;
+        font-weight: 950;
+        margin-top: 18px;
+    }
+
+    .quote-result {
+        margin-top: 22px;
+        border-radius: 18px;
+        padding: 18px;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        color: #065f46;
+    }
+
+    .package-heading {
+        margin: 0 0 28px;
+        text-align: center;
+        color: #0f172a;
+        font-weight: 950;
+        letter-spacing: -.035em;
+    }
+
     @media (max-width: 991px) {
         .pricing-hero {
             padding: 70px 0 35px;
@@ -287,6 +426,9 @@
         .pricing-note {
             padding: 32px 24px;
         }
+
+        .quote-builder-body, .quote-builder-head { padding: 25px; }
+        .quote-summary { position: static; }
     }
 </style>
 
@@ -318,6 +460,171 @@
     <section class="pricing-section">
         <div class="container">
 
+            <div class="quote-builder" id="quotation">
+                <div class="quote-builder-head">
+                    <div class="pricing-badge mb-3" style="background:rgba(255,255,255,.12);color:#fff;">
+                        <i class="fa-solid fa-calculator"></i> Admin-rated quotation
+                    </div>
+                    <h2>Build your Mero Attendance quotation</h2>
+                    <p>Choose your member capacity and only the features you need. Package and feature rates are maintained by the platform administrator.</p>
+                </div>
+                <div class="quote-builder-body">
+                    {% if quote_error %}
+                    <div class="alert alert-danger" role="alert">{{ quote_error }}</div>
+                    {% endif %}
+                    <form method="post" action="{% url 'management:pricing' %}#quotation" id="public-quote-form">
+                        {% csrf_token %}
+                        <div class="row g-4">
+                            <div class="col-lg-8">
+                                <div class="member-input-wrap mb-4">
+                                    <label for="quote-member-limit"><i class="fa-solid fa-users me-2"></i>How many members will use the system?</label>
+                                    <input type="number" min="1" max="1000000" name="member_limit" id="quote-member-limit"
+                                           value="{{ quote_member_limit }}" required>
+                                    <div class="small text-muted mt-2">We automatically choose the smallest member package that covers this number.</div>
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <div>
+                                        <h4 class="fw-bold mb-0" style="color:#0f172a;">Select feature add-ons</h4>
+                                        <div class="small text-muted">Zero-rated features are included without increasing the quotation.</div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="quote-select-all">Select all</button>
+                                </div>
+
+                                <div class="quote-feature-list">
+                                    {% for feature in quote_features %}
+                                    <label class="quote-feature" for="quote-feature-{{ feature.key }}">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <span class="d-inline-flex align-items-center justify-content-center rounded-3"
+                                                  style="width:38px;height:38px;background:#f1f5f9;color:#e11d48;flex:0 0 auto;">
+                                                <i class="fa-solid {{ feature.icon }}"></i>
+                                            </span>
+                                            <div>
+                                                <div class="quote-feature-title">{{ feature.label }}</div>
+                                                <div class="quote-feature-meta">{{ feature.category }}{% if feature.description %} · {{ feature.description }}{% endif %}</div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <span class="quote-feature-price {% if feature.is_free %}free{% endif %}">
+                                                {% if feature.is_free %}Included{% else %}Rs {{ feature.annual_price|floatformat:0 }}/yr{% endif %}
+                                            </span>
+                                            <input class="form-check-input public-feature-toggle" type="checkbox"
+                                                   name="feature_keys" value="{{ feature.key }}"
+                                                   id="quote-feature-{{ feature.key }}"
+                                                   data-price="{{ feature.annual_price }}"
+                                                   {% if feature.key in selected_feature_keys %}checked{% endif %}>
+                                        </div>
+                                    </label>
+                                    {% empty %}
+                                    <div class="pricing-empty">
+                                        <i class="fa-solid fa-tags"></i>
+                                        <h4>Feature rates are being configured</h4>
+                                        <p>Please contact sales for a manual quotation.</p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <aside class="quote-summary">
+                                    <div class="small text-uppercase fw-bold opacity-75 mb-1">Estimated annual total</div>
+                                    <div class="quote-total">Rs <span id="public-quote-total">{% if quote_result %}{{ quote_result.annual_total|floatformat:0 }}{% else %}0{% endif %}</span></div>
+                                    <div class="small opacity-75 mb-3">Backend calculation is confirmed when you submit.</div>
+                                    <div class="quote-line">
+                                        <span class="opacity-75">Member package</span>
+                                        <strong id="public-package-name">{% if quote_result %}{{ quote_result.package_name }}{% else %}Calculating…{% endif %}</strong>
+                                    </div>
+                                    <div class="quote-line">
+                                        <span class="opacity-75">Base capacity</span>
+                                        <strong>Rs <span id="public-base-total">{% if quote_result %}{{ quote_result.base_cost|floatformat:0 }}{% else %}0{% endif %}</span></strong>
+                                    </div>
+                                    <div class="quote-line">
+                                        <span class="opacity-75">Feature add-ons</span>
+                                        <strong>Rs <span id="public-feature-total">{% if quote_result %}{{ quote_result.feature_total|floatformat:0 }}{% else %}0{% endif %}</span></strong>
+                                    </div>
+                                    <div class="quote-line">
+                                        <span class="opacity-75">Monthly equivalent</span>
+                                        <strong>Rs <span id="public-monthly-total">{% if quote_result %}{{ quote_result.monthly_equivalent|floatformat:0 }}{% else %}0{% endif %}</span></strong>
+                                    </div>
+                                    <button type="submit" class="quote-submit">
+                                        <i class="fa-solid fa-file-invoice me-2"></i>Calculate Quotation
+                                    </button>
+                                </aside>
+                            </div>
+                        </div>
+                    </form>
+
+                    {% if quote_result %}
+                    <div class="quote-result">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                            <div>
+                                <div class="fw-bold fs-5"><i class="fa-solid fa-circle-check me-2"></i>Your quotation is ready</div>
+                                <div class="small mt-1">
+                                    {{ quote_result.member_limit }} members · {{ quote_result.package_name }}
+                                    {% if quote_result.package_units > 1 %} × {{ quote_result.package_units }} capacity blocks{% endif %}
+                                    · {{ quote_result.selected_features|length }} selected features
+                                </div>
+                            </div>
+                            <div class="text-md-end">
+                                <div class="small text-uppercase fw-bold">Annual quotation</div>
+                                <div class="fs-3 fw-bold">Rs {{ quote_result.annual_total|floatformat:0 }}</div>
+                                <button type="button" class="btn btn-success mt-2" data-bs-toggle="modal" data-bs-target="#packageRequestModal">Request this package</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="packageRequestModal" tabindex="-1" aria-labelledby="packageRequestModalLabel" aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <form method="post" action="{% url 'management:request_package' %}">
+                            {% csrf_token %}
+                            <div class="modal-header">
+                              <h5 class="modal-title" id="packageRequestModalLabel">Request This Package</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                              <p class="text-muted small">
+                                {{ quote_result.member_limit }} members · {{ quote_result.package_name }} ·
+                                Rs {{ quote_result.annual_total|floatformat:0 }}/yr
+                              </p>
+                              <div class="mb-3">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" name="full_name" class="form-control" required>
+                              </div>
+                              <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control" required>
+                              </div>
+                              <div class="mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="text" name="phone" class="form-control">
+                              </div>
+                              <div class="mb-3">
+                                <label class="form-label">Note <span class="text-muted small">(optional)</span></label>
+                                <textarea name="note" class="form-control" rows="2"></textarea>
+                              </div>
+                              <input type="hidden" name="member_limit" value="{{ quote_result.member_limit }}">
+                              <input type="hidden" name="package_name" value="{{ quote_result.package_name }}">
+                              <input type="hidden" name="base_cost" value="{{ quote_result.base_cost }}">
+                              <input type="hidden" name="feature_total" value="{{ quote_result.feature_total }}">
+                              <input type="hidden" name="annual_total" value="{{ quote_result.annual_total }}">
+                              {% for feature in quote_result.selected_features %}
+                              <input type="hidden" name="selected_feature_keys" value="{{ feature.key }}">
+                              {% endfor %}
+                            </div>
+                            <div class="modal-footer">
+                              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                              <button type="submit" class="btn btn-success">Submit Request</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <h2 class="package-heading">Member capacity packages</h2>
             {% if pricing_list %}
                 <div class="row g-4 justify-content-center">
                     {% for pricing in pricing_list %}
@@ -366,8 +673,8 @@
                                         </li>
                                     </ul>
 
-                                    <a href="{% url 'management:contact' %}" class="pricing-btn">
-                                        Choose Package
+                                    <a href="#quotation" class="pricing-btn">
+                                        Calculate Quotation
                                         <i class="fa-solid fa-arrow-right"></i>
                                     </a>
 
@@ -408,4 +715,53 @@
 
 </div>
 
+{{ pricing_tiers|json_script:"public-pricing-tiers" }}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const tiers = JSON.parse(document.getElementById("public-pricing-tiers").textContent);
+    const memberInput = document.getElementById("quote-member-limit");
+    const toggles = Array.from(document.querySelectorAll(".public-feature-toggle"));
+    const selectAll = document.getElementById("quote-select-all");
+
+    function money(value) {
+        return Math.round(value).toLocaleString("en-IN");
+    }
+
+    function calculatePreview() {
+        const members = Math.max(Number(memberInput && memberInput.value || 1), 1);
+        let tier = tiers.find(item => Number(item.limit) >= members);
+        let units = 1;
+        if (!tier && tiers.length) {
+            tier = tiers[tiers.length - 1];
+            units = Math.ceil(members / Math.max(Number(tier.limit), 1));
+        }
+        const base = tier ? Number(tier.price || 0) * units : 0;
+        const features = toggles.filter(toggle => toggle.checked)
+            .reduce((total, toggle) => total + Number(toggle.dataset.price || 0), 0);
+        const total = base + features;
+        document.getElementById("public-package-name").textContent = tier
+            ? tier.name + (units > 1 ? " × " + units : "")
+            : "Custom package";
+        document.getElementById("public-base-total").textContent = money(base);
+        document.getElementById("public-feature-total").textContent = money(features);
+        document.getElementById("public-quote-total").textContent = money(total);
+        document.getElementById("public-monthly-total").textContent = money(total / 12);
+    }
+
+    if (memberInput) {
+        memberInput.addEventListener("input", calculatePreview);
+        memberInput.addEventListener("change", calculatePreview);
+    }
+    toggles.forEach(toggle => toggle.addEventListener("change", calculatePreview));
+    if (selectAll) {
+        selectAll.addEventListener("click", function () {
+            const shouldSelect = toggles.some(toggle => !toggle.checked);
+            toggles.forEach(toggle => { toggle.checked = shouldSelect; });
+            selectAll.textContent = shouldSelect ? "Clear all" : "Select all";
+            calculatePreview();
+        });
+    }
+    calculatePreview();
+});
+</script>
 {% endblock content %}

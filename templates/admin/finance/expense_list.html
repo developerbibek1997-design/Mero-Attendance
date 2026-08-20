@@ -8,24 +8,84 @@
       <h4 class="font-weight-bolder mb-0">Expenses</h4>
       <p class="text-sm text-muted mb-0">Total: <strong class="text-danger">Rs. {{ total|floatformat:2 }}</strong></p>
     </div>
-    <a href="{% url 'schooladmin:add_expense' %}" class="btn btn-danger btn-sm"><i class="fas fa-plus me-1"></i>Add Expense</a>
+    <a href="{% url 'schooladmin:add_expense' %}" class="btn btn-danger btn-sm text-white"><i class="fas fa-plus me-1"></i>Add Expense</a>
   </div>
   {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body py-3">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-2"><label class="text-xs font-weight-bold">Branch</label>
-          <select name="branch" class="form-select form-select-sm"><option value="">All</option>{% for b in branches %}<option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></div>
-        <div class="col-md-2"><label class="text-xs font-weight-bold">Category</label>
-          <select name="category" class="form-select form-select-sm"><option value="">All</option>{% for c in categories %}<option value="{{ c.id }}" {% if selected_category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
-        <div class="col-md-2"><label class="text-xs font-weight-bold">Payment</label>
-          <select name="payment_method" class="form-select form-select-sm"><option value="">All</option><option value="cash" {% if payment_method == 'cash' %}selected{% endif %}>Cash</option><option value="bank" {% if payment_method == 'bank' %}selected{% endif %}>Bank</option><option value="online" {% if payment_method == 'online' %}selected{% endif %}>Online</option></select></div>
-        <div class="col-md-2"><label class="text-xs font-weight-bold">From</label><input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from|default:'' }}"></div>
-        <div class="col-md-2"><label class="text-xs font-weight-bold">To</label><input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to|default:'' }}"></div>
-        <div class="col-md-2 d-flex gap-1"><button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-filter me-1"></i>Filter</button><a href="{% url 'schooladmin:expense_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a></div>
-      </form>
-    </div>
+ <div class="card border-0 shadow-sm mb-4">
+  <div class="card-body py-3">
+    <form method="get">
+      <!-- Row 1: Branch, Category, Payment -->
+      <div class="row g-2 mb-2">
+        <div class="col-lg-4 col-6">
+          <label class="text-xs text-uppercase fw-bold d-block mb-1">Branch</label>
+          <select name="branch" class="form-select form-select-sm w-100">
+            <option value="">All</option>
+            {% for b in branches %}
+              <option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="col-lg-4 col-6">
+          <label class="text-xs text-uppercase fw-bold d-block mb-1">Category</label>
+          <select name="category" class="form-select form-select-sm w-100">
+            <option value="">All</option>
+            {% for c in categories %}
+              <option value="{{ c.id }}" {% if selected_category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="col-lg-4 col-6">
+          <label class="text-xs text-uppercase fw-bold d-block mb-1">Payment</label>
+          <select name="payment_method" class="form-select form-select-sm w-100">
+            <option value="">All</option>
+            <option value="cash" {% if payment_method == 'cash' %}selected{% endif %}>Cash</option>
+            <option value="bank" {% if payment_method == 'bank' %}selected{% endif %}>Bank</option>
+            <option value="online" {% if payment_method == 'online' %}selected{% endif %}>Online</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Row 2: From Date, To Date, Filter, Clear -->
+      <div class="row g-2">
+        <div class="col-lg-4 col-6">
+          <label class="text-xs text-uppercase fw-bold d-block mb-1">From</label>
+          {% if nepali_enabled %}
+          <input type="text" class="form-control form-control-sm w-100 nepali-cal" name="date_from_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+          <input type="date" class="hidden-date-input" name="date_from" value="{{ date_from|default:'' }}">
+          {% else %}
+          <input type="date" name="date_from" class="form-control form-control-sm w-100" value="{{ date_from|default:'' }}">
+          {% endif %}
+        </div>
+
+        <div class="col-lg-4 col-6">
+          <label class="text-xs text-uppercase fw-bold d-block mb-1">To</label>
+          {% if nepali_enabled %}
+          <input type="text" class="form-control form-control-sm w-100 nepali-cal" name="date_to_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off">
+          <input type="date" class="hidden-date-input" name="date_to" value="{{ date_to|default:'' }}">
+          {% else %}
+          <input type="date" name="date_to" class="form-control form-control-sm w-100" value="{{ date_to|default:'' }}">
+          {% endif %}
+        </div>
+        
+        <div class="col-lg-2 col-6">
+          <label class="text-xs text-uppercase fw-bold d-block mb-1" style="visibility: hidden;">Actions</label>
+          <button type="submit" class="btn btn-primary btn-sm w-100">
+            <i class="fas fa-filter me-1"></i>Filter
+          </button>
+        </div>
+        
+        <div class="col-lg-2 col-6">
+          <label class="text-xs text-uppercase fw-bold d-block mb-1" style="visibility: hidden;">Actions</label>
+          <a href="{% url 'schooladmin:expense_list' %}" class="btn btn-outline-secondary btn-sm w-100">
+            Clear
+          </a>
+        </div>
+      </div>
+    </form>
   </div>
+</div>
   <div class="card border-0 shadow-sm">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
@@ -38,7 +98,7 @@
           {% for tx in transactions %}
           <tr>
             <td class="text-xs text-muted">{{ forloop.counter }}</td>
-            <td class="text-sm">{{ tx.transaction_date }}</td>
+            <td class="text-sm">{{ tx.transaction_date }}{% if nepali_enabled %}<br><small class="text-muted">{{ tx.transaction_date_np }} BS</small>{% endif %}</td>
             <td><p class="text-sm font-weight-bold mb-0">{{ tx.title }}</p>{% if tx.note %}<p class="text-xs text-muted mb-0">{{ tx.note|truncatechars:40 }}</p>{% endif %}</td>
             <td class="text-sm">{{ tx.category.name|default:"-" }}</td>
             <td class="text-sm">{{ tx.branch.name|default:"-" }}</td>

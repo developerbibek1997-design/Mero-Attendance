@@ -1,0 +1,101 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Agent Management | Super Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h4 class="fw-bold mb-1" style="color:#1e293b;">Agent Management</h4>
+      <p class="text-muted mb-0 small">{{ agents.count }} agent{{ agents.count|pluralize }} registered</p>
+    </div>
+    <a href="{% url 'superadmin:agent_add' %}" class="btn btn-primary fw-semibold">
+      <i class="fas fa-plus me-2"></i>Add Agent
+    </a>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if agents %}
+  <div class="row g-4">
+    {% for agent in agents %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            {% if agent.photo %}
+            <img src="{{ agent.photo.url }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">
+            {% else %}
+            <div style="width:48px;height:48px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-user-tie" style="color:#7c3aed;"></i>
+            </div>
+            {% endif %}
+            <div class="flex-grow-1">
+              <h6 class="fw-bold mb-0" style="color:#1e293b;">{{ agent.full_name }}</h6>
+              <div class="text-muted" style="font-size:.78rem;">{{ agent.admin.email }}</div>
+              {% if agent.company_name %}
+              <div class="text-muted" style="font-size:.75rem;">{{ agent.company_name }}</div>
+              {% endif %}
+            </div>
+            <span class="badge" style="background:{% if agent.status == 'active' %}#d1fae5;color:#065f46;{% elif agent.status == 'suspended' %}#fee2e2;color:#991b1b;{% else %}#f1f5f9;color:#374151;{% endif %}font-size:.7rem;">
+              {{ agent.get_status_display }}
+            </span>
+          </div>
+
+          <div class="row g-2 mb-3" style="font-size:.8rem;">
+            <div class="col-6">
+              <div class="text-muted">Organizations</div>
+              <div class="fw-bold" style="color:#4f46e5;">{{ agent.org_count }}/{{ agent.max_organizations_allowed }}</div>
+            </div>
+            <div class="col-6">
+              <div class="text-muted">Commission</div>
+              <div class="fw-bold">{{ agent.commission_value }}{% if agent.commission_type == 'percent' %}%{% else %} Rs.{% endif %}</div>
+            </div>
+            {% if agent.phone %}
+            <div class="col-12">
+              <div class="text-muted">Phone</div>
+              <div class="fw-semibold">{{ agent.phone }}</div>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex gap-2 pt-2 border-top">
+            <a href="{% url 'superadmin:agent_detail' agent.id %}" class="btn btn-sm btn-outline-primary flex-fill">
+              <i class="fas fa-eye me-1"></i>View
+            </a>
+            <a href="{% url 'superadmin:agent_edit' agent.id %}" class="btn btn-sm btn-outline-secondary flex-fill">
+              <i class="fas fa-edit me-1"></i>Edit
+            </a>
+            {% if agent.status == 'active' %}
+            <a href="{% url 'superadmin:agent_suspend' agent.id %}" class="btn btn-sm btn-outline-danger"
+               onclick="return confirm('Suspend {{ agent.full_name }}?')">
+              <i class="fas fa-ban"></i>
+            </a>
+            {% else %}
+            <a href="{% url 'superadmin:agent_activate' agent.id %}" class="btn btn-sm btn-outline-success">
+              <i class="fas fa-check"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card border-0 shadow-sm text-center py-5">
+    <div class="card-body">
+      <i class="fas fa-user-tie fa-4x text-muted mb-4"></i>
+      <h5 class="text-muted mb-3">No agents yet</h5>
+      <a href="{% url 'superadmin:agent_add' %}" class="btn btn-primary px-5">Add First Agent</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

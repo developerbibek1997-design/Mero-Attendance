@@ -112,7 +112,7 @@
           {% for row in members_data %}
           <tr>
             <td style="position:sticky;left:0;background:#fff;z-index:1;font-weight:700;">
-              <div>{{ row.member.name }}</div>
+              <div><a href="{% url 'handle:memberEdit' row.member.id %}" class="text-dark fw-bold">{{ row.member.name }}</a></div>
               <div style="font-size:.72rem;color:var(--muted);">{{ row.member.card|default:"" }}</div>
             </td>
             {% for subj in subjects %}

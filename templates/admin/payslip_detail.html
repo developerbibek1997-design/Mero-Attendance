@@ -1,0 +1,262 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}Payslip Detail | {{ mem.name }}{% endblock title %}
+
+{% block content %}
+<style>
+    .payslip-card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    .stat-box { border-radius: 12px; padding: 15px; text-align: center; color: white; margin-bottom: 20px; }
+    .table-premium th { background-color: #f8fafc; color: #475569; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 15px;}
+    .table-premium td { vertical-align: middle; padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem;}
+
+    @media print {
+        body * { visibility: hidden; }
+        .no-print { display: none !important; }
+        .printableArea, .printableArea * { visibility: visible; }
+        .printableArea { position: absolute; left: 0; top: 0; width: 100%; }
+        .payslip-card { box-shadow: none; border: none; padding: 0; }
+    }
+</style>
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <div>
+            <h4 class="font-weight-bolder mb-0"><i class="fas fa-file-invoice-dollar text-primary me-2"></i>Payslip Detail</h4>
+            <p class="text-xs text-muted mb-0">{{ mem.name }} &middot; {{ slip.month_name }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'schooladmin:play-slip-detail' mem.id %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Back to History</a>
+            {% if slip.status == 'draft' %}
+            <span class="badge bg-warning text-dark align-self-center px-3 py-2">Draft</span>
+            {% elif slip.status == 'finalized' %}
+            <span class="badge bg-success align-self-center px-3 py-2">Finalized</span>
+            {% else %}
+            <span class="badge bg-primary align-self-center px-3 py-2">Paid</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="printableArea">
+        <div id="payslipDocument" class="payslip-card bg-white">
+
+            <div class="text-center border-bottom pb-4 mb-4">
+              
+                {% if org.image %}
+                    <img src="{{ org.image.url }}" alt="{{ org.name }} Logo" style="max-height: 80px; margin-bottom: 15px; object-fit: contain;">
+                {% endif %}
+                <h2 class="font-weight-bolder text-dark mb-0">{{ org.name }}</h2>
+                <p class="text-muted mb-3">{{ org.address|default:"Corporate Headquarters" }}</p>
+                <span class="badge bg-light text-dark border px-4 py-2 text-uppercase letter-spacing-1">Official Salary Statement</span>
+            </div>
+
+            <div class="row mb-5">
+                <div class="col-6">
+                    <p class="mb-1 text-sm"><strong>Employee:</strong> {{ mem.name }}</p>
+                    <p class="mb-1 text-sm"><strong>Department:</strong> {{ mem.classification.name }}</p>
+                    <p class="mb-1 text-sm"><strong>Payroll Type:</strong> <span class="badge bg-primary text-uppercase">{{ slip.salary_type }}</span></p>
+                </div>
+                <div class="col-6 text-end">
+                    <p class="mb-1 text-sm"><strong>Salary Month:</strong> {{ slip.month_name|default:"—" }}</p>
+                    <p class="mb-1 text-sm"><strong>Payroll Period:</strong> {{ slip.from_date }} to {{ slip.to_date }}</p>
+                    <p class="mb-1 text-sm"><strong>Generated:</strong> {{ slip.generated_on|date:"F j, Y" }}</p>
+                    {% if slip.payment_date %}<p class="mb-1 text-sm"><strong>Payment Date:</strong> {{ slip.payment_date|date:"F j, Y" }}</p>{% endif %}
+                    {% if slip.finalized_by %}<p class="mb-1 text-sm"><strong>Finalized By:</strong> {{ slip.finalized_by.get_full_name|default:slip.finalized_by.username }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-3"><div class="stat-box text-dark"><h6>Period Days</h6><h3 class="mb-0 ">{{ slip.total_days }}</h3></div></div>
+                <div class="col-3"><div class="stat-box text-success"><h6>Present</h6><h3 class="mb-0 ">{{ slip.present_days }}</h3></div></div>
+                <div class="col-3"><div class="stat-box text-info"><h6>Paid Off-Days</h6><h3 class="mb-0 ">{{ slip.paid_leaves|add:slip.holidays }}</h3></div></div>
+                <div class="col-3"><div class="stat-box text-danger"><h6>Unpaid Absent</h6><h3 class="mb-0 ">{{ slip.unpaid_absences }}</h3></div></div>
+            </div>
+
+            <h6 class="text-uppercase text-xs font-weight-bolder text-muted mb-2 mt-5">Detailed Financial Ledger</h6>
+            <table class="table table-bordered mb-5">
+                <thead class="table-premium">
+                    <tr>
+                        <th>Earnings & Deductions</th>
+                        <th class="text-end">Amount (NPR)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="font-weight-bold text-dark">Gross Salary</td>
+                        <td class="text-end font-weight-bold" style="font-family: monospace; font-size: 1.1rem;">{{ slip.gross_salary }}</td>
+                    </tr>
+                    {% if slip.overtime_amount > 0 %}
+                    <tr style="background: #f0fff4;">
+                        <td class="font-weight-bold text-success">Overtime Pay ({{ slip.overtime_hours|floatformat:2 }} hrs &times; {{ slip.overtime_rate_multiplier }}x)</td>
+                        <td class="text-end font-weight-bold text-success" style="font-family: monospace; font-size: 1.1rem;">+ {{ slip.overtime_amount }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if slip.probation_adjustment > 0 %}
+                    <tr style="background: #fffbeb;">
+                        <td class="font-weight-bold text-warning">Probation Salary Adjustment</td>
+                        <td class="text-end font-weight-bold text-warning" style="font-family: monospace; font-size: 1.1rem;">- {{ slip.probation_adjustment }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if slip.allowance_total > 0 %}
+                    <tr>
+                        <td class="font-weight-bold text-dark">Allowances</td>
+                        <td class="text-end font-weight-bold text-success" style="font-family: monospace; font-size: 1.1rem;">+ {{ slip.allowance_total }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if slip.bonus_total > 0 %}
+                    <tr>
+                        <td class="font-weight-bold text-dark">Bonus</td>
+                        <td class="text-end font-weight-bold text-success" style="font-family: monospace; font-size: 1.1rem;">+ {{ slip.bonus_total }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if slip.other_deduction > 0 %}
+                    <tr style="background: #fff5f5;">
+                        <td class="font-weight-bold text-danger">Other Deductions</td>
+                        <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">- {{ slip.other_deduction }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="font-weight-bold text-danger">Tax Deduction (TDS)</td>
+                        <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">- {{ slip.tax_deduction }}</td>
+                    </tr>
+                    {% if slip.pf_employee > 0 or slip.pf_employer > 0 %}
+                    <tr>
+                        <td class="font-weight-bold text-danger">Provident Fund</td>
+                        <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">- {{ slip.pf_employee }} <small class="text-muted">(Employer: {{ slip.pf_employer }})</small></td>
+                    </tr>
+                    {% endif %}
+                    {% if slip.ssf_employee > 0 or slip.ssf_employer > 0 %}
+                    <tr>
+                        <td class="font-weight-bold text-danger">Social Security Fund</td>
+                        <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">- {{ slip.ssf_employee }} <small class="text-muted">(Employer: {{ slip.ssf_employer }})</small></td>
+                    </tr>
+                    {% endif %}
+                    {% if slip.advance_deduction > 0 %}
+                    <tr style="background: #fff5f5;">
+                        <td class="font-weight-bold text-danger">Advance Salary Deduction</td>
+                        <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">- {{ slip.advance_deduction }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if slip.loan_deduction > 0 %}
+                    <tr style="background: #fff5f5;">
+                        <td class="font-weight-bold text-danger">Loan Deduction</td>
+                        <td class="text-end font-weight-bold text-danger" style="font-family: monospace; font-size: 1.1rem;">- {{ slip.loan_deduction }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr style="background-color: #f8fafc; border-top: 2px solid #10b981;">
+                        <td class="text-end text-dark align-middle"><h5 class="mb-0 font-weight-bolder py-2">Net Payable Amount</h5></td>
+                        <td class="text-end">
+                            <h4 class="mb-0 text-success">Rs. {{ slip.net_payable }}</h4>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {% if slip.notes %}
+            <div class="alert alert-light border no-print"><strong>Notes:</strong> {{ slip.notes }}</div>
+            {% endif %}
+
+            {% if daily_logs %}
+            <h6 class="text-uppercase text-xs font-weight-bolder text-muted mb-2 no-print">Daily Attendance & Hours Detail</h6>
+            <div class="table-responsive no-print mb-4">
+                <table class="table table-premium table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Punch In</th>
+                            <th>Punch Out</th>
+                            <th class="text-center">Late In</th>
+                            <th class="text-center">Early Out</th>
+                            <th class="text-center">Overtime</th>
+                            <th class="text-end">Total Hours</th>
+                            <th class="text-end">Amount (Rs.)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in daily_logs %}
+                        <tr>
+                            <td><strong class="d-block text-dark">{% if nepali_enabled %}{{ log.date_np }}{% else %}{{ log.date }}{% endif %}</strong></td>
+                            <td>
+                                {% if log.status == 'Present' %}<span class="badge bg-success">Present</span>
+                                {% elif log.status == 'Absent' %}<span class="badge bg-danger">Absent</span>
+                                {% else %}<span class="badge bg-info text-dark">{{ log.status }}</span>{% endif %}
+                            </td>
+                            <td>{{ log.punch_in }}</td>
+                            <td>{{ log.punch_out }}</td>
+                            <td class="text-center text-danger">{{ log.late_in }}</td>
+                            <td class="text-center text-danger">{{ log.early_out }}</td>
+                            <td class="text-center text-success">{% if log.overtime_hrs > 0 %}{{ log.overtime_hrs }} hrs{% else %}-{% endif %}</td>
+                            <td class="text-end font-weight-bold text-dark">{{ log.worked_hrs }} hrs</td>
+                            <td class="text-end">{{ log.amount|default:"0.00" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            <div class="row mt-5 pt-5 text-center">
+                <div class="col-6">
+                    <hr style="width: 60%; margin: 0 auto 10px auto; border-top: 2px solid #cbd5e1;">
+                    <p class="text-sm font-weight-bold text-secondary">Employer Signature</p>
+                </div>
+                <div class="col-6">
+                    <hr style="width: 60%; margin: 0 auto 10px auto; border-top: 2px solid #cbd5e1;">
+                    <p class="text-sm font-weight-bold text-secondary">Employee Signature</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-end no-print mt-4 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-dark btn-lg" onclick="window.print()">
+                <i class="fas fa-print me-2"></i> Print Paper
+            </button>
+            <button type="button" class="btn btn-danger btn-lg text-white" onclick="generatePDF()">
+                <i class="fas fa-file-pdf me-2"></i> Download / Share PDF
+            </button>
+            {% if mem.email %}
+            <form method="post" action="{% url 'schooladmin:payslip_detail' slip.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="resend_email">
+                <button type="submit" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-envelope me-2"></i> Resend Email
+                </button>
+            </form>
+            {% endif %}
+            {% if slip.status == 'draft' %}
+            <form method="post" action="{% url 'schooladmin:finalize_payslip' slip.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="finalized">
+                <button type="submit" class="btn bg-gradient-success btn-lg shadow-success">
+                    <i class="fas fa-check-circle me-2"></i> Finalize Payslip
+                </button>
+            </form>
+            {% elif slip.status == 'finalized' %}
+            <form method="post" action="{% url 'schooladmin:finalize_payslip' slip.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="paid">
+                <button type="submit" class="btn bg-gradient-primary btn-lg">
+                    <i class="fas fa-money-check-alt me-2"></i> Mark as Paid
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    function generatePDF() {
+        const element = document.getElementById('payslipDocument');
+        const opt = {
+            margin: 0.5,
+            filename: 'Payslip_{{ mem.name|slugify }}_{{ slip.month_name|slugify }}.pdf',
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 2, useCORS: true, windowWidth: 1024 },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+</script>
+{% endblock content %}

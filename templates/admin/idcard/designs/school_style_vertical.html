@@ -1,0 +1,23 @@
+{% load static %}
+<div class="idc-card-pair">
+  <div class="idc-card-label">Front</div>
+  <div class="idc-card idc-sc" style="background:#fff;{% if template.front_background %}background-image:url('{{ template.front_background.url }}');{% endif %}">
+    <div class="idc-sc-wave" style="background:linear-gradient(135deg, {{ template.primary_color }}, {{ template.secondary_color }});">
+      {% if template.show_org_name %}<div class="idc-org-name" style="color:#fff;">{{ org.name }}</div>{% endif %}
+      <div class="idc-sc-label">{% if m.member_type == 'student' %}Student ID{% else %}Staff ID{% endif %}</div>
+    </div>
+    {% if template.show_photo %}
+      {% if m.photo %}<img class="idc-photo idc-sc-photo" src="{{ m.photo.url }}" style="border-color:{{ template.secondary_color }};">{% else %}<div class="idc-photo idc-sc-photo d-flex align-items-center justify-content-center text-muted" style="border-color:{{ template.secondary_color }};"><i class="fas fa-user"></i></div>{% endif %}
+    {% endif %}
+    <div class="idc-sc-body">
+      <div class="idc-name" style="text-align:center;color:{{ template.primary_color }};">{{ m.name }}</div>
+      <div class="idc-fields idc-sc-fields">{% include "admin/idcard/designs/_fields.html" %}</div>
+    </div>
+  </div>
+
+  <div class="idc-card-label">Back</div>
+  <div class="idc-card idc-sc idc-back" style="{% if template.back_background %}background-image:url('{{ template.back_background.url }}');{% endif %}">
+    <div class="idc-sc-wave" style="background:linear-gradient(135deg, {{ template.primary_color }}, {{ template.secondary_color }});height:10mm;"></div>
+    {% include "admin/idcard/designs/_back_common.html" %}
+  </div>
+</div>

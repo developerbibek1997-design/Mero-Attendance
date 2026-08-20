@@ -1,80 +1,322 @@
 {% extends 'dashboard.html' %}
+{% load static %}
 {% block title %}Staff Dashboard | {{ org.name }}{% endblock %}
 {% block content %}
-<div class="container-fluid py-2">
+<style>
+  .dashboard-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #7f1d1d 100%);
+    border-radius: 1rem;
+    position: relative;
+    overflow: hidden;
+    min-height: 160px;
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+    border-radius: 1rem;
+  }
+  .avatar-initial {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #e11d48, #be123c);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.6rem;
+    box-shadow: 0 8px 20px rgba(225,29,72,.28);
+    border: 2px solid #fff;
+    overflow: hidden;
+  }
+  .avatar-initial img { width: 100%; height: 100%; object-fit: cover; }
+  .stat-tile {
+    border-radius: 1rem;
+    border: none;
+    transition: all .25s cubic-bezier(.25,.8,.25,1);
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-tile:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,.1);
+  }
+  .stat-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    margin-bottom: .75rem;
+  }
+  .action-tile {
+    border-radius: 14px;
+    border: none;
+    background: #f8fafc;
+    transition: all .25s cubic-bezier(.25,.8,.25,1);
+    text-decoration: none;
+    display: block;
+    position: relative;
+  }
+  .action-tile:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 28px rgba(15,23,42,.10);
+    background: #fff;
+  }
+  .action-tile .action-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin: 0 auto .6rem;
+  }
+  .panel-card {
+    border-radius: 1rem;
+    border: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,.05);
+  }
+  .panel-card .card-header {
+    border-radius: 1rem 1rem 0 0;
+  }
+  .hover-row {
+    transition: background .15s ease;
+  }
+  .hover-row:hover {
+    background: #f8fafc;
+  }
+</style>
+{% include "components/premium_dashboard_styles.html" %}
 
-  <!-- Welcome Header -->
-  <div class="card border-0 mb-4 text-white" style="background:linear-gradient(135deg,#1e3a5f 0%,#4e4376 100%);">
-    <div class="card-body p-4">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-        <div>
-          <h4 class="text-white font-weight-bolder mb-1">
-            Welcome, {{ memb.name|default:request.user.get_full_name|default:request.user.username }} 👋
-          </h4>
-          <p class="text-white opacity-8 mb-0 text-sm">
-            {{ org.name }} &bull; {{ today|date:"l, F j, Y" }}
-            {% if memb %}&bull; {{ memb.get_member_type_display }}{% endif %}
-          </p>
-        </div>
-        <div class="d-flex gap-2">
-          <a href="{% url 'staff:my_attendance' %}" class="btn btn-sm btn-light">
-            <i class="fas fa-calendar-check me-1"></i>My Attendance
-          </a>
-          {% if org.feature_tasks %}
-          <a href="{% url 'staff:my_tasks' %}" class="btn btn-sm" style="background:#f97316;color:#fff;">
-            <i class="fas fa-tasks me-1"></i>My Tasks
-            {% if my_tasks_pending %}<span class="badge bg-white text-dark ms-1">{{ my_tasks_pending }}</span>{% endif %}
-          </a>
-          {% endif %}
+<div class="container-fluid py-4 premium-dashboard {% if is_teacher %}teacher-workspace{% else %}staff-workspace{% endif %}">
+
+  <!-- Hero Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="dashboard-header shadow-sm"
+           {% if org.image %}style="background-image:linear-gradient(135deg, rgba(15,23,42,.82) 0%, rgba(30,41,59,.7) 60%, rgba(127,29,29,.75) 100%), url('{{ org.image.url }}'); background-size:cover; background-position:center;"{% endif %}></div>
+      <div class="card glass-card mx-3 mx-md-4 mt-n5">
+        <div class="card-body p-4">
+          <div class="row align-items-center gx-4">
+            <div class="col-auto">
+              <div class="avatar-initial">
+                {% if memb.photo %}
+                <img src="{{ memb.photo.url }}" alt="{{ memb.name }} profile photo">
+                {% else %}
+                {{ memb.name|default:request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
+                {% endif %}
+              </div>
+            </div>
+            <div class="col my-auto">
+              <div class="workspace-eyebrow"><span class="workspace-live-dot"></span>{{ dashboard_role_label }}</div>
+              <h3 class="mb-2 text-dark font-weight-bolder">
+                {% if is_teacher %}Good day, {{ memb.name|default:request.user.get_full_name|default:request.user.username }}{% else %}Welcome back, {{ memb.name|default:request.user.get_full_name|default:request.user.username }}{% endif %}
+              </h3>
+              <div class="workspace-subtitle">
+                <span><i class="fas fa-building"></i>{{ org.name }}</span>
+                <span><i class="fas fa-calendar-day"></i>{{ today|date:"l, F j, Y" }}</span>
+                {% if memb %}<span><i class="fas fa-id-badge"></i>{{ memb.get_member_type_display }}</span>{% endif %}
+              </div>
+            </div>
+            <div class="col-12 col-lg-auto workspace-actions">
+              <a href="{% url 'staff:profile' %}" class="btn btn-sm btn-outline-primary mb-0">
+                <i class="fas fa-user-circle me-1"></i>My Profile
+              </a>
+              <a href="{% url 'handle:changePassword' %}" class="btn btn-sm btn-outline-secondary mb-0">
+                <i class="fas fa-key me-1"></i>Change Password
+              </a>
+              <a href="{% url 'staff:my_attendance' %}" class="btn btn-sm btn-outline-dark mb-0">
+                <i class="fas fa-calendar-check me-1"></i>My Attendance
+              </a>
+              {% if is_teacher and features.academic_management %}
+              <a href="{% url 'staff:subject_teaching_log' %}" class="btn btn-sm workspace-primary-btn mb-0">
+                <i class="fas fa-user-check me-1"></i>Mark Attendance
+              </a>
+              {% elif features.tasks and staff_perms.can_view_tasks %}
+              <a href="{% url 'staff:my_tasks' %}" class="btn btn-sm bg-gradient-warning text-white mb-0">
+                <i class="fas fa-tasks me-1"></i>My Tasks
+                {% if my_tasks_pending %}<span class="badge bg-white text-dark ms-1">{{ my_tasks_pending }}</span>{% endif %}
+              </a>
+              {% endif %}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
+  {% include "components/dashboard_notifications.html" %}
+
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show shadow-sm border-0">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  {% if dash_notices %}
+  <div class="card panel-card mb-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 font-weight-bolder text-dark">
+        <i class="fas fa-bullhorn text-primary me-2"></i>Notices
+        {% if unread_notices %}<span class="badge bg-danger ms-1">{{ unread_notices }} new</span>{% endif %}
+      </h6>
+      <a href="{% url 'staff:notices' %}" class="text-xs text-primary font-weight-bold">View All →</a>
+    </div>
+    <div class="card-body p-0">
+      {% for n in dash_notices %}
+      <a href="{% url 'staff:notices' %}" class="d-block p-3 border-bottom hover-row text-decoration-none">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <p class="text-sm font-weight-bold mb-0 text-dark">
+              {% if not n.has_read %}<span class="badge bg-danger me-1">New</span>{% endif %}{{ n.title|truncatechars:60 }}
+            </p>
+            <p class="text-xs text-muted mb-0">{{ n.publish_at|date:"M d, Y" }}</p>
+          </div>
+          <span class="badge {% if n.priority == 'urgent' %}bg-danger{% elif n.priority == 'high' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ n.get_priority_display }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Quick Stats Row -->
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm text-center p-3" style="border-top:3px solid #3b82f6 !important;">
-        <div class="font-weight-bolder text-primary" style="font-size:1.8rem;">{{ total_members_assigned }}</div>
-        <p class="text-xs text-muted mb-0">Members Assigned</p>
+      <div class="card stat-tile shadow-sm text-center p-3">
+        <div class="stat-icon bg-gradient-info text-white mx-auto">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="font-weight-bolder text-dark" style="font-size:1.7rem;">{{ total_members_assigned }}</div>
+        <p class="text-xs text-muted mb-0 text-uppercase font-weight-bold">Members Assigned</p>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm text-center p-3" style="border-top:3px solid #22c55e !important;">
-        <div class="font-weight-bolder text-success" style="font-size:1.8rem;">{{ total_present_today }}</div>
-        <p class="text-xs text-muted mb-0">Present Today</p>
+      <div class="card stat-tile shadow-sm text-center p-3">
+        <div class="stat-icon bg-gradient-success text-white mx-auto">
+          <i class="fas fa-user-check"></i>
+        </div>
+        <div class="font-weight-bolder text-dark" style="font-size:1.7rem;">{{ total_present_today }}</div>
+        <p class="text-xs text-muted mb-0 text-uppercase font-weight-bold">Present Today</p>
       </div>
     </div>
-    {% if org.feature_tasks %}
+    {% if features.tasks and staff_perms.can_view_tasks %}
     <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm text-center p-3" style="border-top:3px solid #f59e0b !important;">
-        <a href="{% url 'staff:my_tasks' %}" class="text-decoration-none">
-          <div class="font-weight-bolder text-warning" style="font-size:1.8rem;">{{ my_tasks_pending|default:0 }}</div>
-          <p class="text-xs text-muted mb-0">Pending Tasks</p>
-        </a>
-      </div>
+      <a href="{% url 'staff:my_tasks' %}" class="text-decoration-none">
+        <div class="card stat-tile shadow-sm text-center p-3">
+          <div class="stat-icon bg-gradient-warning text-white mx-auto">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+          <div class="font-weight-bolder text-dark" style="font-size:1.7rem;">{{ my_tasks_pending|default:0 }}</div>
+          <p class="text-xs text-muted mb-0 text-uppercase font-weight-bold">Pending Tasks</p>
+        </div>
+      </a>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm text-center p-3" style="border-top:3px solid #ef4444 !important;">
-        <div class="font-weight-bolder text-danger" style="font-size:1.8rem;">{{ my_tasks_overdue|default:0 }}</div>
-        <p class="text-xs text-muted mb-0">Overdue Tasks</p>
+      <div class="card stat-tile shadow-sm text-center p-3">
+        <div class="stat-icon bg-gradient-danger text-white mx-auto">
+          <i class="fas fa-triangle-exclamation"></i>
+        </div>
+        <div class="font-weight-bolder text-dark" style="font-size:1.7rem;">{{ my_tasks_overdue|default:0 }}</div>
+        <p class="text-xs text-muted mb-0 text-uppercase font-weight-bold">Overdue Tasks</p>
       </div>
     </div>
     {% endif %}
   </div>
 
+  {% if is_teacher and features.academic_management %}
+  <div class="card panel-card mb-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h6 class="mb-0 font-weight-bolder text-dark"><i class="fas fa-chalkboard-teacher text-primary me-2"></i>My Teaching Dashboard</h6>
+        <span class="text-xs text-muted">Access comes only from active subject assignments.</span>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'staff:teacher_routine' %}" class="btn btn-sm btn-outline-dark mb-0"><i class="fas fa-calendar-week me-1"></i>My Routine</a>
+        <a href="{% url 'staff:teacher_homework' %}" class="btn btn-sm btn-outline-success mb-0"><i class="fas fa-book-open me-1"></i>Homework</a>
+        <a href="{% url 'staff:teacher_assignments' %}" class="btn btn-sm btn-outline-warning mb-0"><i class="fas fa-file-signature me-1"></i>Assignments</a>
+        {% if features.results %}<a href="{% url 'staff:teacher_exams' %}" class="btn btn-sm btn-outline-danger mb-0"><i class="fas fa-clipboard-check me-1"></i>Exams & Marks</a>{% endif %}
+        <a href="{% url 'staff:teacher_subject_attendance_report' %}" class="btn btn-sm btn-outline-primary mb-0"><i class="fas fa-chart-column me-1"></i>My Report</a>
+        <a href="{% url 'staff:subject_teaching_log' %}" class="btn btn-sm bg-gradient-primary text-white mb-0"><i class="fas fa-user-check me-1"></i>Mark Subject Attendance</a>
+      </div>
+    </div>
+    <div class="card-body p-3">
+      {% if teacher_routine_reminder %}
+      <div class="alert {% if teacher_routine_reminder.reminder_state == 'live' or teacher_routine_reminder.reminder_state == 'rejected' %}alert-danger{% elif teacher_routine_reminder.reminder_state == 'overdue' %}alert-warning{% elif teacher_routine_reminder.reminder_state == 'completed' %}alert-success{% else %}alert-primary{% endif %} d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
+        <div>
+          <div class="text-xs text-uppercase font-weight-bold mb-1"><i class="fas fa-bell me-1"></i>Routine Reminder · Period {{ teacher_routine_reminder.period_number }}</div>
+          <div class="font-weight-bolder">{{ teacher_routine_reminder.subject.name }} — {{ teacher_routine_reminder.classification.name }}{% if teacher_routine_reminder.section %} / {{ teacher_routine_reminder.section.name }}{% endif %}</div>
+          <div class="text-sm">{{ teacher_routine_reminder.start_time|time:"H:i" }}–{{ teacher_routine_reminder.end_time|time:"H:i" }}{% if teacher_routine_reminder.room %} · Room {{ teacher_routine_reminder.room }}{% endif %} · {{ teacher_routine_reminder.reminder_label }}</div>
+        </div>
+        {% if teacher_routine_reminder.attendance_action_required %}
+        <a href="{% url 'staff:subject_teaching_log' %}?routine_period={{ teacher_routine_reminder.pk }}" class="btn btn-sm btn-dark mb-0"><i class="fas fa-user-check me-1"></i>Open Attendance</a>
+        {% endif %}
+      </div>
+      {% elif teacher_next_routine %}
+      <div class="alert alert-light border d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+        <div class="text-sm"><i class="fas fa-bell text-primary me-1"></i><strong>Next routine:</strong> {{ teacher_next_routine.next_occurrence_day }}, {{ teacher_next_routine.start_time|time:"H:i" }} · {{ teacher_next_routine.subject.name }} · {{ teacher_next_routine.classification.name }}{% if teacher_next_routine.section %} / {{ teacher_next_routine.section.name }}{% endif %}</div>
+        <a href="{% url 'staff:teacher_routine' %}" class="btn btn-sm btn-outline-primary mb-0">View Week</a>
+      </div>
+      {% endif %}
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-md"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Assigned Courses</div><div class="h5 mb-0">{{ teacher_assigned_course_count }}</div></div></div>
+        <div class="col-6 col-md"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Assigned Subjects</div><div class="h5 mb-0">{{ teacher_assigned_subject_count }}</div></div></div>
+        <div class="col-6 col-md"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Roster Students</div><div class="h5 mb-0">{{ teacher_roster_student_count }}</div></div></div>
+        <div class="col-6 col-md"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Today's Periods</div><div class="h5 mb-0">{{ teacher_today_periods|length }}</div></div></div>
+        <div class="col-6 col-md"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Pending Review</div><div class="h5 mb-0 text-warning">{{ teacher_submitted_sessions }}</div></div></div>
+        <div class="col-6 col-md"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Rejected</div><div class="h5 mb-0 text-danger">{{ teacher_rejected_sessions }}</div></div></div>
+        <div class="col-6 col-md"><a href="{% url 'staff:teacher_homework' %}" class="text-decoration-none"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Active Homework</div><div class="h5 mb-0 text-success">{{ teacher_active_homework }}</div></div></a></div>
+        <div class="col-6 col-md"><a href="{% url 'staff:teacher_assignments' %}" class="text-decoration-none"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Open Assignments</div><div class="h5 mb-0 text-warning">{{ teacher_open_assignments }}</div><div class="text-xs text-muted">{{ teacher_ungraded_submissions }} to review</div></div></a></div>
+        {% if features.results %}<div class="col-6 col-md"><a href="{% url 'staff:teacher_exams' %}" class="text-decoration-none"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">My Exams</div><div class="h5 mb-0 text-danger">{{ teacher_exam_count }}</div></div></a></div>{% endif %}
+      </div>
+      {% if teacher_rejected_sessions %}<div class="alert alert-danger py-2 text-sm">Correct and resubmit rejected subject-attendance sessions.</div>{% endif %}
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <h6 class="text-xs text-uppercase text-muted">Active assignments</h6>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead><tr><th>Course / Class</th><th>Section</th><th>Subject</th><th>Dates</th></tr></thead>
+              <tbody>
+                {% for assignment in teacher_assignments %}
+                <tr><td>{% if assignment.course %}{{ assignment.course.name }} / {% endif %}{{ assignment.classification.name }}</td><td>{{ assignment.section.name|default:"All" }}</td><td>{{ assignment.subject.name }}</td><td>{{ assignment.start_date }} → {{ assignment.end_date|default:"Ongoing" }}</td></tr>
+                {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No active subject assignment. Contact your administrator.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <h6 class="text-xs text-uppercase text-muted">Today's routine</h6>
+          {% for period in teacher_today_periods %}
+          <a href="{% url 'staff:subject_teaching_log' %}?routine_period={{ period.pk }}" class="d-block border rounded p-2 mb-2 text-decoration-none">
+            <div class="d-flex justify-content-between gap-2"><div class="text-sm font-weight-bold">P{{ period.period_number }} · {{ period.subject.name }}</div><span class="badge {{ period.reminder_badge_class }}">{{ period.reminder_label }}</span></div>
+            <div class="text-xs text-muted">{% if period.subject.course %}{{ period.subject.course.name }} / {% endif %}{{ period.classification.name }}{% if period.section %} / {{ period.section.name }}{% endif %} · {{ period.start_time|time:"H:i" }}–{{ period.end_time|time:"H:i" }}</div>
+          </a>
+          {% empty %}<div class="text-center text-muted py-3 text-sm">No assigned periods today.</div>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <div class="row g-3 mb-4">
-    {% if org.feature_tasks %}
+    {% if features.tasks and staff_perms.can_view_tasks %}
     <!-- Today's Tasks -->
     <div class="col-lg-5">
-      <div class="card border-0 shadow-sm h-100">
+      <div class="card panel-card h-100">
         <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-tasks text-primary me-2"></i>Today's Tasks</h6>
-          <a href="{% url 'staff:my_tasks' %}" class="text-xs text-primary">View All →</a>
+          <h6 class="mb-0 font-weight-bolder text-dark"><i class="fas fa-tasks text-primary me-2"></i>Today's Tasks</h6>
+          <a href="{% url 'staff:my_tasks' %}" class="text-xs text-primary font-weight-bold">View All →</a>
         </div>
         <div class="card-body p-0" style="max-height:280px;overflow-y:auto;">
           {% for inst in my_tasks_today %}
-          <div class="p-3 border-bottom">
+          <div class="p-3 border-bottom hover-row">
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <p class="text-sm font-weight-bold mb-0">{{ inst.task.title|truncatechars:40 }}</p>
@@ -91,7 +333,7 @@
             </div>
           </div>
           {% empty %}
-          <div class="text-center py-4 text-muted">
+          <div class="text-center py-5 text-muted">
             <i class="fas fa-check-circle fa-2x mb-2 d-block text-success"></i>
             <p class="text-xs">No tasks due today</p>
           </div>
@@ -99,7 +341,7 @@
         </div>
         {% if my_tasks_today %}
         <div class="card-footer bg-white border-top py-2 text-center">
-          <a href="{% url 'staff:my_tasks' %}" class="btn btn-sm btn-primary w-100">Manage Tasks</a>
+          <a href="{% url 'staff:my_tasks' %}" class="btn btn-sm bg-gradient-primary text-white w-100 mb-0">Manage Tasks</a>
         </div>
         {% endif %}
       </div>
@@ -107,102 +349,116 @@
     {% endif %}
 
     <!-- Quick Actions -->
-    <div class="{% if org.feature_tasks %}col-lg-7{% else %}col-lg-12{% endif %}">
-      <div class="card border-0 shadow-sm h-100">
+    <div class="{% if features.tasks and staff_perms.can_view_tasks %}col-lg-7{% else %}col-lg-12{% endif %}">
+      <div class="card panel-card h-100">
         <div class="card-header bg-white border-bottom py-3">
-          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-bolt text-warning me-2"></i>Quick Actions</h6>
+          <h6 class="mb-0 font-weight-bolder text-dark"><i class="fas fa-bolt text-warning me-2"></i>Quick Actions</h6>
         </div>
         <div class="card-body p-3">
           <div class="row g-2">
-            {% if org.feature_leave %}
             <div class="col-6 col-md-4">
-              <a href="{% url 'staff:apply_leave' %}" class="text-decoration-none">
-                <div class="card border-0 bg-light text-center p-3 h-100" style="border-radius:12px;">
-                  <i class="fas fa-calendar-minus fa-2x text-danger mb-2"></i>
-                  <p class="text-xs font-weight-bold mb-0">Apply Leave</p>
-                </div>
+              <a href="{% url 'staff:profile' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon bg-gradient-primary text-white"><i class="fas fa-user-circle"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">My Profile</p>
+              </a>
+            </div>
+            <div class="col-6 col-md-4">
+              <a href="{% url 'handle:changePassword' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon bg-gradient-dark text-white"><i class="fas fa-key"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">Change Password</p>
+              </a>
+            </div>
+            {% if features.leave and staff_perms.can_view_leave %}
+            <div class="col-6 col-md-4">
+              <a href="{% url 'staff:apply_leave' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon bg-gradient-danger text-white"><i class="fas fa-calendar-minus"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">Apply Leave</p>
               </a>
             </div>
             {% endif %}
             <div class="col-6 col-md-4">
-              <a href="{% url 'staff:my_attendance' %}" class="text-decoration-none">
-                <div class="card border-0 bg-light text-center p-3 h-100" style="border-radius:12px;">
-                  <i class="fas fa-chart-bar fa-2x text-primary mb-2"></i>
-                  <p class="text-xs font-weight-bold mb-0">My Attendance</p>
-                </div>
+              <a href="{% url 'staff:my_attendance' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon bg-gradient-primary text-white"><i class="fas fa-chart-bar"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">My Attendance</p>
               </a>
             </div>
-            {% if org.feature_payroll %}
+            {% if features.payroll and staff_perms.can_view_own_payslip %}
             <div class="col-6 col-md-4">
-              <a href="{% url 'staff:my_payslips' %}" class="text-decoration-none">
-                <div class="card border-0 bg-light text-center p-3 h-100" style="border-radius:12px;">
-                  <i class="fas fa-file-invoice-dollar fa-2x text-success mb-2"></i>
-                  <p class="text-xs font-weight-bold mb-0">Payslips</p>
-                </div>
+              <a href="{% url 'staff:my_payslips' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon bg-gradient-success text-white"><i class="fas fa-file-invoice-dollar"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">Payslips</p>
               </a>
             </div>
             {% endif %}
-            {% if org.feature_tasks %}
+            {% if features.tasks and staff_perms.can_view_tasks %}
             <div class="col-6 col-md-4">
-              <a href="{% url 'staff:my_tasks' %}" class="text-decoration-none">
-                <div class="card border-0 bg-light text-center p-3 h-100" style="border-radius:12px;">
-                  <i class="fas fa-tasks fa-2x text-warning mb-2"></i>
-                  <p class="text-xs font-weight-bold mb-0">My Tasks</p>
-                </div>
+              <a href="{% url 'staff:my_tasks' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon bg-gradient-warning text-white"><i class="fas fa-tasks"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">My Tasks</p>
               </a>
             </div>
             {% endif %}
+            {% if staff_perms.can_view_reports %}
             <div class="col-6 col-md-4">
-              <a href="{% url 'staff:report' %}" class="text-decoration-none">
-                <div class="card border-0 bg-light text-center p-3 h-100" style="border-radius:12px;">
-                  <i class="fas fa-users fa-2x text-info mb-2"></i>
-                  <p class="text-xs font-weight-bold mb-0">Class Reports</p>
-                </div>
+              <a href="{% url 'staff:report' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon bg-gradient-info text-white"><i class="fas fa-users"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">Class Reports</p>
               </a>
             </div>
+            {% endif %}
+            {% if is_teacher and features.academic_management %}
             <div class="col-6 col-md-4">
-              <a href="{% url 'staff:teaching_log' %}" class="text-decoration-none">
-                <div class="card border-0 bg-light text-center p-3 h-100" style="border-radius:12px;">
-                  <i class="fas fa-book-open fa-2x" style="color:#8b5cf6;"></i>
-                  <p class="text-xs font-weight-bold mb-0 mt-2">Teaching Log</p>
-                </div>
+              <a href="{% url 'staff:subject_teaching_log' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon text-white" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);"><i class="fas fa-book-open"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">Subject Attendance</p>
               </a>
             </div>
+            {% endif %}
+            {% if features.hrms %}
             <div class="col-6 col-md-4">
-              <a href="{% url 'staff:my_resignation' %}" class="text-decoration-none">
-                <div class="card border-0 text-center p-3 h-100" style="border-radius:12px;background:#fff1f2;border:1px solid #fecdd3 !important;">
-                  <i class="fas fa-person-walking-arrow-right fa-2x" style="color:#e11d48;"></i>
-                  <p class="text-xs font-weight-bold mb-0 mt-2" style="color:#be123c;">Resignation</p>
-                </div>
+              <a href="{% url 'staff:my_resignation' %}" class="action-tile text-center p-3 h-100" style="background:#fff1f2;">
+                <div class="action-icon text-white" style="background:linear-gradient(135deg,#e11d48,#be123c);"><i class="fas fa-person-walking-arrow-right"></i></div>
+                <p class="text-xs font-weight-bold mb-0" style="color:#be123c;">Resignation</p>
               </a>
             </div>
+            {% endif %}
             {% if org.location_based %}
             <div class="col-6 col-md-4">
-              <a href="{% url 'staff:location_checkin' %}" class="text-decoration-none">
-                <div class="card border-0 bg-light text-center p-3 h-100" style="border-radius:12px;">
-                  <i class="fas fa-map-marker-alt fa-2x text-danger mb-2"></i>
-                  <p class="text-xs font-weight-bold mb-0">GPS Check-in</p>
-                </div>
+              <a href="{% url 'staff:location_checkin' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon bg-gradient-danger text-white"><i class="fas fa-map-marker-alt"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">GPS Check-in</p>
               </a>
             </div>
             {% endif %}
             {% if org.qr_based %}
             <div class="col-6 col-md-4">
-              <a href="{% url 'staff:wifi_checkin' %}" class="text-decoration-none">
-                <div class="card border-0 bg-light text-center p-3 h-100" style="border-radius:12px;">
-                  <i class="fas fa-wifi fa-2x text-info mb-2"></i>
-                  <p class="text-xs font-weight-bold mb-0">WiFi Check-in</p>
-                </div>
+              <a href="{% url 'staff:wifi_checkin' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon bg-gradient-info text-white"><i class="fas fa-wifi"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">WiFi Check-in</p>
               </a>
             </div>
             {% endif %}
-            {% if org.feature_complaints %}
+            {% if org.feature_field_visits and staff_perms.can_send_location %}
             <div class="col-6 col-md-4">
-              <a href="{% url 'staff:student_complaint' %}" class="text-decoration-none">
-                <div class="card border-0 bg-light text-center p-3 h-100" style="border-radius:12px;">
-                  <i class="fas fa-exclamation-circle fa-2x text-warning mb-2"></i>
-                  <p class="text-xs font-weight-bold mb-0">File Complaint</p>
-                </div>
+              <a href="{% url 'staff:send_location' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon bg-gradient-info text-white"><i class="fas fa-location-arrow"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">Send My Location</p>
+              </a>
+            </div>
+            {% endif %}
+            {% if org.feature_clients and staff_perms.can_view_clients %}
+            <div class="col-6 col-md-4">
+              <a href="{% url 'staff:client_list' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon bg-gradient-primary text-white"><i class="fas fa-building"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">Clients</p>
+              </a>
+            </div>
+            {% endif %}
+            {% if features.complaints and staff_perms.can_view_complaints %}
+            <div class="col-6 col-md-4">
+              <a href="{% url 'staff:student_complaint' %}" class="action-tile text-center p-3 h-100">
+                <div class="action-icon bg-gradient-warning text-white"><i class="fas fa-exclamation-circle"></i></div>
+                <p class="text-xs font-weight-bold mb-0 text-dark">File Complaint</p>
               </a>
             </div>
             {% endif %}
@@ -213,24 +469,24 @@
   </div>
 
   <!-- Class Attendance Section -->
-  {% if clas %}
-  <div class="card border-0 shadow-sm mb-4">
+  {% if clas and staff_perms.can_view_attendance %}
+  <div class="card panel-card mb-4">
     <div class="card-header bg-white border-bottom py-3">
-      <h6 class="mb-0 font-weight-bolder"><i class="fas fa-clipboard-check text-primary me-2"></i>Take Class Attendance</h6>
+      <h6 class="mb-0 font-weight-bolder text-dark"><i class="fas fa-clipboard-check text-primary me-2"></i>Take Class Attendance</h6>
     </div>
     <div class="card-body p-3">
       <div class="row g-3">
         {% for i in clas %}
         <div class="col-lg-4 col-md-6">
-          <div class="card border-0 bg-light p-3 h-100">
+          <div class="card stat-tile bg-light p-3 h-100">
             <div class="d-flex justify-content-between align-items-start mb-2">
               <div>
-                <h6 class="font-weight-bolder mb-0">{{ i.classification.name }}</h6>
-                {% if i.classification.branch %}<p class="text-xs text-muted mb-0">{{ i.classification.branch.name }}</p>{% endif %}
+                <h6 class="font-weight-bolder mb-0 text-dark">{{ i.classification.name }}</h6>
+                {% if i.classification.primary_branch %}<p class="text-xs text-muted mb-0">{{ i.classification.primary_branch.name }}</p>{% endif %}
               </div>
-              <span class="badge bg-primary">Class</span>
+              <span class="badge bg-gradient-primary text-white">Class</span>
             </div>
-            <a href="{% url 'staff:attendance' i.classification.id i.classification.name %}" class="btn btn-sm btn-primary mt-auto">
+            <a href="{% url 'staff:attendance' i.classification.id i.classification.name %}" class="btn btn-sm bg-gradient-primary text-white mt-auto mb-0">
               <i class="fas fa-qrcode me-1"></i>Open Scanner
             </a>
           </div>
@@ -242,23 +498,23 @@
   {% endif %}
 
   <!-- Recent Payslips -->
-  {% if payslips and org.feature_payroll %}
-  <div class="card border-0 shadow-sm mb-4">
+  {% if payslips and features.payroll and staff_perms.can_view_own_payslip %}
+  <div class="card panel-card mb-4">
     <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between">
-      <h6 class="mb-0 font-weight-bolder"><i class="fas fa-file-invoice me-2 text-success"></i>Recent Payslips</h6>
-      <a href="{% url 'staff:my_payslips' %}" class="text-xs text-primary">All Payslips →</a>
+      <h6 class="mb-0 font-weight-bolder text-dark"><i class="fas fa-file-invoice me-2 text-success"></i>Recent Payslips</h6>
+      <a href="{% url 'staff:my_payslips' %}" class="text-xs text-primary font-weight-bold">All Payslips →</a>
     </div>
     <div class="card-body p-0">
       {% for ps in payslips %}
-      <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+      <div class="p-3 border-bottom d-flex justify-content-between align-items-center hover-row">
         <div>
           <p class="text-sm font-weight-bold mb-0">{{ ps.from_date|date:"M Y" }}</p>
           <p class="text-xs text-muted mb-0">{{ ps.from_date|date:"M d" }} — {{ ps.to_date|date:"M d, Y" }}</p>
         </div>
         <div class="text-end">
           <p class="text-sm font-weight-bold mb-0">Rs. {{ ps.net_payable|floatformat:0 }}</p>
-          <span class="badge {% if ps.is_paid %}bg-success{% else %}bg-warning text-dark{% endif %}">
-            {% if ps.is_paid %}Paid{% else %}Pending{% endif %}
+          <span class="badge {% if ps.status == 'paid' %}bg-success{% elif ps.status == 'finalized' %}bg-info{% else %}bg-secondary{% endif %} text-uppercase">
+            {{ ps.get_status_display }}
           </span>
         </div>
       </div>

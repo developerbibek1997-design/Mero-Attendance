@@ -1,203 +1,2031 @@
 {% extends 'dashboard.html' %}
 {% load static %}
+
 {% block title %}Organization Profile{% endblock title %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="mb-4">
-        <h3 class="font-weight-bolder text-dark">Organization Profile</h3>
-        <p class="text-muted">Manage your organization details, holidays, and system settings.</p>
+
+<div class="container-fluid op-page py-4">
+
+    <!-- PAGE HEADER -->
+    <div class="op-page-header d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="op-eyebrow mb-2">
+                <span class="op-eyebrow-dot"></span>
+                ORGANIZATION CONTROL CENTER
+            </div>
+            <h2 class="op-page-title mb-1">Organization Profile</h2>
+            <p class="op-page-subtitle mb-0">
+                Manage identity, attendance settings, work calendar, shifts, holidays and report preferences.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button"
+                    class="btn op-header-btn op-header-btn-light"
+                    data-bs-toggle="modal"
+                    data-bs-target="#manageHolidayModal">
+                <span class="op-btn-icon"><i class="fas fa-calendar-week"></i></span>
+                Weekends
+            </button>
+
+            <button type="button"
+                    class="btn op-header-btn op-header-btn-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#occasionHolidayModal">
+                <span class="op-btn-icon"><i class="fas fa-sparkles"></i></span>
+                Holidays
+            </button>
+        </div>
     </div>
 
+    <!-- MESSAGES -->
     {% for message in messages %}
-    <div class="alert alert-info alert-dismissible fade show text-white" role="alert">
-        {{ message }}
+    <div class="alert op-alert alert-dismissible fade show mb-4" role="alert">
+        <div class="d-flex align-items-center gap-3">
+            <span class="op-alert-icon"><i class="fas fa-circle-check"></i></span>
+            <div class="flex-grow-1">{{ message }}</div>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     {% endfor %}
 
-    <div class="row g-4">
-        <div class="col-lg-4">
-            <div class="card h-100 shadow-sm border-0 p-4">
-                <div class="text-center mb-4">
-                    <div class="avatar avatar-xxl position-relative mb-3">
-                        {% if org.image %}
-                            <img src="{{ org.image.url }}" class="rounded-circle shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">
-                        {% else %}
-                            <div class="avatar avatar-xxl bg-gradient-primary text-white rounded-circle">
-                                <i class="fas fa-building text-3xl"></i>
+    <!-- PREMIUM HERO -->
+    <section class="op-hero mb-4">
+        <div class="op-hero-orb op-hero-orb-one"></div>
+        <div class="op-hero-orb op-hero-orb-two"></div>
+        <div class="op-hero-grid"></div>
+
+        <div class="op-hero-content position-relative">
+            <div class="row align-items-center g-4">
+                <div class="col-xl-8">
+                    <div class="d-flex flex-column flex-md-row align-items-center align-items-md-start gap-4">
+
+                        <div class="op-hero-logo-wrap">
+                            <div class="op-hero-logo">
+                                {% if org.image %}
+                                    <img src="{{ org.image.url }}" alt="{{ org.name }}">
+                                {% else %}
+                                    <div class="op-logo-placeholder">
+                                        <i class="fas fa-building"></i>
+                                    </div>
+                                {% endif %}
                             </div>
+                            <span class="op-logo-status">
+                                <i class="fas fa-check"></i>
+                            </span>
+                        </div>
+
+                        <div class="flex-grow-1 text-center text-md-start">
+                            <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-2 mb-2">
+                                <span class="op-live-badge">
+                                    <span></span> ACTIVE ORGANIZATION
+                                </span>
+                                {% if org.nepali_date %}
+                                <span class="op-mode-badge">
+                                    <i class="fas fa-language me-1"></i> BS Calendar
+                                </span>
+                                {% else %}
+                                <span class="op-mode-badge">
+                                    <i class="fas fa-calendar me-1"></i> AD Calendar
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <h1 class="op-org-name mb-2">{{ org.name }}</h1>
+
+                            <div class="op-hero-meta d-flex flex-wrap justify-content-center justify-content-md-start gap-2 gap-md-3">
+                                <span>
+                                    <i class="fas fa-location-dot"></i>
+                                    {{ org.address|default:"Address not set" }}
+                                </span>
+
+                                {% if org.email %}
+                                <span>
+                                    <i class="fas fa-envelope"></i>
+                                    {{ org.email }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-4">
+                    <div class="op-license-card">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="op-license-label">SUBSCRIPTION</span>
+                            <span class="op-license-icon"><i class="fas fa-shield-halved"></i></span>
+                        </div>
+
+                        <div class="op-license-title">System Access Active</div>
+
+                        <div class="op-license-row mt-3">
+                            <span>Serial Key</span>
+                            <strong class="font-monospace">{{ org.serial_key }}</strong>
+                        </div>
+
+                        <div class="op-license-row">
+                            <span>Expiry Date</span>
+                            <strong>{{ org.expire_on|date:"M d, Y" }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STATS -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-6 col-md-4 col-xl">
+            <div class="op-stat-card op-stat-primary h-100">
+                <div class="op-stat-top">
+                    <div class="op-stat-icon"><i class="fas fa-users"></i></div>
+                    <span class="op-stat-arrow"><i class="fas fa-arrow-trend-up"></i></span>
+                </div>
+                <div class="op-stat-value">{{ org_stats.total_members }}</div>
+                <div class="op-stat-label">Total Members</div>
+            </div>
+        </div>
+
+        {% if org_stats.total_students is not None %}
+        <div class="col-6 col-md-4 col-xl">
+            <div class="op-stat-card op-stat-info h-100">
+                <div class="op-stat-top">
+                    <div class="op-stat-icon"><i class="fas fa-user-graduate"></i></div>
+                    <span class="op-stat-arrow"><i class="fas fa-graduation-cap"></i></span>
+                </div>
+                <div class="op-stat-value">{{ org_stats.total_students }}</div>
+                <div class="op-stat-label">Students</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="col-6 col-md-4 col-xl">
+            <div class="op-stat-card op-stat-warning h-100">
+                <div class="op-stat-top">
+                    <div class="op-stat-icon"><i class="fas fa-code-branch"></i></div>
+                    <span class="op-stat-arrow"><i class="fas fa-sitemap"></i></span>
+                </div>
+                <div class="op-stat-value">{{ org_stats.total_branches }}</div>
+                <div class="op-stat-label">Branches</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl">
+            <div class="op-stat-card op-stat-violet h-100">
+                <div class="op-stat-top">
+                    <div class="op-stat-icon"><i class="fas fa-layer-group"></i></div>
+                    <span class="op-stat-arrow"><i class="fas fa-shapes"></i></span>
+                </div>
+                <div class="op-stat-value">{{ org_stats.total_classifications }}</div>
+                <div class="op-stat-label">Classifications</div>
+            </div>
+        </div>
+
+        {% if org_stats.total_stock_items is not None %}
+        <div class="col-6 col-md-4 col-xl">
+            <div class="op-stat-card op-stat-success h-100">
+                <div class="op-stat-top">
+                    <div class="op-stat-icon"><i class="fas fa-boxes-stacked"></i></div>
+                    <span class="op-stat-arrow"><i class="fas fa-box-open"></i></span>
+                </div>
+                <div class="op-stat-value">{{ org_stats.total_stock_items }}</div>
+                <div class="op-stat-label">Stock Items</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="col-6 col-md-4 col-xl">
+            <div class="op-stat-card op-stat-dark h-100">
+                <div class="op-stat-top">
+                    <div class="op-stat-icon"><i class="fas fa-fingerprint"></i></div>
+                    <span class="op-stat-arrow"><i class="fas fa-database"></i></span>
+                </div>
+                <div class="op-stat-value">{{ org_stats.total_attendance_records }}</div>
+                <div class="op-stat-label">Attendance</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl">
+            <div class="op-stat-card op-stat-danger h-100">
+                <div class="op-stat-top">
+                    <div class="op-stat-icon"><i class="fas fa-plane-departure"></i></div>
+                    <span class="op-stat-arrow"><i class="fas fa-calendar-minus"></i></span>
+                </div>
+                <div class="op-stat-value">{{ org_stats.total_leave_requests }}</div>
+                <div class="op-stat-label">Leave Requests</div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row g-4">
+
+        <!-- LEFT COLUMN -->
+        <div class="col-xl-4">
+            <div class="op-side-card mb-4">
+
+                <div class="op-side-cover">
+                    <div class="op-side-cover-pattern"></div>
+                </div>
+
+                <div class="op-side-body">
+                    <div class="op-profile-avatar">
+                        {% if org.image %}
+                            <img src="{{ org.image.url }}" alt="{{ org.name }}">
+                        {% else %}
+                            <i class="fas fa-building"></i>
                         {% endif %}
                     </div>
-                    <h5 class="font-weight-bolder">{{ org.name }}</h5>
-                    <span class="badge bg-gradient-success">Active</span>
-                </div>
 
-                <div class="list-group list-group-flush border-top">
-                    <div class="list-group-item d-flex justify-content-between px-0">
-                        <span class="text-xs text-uppercase font-weight-bold">Address</span>
-                        <span class="text-sm">{{ org.address|default:"Not set" }}</span>
+                    <div class="text-center px-3">
+                        <h5 class="fw-bold mb-1">{{ org.name }}</h5>
+                        <p class="text-muted text-sm mb-3">Organization Workspace</p>
                     </div>
-                    <div class="list-group-item d-flex justify-content-between px-0">
-                        <span class="text-xs text-uppercase font-weight-bold">Serial Key</span>
-                        <span class="text-sm font-monospace">{{ org.serial_key }}</span>
-                    </div>
-                    <div class="list-group-item d-flex justify-content-between px-0">
-                        <span class="text-xs text-uppercase font-weight-bold">Expiry</span>
-                        <span class="text-sm">{{ org.expire_on|date:"M d, Y" }}</span>
-                    </div>
-                </div>
 
-                <div class="mt-4 d-grid gap-2">
-                    <button class="btn btn-outline-primary btn-sm mb-0" data-bs-toggle="modal" data-bs-target="#manageHolidayModal"><i class="fas fa-calendar-alt me-2"></i>Manage Weekends</button>
-                    <button class="btn btn-outline-success btn-sm mb-0" data-bs-toggle="modal" data-bs-target="#occasionHolidayModal"><i class="fas fa-gifts me-2"></i>Occasion Holidays</button>
+                    <div class="op-detail-list">
+                        <div class="op-detail-item">
+                            <div class="op-detail-icon"><i class="fas fa-location-dot"></i></div>
+                            <div class="flex-grow-1">
+                                <span class="op-detail-label">Address</span>
+                                <div class="op-detail-value">{{ org.address|default:"Not set" }}</div>
+                            </div>
+                        </div>
+
+                        <div class="op-detail-item">
+                            <div class="op-detail-icon"><i class="fas fa-envelope"></i></div>
+                            <div class="flex-grow-1">
+                                <span class="op-detail-label">Email</span>
+                                <div class="op-detail-value text-break">{{ org.email|default:"Not set" }}</div>
+                            </div>
+                        </div>
+
+                        <div class="op-detail-item">
+                            <div class="op-detail-icon"><i class="fas fa-key"></i></div>
+                            <div class="flex-grow-1">
+                                <span class="op-detail-label">Serial Key</span>
+                                <div class="op-detail-value font-monospace text-break">{{ org.serial_key }}</div>
+                            </div>
+                        </div>
+
+                        <div class="op-detail-item">
+                            <div class="op-detail-icon"><i class="fas fa-hourglass-half"></i></div>
+                            <div class="flex-grow-1">
+                                <span class="op-detail-label">License Expiry</span>
+                                <div class="op-detail-value">{{ org.expire_on|date:"M d, Y" }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="op-side-actions">
+                        <button class="op-action-row"
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#manageHolidayModal">
+                            <span class="op-action-icon op-action-blue">
+                                <i class="fas fa-calendar-week"></i>
+                            </span>
+                            <span class="flex-grow-1 text-start">
+                                <strong>Weekly Holidays</strong>
+                                <small>Choose organization weekends</small>
+                            </span>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+
+                        <button class="op-action-row"
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#occasionHolidayModal">
+                            <span class="op-action-icon op-action-green">
+                                <i class="fas fa-gift"></i>
+                            </span>
+                            <span class="flex-grow-1 text-start">
+                                <strong>Occasion Holidays</strong>
+                                <small>Add festivals and special holidays</small>
+                            </span>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+
+                        <button class="op-action-row"
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#companyShiftOverrideModal">
+                            <span class="op-action-icon op-action-dark">
+                                <i class="fas fa-business-time"></i>
+                            </span>
+                            <span class="flex-grow-1 text-start">
+                                <strong>Shift Override</strong>
+                                <small>Change company shift for a date</small>
+                            </span>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0 p-4">
-                <h6 class="text-uppercase text-xs font-weight-bolder text-muted mb-3">Organization Details</h6>
-                <form action="" method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-xs font-weight-bold text-uppercase text-muted">Organization Name</label>
-                            {{ form.name }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-xs font-weight-bold text-uppercase text-muted">Organization Key</label>
-                            {{ form.serial_key }}
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label text-xs font-weight-bold text-uppercase text-muted">Address</label>
-                            {{ form.address }}
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label text-xs font-weight-bold text-uppercase text-muted">Logo / Image</label>
-                            {{ form.image }}
-                        </div>
+        <!-- RIGHT COLUMN -->
+        <div class="col-xl-8">
 
-                        <div class="col-12 mt-2">
-                            <hr class="horizontal dark">
-                            <h6 class="text-xs text-uppercase font-weight-bold text-muted mb-3"><i class="fas fa-calendar-alt me-1"></i>Calendar Settings</h6>
-                            <div class="card border rounded p-3" style="background:#f8f9fa;">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <p class="mb-0 font-weight-bold text-sm">Calendar Mode</p>
-                                        <p class="mb-0 text-xs text-muted">Switch between English (AD) and Nepali (BS / Bikram Sambat) calendar throughout the system</p>
+            <form action="" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <!-- GENERAL DETAILS -->
+                <div class="op-main-card mb-4">
+                    <div class="op-card-heading">
+                        <div class="op-heading-icon op-heading-primary">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1">Organization Details</h5>
+                            <p class="mb-0">Update the main identity and contact information.</p>
+                        </div>
+                    </div>
+
+                    <div class="op-card-body">
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label class="op-form-label">Organization Name</label>
+                                <div class="op-field-wrap">
+                                    <span class="op-field-icon"><i class="fas fa-building"></i></span>
+                                    {{ form.name }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="op-form-label">Organization Key</label>
+                                <div class="op-field-wrap">
+                                    <span class="op-field-icon"><i class="fas fa-key"></i></span>
+                                    {{ form.serial_key }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="op-form-label">Email Address</label>
+                                <div class="op-field-wrap">
+                                    <span class="op-field-icon"><i class="fas fa-envelope"></i></span>
+                                    {{ form.email }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="op-form-label">Office Address</label>
+                                <div class="op-field-wrap">
+                                    <span class="op-field-icon"><i class="fas fa-location-dot"></i></span>
+                                    {{ form.address }}
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="op-form-label">Organization Logo / Image</label>
+                                <div class="op-upload-box">
+                                    <div class="op-upload-icon">
+                                        <i class="fas fa-cloud-arrow-up"></i>
                                     </div>
-                                    <div class="form-check form-switch mb-0 ms-3">
-                                        {{ form.nepali_date }}
-                                        <label class="form-check-label font-weight-bold text-sm" for="{{ form.nepali_date.id_for_label }}">
-                                            {% if org.nepali_date %}
-                                            <span class="text-warning">BS Mode ON</span>
-                                            {% else %}
-                                            <span class="text-muted">AD Mode</span>
-                                            {% endif %}
-                                        </label>
+                                    <div class="flex-grow-1">
+                                        <strong>Upload organization image</strong>
+                                        <small>Use a square PNG/JPG for the best result.</small>
+                                    </div>
+                                    <div class="op-upload-control">
+                                        {{ form.image }}
                                     </div>
                                 </div>
-                                <div class="mt-2 text-xs text-muted">
-                                    <i class="fas fa-info-circle me-1 text-primary"></i>
-                                    Currently: <strong>{% if org.nepali_date %}Nepali Calendar (BS / Bikram Sambat){% else %}English Calendar (AD){% endif %}</strong>
-                                    — affects date display on attendance reports, payslips, and calendar page.
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SETTINGS -->
+                <div class="row g-4 mb-4">
+
+                    <div class="col-lg-6">
+                        <div class="op-main-card h-100">
+                            <div class="op-card-heading">
+                                <div class="op-heading-icon op-heading-warning">
+                                    <i class="fas fa-calendar-days"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">Calendar Mode</h5>
+                                    <p class="mb-0">Choose how dates appear system-wide.</p>
+                                </div>
+                            </div>
+
+                            <div class="op-card-body">
+                                <div class="op-setting-panel">
+                                    <div class="d-flex justify-content-between align-items-center gap-3">
+                                        <div>
+                                            <span class="op-setting-kicker">CURRENT MODE</span>
+                                            <h6 class="mb-1">
+                                                {% if org.nepali_date %}
+                                                    Nepali Calendar (BS)
+                                                {% else %}
+                                                    English Calendar (AD)
+                                                {% endif %}
+                                            </h6>
+                                            <p class="mb-0">
+                                                Attendance, payroll, calendar and report dates follow this mode.
+                                            </p>
+                                        </div>
+
+                                        <div class="op-switch-wrap">
+                                            {{ form.nepali_date }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="op-info-strip mt-3">
+                                    <i class="fas fa-circle-info"></i>
+                                    <span>
+                                        {% if org.nepali_date %}
+                                            BS / Bikram Sambat mode is currently enabled.
+                                        {% else %}
+                                            Gregorian / AD calendar is currently enabled.
+                                        {% endif %}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="mt-4 pt-3 border-top d-flex justify-content-end">
-                        <button type="submit" class="btn bg-gradient-warning px-5"><i class="fas fa-save me-2"></i>Update Profile</button>
+
+                    <div class="col-lg-6">
+                        <div class="op-main-card h-100">
+                            <div class="op-card-heading">
+                                <div class="op-heading-icon op-heading-dark">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">Default Shift</h5>
+                                    <p class="mb-0">Default timing for newly added members.</p>
+                                </div>
+                            </div>
+
+                            <div class="op-card-body">
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <label class="op-form-label">Check-in</label>
+                                        <div class="op-time-field">
+                                            <i class="fas fa-right-to-bracket"></i>
+                                            <input type="time"
+                                                   name="default_shift_start_time"
+                                                   class="form-control"
+                                                   value="{{ org.default_shift_start_time|time:'H\:i' }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-6">
+                                        <label class="op-form-label">Check-out</label>
+                                        <div class="op-time-field">
+                                            <i class="fas fa-right-from-bracket"></i>
+                                            <input type="time"
+                                                   name="default_shift_end_time"
+                                                   class="form-control"
+                                                   value="{{ org.default_shift_end_time|time:'H\:i' }}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="op-info-strip mt-3">
+                                    <i class="fas fa-circle-info"></i>
+                                    <span>
+                                        Individual Shift Management assignments remain unchanged.
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </form>
-            </div>
+
+                </div>
+
+                <!-- SAVE BAR -->
+                <div class="op-save-bar mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="op-save-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                        <div>
+                            <strong>Ready to save your changes?</strong>
+                            <p class="mb-0">Your organization configuration will be updated immediately.</p>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn op-save-btn">
+                        <i class="fas fa-floppy-disk me-2"></i>
+                        Update Organization
+                    </button>
+                </div>
+
+            </form>
+
         </div>
+
     </div>
+
 </div>
 
-<style>
-    .modal-header { border-bottom: none; }
-    .day-checkbox { padding: 10px; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 5px; display: flex; align-items: center; }
-    .day-checkbox:hover { background: #f8f9fe; }
-</style>
 
-<div class="modal fade" id="manageHolidayModal" tabindex="-1">
+<!-- ========================= -->
+<!-- WEEKLY HOLIDAYS MODAL     -->
+<!-- ========================= -->
+<div class="modal fade op-modal" id="manageHolidayModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header"><h5 class="modal-title font-weight-bolder">Weekly Holidays</h5></div>
-            <div class="modal-body">
-                <form action="{% if holiday %}{% url 'schooladmin:updateHoliday' %}{% else %}{% url 'schooladmin:addHoliday' %}{% endif %}" method="post">
-                    {% csrf_token %}
-                   <div class="row">
-                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Sunday" {% if 'Sunday' in holiday %}checked{% endif %} class="me-2"> Sunday</label></div>
-                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Monday" {% if 'Monday' in holiday %}checked{% endif %} class="me-2"> Monday</label></div>
-                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Tuesday" {% if 'Tuesday' in holiday %}checked{% endif %} class="me-2"> Tuesday</label></div>
-                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Wednesday" {% if 'Wednesday' in holiday %}checked{% endif %} class="me-2"> Wednesday</label></div>
-                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Thursday" {% if 'Thursday' in holiday %}checked{% endif %} class="me-2"> Thursday</label></div>
-                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Friday" {% if 'Friday' in holiday %}checked{% endif %} class="me-2"> Friday</label></div>
-                        <div class="col-6"><label class="day-checkbox"><input type="checkbox" name="day" value="Saturday" {% if 'Saturday' in holiday %}checked{% endif %} class="me-2"> Saturday</label></div>
+        <div class="modal-content">
+
+            <div class="modal-header op-modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="op-modal-icon op-modal-icon-blue">
+                        <i class="fas fa-calendar-week"></i>
+                    </span>
+                    <div>
+                        <h5 class="modal-title mb-0">Weekly Holidays</h5>
+                        <small>Choose regular off-days for your organization.</small>
                     </div>
-                    <button type="submit" class="btn bg-gradient-primary w-100 mt-3">Save Weekly Holidays</button>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <form action="{% if holiday %}{% url 'schooladmin:updateHoliday' %}{% else %}{% url 'schooladmin:addHoliday' %}{% endif %}"
+                      method="post">
+                    {% csrf_token %}
+
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="op-day-checkbox">
+                                <input type="checkbox" name="day" value="Sunday" {% if 'Sunday' in holiday %}checked{% endif %}>
+                                <span class="op-day-check-icon"><i class="fas fa-sun"></i></span>
+                                <span>Sunday</span>
+                            </label>
+                        </div>
+
+                        <div class="col-6">
+                            <label class="op-day-checkbox">
+                                <input type="checkbox" name="day" value="Monday" {% if 'Monday' in holiday %}checked{% endif %}>
+                                <span class="op-day-check-icon"><i class="fas fa-calendar-day"></i></span>
+                                <span>Monday</span>
+                            </label>
+                        </div>
+
+                        <div class="col-6">
+                            <label class="op-day-checkbox">
+                                <input type="checkbox" name="day" value="Tuesday" {% if 'Tuesday' in holiday %}checked{% endif %}>
+                                <span class="op-day-check-icon"><i class="fas fa-calendar-day"></i></span>
+                                <span>Tuesday</span>
+                            </label>
+                        </div>
+
+                        <div class="col-6">
+                            <label class="op-day-checkbox">
+                                <input type="checkbox" name="day" value="Wednesday" {% if 'Wednesday' in holiday %}checked{% endif %}>
+                                <span class="op-day-check-icon"><i class="fas fa-calendar-day"></i></span>
+                                <span>Wednesday</span>
+                            </label>
+                        </div>
+
+                        <div class="col-6">
+                            <label class="op-day-checkbox">
+                                <input type="checkbox" name="day" value="Thursday" {% if 'Thursday' in holiday %}checked{% endif %}>
+                                <span class="op-day-check-icon"><i class="fas fa-calendar-day"></i></span>
+                                <span>Thursday</span>
+                            </label>
+                        </div>
+
+                        <div class="col-6">
+                            <label class="op-day-checkbox">
+                                <input type="checkbox" name="day" value="Friday" {% if 'Friday' in holiday %}checked{% endif %}>
+                                <span class="op-day-check-icon"><i class="fas fa-calendar-day"></i></span>
+                                <span>Friday</span>
+                            </label>
+                        </div>
+
+                        <div class="col-6">
+                            <label class="op-day-checkbox">
+                                <input type="checkbox" name="day" value="Saturday" {% if 'Saturday' in holiday %}checked{% endif %}>
+                                <span class="op-day-check-icon"><i class="fas fa-star"></i></span>
+                                <span>Saturday</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn op-modal-primary-btn w-100 mt-4">
+                        <i class="fas fa-check me-2"></i>
+                        Save Weekly Holidays
+                    </button>
                 </form>
             </div>
+
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="occasionHolidayModal" tabindex="-1">
+
+<!-- ========================= -->
+<!-- OCCASION HOLIDAYS MODAL   -->
+<!-- ========================= -->
+<div class="modal fade op-modal" id="occasionHolidayModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header"><h5 class="modal-title">Occasion Holidays</h5></div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6 border-end">
+        <div class="modal-content">
+
+            <div class="modal-header op-modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="op-modal-icon op-modal-icon-green">
+                        <i class="fas fa-gift"></i>
+                    </span>
+                    <div>
+                        <h5 class="modal-title mb-0">Occasion Holidays</h5>
+                        <small>Add festivals, events and special organization holidays.</small>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-0">
+                <div class="row g-0">
+
+                    <div class="col-md-6 p-4 op-modal-form-side">
                         <form action="{% url 'schooladmin:addOccasion' %}" method="POST">
                             {% csrf_token %}
+
                             <div class="mb-3">
-                                <label class="form-label text-xs font-weight-bolder">Occasion Name</label>
-                                <input type="text" class="form-control" name="occasion" required>
+                                <label class="op-form-label">Occasion Name</label>
+                                <input type="text"
+                                       class="form-control op-native-control"
+                                       name="occasion"
+                                       placeholder="e.g. Dashain Holiday"
+                                       required>
                             </div>
-                            <div class="row">
-                                <div class="col-6 mb-3">
-                                    <label class="form-label text-xs">Type</label>
-                                    <select class="form-select" id="holidayType" name="holidayType" onchange="toggleEndDate()">
+
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="op-form-label">Holiday Type</label>
+                                    <select class="form-select op-native-control"
+                                            id="holidayType"
+                                            name="holidayType"
+                                            onchange="toggleEndDate()">
                                         <option value="1-day">Single Day</option>
                                         <option value="gap">Gap Period</option>
                                     </select>
                                 </div>
-                                <div class="col-6 mb-3">
-                                    <label class="form-label text-xs">Start Date</label>
-                                    <input type="date" class="form-control" name="ocDate" required>
+
+                                <div class="col-6">
+                                    <label class="op-form-label">Start Date</label>
+                                    <input type="date"
+                                           class="form-control op-native-control"
+                                           name="ocDate"
+                                           required>
                                 </div>
                             </div>
-                            <div class="mb-3" id="endDateDiv" style="display: none;">
-                                <label class="form-label text-xs">End Date</label>
-                                <input type="date" class="form-control" name="ocEndDate">
+
+                            <div class="mt-3" id="endDateDiv" style="display:none;">
+                                <label class="op-form-label">End Date</label>
+                                <input type="date"
+                                       class="form-control op-native-control"
+                                       name="ocEndDate">
                             </div>
-                            <button type="submit" class="btn bg-gradient-success w-100">Add Occasion</button>
+
+                            <button type="submit" class="btn op-modal-success-btn w-100 mt-4">
+                                <i class="fas fa-plus me-2"></i>
+                                Add Occasion Holiday
+                            </button>
                         </form>
                     </div>
-                    <div class="col-md-6">
-                        <h6 class="text-xs text-uppercase font-weight-bolder mb-3">Upcoming Occasions</h6>
-                        <div class="overflow-auto" style="max-height: 250px;">
+
+                    <div class="col-md-6 p-4 op-modal-list-side">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div>
+                                <span class="op-setting-kicker">SCHEDULE</span>
+                                <h6 class="mb-0">Upcoming Occasions</h6>
+                            </div>
+                            <span class="op-soft-badge">{{ occasions|length }} Listed</span>
+                        </div>
+
+                        <div class="op-scroll-list">
                             {% for occasion in occasions %}
-                                <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                                    <small>{{ occasion.date|date:"M d" }}{% if occasion.end_date %} - {{ occasion.end_date|date:"M d" }}{% endif %}</small>
-                                    <span class="badge bg-primary">{{ occasion.name }}</span>
+                                <div class="op-schedule-row">
+                                    <div class="op-schedule-date">
+                                        <i class="fas fa-calendar"></i>
+                                    </div>
+
+                                    <div class="flex-grow-1">
+                                        <strong>{{ occasion.name }}</strong>
+                                        <small>
+                                            {{ occasion.date|date:"M d, Y" }}
+                                            {% if occasion.end_date %}
+                                                — {{ occasion.end_date|date:"M d, Y" }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="op-empty-state">
+                                    <i class="fas fa-calendar-plus"></i>
+                                    <strong>No occasions yet</strong>
+                                    <span>Add your first special holiday.</span>
                                 </div>
                             {% endfor %}
                         </div>
                     </div>
+
                 </div>
             </div>
+
         </div>
     </div>
 </div>
 
-<script>
-    function toggleEndDate() {
-        document.getElementById("endDateDiv").style.display = 
-            (document.getElementById("holidayType").value === "gap") ? "block" : "none";
+
+<!-- ========================= -->
+<!-- SHIFT OVERRIDE MODAL      -->
+<!-- ========================= -->
+<div class="modal fade op-modal" id="companyShiftOverrideModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header op-modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="op-modal-icon op-modal-icon-dark">
+                        <i class="fas fa-business-time"></i>
+                    </span>
+                    <div>
+                        <h5 class="modal-title mb-0">Company-wide Shift Changes</h5>
+                        <small>Override the default shift for one specific date.</small>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-0">
+                <div class="row g-0">
+
+                    <div class="col-md-6 p-4 op-modal-form-side">
+                        <div class="op-info-strip mb-3">
+                            <i class="fas fa-circle-info"></i>
+                            <span>
+                                Members with individual Shift Management assignments are not affected.
+                            </span>
+                        </div>
+
+                        <form action="{% url 'schooladmin:addOrgShiftOverride' %}" method="POST">
+                            {% csrf_token %}
+
+                            <div class="mb-3">
+                                <label class="op-form-label">Override Date</label>
+                                <input type="date"
+                                       class="form-control op-native-control"
+                                       name="override_date"
+                                       required>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="op-form-label">Start Time</label>
+                                    <input type="time"
+                                           class="form-control op-native-control"
+                                           name="override_start_time"
+                                           required>
+                                </div>
+
+                                <div class="col-6">
+                                    <label class="op-form-label">End Time</label>
+                                    <input type="time"
+                                           class="form-control op-native-control"
+                                           name="override_end_time"
+                                           required>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <label class="op-form-label">Note <span class="text-muted">(Optional)</span></label>
+                                <input type="text"
+                                       class="form-control op-native-control"
+                                       name="override_note"
+                                       maxlength="200"
+                                       placeholder="e.g. Half day / Staff meeting">
+                            </div>
+
+                            <button type="submit" class="btn op-modal-dark-btn w-100 mt-4">
+                                <i class="fas fa-floppy-disk me-2"></i>
+                                Save Shift Change
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="col-md-6 p-4 op-modal-list-side">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div>
+                                <span class="op-setting-kicker">UPCOMING</span>
+                                <h6 class="mb-0">Scheduled Changes</h6>
+                            </div>
+                        </div>
+
+                        <div class="op-scroll-list">
+                            {% for ov in shift_overrides %}
+                                <div class="op-schedule-row">
+                                    <div class="op-schedule-date op-schedule-date-dark">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+
+                                    <div class="flex-grow-1">
+                                        <strong>{{ ov.date|date:"M d, Y" }}</strong>
+                                        <small>
+                                            {{ ov.start_time|time:"H\:i" }} – {{ ov.end_time|time:"H\:i" }}
+                                            {% if ov.note %}
+                                                · {{ ov.note }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+
+                                    <form action="{% url 'schooladmin:deleteOrgShiftOverride' ov.pk %}"
+                                          method="POST"
+                                          onsubmit="return confirm('Remove this shift change?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="op-delete-btn" title="Remove">
+                                            <i class="fas fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            {% empty %}
+                                <div class="op-empty-state">
+                                    <i class="fas fa-clock-rotate-left"></i>
+                                    <strong>No shift changes</strong>
+                                    <span>Scheduled overrides will appear here.</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<style>
+/* =========================================================
+   ORGANIZATION PROFILE — PREMIUM UI
+   ========================================================= */
+
+.op-page {
+    --op-primary: #5b5ce2;
+    --op-primary-2: #7c3aed;
+    --op-dark: #111827;
+    --op-text: #172033;
+    --op-muted: #7a8499;
+    --op-border: #e8ecf3;
+    --op-bg-soft: #f7f8fc;
+    --op-success: #16a34a;
+    --op-warning: #f59e0b;
+    --op-danger: #ef4444;
+    --op-info: #0ea5e9;
+}
+
+.op-page-header {
+    padding: 2px 2px 4px;
+}
+
+.op-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .68rem;
+    letter-spacing: .14em;
+    font-weight: 800;
+    color: var(--op-primary);
+}
+
+.op-eyebrow-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    box-shadow: 0 0 0 5px rgba(99, 102, 241, .10);
+}
+
+.op-page-title {
+    color: var(--op-text);
+    font-size: clamp(1.65rem, 2vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -.035em;
+}
+
+.op-page-subtitle {
+    color: var(--op-muted);
+    font-size: .92rem;
+}
+
+.op-header-btn {
+    height: 42px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-weight: 700;
+    font-size: .8rem;
+    padding: 0 15px;
+    margin: 0 !important;
+    border: 1px solid transparent;
+}
+
+.op-header-btn-light {
+    background: #fff;
+    border-color: var(--op-border);
+    color: #374151;
+    box-shadow: 0 4px 12px rgba(17, 24, 39, .04);
+}
+
+.op-header-btn-primary {
+    color: #fff;
+    background: linear-gradient(135deg, #5b5ce2, #7c3aed);
+    box-shadow: 0 8px 20px rgba(91, 92, 226, .22);
+}
+
+.op-btn-icon {
+    display: grid;
+    place-items: center;
+}
+
+.op-alert {
+    background: linear-gradient(135deg, #effcf4, #f8fffb);
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(22, 163, 74, .05);
+}
+
+.op-alert-icon {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: #dcfce7;
+    color: #16a34a;
+    flex-shrink: 0;
+}
+
+/* HERO */
+.op-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    background:
+        radial-gradient(circle at 86% 15%, rgba(139, 92, 246, .38), transparent 30%),
+        radial-gradient(circle at 20% 100%, rgba(14, 165, 233, .20), transparent 35%),
+        linear-gradient(125deg, #101728 0%, #1b2550 52%, #342467 100%);
+    box-shadow: 0 18px 50px rgba(25, 33, 75, .18);
+}
+
+.op-hero-content {
+    z-index: 3;
+    padding: 30px;
+}
+
+.op-hero-grid {
+    position: absolute;
+    inset: 0;
+    opacity: .10;
+    background-image:
+        linear-gradient(rgba(255,255,255,.13) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.13) 1px, transparent 1px);
+    background-size: 38px 38px;
+    mask-image: linear-gradient(to right, transparent, #000, transparent);
+}
+
+.op-hero-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(4px);
+}
+
+.op-hero-orb-one {
+    width: 230px;
+    height: 230px;
+    right: -85px;
+    top: -80px;
+    background: rgba(167, 139, 250, .20);
+}
+
+.op-hero-orb-two {
+    width: 180px;
+    height: 180px;
+    left: 30%;
+    bottom: -130px;
+    background: rgba(56, 189, 248, .10);
+}
+
+.op-hero-logo-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.op-hero-logo {
+    width: 116px;
+    height: 116px;
+    padding: 8px;
+    border-radius: 25px;
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(255,255,255,.65);
+    box-shadow: 0 16px 34px rgba(0,0,0,.20);
+}
+
+.op-hero-logo img,
+.op-logo-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 18px;
+    object-fit: cover;
+}
+
+.op-logo-placeholder {
+    display: grid;
+    place-items: center;
+    color: #818cf8;
+    font-size: 2.8rem;
+    background: linear-gradient(145deg, #f5f3ff, #eef2ff);
+}
+
+.op-logo-status {
+    position: absolute;
+    right: -6px;
+    bottom: 3px;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    background: #22c55e;
+    color: #fff;
+    border: 4px solid #fff;
+    border-radius: 50%;
+    font-size: .65rem;
+}
+
+.op-live-badge,
+.op-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    font-size: .64rem;
+    font-weight: 800;
+    letter-spacing: .07em;
+}
+
+.op-live-badge {
+    gap: 7px;
+    padding: 7px 10px;
+    background: rgba(34, 197, 94, .14);
+    color: #bbf7d0;
+    border: 1px solid rgba(74, 222, 128, .20);
+}
+
+.op-live-badge > span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 0 4px rgba(74, 222, 128, .12);
+}
+
+.op-mode-badge {
+    padding: 7px 10px;
+    background: rgba(255,255,255,.08);
+    color: rgba(255,255,255,.72);
+    border: 1px solid rgba(255,255,255,.10);
+}
+
+.op-org-name {
+    color: #fff;
+    font-size: clamp(1.65rem, 3vw, 2.65rem);
+    font-weight: 800;
+    letter-spacing: -.045em;
+}
+
+.op-hero-meta span {
+    color: rgba(255,255,255,.64);
+    font-size: .79rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.op-hero-meta i {
+    color: rgba(255,255,255,.90);
+}
+
+.op-license-card {
+    padding: 18px;
+    background: rgba(255,255,255,.095);
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 18px;
+    backdrop-filter: blur(14px);
+    color: #fff;
+}
+
+.op-license-label {
+    color: rgba(255,255,255,.50);
+    font-size: .63rem;
+    font-weight: 800;
+    letter-spacing: .11em;
+}
+
+.op-license-icon {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    color: #ddd6fe;
+    background: rgba(255,255,255,.09);
+}
+
+.op-license-title {
+    font-size: 1rem;
+    font-weight: 750;
+}
+
+.op-license-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid rgba(255,255,255,.10);
+    padding: 11px 0 0;
+    margin-top: 11px;
+    font-size: .72rem;
+}
+
+.op-license-row span {
+    color: rgba(255,255,255,.52);
+}
+
+.op-license-row strong {
+    color: rgba(255,255,255,.92);
+    font-size: .72rem;
+    text-align: right;
+}
+
+/* STATS */
+.op-stat-card {
+    position: relative;
+    overflow: hidden;
+    padding: 17px;
+    background: #fff;
+    border: 1px solid var(--op-border);
+    border-radius: 17px;
+    box-shadow: 0 7px 24px rgba(20, 28, 45, .045);
+    transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+
+.op-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 14px 34px rgba(20, 28, 45, .09);
+    border-color: transparent;
+}
+
+.op-stat-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 17px;
+}
+
+.op-stat-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    font-size: .93rem;
+}
+
+.op-stat-arrow {
+    opacity: .30;
+    font-size: .72rem;
+}
+
+.op-stat-value {
+    color: var(--op-text);
+    font-weight: 800;
+    font-size: 1.45rem;
+    line-height: 1.05;
+    letter-spacing: -.035em;
+}
+
+.op-stat-label {
+    margin-top: 5px;
+    color: #8a93a6;
+    font-size: .66rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .055em;
+}
+
+.op-stat-primary .op-stat-icon { background:#eef2ff; color:#4f46e5; }
+.op-stat-info .op-stat-icon { background:#ecfeff; color:#0891b2; }
+.op-stat-warning .op-stat-icon { background:#fff7ed; color:#ea580c; }
+.op-stat-violet .op-stat-icon { background:#f5f3ff; color:#7c3aed; }
+.op-stat-success .op-stat-icon { background:#ecfdf5; color:#16a34a; }
+.op-stat-dark .op-stat-icon { background:#f1f5f9; color:#334155; }
+.op-stat-danger .op-stat-icon { background:#fff1f2; color:#e11d48; }
+
+/* LEFT PROFILE */
+.op-side-card,
+.op-main-card {
+    background: #fff;
+    border: 1px solid var(--op-border);
+    border-radius: 20px;
+    box-shadow: 0 9px 30px rgba(24, 33, 55, .055);
+    overflow: hidden;
+}
+
+.op-side-cover {
+    height: 105px;
+    position: relative;
+    background:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,.20), transparent 23%),
+        linear-gradient(135deg, #5865f2 0%, #7c3aed 100%);
+}
+
+.op-side-cover-pattern {
+    position: absolute;
+    inset: 0;
+    opacity: .17;
+    background-image: radial-gradient(rgba(255,255,255,.8) 1px, transparent 1px);
+    background-size: 14px 14px;
+}
+
+.op-side-body {
+    padding: 0 20px 20px;
+}
+
+.op-profile-avatar {
+    width: 92px;
+    height: 92px;
+    margin: -46px auto 14px;
+    position: relative;
+    z-index: 2;
+    border-radius: 24px;
+    border: 6px solid #fff;
+    background: #f8fafc;
+    box-shadow: 0 12px 28px rgba(44, 55, 105, .14);
+    display: grid;
+    place-items: center;
+    color: #6366f1;
+    font-size: 2rem;
+    overflow: hidden;
+}
+
+.op-profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.op-detail-list {
+    padding: 8px 0 12px;
+}
+
+.op-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 0;
+    border-bottom: 1px dashed #e8ecf3;
+}
+
+.op-detail-item:last-child {
+    border-bottom: 0;
+}
+
+.op-detail-icon {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #f7f8fc;
+    color: #667085;
+    font-size: .78rem;
+}
+
+.op-detail-label {
+    display: block;
+    color: #9aa2b1;
+    font-size: .61rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    font-weight: 800;
+}
+
+.op-detail-value {
+    color: #344054;
+    font-size: .78rem;
+    font-weight: 650;
+    margin-top: 1px;
+}
+
+.op-side-actions {
+    border-top: 1px solid var(--op-border);
+    padding-top: 14px;
+}
+
+.op-action-row {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 8px;
+    border-radius: 12px;
+    color: #667085;
+    transition: .2s ease;
+}
+
+.op-action-row:hover {
+    background: #f8f9fc;
+    transform: translateX(2px);
+}
+
+.op-action-row strong {
+    display: block;
+    color: #344054;
+    font-size: .76rem;
+}
+
+.op-action-row small {
+    display: block;
+    color: #98a2b3;
+    font-size: .65rem;
+    margin-top: 1px;
+}
+
+.op-action-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 11px;
+    font-size: .79rem;
+}
+
+.op-action-blue { background:#eef2ff; color:#4f46e5; }
+.op-action-green { background:#ecfdf3; color:#16a34a; }
+.op-action-dark { background:#f2f4f7; color:#344054; }
+
+/* MAIN CARDS */
+.op-card-heading {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--op-border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(180deg, #fff, #fdfdff);
+}
+
+.op-card-heading h5 {
+    color: #202939;
+    font-size: .98rem;
+    font-weight: 800;
+}
+
+.op-card-heading p {
+    color: #98a2b3;
+    font-size: .69rem;
+}
+
+.op-heading-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 12px;
+    font-size: .86rem;
+}
+
+.op-heading-primary { color:#4f46e5; background:#eef2ff; }
+.op-heading-warning { color:#d97706; background:#fffbeb; }
+.op-heading-dark { color:#334155; background:#f1f5f9; }
+.op-heading-violet { color:#7c3aed; background:#f5f3ff; }
+
+.op-card-body {
+    padding: 20px;
+}
+
+.op-form-label {
+    display: block;
+    margin-bottom: 7px;
+    color: #667085;
+    font-size: .64rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+
+.op-field-wrap,
+.op-time-field {
+    position: relative;
+}
+
+.op-field-wrap .op-field-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0a8b8;
+    font-size: .76rem;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.op-field-wrap input,
+.op-field-wrap select,
+.op-field-wrap textarea {
+    min-height: 46px !important;
+    border: 1px solid #e5e9f1 !important;
+    border-radius: 12px !important;
+    padding-left: 40px !important;
+    background: #fbfcfe !important;
+    color: #344054 !important;
+    box-shadow: none !important;
+    transition: .2s ease;
+}
+
+.op-field-wrap input:focus,
+.op-field-wrap select:focus,
+.op-field-wrap textarea:focus,
+.op-native-control:focus,
+.op-time-field input:focus {
+    background: #fff !important;
+    border-color: #a5b4fc !important;
+    box-shadow: 0 0 0 4px rgba(99,102,241,.08) !important;
+}
+
+.op-upload-box {
+    min-height: 76px;
+    padding: 13px 15px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    border: 1.5px dashed #d9deea;
+    border-radius: 14px;
+    background: #fbfcff;
+}
+
+.op-upload-icon {
+    width: 43px;
+    height: 43px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.op-upload-box strong {
+    color: #344054;
+    font-size: .78rem;
+    display: block;
+}
+
+.op-upload-box small {
+    color: #98a2b3;
+    font-size: .66rem;
+    display: block;
+    margin-top: 2px;
+}
+
+.op-upload-control input {
+    max-width: 220px;
+    font-size: .72rem;
+}
+
+.op-setting-panel {
+    padding: 16px;
+    border-radius: 15px;
+    background: linear-gradient(145deg, #fafbff, #f7f8fd);
+    border: 1px solid #eceff5;
+}
+
+.op-setting-kicker {
+    color: #98a2b3;
+    display: block;
+    font-size: .59rem;
+    font-weight: 800;
+    letter-spacing: .09em;
+    margin-bottom: 4px;
+}
+
+.op-setting-panel h6 {
+    color: #344054;
+    font-size: .82rem;
+    font-weight: 800;
+}
+
+.op-setting-panel p {
+    color: #98a2b3;
+    font-size: .66rem;
+    line-height: 1.45;
+}
+
+.op-switch-wrap .form-check-input {
+    width: 2.8em !important;
+    height: 1.5em !important;
+    cursor: pointer;
+}
+
+.op-info-strip {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 11px 12px;
+    border-radius: 11px;
+    background: #f8faff;
+    color: #75809a;
+    font-size: .65rem;
+    line-height: 1.5;
+}
+
+.op-info-strip i {
+    color: #6366f1;
+    margin-top: 2px;
+}
+
+.op-time-field i {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #98a2b3;
+    z-index: 2;
+    font-size: .73rem;
+}
+
+.op-time-field input {
+    height: 45px;
+    padding-left: 38px;
+    background: #fbfcfe;
+    border: 1px solid #e5e9f1;
+    border-radius: 12px;
+    box-shadow: none;
+}
+
+/* SAVE */
+.op-save-bar {
+    min-height: 86px;
+    padding: 15px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-radius: 18px;
+    border: 1px solid #e5e7ff;
+    background:
+        radial-gradient(circle at 0% 100%, rgba(99,102,241,.08), transparent 26%),
+        linear-gradient(135deg, #fafaff, #f7f6ff);
+}
+
+.op-save-icon {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 13px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(99,102,241,.22);
+}
+
+.op-save-bar strong {
+    color: #344054;
+    font-size: .79rem;
+}
+
+.op-save-bar p {
+    color: #98a2b3;
+    font-size: .65rem;
+    margin-top: 2px;
+}
+
+.op-save-btn {
+    min-width: 182px;
+    height: 45px;
+    border: 0;
+    border-radius: 12px;
+    color: #fff !important;
+    font-weight: 750;
+    font-size: .76rem;
+    background: linear-gradient(135deg, #5b5ce2, #7c3aed);
+    box-shadow: 0 9px 22px rgba(91,92,226,.23);
+    margin: 0 !important;
+}
+
+/* PRINT */
+.op-soft-badge {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: #f5f3ff;
+    color: #7c3aed;
+    font-size: .63rem;
+    font-weight: 750;
+}
+
+.op-print-card {
+    padding: 15px;
+    border-radius: 14px;
+    border: 1px solid #e8ecf3;
+    background: linear-gradient(145deg, #fff, #fbfcff);
+    transition: .2s ease;
+}
+
+.op-print-card:hover {
+    transform: translateY(-2px);
+    border-color: #d7dcff;
+    box-shadow: 0 10px 24px rgba(44,55,105,.06);
+}
+
+.op-print-card strong {
+    color: #344054;
+    font-size: .76rem;
+}
+
+.op-mini-print-icon {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: #f5f3ff;
+    color: #7c3aed;
+    font-size: .72rem;
+}
+
+.op-print-card .opd-inline-panel {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin-top: 6px !important;
+}
+
+/* MODALS */
+.op-modal .modal-content {
+    border: 0;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 28px 80px rgba(15, 23, 42, .22);
+}
+
+.op-modal-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid #edf0f5;
+    background: #fff;
+}
+
+.op-modal-header h5 {
+    color: #202939;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.op-modal-header small {
+    color: #98a2b3;
+    font-size: .66rem;
+}
+
+.op-modal-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+}
+
+.op-modal-icon-blue { background:#eef2ff; color:#4f46e5; }
+.op-modal-icon-green { background:#ecfdf3; color:#16a34a; }
+.op-modal-icon-dark { background:#f1f5f9; color:#334155; }
+
+.op-day-checkbox {
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 11px;
+    border: 1px solid #e8ecf3;
+    border-radius: 12px;
+    background: #fff;
+    color: #475467;
+    font-size: .75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: .18s ease;
+}
+
+.op-day-checkbox:hover {
+    border-color: #c7d2fe;
+    background: #fafaff;
+}
+
+.op-day-checkbox input {
+    accent-color: #6366f1;
+}
+
+.op-day-check-icon {
+    width: 29px;
+    height: 29px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: #f7f8fc;
+    color: #667085;
+    font-size: .67rem;
+}
+
+.op-modal-primary-btn,
+.op-modal-success-btn,
+.op-modal-dark-btn {
+    height: 44px;
+    border: 0;
+    border-radius: 12px;
+    color: #fff !important;
+    font-size: .76rem;
+    font-weight: 750;
+    margin: 0 !important;
+}
+
+.op-modal-primary-btn {
+    background: linear-gradient(135deg, #5b5ce2, #7c3aed);
+}
+
+.op-modal-success-btn {
+    background: linear-gradient(135deg, #16a34a, #059669);
+}
+
+.op-modal-dark-btn {
+    background: linear-gradient(135deg, #334155, #111827);
+}
+
+.op-modal-form-side {
+    background: #fff;
+}
+
+.op-modal-list-side {
+    background: #fafbfe;
+    border-left: 1px solid #edf0f5;
+}
+
+.op-native-control {
+    height: 44px;
+    border: 1px solid #e4e8f0;
+    border-radius: 11px;
+    background: #fbfcfe;
+    box-shadow: none;
+    font-size: .76rem;
+}
+
+.op-scroll-list {
+    max-height: 310px;
+    overflow: auto;
+    padding-right: 3px;
+}
+
+.op-schedule-row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 11px;
+    margin-bottom: 9px;
+    border: 1px solid #eaedf3;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.op-schedule-date {
+    width: 37px;
+    height: 37px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #ecfdf3;
+    color: #16a34a;
+    font-size: .72rem;
+}
+
+.op-schedule-date-dark {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.op-schedule-row strong {
+    display: block;
+    color: #344054;
+    font-size: .73rem;
+}
+
+.op-schedule-row small {
+    display: block;
+    color: #98a2b3;
+    font-size: .63rem;
+    margin-top: 2px;
+}
+
+.op-delete-btn {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 8px;
+    background: #fff1f2;
+    color: #e11d48;
+    font-size: .68rem;
+}
+
+.op-empty-state {
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #98a2b3;
+    text-align: center;
+}
+
+.op-empty-state i {
+    font-size: 1.6rem;
+    color: #c7ceda;
+    margin-bottom: 9px;
+}
+
+.op-empty-state strong {
+    color: #667085;
+    font-size: .75rem;
+}
+
+.op-empty-state span {
+    font-size: .63rem;
+    margin-top: 2px;
+}
+
+/* COMPATIBILITY WITH DJANGO FORM WIDGETS */
+.op-page input[type="text"],
+.op-page input[type="email"],
+.op-page input[type="number"],
+.op-page input[type="password"],
+.op-page input[type="url"],
+.op-page select,
+.op-page textarea {
+    width: 100%;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1199.98px) {
+    .op-hero-content {
+        padding: 26px;
     }
+}
+
+@media (max-width: 767.98px) {
+    .op-page {
+        padding-top: 16px !important;
+    }
+
+    .op-hero {
+        border-radius: 19px;
+    }
+
+    .op-hero-content {
+        padding: 22px 17px;
+    }
+
+    .op-hero-logo {
+        width: 96px;
+        height: 96px;
+        border-radius: 22px;
+    }
+
+    .op-org-name {
+        font-size: 1.55rem;
+    }
+
+    .op-license-card {
+        margin-top: 5px;
+    }
+
+    .op-stat-card {
+        padding: 14px;
+    }
+
+    .op-stat-value {
+        font-size: 1.25rem;
+    }
+
+    .op-card-body,
+    .op-card-heading {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .op-save-bar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .op-save-btn {
+        width: 100%;
+    }
+
+    .op-upload-box {
+        flex-wrap: wrap;
+    }
+
+    .op-upload-control {
+        width: 100%;
+    }
+
+    .op-upload-control input {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .op-modal-list-side {
+        border-left: 0;
+        border-top: 1px solid #edf0f5;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .op-header-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .op-page-header > .d-flex {
+        width: 100%;
+    }
+
+    .op-day-checkbox {
+        min-height: 52px;
+        padding: 8px;
+    }
+
+    .op-day-check-icon {
+        display: none;
+    }
+}
+</style>
+
+<script>
+function toggleEndDate() {
+    const endDateDiv = document.getElementById("endDateDiv");
+    const holidayType = document.getElementById("holidayType");
+
+    if (endDateDiv && holidayType) {
+        endDateDiv.style.display = holidayType.value === "gap" ? "block" : "none";
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    /*
+     * Apply premium classes to Django-rendered form widgets without
+     * requiring changes in forms.py.
+     */
+    document.querySelectorAll(".op-field-wrap input, .op-field-wrap select, .op-field-wrap textarea")
+        .forEach(function (el) {
+            if (!el.classList.contains("form-control") && el.tagName !== "SELECT") {
+                el.classList.add("form-control");
+            }
+
+            if (el.tagName === "SELECT") {
+                el.classList.add("form-select");
+            }
+        });
+
+    /*
+     * Keep the Nepali-date checkbox looking like a Bootstrap switch
+     * even if the widget comes from Django without all classes.
+     */
+    const nepaliToggle = document.querySelector(".op-switch-wrap input[type='checkbox']");
+    if (nepaliToggle) {
+        nepaliToggle.classList.add("form-check-input");
+        nepaliToggle.setAttribute("role", "switch");
+    }
+});
 </script>
-{% endblock content %}
+
+{% endblock content %}m

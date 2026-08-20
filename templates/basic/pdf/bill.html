@@ -1,0 +1,25 @@
+<html>
+<head>
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; color: #111827; font-size: 12px; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .muted { color: #6b7280; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
+  .total { background: #111827; color: #fff; font-weight: bold; }
+  .right { text-align: right; }
+</style>
+</head>
+<body>
+  <h1>{{ org_name }}</h1>
+  <p class="muted">Invoice {{ invoice_number }} &mdash; Due {{ due_date }}</p>
+  <p>Billed to: <strong>{{ name }}</strong></p>
+  <table>
+    {% for item in items %}
+    <tr><td>{{ item.desc }}</td><td class="right">Rs. {{ item.amount }}</td></tr>
+    {% endfor %}
+    <tr class="total"><td>Total Due</td><td class="right">Rs. {{ total_amount }}</td></tr>
+  </table>
+  {% if remarks %}<p class="muted">Note: {{ remarks }}</p>{% endif %}
+</body>
+</html>

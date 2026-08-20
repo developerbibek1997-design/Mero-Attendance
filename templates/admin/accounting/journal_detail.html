@@ -1,0 +1,92 @@
+{% extends 'dashboard.html' %}
+{% block title %}Journal {{ entry.voucher_number }} | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 font-weight-bolder"><i class="fas fa-book text-primary me-2"></i>{{ entry.voucher_number }}</h6>
+          {% if entry.status == 'approved' %}<span class="badge bg-success">Approved</span>
+          {% elif entry.status == 'pending' %}<span class="badge bg-warning text-dark">Pending Approval</span>
+          {% elif entry.status == 'rejected' %}<span class="badge bg-danger">Rejected</span>
+          {% else %}<span class="badge bg-secondary">Draft</span>{% endif %}
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}<div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+          {% if entry.status == 'rejected' and entry.rejection_reason %}
+          <div class="alert alert-danger py-2"><i class="fas fa-triangle-exclamation me-1"></i><b>Rejected:</b> {{ entry.rejection_reason }}</div>
+          {% endif %}
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Date</p><p class="text-sm font-weight-bold">{{ entry.entry_date }}</p></div>
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Reference</p><p class="text-sm font-weight-bold">{{ entry.reference|default:"—" }}</p></div>
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Created By</p><p class="text-sm font-weight-bold">{{ entry.created_by.get_full_name|default:entry.created_by.username|default:"—" }}</p></div>
+            <div class="col-md-3"><p class="text-xs text-muted mb-0">Branch</p><p class="text-sm font-weight-bold">{{ entry.branch.name|default:"—" }}</p></div>
+            <div class="col-12"><p class="text-xs text-muted mb-0">Description</p><p class="text-sm">{{ entry.description|default:"—" }}</p></div>
+            {% if entry.attachment %}<div class="col-12"><a href="{{ entry.attachment.url }}" target="_blank" class="text-sm"><i class="fas fa-paperclip me-1"></i>View Attachment</a></div>{% endif %}
+          </div>
+
+          <table class="table table-sm align-middle">
+            <thead class="table-light"><tr><th class="text-xs">Account</th><th class="text-xs">Remarks</th><th class="text-xs">Debit</th><th class="text-xs">Credit</th></tr></thead>
+            <tbody>
+              {% for line in lines %}
+              <tr>
+                <td class="text-sm">{{ line.account.full_path }}</td>
+                <td class="text-xs text-muted">{{ line.remarks|default:"" }}</td>
+                <td class="text-sm">{% if line.debit %}Rs. {{ line.debit|floatformat:2 }}{% endif %}</td>
+                <td class="text-sm">{% if line.credit %}Rs. {{ line.credit|floatformat:2 }}{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr class="fw-bold table-light">
+                <td colspan="2" class="text-end">Total</td>
+                <td>Rs. {{ entry.total_debit|floatformat:2 }}</td>
+                <td>Rs. {{ entry.total_credit|floatformat:2 }}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          {% if entry.approved_by %}
+          <p class="text-xs text-muted">{% if entry.status == 'approved' %}Approved{% else %}Reviewed{% endif %} by {{ entry.approved_by.get_full_name|default:entry.approved_by.username }} on {{ entry.approved_at|date:"Y-m-d H:i" }}</p>
+          {% endif %}
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            {% if entry.status == 'draft' or entry.status == 'rejected' %}
+              {% if can_create_journals %}
+              <a href="{% url 'schooladmin:edit_journal' entry.pk %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-edit me-1"></i>Edit</a>
+              <form method="post" action="{% url 'schooladmin:submit_journal' entry.pk %}">{% csrf_token %}<button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-paper-plane me-1"></i>Submit for Approval</button></form>
+              {% endif %}
+            {% endif %}
+            {% if entry.status == 'pending' %}
+              {% if can_approve_journals %}
+              <form method="post" action="{% url 'schooladmin:approve_journal' entry.pk %}">{% csrf_token %}<button type="submit" class="btn btn-success btn-sm"><i class="fas fa-check me-1"></i>Approve</button></form>
+              <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#rejectModal"><i class="fas fa-times me-1"></i>Reject</button>
+              {% endif %}
+            {% endif %}
+            <a href="{% url 'schooladmin:journal_list' %}" class="btn btn-outline-secondary btn-sm">Back to List</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="rejectModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h6 class="modal-title font-weight-bolder">Reject Journal Entry</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="post" action="{% url 'schooladmin:reject_journal' entry.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <label class="form-label text-xs font-weight-bold">Reason *</label>
+          <textarea name="reason" class="form-control" rows="3" required></textarea>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-danger btn-sm">Reject</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

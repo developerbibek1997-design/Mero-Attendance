@@ -1,0 +1,33 @@
+{% comment %}
+Org-wide print-default editor for one report (Organization Profile's Print
+Defaults section). Reuses static/js/print_settings.js's exact panel-building
+logic (paper/orientation/margin/fit-to-width) — same widget as the per-user
+"Print Settings" button on each report page — just pointed at the org-
+default save endpoint instead of the per-user one, and rendered always-open
+inline (no toggle button) since this already lives on a dedicated settings
+page. Expects `report_key` and `value` (an OrgPrintDefault settings dict,
+from school.print_settings.get_org_print_default) in scope.
+{% endcomment %}
+{% with pref_id="org-print-pref-data-"|add:report_key %}{{ value|json_script:pref_id }}{% endwith %}
+<div class="opd-mount" id="orgPrintDefault-{{ report_key }}" data-save-url="{% url 'handle:save_org_print_default' report_key %}" data-csrf="{{ csrf_token }}">
+  <div class="ps-panel opd-inline-panel"></div>
+</div>
+<style>
+  .ps-field { margin-bottom: 10px; }
+  .ps-field:last-child { margin-bottom: 0; }
+  .ps-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #6b7280; margin-bottom: 4px; }
+  .ps-cols { max-height: 140px; overflow-y: auto; }
+  .ps-col-check { display: block; font-size: 13px; font-weight: 400; margin-bottom: 4px; }
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var dataEl = document.getElementById('org-print-pref-data-{{ report_key }}');
+    var initial = {};
+    try { initial = dataEl ? JSON.parse(dataEl.textContent) : {}; } catch (e) { /* ignore */ }
+    window.PrintSettings.init({
+      mountId: 'orgPrintDefault-{{ report_key }}',
+      reportKey: 'orgdefault_{{ report_key }}',
+      initial: initial,
+    });
+  });
+</script>

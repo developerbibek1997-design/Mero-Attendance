@@ -1,0 +1,101 @@
+{% extends 'dashboard.html' %}
+{% block title %}Accounting Dashboard | {{ org.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div><h4 class="font-weight-bolder mb-0">Accounting Dashboard</h4><p class="text-sm text-muted mb-0">Chart of accounts, journals, and financial reports</p></div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'schooladmin:add_journal' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i>New Journal Entry</a>
+      <a href="{% url 'schooladmin:accounting_accounts' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-sitemap me-1"></i>Chart of Accounts</a>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-warning mb-1">Pending Approval</p><h3 class="font-weight-bolder mb-0">{{ pending_count }}</h3><span class="text-xs text-muted">Journal entries</span></div>
+          <div class="icon icon-shape bg-gradient-warning text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-hourglass-half"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-success mb-1">This Month — Income</p><h3 class="font-weight-bolder mb-0">Rs. {{ income|floatformat:0 }}</h3><span class="text-xs text-muted">Approved entries</span></div>
+          <div class="icon icon-shape bg-gradient-success text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-arrow-trend-up"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-danger mb-1">This Month — Expense</p><h3 class="font-weight-bolder mb-0">Rs. {{ expense|floatformat:0 }}</h3><span class="text-xs text-muted">Approved entries</span></div>
+          <div class="icon icon-shape bg-gradient-danger text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-arrow-trend-down"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body d-flex justify-content-between align-items-center p-4">
+          <div><p class="text-xs text-uppercase font-weight-bold text-primary mb-1">Net Income</p><h3 class="font-weight-bolder mb-0">Rs. {{ net_income|floatformat:0 }}</h3><span class="text-xs text-muted">Month to date</span></div>
+          <div class="icon icon-shape bg-gradient-primary text-white rounded-circle shadow" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-calculator"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+      <a href="{% url 'schooladmin:accounting_accounts' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center py-3"><i class="fas fa-sitemap fa-lg text-primary mb-2"></i><div class="text-sm font-weight-bold">Chart of Accounts</div><div class="text-xs text-muted">{{ account_count }} accounts</div></div>
+      </a>
+    </div>
+    <div class="col-md-3 col-6">
+      <a href="{% url 'schooladmin:journal_list' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center py-3"><i class="fas fa-book fa-lg text-info mb-2"></i><div class="text-sm font-weight-bold">Journal Entries</div><div class="text-xs text-muted">All vouchers</div></div>
+      </a>
+    </div>
+    <div class="col-md-3 col-6">
+      <a href="{% url 'schooladmin:general_ledger' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center py-3"><i class="fas fa-book-open fa-lg text-secondary mb-2"></i><div class="text-sm font-weight-bold">General Ledger</div><div class="text-xs text-muted">Per-account view</div></div>
+      </a>
+    </div>
+    <div class="col-md-3 col-6">
+      <a href="{% url 'schooladmin:trial_balance' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center py-3"><i class="fas fa-chart-line fa-lg text-success mb-2"></i><div class="text-sm font-weight-bold">Reports</div><div class="text-xs text-muted">Trial Balance, P&amp;L, Balance Sheet</div></div>
+      </a>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between">
+      <h6 class="mb-0 font-weight-bolder"><i class="fas fa-history text-primary me-2"></i>Recent Journal Entries</h6>
+      <a href="{% url 'schooladmin:journal_list' %}" class="btn btn-xs btn-outline-primary">View All</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th class="text-xs">Voucher</th><th class="text-xs">Date</th><th class="text-xs">Description</th><th class="text-xs">Created By</th><th class="text-xs">Status</th></tr></thead>
+        <tbody>
+          {% for e in recent_entries %}
+          <tr onclick="window.location='{% url 'schooladmin:journal_detail' e.pk %}'" style="cursor:pointer;">
+            <td class="text-sm font-weight-bold">{{ e.voucher_number }}</td>
+            <td class="text-sm">{{ e.entry_date }}</td>
+            <td class="text-sm">{{ e.description|truncatechars:40|default:"-" }}</td>
+            <td class="text-sm">{{ e.created_by.get_full_name|default:e.created_by.username|default:"-" }}</td>
+            <td>
+              {% if e.status == 'approved' %}<span class="badge bg-success">Approved</span>
+              {% elif e.status == 'pending' %}<span class="badge bg-warning text-dark">Pending</span>
+              {% elif e.status == 'rejected' %}<span class="badge bg-danger">Rejected</span>
+              {% else %}<span class="badge bg-secondary">Draft</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No journal entries yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -16,9 +16,23 @@
             <div class="row g-3">
               <div class="col-12"><label class="form-label text-xs font-weight-bold">Member *</label>
                 <select name="member_id" class="form-select" required><option value="">-- Select Member --</option>{% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></div>
-              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Resignation Date *</label><input type="date" name="resignation_date" class="form-control" value="{{ today }}" required></div>
+              <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Resignation Date *</label>
+                {% if nepali_enabled %}
+                <input type="text" class="form-control nepali-cal" name="resignation_date_np" placeholder="YYYY-MM-DD (BS)" autocomplete="off" required>
+                <input type="date" class="hidden-date-input" name="resignation_date" value="{{ today }}">
+                {% else %}
+                <input type="date" name="resignation_date" class="form-control" value="{{ today }}" required>
+                {% endif %}
+              </div>
               <div class="col-md-6"><label class="form-label text-xs font-weight-bold">Notice Period (Days)</label><input type="number" name="notice_period_days" class="form-control" value="30"></div>
-              <div class="col-12"><label class="form-label text-xs font-weight-bold">Last Working Day</label><input type="date" name="last_working_day" class="form-control"><small class="text-muted">Auto-calculated if left blank (Resignation Date + Notice Period)</small></div>
+              <div class="col-12"><label class="form-label text-xs font-weight-bold">Last Working Day</label>
+                {% if nepali_enabled %}
+                <input type="text" class="form-control nepali-cal" name="last_working_day_np" placeholder="YYYY-MM-DD (BS), optional" autocomplete="off" data-no-autoseed>
+                <input type="date" class="hidden-date-input" name="last_working_day" value="">
+                {% else %}
+                <input type="date" name="last_working_day" class="form-control">
+                {% endif %}
+                <small class="text-muted">Auto-calculated if left blank (Resignation Date + Notice Period)</small></div>
               <div class="col-12"><label class="form-label text-xs font-weight-bold">Reason *</label><textarea name="reason" class="form-control" rows="3" required></textarea></div>
               <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-danger"><i class="fas fa-save me-1"></i>Save Record</button><a href="{% url 'schooladmin:resignation_list' %}" class="btn btn-outline-secondary">Cancel</a></div>
             </div>

@@ -1,0 +1,162 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block title %}{{ agent.full_name }} | Agents{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{% url 'superadmin:agent_list' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fas fa-arrow-left me-1"></i>Agents
+    </a>
+    <a href="{% url 'superadmin:agent_edit' agent.id %}" class="btn btn-sm btn-primary">
+      <i class="fas fa-edit me-1"></i>Edit
+    </a>
+    {% if agent.status == 'active' %}
+    <a href="{% url 'superadmin:agent_suspend' agent.id %}" class="btn btn-sm btn-outline-danger"
+       onclick="return confirm('Suspend {{ agent.full_name }}?')">
+      <i class="fas fa-ban me-1"></i>Suspend
+    </a>
+    {% else %}
+    <a href="{% url 'superadmin:agent_activate' agent.id %}" class="btn btn-sm btn-outline-success">
+      <i class="fas fa-check me-1"></i>Activate
+    </a>
+    {% endif %}
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show mb-4">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="row g-4">
+    <!-- Profile card -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
+        <div class="card-body p-4 text-center">
+          {% if agent.photo %}
+          <img src="{{ agent.photo.url }}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;" class="mb-3">
+          {% else %}
+          <div style="width:80px;height:80px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <i class="fas fa-user-tie" style="color:#7c3aed;font-size:1.8rem;"></i>
+          </div>
+          {% endif %}
+          <h5 class="fw-bold mb-1" style="color:#1e293b;">{{ agent.full_name }}</h5>
+          {% if agent.company_name %}<p class="text-muted small mb-1">{{ agent.company_name }}</p>{% endif %}
+          <span class="badge py-2 px-3 mb-3" style="background:{% if agent.status == 'active' %}#d1fae5;color:#065f46;{% elif agent.status == 'suspended' %}#fee2e2;color:#991b1b;{% else %}#f1f5f9;color:#374151;{% endif %}">
+            {{ agent.get_status_display }}
+          </span>
+          <div class="row g-2 pt-2 border-top">
+            <div class="col-6 text-center">
+              <div class="fs-5 fw-bold" style="color:#4f46e5;">{{ agent.org_count }}</div>
+              <div class="text-muted" style="font-size:.72rem;">Organizations</div>
+            </div>
+            <div class="col-6 text-center">
+              <div class="fs-5 fw-bold" style="color:#4f46e5;">{{ agent.max_organizations_allowed }}</div>
+              <div class="text-muted" style="font-size:.72rem;">Max Allowed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm" style="border-radius:12px;">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3" style="color:#1e293b;">Agent Details</h6>
+          <table class="table table-sm mb-0" style="font-size:.85rem;">
+            <tr><td class="text-muted border-0 ps-0">Email</td><td class="border-0 fw-semibold">{{ agent.admin.email }}</td></tr>
+            <tr><td class="text-muted ps-0">Phone</td><td class="fw-semibold">{{ agent.phone|default:"—" }}</td></tr>
+            <tr><td class="text-muted ps-0">PAN</td><td class="fw-semibold">{{ agent.pan_number|default:"—" }}</td></tr>
+            <tr><td class="text-muted ps-0">Address</td><td class="fw-semibold">{{ agent.address|default:"—" }}</td></tr>
+            <tr><td class="text-muted ps-0">Commission</td><td class="fw-semibold">{{ agent.commission_value }}{% if agent.commission_type == 'percent' %}%{% else %} Rs.{% endif %} ({{ agent.get_commission_type_display }})</td></tr>
+            <tr><td class="text-muted ps-0">Created</td><td class="fw-semibold">{{ agent.created_at|date:"d M Y" }}</td></tr>
+            {% if agent.created_by %}
+            <tr><td class="text-muted ps-0">Created By</td><td class="fw-semibold">{{ agent.created_by.get_full_name|default:agent.created_by.username }}</td></tr>
+            {% endif %}
+          </table>
+          <div class="mt-3 pt-3 border-top">
+            <p class="text-muted small fw-semibold mb-2">Permissions</p>
+            <div class="d-flex flex-column gap-1" style="font-size:.8rem;">
+              <span>{% if agent.allowed_to_create_org %}<i class="fas fa-check-circle text-success me-1"></i>{% else %}<i class="fas fa-times-circle text-danger me-1"></i>{% endif %}Create Orgs</span>
+              <span>{% if agent.allowed_to_manage_billing %}<i class="fas fa-check-circle text-success me-1"></i>{% else %}<i class="fas fa-times-circle text-danger me-1"></i>{% endif %}Manage Billing</span>
+              <span>{% if agent.allowed_to_manage_features %}<i class="fas fa-check-circle text-success me-1"></i>{% else %}<i class="fas fa-times-circle text-danger me-1"></i>{% endif %}Manage Features</span>
+              <span>{% if agent.allowed_to_view_reports %}<i class="fas fa-check-circle text-success me-1"></i>{% else %}<i class="fas fa-times-circle text-danger me-1"></i>{% endif %}View Reports</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <!-- Organizations -->
+      <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3" style="color:#1e293b;">Organizations ({{ orgs.count }})</h6>
+          {% if orgs %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size:.85rem;">
+              <thead style="background:#f8fafc;">
+                <tr>
+                  <th class="border-0 text-muted fw-semibold">Name</th>
+                  <th class="border-0 text-muted fw-semibold">Category</th>
+                  <th class="border-0 text-muted fw-semibold">Status</th>
+                  <th class="border-0 text-muted fw-semibold">Expires</th>
+                  <th class="border-0"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for org in orgs %}
+                <tr>
+                  <td class="fw-semibold" style="color:#1e293b;">{{ org.name }}</td>
+                  <td><span class="badge bg-light text-dark">{{ org.get_category_display }}</span></td>
+                  <td>
+                    {% if org.activate %}<span class="badge" style="background:#d1fae5;color:#065f46;">Active</span>
+                    {% else %}<span class="badge" style="background:#fee2e2;color:#991b1b;">Inactive</span>{% endif %}
+                  </td>
+                  <td class="text-muted">{{ org.expire_on|date:"d M Y" }}</td>
+                  <td>
+                    <a href="{% url 'superadmin:orgDetail' org.id %}" class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted small mb-0">No organizations yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="card border-0 shadow-sm" style="border-radius:12px;">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3" style="color:#1e293b;">Recent Activity</h6>
+          {% if activity %}
+          <div class="d-flex flex-column gap-3">
+            {% for log in activity %}
+            <div class="d-flex gap-3 align-items-start">
+              <div style="width:34px;height:34px;border-radius:8px;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-history" style="font-size:.75rem;color:#7c3aed;"></i>
+              </div>
+              <div>
+                <div class="fw-semibold small" style="color:#1e293b;">{{ log.action }}</div>
+                {% if log.organization %}<div class="text-muted" style="font-size:.78rem;">{{ log.organization.name }}</div>{% endif %}
+                {% if log.description %}<div class="text-muted" style="font-size:.75rem;">{{ log.description }}</div>{% endif %}
+                <div class="text-muted" style="font-size:.72rem;">{{ log.created_at|date:"d M Y, H:i" }}{% if log.ip_address %} &mdash; {{ log.ip_address }}{% endif %}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted small mb-0">No activity recorded.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

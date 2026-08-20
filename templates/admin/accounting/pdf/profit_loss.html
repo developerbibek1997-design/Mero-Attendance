@@ -1,0 +1,26 @@
+<html>
+<head>
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; color: #111827; font-size: 11px; }
+  h1 { font-size: 17px; margin-bottom: 2px; }
+  .muted { color: #6b7280; margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
+  .label { width: 65%; }
+  .num { text-align: right; }
+  .total { font-weight: bold; background: #f1f5f9; }
+  .net { font-weight: bold; background: #111827; color: #fff; }
+</style>
+</head>
+<body>
+  <h1>{{ org.name }}</h1>
+  <p class="muted">Profit &amp; Loss &mdash; {{ date_from }} to {{ date_to }}</p>
+  <table>
+    <tr><td class="label">Income</td><td class="num">{{ pl.income|floatformat:2 }}</td></tr>
+    <tr><td class="label">Cost of Goods Sold</td><td class="num">{{ pl.cogs|floatformat:2 }}</td></tr>
+    <tr class="total"><td class="label">Gross Profit</td><td class="num">{{ pl.gross_profit|floatformat:2 }}</td></tr>
+    <tr><td class="label">Expense</td><td class="num">{{ pl.expense|floatformat:2 }}</td></tr>
+    <tr class="net"><td class="label">Net Income</td><td class="num">{{ pl.net_income|floatformat:2 }}</td></tr>
+  </table>
+</body>
+</html>

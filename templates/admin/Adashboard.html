@@ -7,6 +7,7 @@
     /* 🌟 EXTRAORDINARY UI/UX ENHANCEMENTS */
     .dashboard-header { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 16px; padding: 30px; color: white; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15); position: relative; overflow: hidden; }
     .dashboard-header::after { content: ''; position: absolute; top: -50%; right: -10%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(56,189,248,0.2) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; }
+    .dashboard-header-logo { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; border: 2px solid rgba(255,255,255,.25); flex-shrink: 0; }
     
     .pulse-card { border-radius: 16px; border: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: #ffffff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); overflow: hidden; z-index: 1; }
     .pulse-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); }
@@ -27,10 +28,16 @@
 <div class="container-fluid py-2">
     
     <!-- 1. Enterprise Header -->
-    <div class="dashboard-header d-flex justify-content-between align-items-center">
-        <div style="z-index: 2;">
-            <h3 class="text-white mb-1 font-weight-bolder">{{ org.name }}</h3>
-            <p class="mb-0 text-sm opacity-8">System Status: Optimal | Today is {% now "l, F j, Y" %}</p>
+    <div class="dashboard-header d-flex justify-content-between align-items-center"
+         {% if org.image %}style="background-image:linear-gradient(135deg, rgba(30,41,59,.88) 0%, rgba(15,23,42,.94) 100%), url('{{ org.image.url }}'); background-size:cover; background-position:center;"{% endif %}>
+        <div style="z-index: 2;" class="d-flex align-items-center gap-3">
+            {% if org.image %}
+            <img src="{{ org.image.url }}" alt="{{ org.name }}" class="dashboard-header-logo">
+            {% endif %}
+            <div>
+                <h3 class="text-white mb-1 font-weight-bolder">{{ org.name }}</h3>
+                <p class="mb-0 text-sm opacity-8">System Status: Optimal | Today is {% now "l, F j, Y" %}</p>
+            </div>
         </div>
         <div class="text-end" style="z-index: 2;">
             <a href="{% url 'schooladmin:manual_attendance' %}" class="btn bg-gradient-info mb-0">
@@ -80,7 +87,7 @@
             </a>
         </div>
         <!-- Leaves -->
-        {% if org.feature_leave %}
+        {% if features.leave %}
         <div class="col-xl-3 col-sm-6">
             <a href="{% url 'schooladmin:leaveReportView' %}">
                 <div class="card pulse-card h-100">
@@ -117,9 +124,31 @@
         </div>
     </div>
 
+    {% if dash_notices %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 font-weight-bolder text-dark"><i class="fas fa-bullhorn text-primary me-2"></i>Active Notices</h6>
+            <a href="{% url 'schooladmin:notice_list' %}" class="text-xs text-primary font-weight-bold">Notice Board →</a>
+        </div>
+        <div class="card-body p-0">
+            {% for n in dash_notices %}
+            <a href="{% url 'schooladmin:notice_detail' n.pk %}" class="d-block px-3 py-2 border-bottom text-decoration-none">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                        <p class="text-sm font-weight-bold mb-0 text-dark">{{ n.title|truncatechars:70 }}</p>
+                        <p class="text-xs text-muted mb-0">{{ n.audience_label }} &middot; {{ n.publish_at|date:"M d, Y" }}</p>
+                    </div>
+                    <span class="badge {% if n.priority == 'urgent' %}bg-danger{% elif n.priority == 'high' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ n.get_priority_display }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- 2b. New Module Stats Row -->
     <div class="row g-3 mb-4">
-        {% if org.feature_finance %}
+        {% if features.finance %}
         <div class="col-xl-2 col-sm-4 col-6">
             <a href="{% url 'schooladmin:finance_dashboard' %}">
                 <div class="card pulse-card h-100">
@@ -132,7 +161,7 @@
             </a>
         </div>
         {% endif %}
-        {% if org.feature_stock %}
+        {% if features.stock %}
         <div class="col-xl-2 col-sm-4 col-6">
             <a href="{% url 'schooladmin:stock_items' %}">
                 <div class="card pulse-card h-100">
@@ -145,7 +174,33 @@
             </a>
         </div>
         {% endif %}
-        {% if org.feature_complaints %}
+        {% if features.library %}
+        <div class="col-xl-2 col-sm-4 col-6">
+            <a href="{% url 'schooladmin:library_issues' %}?status=issued">
+                <div class="card pulse-card h-100">
+                    <div class="card-body p-3">
+                        <p class="text-xs text-uppercase text-danger font-weight-bold mb-1">Books Overdue</p>
+                        <h5 class="mb-0 font-weight-bolder text-dark">{{ library_overdue_count }}</h5>
+                        <span class="text-xs text-secondary">Past due date</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endif %}
+        {% if features.accounting %}
+        <div class="col-xl-2 col-sm-4 col-6">
+            <a href="{% url 'schooladmin:journal_list' %}?status=pending">
+                <div class="card pulse-card h-100">
+                    <div class="card-body p-3">
+                        <p class="text-xs text-uppercase text-warning font-weight-bold mb-1">Pending Journals</p>
+                        <h5 class="mb-0 font-weight-bolder text-dark">{{ pending_journal_count }}</h5>
+                        <span class="text-xs text-secondary">Awaiting approval</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endif %}
+        {% if features.complaints %}
         <div class="col-xl-2 col-sm-4 col-6">
             <a href="{% url 'schooladmin:complaint_list' %}">
                 <div class="card pulse-card h-100">
@@ -158,7 +213,7 @@
             </a>
         </div>
         {% endif %}
-        {% if org.feature_events %}
+        {% if features.events %}
         <div class="col-xl-2 col-sm-4 col-6">
             <a href="{% url 'schooladmin:event_list' %}">
                 <div class="card pulse-card h-100">
@@ -171,7 +226,7 @@
             </a>
         </div>
         {% endif %}
-        {% if org.feature_hrms %}
+        {% if features.hrms %}
         <div class="col-xl-2 col-sm-4 col-6">
             <a href="{% url 'schooladmin:resignation_list' %}">
                 <div class="card pulse-card h-100">
@@ -184,7 +239,7 @@
             </a>
         </div>
         {% endif %}
-        {% if org.feature_branches %}
+        {% if features.branches %}
         <div class="col-xl-2 col-sm-4 col-6">
             <a href="{% url 'schooladmin:branch_list' %}">
                 <div class="card pulse-card h-100">
@@ -200,7 +255,7 @@
     </div>
 
     <!-- Payroll & Advance Summary -->
-    {% if org.feature_payroll %}
+    {% if features.payroll %}
     <div class="row g-3 mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -256,22 +311,39 @@
     </div>
     {% endif %}
 
-    <!-- Student Finance & Results Summary -->
+    {% comment %}
+    Student Finance & Results Summary.
+    This block mixes three independent modules (billing, results, student
+    management), so it is gated per-tile rather than as one lump — an org with
+    only Results enabled should still see its results tile. The section header
+    itself only renders if at least one of the three is on, which is what keeps
+    an office-type org from seeing a wall of "Rs. 0".
+    `features.x` (not org.feature_x) is used because it also honours the
+    superadmin allowlist — a flag can be on while the module is still not granted.
+    {% endcomment %}
+    {% if features.billing or features.results or features.student_mgmt %}
     <div class="row g-3 mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="font-weight-bolder mb-0"><i class="fas fa-user-graduate text-danger me-2"></i>Student Finance & Results</h6>
+                <h6 class="font-weight-bolder mb-0"><i class="fas fa-user-graduate text-danger me-2"></i>Student Finance &amp; Results</h6>
                 <div class="d-flex gap-2 flex-wrap">
+                    {% if features.student_mgmt %}
                     <a href="{% url 'schooladmin:student_list' %}" class="btn btn-outline-primary btn-sm">Students</a>
+                    {% endif %}
+                    {% if features.billing %}
                     <a href="{% url 'schooladmin:bulk_bill_generate' %}" class="btn btn-primary btn-sm">Generate Bills</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
+        {% if features.student_mgmt %}
         <div class="col-6 col-md-3 col-xl">
             <div class="card border-0 shadow-sm h-100" style="border-radius:8px;border-left:4px solid #111827!important;"><div class="card-body p-3">
                 <p class="text-xs text-uppercase text-muted fw-bold mb-1">Total Students</p><h5 class="mb-0 fw-bolder">{{ total_students }}</h5>
             </div></div>
         </div>
+        {% endif %}
+        {% if features.billing %}
         <div class="col-6 col-md-3 col-xl">
             <div class="card border-0 shadow-sm h-100" style="border-radius:8px;border-left:4px solid #e11d48!important;"><div class="card-body p-3">
                 <p class="text-xs text-uppercase text-danger fw-bold mb-1">Expected Monthly Billing</p><h5 class="mb-0 fw-bolder">Rs. {{ expected_monthly_billing|floatformat:0 }}</h5>
@@ -292,13 +364,22 @@
                 <p class="text-xs text-uppercase text-info fw-bold mb-1">Bills / Not Sent</p><h5 class="mb-0 fw-bolder">{{ bills_generated_this_month }} / {{ bills_not_sent }}</h5>
             </div></div>
         </div>
+        {% endif %}
+        {% if features.results %}
         <div class="col-6 col-md-3 col-xl">
             <div class="card border-0 shadow-sm h-100" style="border-radius:8px;border-left:4px solid #6366f1!important;"><div class="card-body p-3">
                 <p class="text-xs text-uppercase fw-bold mb-1" style="color:#6366f1;">Results Published / Pending</p><h5 class="mb-0 fw-bolder">{{ results_published }} / {{ results_pending_publish }}</h5>
             </div></div>
         </div>
+        {% endif %}
     </div>
+    {% endif %}
 
+    {% comment %}
+    Recent Payments / Recent Sent Bills / Classification-Wise Income are all
+    driven by Bill records, so the whole row hides when billing is off.
+    {% endcomment %}
+    {% if features.billing %}
     <div class="row g-3 mb-4">
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm h-100" style="border-radius:8px;">
@@ -346,9 +427,10 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- Task Management Summary -->
-    {% if org.feature_tasks %}
+    {% if features.tasks %}
     <div class="row g-3 mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -467,8 +549,9 @@
                         {% for absent_mem in critical_absentees %}
                         <div class="gap-item d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm bg-gradient-danger text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
-                                    {{ absent_mem.name|slice:":1" }}
+                                <div class="avatar avatar-sm bg-gradient-danger text-white rounded-circle me-3 d-flex align-items-center justify-content-center" style="overflow:hidden;">
+                                    {% if absent_mem.photo %}<img src="{{ absent_mem.photo.url }}" alt="{{ absent_mem.name }}" style="width:100%;height:100%;object-fit:cover;">
+                                    {% else %}{{ absent_mem.name|slice:":1" }}{% endif %}
                                 </div>
                                 <div>
                                     <h6 class="mb-0 text-sm text-dark">{{ absent_mem.name }}</h6>
@@ -507,6 +590,22 @@
                 </div>
             </a>
         </div>
+
+        <!-- Face Attendance Module -->
+        {% if not org or features.face_attendance %}
+        <div class="col-xl-3 col-md-6">
+            <a href="{% url 'schooladmin:face_enroll_list' %}">
+                <div class="card module-card" style="background-image: url('https://images.unsplash.com/photo-1633265486064-086b219458ec?auto=format&fit=crop&w=600&q=80');">
+                    <div class="module-mask"></div>
+                    <div class="module-content">
+                        <h5 class="text-white mb-1"><i class="fas fa-face-viewfinder me-2"></i>Face Attendance</h5>
+                        <p class="text-white text-xs opacity-8 mb-3">Enrol member faces and mark attendance instantly with the camera.</p>
+                        <span class="text-white text-sm font-weight-bold">Open Camera <i class="fas fa-arrow-right ms-1"></i></span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endif %}
 
         <!-- Log Official Leave -->
         <div class="col-xl-3 col-md-6">
@@ -553,6 +652,43 @@
         {% endif %}
     </div>
 
+    {% if features.academic_management %}
+    <h6 class="text-uppercase text-xs font-weight-bolder text-muted mb-3 mt-4">Academic Control Center</h6>
+    <div class="card border-0 shadow-sm mb-4" style="border-radius:14px;">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h5 class="font-weight-bolder mb-1">Course → Class → Section → Subject → Teacher</h5>
+                    <p class="text-xs text-muted mb-0">Current year: {{ academic_current_year|default:"Not configured" }}</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'schooladmin:course_list' %}" class="btn btn-sm btn-outline-primary">Courses & Enrollments</a>
+                    <a href="{% url 'schooladmin:subject_list' %}" class="btn btn-sm btn-outline-success">Subjects & Teachers</a>
+                    <a href="{% url 'schooladmin:routine_grid' %}" class="btn btn-sm btn-outline-info">Routine</a>
+                    <a href="{% url 'schooladmin:subject_attendance_report' %}" class="btn btn-sm btn-primary">Attendance Reports</a>
+                </div>
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-2"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Active Courses</div><div class="h5 mb-0">{{ academic_course_count }}</div></div></div>
+                <div class="col-6 col-md-2"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Enrollments</div><div class="h5 mb-0">{{ academic_enrollment_count }}</div></div></div>
+                <div class="col-6 col-md-2"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Teacher Assignments</div><div class="h5 mb-0">{{ academic_active_assignment_count }}</div></div></div>
+                <div class="col-6 col-md-2"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Today's Periods</div><div class="h5 mb-0">{{ academic_today_period_count }}</div></div></div>
+                <div class="col-6 col-md-2"><a href="{% url 'schooladmin:teaching_log_list' %}?status=submitted" class="d-block bg-light rounded p-3 h-100"><div class="text-xs text-muted">Pending Review</div><div class="h5 mb-0 text-warning">{{ academic_submitted_session_count }}</div></a></div>
+                <div class="col-6 col-md-2"><div class="bg-light rounded p-3 h-100"><div class="text-xs text-muted">Missing Sessions</div><div class="h5 mb-0 text-danger">{{ academic_missing_session_count }}</div></div></div>
+            </div>
+            {% if academic_unlinked_subject_count %}
+            <div class="alert alert-info py-2 mb-2">{{ academic_unlinked_subject_count }} active subject(s) use classification/section attendance without an optional course link.</div>
+            {% endif %}
+            {% if academic_unmapped_routine_count %}
+            <div class="alert alert-warning py-2 mb-2">{{ academic_unmapped_routine_count }} active routine period(s) have no valid teacher-subject assignment. Edit those periods before attendance is taken.</div>
+            {% endif %}
+            {% if academic_rejected_session_count %}
+            <div class="text-xs text-danger">{{ academic_rejected_session_count }} rejected session(s) are waiting for teacher correction.</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- 4b. New Action Modules -->
     <h6 class="text-uppercase text-xs font-weight-bolder text-muted mb-3 mt-4">Financial & Academic</h6>
     <div class="row g-4 mb-4">
@@ -593,12 +729,12 @@
             </a>
         </div>
         <div class="col-xl-3 col-md-6">
-            <a href="{% url 'schooladmin:privilege_manage' %}">
+            <a href="{% url 'schooladmin:roles_permissions_list' %}">
                 <div class="card module-card" style="background:linear-gradient(135deg,#4c1d95,#7c3aed);">
                     <div class="module-content">
                         <div class="mb-2" style="font-size:32px;">🛡️</div>
-                        <h5 class="text-white mb-1">Privilege Levels</h5>
-                        <p class="text-white text-xs opacity-8 mb-3">Control what each member can see in their portal (5 access levels).</p>
+                        <h5 class="text-white mb-1">Roles & Permissions</h5>
+                        <p class="text-white text-xs opacity-8 mb-3">Set each staff member's role preset and granular permissions in one place.</p>
                         <span class="text-white text-sm font-weight-bold">Manage Access <i class="fas fa-arrow-right ms-1"></i></span>
                     </div>
                 </div>

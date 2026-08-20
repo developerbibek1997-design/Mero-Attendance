@@ -132,6 +132,39 @@
     </div>
     {% endif %}
 
+    <!-- Library -->
+    {% if features.library %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="icon icon-shape shadow border-radius-md text-center" style="width:48px;height:48px;background:linear-gradient(135deg,#6d28d9,#8b5cf6);">
+              <i class="fas fa-book text-white fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 font-weight-bolder">Library</h6>
+              <p class="text-xs text-muted mb-0">Book catalog and issue history</p>
+            </div>
+          </div>
+          <div class="mb-3">
+            <select id="library_type" class="form-select form-select-sm">
+              <option value="books">Book Catalog</option>
+              <option value="issues">Issue History</option>
+            </select>
+          </div>
+          <div class="d-flex gap-2">
+            <button onclick="doExport('{% url 'schooladmin:export_library' %}','excel',{type:document.getElementById('library_type').value})" class="btn btn-sm flex-fill text-white" style="background:#7c3aed;">
+              <i class="fas fa-file-excel me-1"></i>Excel
+            </button>
+            <button onclick="doExport('{% url 'schooladmin:export_library' %}','csv',{type:document.getElementById('library_type').value})" class="btn btn-outline-secondary btn-sm flex-fill">
+              <i class="fas fa-file-csv me-1"></i>CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Finance -->
     {% if org.feature_finance %}
     <div class="col-md-6 col-xl-4">

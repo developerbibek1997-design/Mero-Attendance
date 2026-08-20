@@ -1,0 +1,12 @@
+<tr id="entry-add-form">
+  <td colspan="4" class="text-center py-2">
+    {% if ts.can_edit %}
+    <button class="btn btn-sm btn-outline-primary fw-semibold"
+            hx-get="{% url 'staff:ts_entry_add' pk=ts.pk %}"
+            hx-target="#entry-add-form"
+            hx-swap="outerHTML">
+      <i class="fas fa-plus me-1"></i>Add Entry
+    </button>
+    {% endif %}
+  </td>
+</tr>
